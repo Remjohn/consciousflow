@@ -365,3 +365,43 @@ export const kegelSessions = pgTable('kegel_sessions', {
 
     createdAt: timestamp('created_at').defaultNow()
 });
+
+// ========================================
+// DEEP WORK ACCOUNTABILITY SYSTEM
+// ========================================
+
+// Deep Work Sessions - Full accountability tracking with 5-pillar scoring
+export const deepWorkSessions = pgTable('deep_work_sessions', {
+    id: serial('id').primaryKey(),
+    userId: integer('user_id').references(() => users.id),
+
+    // Session Metadata
+    date: date('date').notNull(),
+    startedAt: timestamp('started_at').notNull(),
+    endedAt: timestamp('ended_at'),
+    durationMinutes: integer('duration_minutes').default(25),
+    status: text('status').default('IN_PROGRESS'), // IN_PROGRESS, COMPLETED, ABANDONED
+
+    // Task Accountability
+    taskDescription: text('task_description').notNull(),
+    taskCategory: text('task_category'), // video_editing, coding, writing, etc.
+    isFirstPriority: boolean('is_first_priority').default(false), // Declared at start
+    accomplishmentNotes: text('accomplishment_notes'), // What got done
+
+    // The Five Pillars (1 = excellent, 0 = average, -2 = poor)
+    scoreSpeed: integer('score_speed'), // Maximum Speed
+    scoreFocus: integer('score_focus'), // Zero Distraction
+    scoreFlow: integer('score_flow'), // Zero Pause (can be influenced by pause data)
+    scorePriority: integer('score_priority'), // First Priority Work
+    scoreContext: integer('score_context'), // Minimal Context Switching
+
+    // Calculated Total Score (sum of all pillars: -10 to +5)
+    totalScore: integer('total_score'),
+
+    // Pause Telemetry (auto-tracked during session)
+    pauseCount: integer('pause_count').default(0),
+    totalPauseSeconds: integer('total_pause_seconds').default(0),
+
+    // Timestamps
+    createdAt: timestamp('created_at').defaultNow()
+});

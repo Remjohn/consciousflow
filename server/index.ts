@@ -4,7 +4,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { db } from '../src/db';
-import { users, dailyLogs, challenges, goals, candidates, candidateLogs, candidateFlags, candidateQuestions, candidateAdjustments, coreTestQuestions } from '../src/db/schema';
+import { users, dailyLogs, challenges, goals, candidates, candidateLogs, candidateFlags, candidateQuestions, candidateAdjustments, coreTestQuestions, deepWorkSessions } from '../src/db/schema';
 import { desc, eq, gte, and, sql } from 'drizzle-orm';
 import { subDays, differenceInDays, format } from 'date-fns';
 import {
@@ -2703,6 +2703,380 @@ app.post('/api/mission/log', async (c) => {
     } catch (error) {
         console.error('Mission log error:', error);
         return c.json({ message: 'COMMS ERROR. RETRY TRANSMISSION.', mood: null, error: String(error) }, 500);
+    }
+});
+
+// ============================================
+// DEEP WORK ACCOUNTABILITY SYSTEM API
+// ============================================
+
+// Helper function to calculate stats from sessions
+function calculateDeepWorkStats(sessions: any[], period: string) {
+    if (sessions.length === 0) {
+        return {
+            period,
+            sessionCount: 0,
+            totalMinutes: 0,
+            totalScore: 0,
+            averageSessionScore: 0,
+            perfectSessions: 0,
+            failedSessions: 0,
+            pillarAverages: { speed: 0, focus: 0, flow: 0, priority: 0, context: 0 },
+            performanceTier: 'NONE' as const
+        };
+    }
+
+    const totalScore = sessions.reduce((sum, s) => sum + (s.totalScore || 0), 0);
+    const avgScore = totalScore / sessions.length;
+
+    let performanceTier: 'LEGENDARY' | 'ELITE' | 'STRONG' | 'DECENT' | 'WEAK' | 'FAILED' | 'NONE' = 'DECENT';
+    if (totalScore >= 20) performanceTier = 'LEGENDARY';
+    else if (totalScore >= 15) performanceTier = 'ELITE';
+    else if (totalScore >= 10) performanceTier = 'STRONG';
+    else if (totalScore >= 5) performanceTier = 'DECENT';
+    else if (totalScore >= 0) performanceTier = 'WEAK';
+    else performanceTier = 'FAILED';
+
+    return {
+        period,
+        sessionCount: sessions.length,
+        totalMinutes: sessions.reduce((sum, s) => sum + (s.durationMinutes || 25), 0),
+        totalScore,
+        averageSessionScore: Math.round(avgScore * 10) / 10,
+        perfectSessions: sessions.filter(s => s.totalScore === 5).length,
+        failedSessions: sessions.filter(s => (s.totalScore || 0) < 0).length,
+        pillarAverages: {
+            speed: Math.round(sessions.reduce((sum, s) => sum + (s.scoreSpeed || 0), 0) / sessions.length * 10) / 10,
+            focus: Math.round(sessions.reduce((sum, s) => sum + (s.scoreFocus || 0), 0) / sessions.length * 10) / 10,
+            flow: Math.round(sessions.reduce((sum, s) => sum + (s.scoreFlow || 0), 0) / sessions.length * 10) / 10,
+            priority: Math.round(sessions.reduce((sum, s) => sum + (s.scorePriority || 0), 0) / sessions.length * 10) / 10,
+            context: Math.round(sessions.reduce((sum, s) => sum + (s.scoreContext || 0), 0) / sessions.length * 10) / 10,
+        },
+        performanceTier
+    };
+}
+
+// Start a new deep work session
+app.post('/api/deepwork/session/start', async (c) => {
+    try {
+        const body = await c.req.json();
+        const { taskDescription, taskCategory, isFirstPriority } = body;
+
+        if (!taskDescription) {
+            return c.json({ error: 'Task description is required' }, 400);
+        }
+
+        const now = new Date();
+        const dateStr = format(now, 'yyyy-MM-dd');
+
+        const result = await db.insert(deepWorkSessions).values({
+            userId: 1,
+            date: dateStr,
+            startedAt: now,
+            taskDescription,
+            taskCategory: taskCategory || null,
+            isFirstPriority: isFirstPriority || false,
+            status: 'IN_PROGRESS'
+        }).returning();
+
+        return c.json({ session: result[0], message: 'Deep work session started' });
+    } catch (error) {
+        console.error('Deep work start error:', error);
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+// Record a pause during session
+app.post('/api/deepwork/session/:id/pause', async (c) => {
+    try {
+        const sessionId = parseInt(c.req.param('id'));
+        const body = await c.req.json();
+        const { pauseDuration } = body; // Duration in seconds
+
+        // Get current session
+        const current = await db.select().from(deepWorkSessions).where(eq(deepWorkSessions.id, sessionId));
+        if (current.length === 0) {
+            return c.json({ error: 'Session not found' }, 404);
+        }
+
+        const session = current[0];
+        const newPauseCount = (session.pauseCount || 0) + 1;
+        const newTotalPause = (session.totalPauseSeconds || 0) + (pauseDuration || 0);
+
+        await db.update(deepWorkSessions)
+            .set({
+                pauseCount: newPauseCount,
+                totalPauseSeconds: newTotalPause
+            })
+            .where(eq(deepWorkSessions.id, sessionId));
+
+        return c.json({ pauseCount: newPauseCount, totalPauseSeconds: newTotalPause });
+    } catch (error) {
+        console.error('Deep work pause error:', error);
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+// Complete a session with ratings
+app.post('/api/deepwork/session/:id/complete', async (c) => {
+    try {
+        const sessionId = parseInt(c.req.param('id'));
+        const body = await c.req.json();
+        const {
+            accomplishmentNotes,
+            scoreSpeed,
+            scoreFocus,
+            scoreFlow,
+            scorePriority,
+            scoreContext,
+            durationMinutes
+        } = body;
+
+        // Validate scores
+        const validScores = [1, 0, -2];
+        if (!validScores.includes(scoreSpeed) || !validScores.includes(scoreFocus) ||
+            !validScores.includes(scoreFlow) || !validScores.includes(scorePriority) ||
+            !validScores.includes(scoreContext)) {
+            return c.json({ error: 'Invalid score values. Must be 1, 0, or -2' }, 400);
+        }
+
+        const totalScore = scoreSpeed + scoreFocus + scoreFlow + scorePriority + scoreContext;
+        const now = new Date();
+
+        await db.update(deepWorkSessions)
+            .set({
+                endedAt: now,
+                status: 'COMPLETED',
+                accomplishmentNotes: accomplishmentNotes || null,
+                scoreSpeed,
+                scoreFocus,
+                scoreFlow,
+                scorePriority,
+                scoreContext,
+                totalScore,
+                durationMinutes: durationMinutes || 25
+            })
+            .where(eq(deepWorkSessions.id, sessionId));
+
+        // Get updated session
+        const updated = await db.select().from(deepWorkSessions).where(eq(deepWorkSessions.id, sessionId));
+
+        return c.json({
+            session: updated[0],
+            totalScore,
+            message: totalScore >= 3 ? '🏆 EXCELLENT SESSION!' : totalScore >= 0 ? '✓ Good work' : '⚠ Room for improvement'
+        });
+    } catch (error) {
+        console.error('Deep work complete error:', error);
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+// Abandon a session
+app.post('/api/deepwork/session/:id/abandon', async (c) => {
+    try {
+        const sessionId = parseInt(c.req.param('id'));
+
+        await db.update(deepWorkSessions)
+            .set({
+                endedAt: new Date(),
+                status: 'ABANDONED',
+                totalScore: -10 // Maximum penalty for abandoning
+            })
+            .where(eq(deepWorkSessions.id, sessionId));
+
+        return c.json({ message: 'Session abandoned' });
+    } catch (error) {
+        console.error('Deep work abandon error:', error);
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+// Get today's stats
+app.get('/api/deepwork/stats/today', async (c) => {
+    try {
+        const today = format(new Date(), 'yyyy-MM-dd');
+        const sessions = await db.select()
+            .from(deepWorkSessions)
+            .where(and(
+                eq(deepWorkSessions.date, today),
+                eq(deepWorkSessions.status, 'COMPLETED')
+            ))
+            .orderBy(desc(deepWorkSessions.startedAt));
+
+        return c.json({
+            stats: calculateDeepWorkStats(sessions, 'today'),
+            sessions
+        });
+    } catch (error) {
+        console.error('Deep work stats error:', error);
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+// Get yesterday's stats
+app.get('/api/deepwork/stats/yesterday', async (c) => {
+    try {
+        const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+        const sessions = await db.select()
+            .from(deepWorkSessions)
+            .where(and(
+                eq(deepWorkSessions.date, yesterday),
+                eq(deepWorkSessions.status, 'COMPLETED')
+            ))
+            .orderBy(desc(deepWorkSessions.startedAt));
+
+        return c.json({
+            stats: calculateDeepWorkStats(sessions, 'yesterday'),
+            sessions
+        });
+    } catch (error) {
+        console.error('Deep work stats error:', error);
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+// Get this week's stats
+app.get('/api/deepwork/stats/week', async (c) => {
+    try {
+        const weekAgo = format(subDays(new Date(), 7), 'yyyy-MM-dd');
+        const sessions = await db.select()
+            .from(deepWorkSessions)
+            .where(and(
+                gte(deepWorkSessions.date, weekAgo),
+                eq(deepWorkSessions.status, 'COMPLETED')
+            ))
+            .orderBy(desc(deepWorkSessions.startedAt));
+
+        return c.json({
+            stats: calculateDeepWorkStats(sessions, 'week'),
+            sessions
+        });
+    } catch (error) {
+        console.error('Deep work stats error:', error);
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+// Get this month's stats
+app.get('/api/deepwork/stats/month', async (c) => {
+    try {
+        const monthAgo = format(subDays(new Date(), 30), 'yyyy-MM-dd');
+        const sessions = await db.select()
+            .from(deepWorkSessions)
+            .where(and(
+                gte(deepWorkSessions.date, monthAgo),
+                eq(deepWorkSessions.status, 'COMPLETED')
+            ))
+            .orderBy(desc(deepWorkSessions.startedAt));
+
+        return c.json({
+            stats: calculateDeepWorkStats(sessions, 'month'),
+            sessions
+        });
+    } catch (error) {
+        console.error('Deep work stats error:', error);
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+// Get all-time stats
+app.get('/api/deepwork/stats/alltime', async (c) => {
+    try {
+        const sessions = await db.select()
+            .from(deepWorkSessions)
+            .where(eq(deepWorkSessions.status, 'COMPLETED'))
+            .orderBy(desc(deepWorkSessions.startedAt));
+
+        return c.json({
+            stats: calculateDeepWorkStats(sessions, 'alltime'),
+            sessionCount: sessions.length
+        });
+    } catch (error) {
+        console.error('Deep work stats error:', error);
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+// Get stats for custom date range
+app.get('/api/deepwork/stats/range', async (c) => {
+    try {
+        const from = c.req.query('from');
+        const to = c.req.query('to');
+
+        if (!from || !to) {
+            return c.json({ error: 'from and to dates are required (YYYY-MM-DD format)' }, 400);
+        }
+
+        const sessions = await db.select()
+            .from(deepWorkSessions)
+            .where(and(
+                gte(deepWorkSessions.date, from),
+                sql`${deepWorkSessions.date} <= ${to}`,
+                eq(deepWorkSessions.status, 'COMPLETED')
+            ))
+            .orderBy(desc(deepWorkSessions.startedAt));
+
+        return c.json({
+            stats: calculateDeepWorkStats(sessions, `${from} to ${to}`),
+            sessions
+        });
+    } catch (error) {
+        console.error('Deep work stats error:', error);
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+// Get personal records
+app.get('/api/deepwork/stats/records', async (c) => {
+    try {
+        // Get all completed sessions
+        const allSessions = await db.select()
+            .from(deepWorkSessions)
+            .where(eq(deepWorkSessions.status, 'COMPLETED'));
+
+        // Group by date to find best day
+        const byDate: Record<string, number> = {};
+        allSessions.forEach(s => {
+            const d = s.date;
+            byDate[d] = (byDate[d] || 0) + (s.totalScore || 0);
+        });
+
+        const bestDay = Object.entries(byDate).reduce((best, [date, score]) =>
+            score > best.score ? { date, score } : best
+            , { date: '', score: -999 });
+
+        // Count perfect sessions
+        const perfectCount = allSessions.filter(s => s.totalScore === 5).length;
+
+        // Find longest positive streak (consecutive positive score days)
+        const sortedDates = [...new Set(allSessions.map(s => s.date))].sort();
+        let currentStreak = 0;
+        let longestStreak = 0;
+
+        for (const date of sortedDates) {
+            const dayScore = byDate[date];
+            if (dayScore > 0) {
+                currentStreak++;
+                longestStreak = Math.max(longestStreak, currentStreak);
+            } else {
+                currentStreak = 0;
+            }
+        }
+
+        return c.json({
+            bestDay,
+            totalSessions: allSessions.length,
+            perfectSessions: perfectCount,
+            longestPositiveStreak: longestStreak,
+            allTimeScore: allSessions.reduce((sum, s) => sum + (s.totalScore || 0), 0),
+            averageScore: allSessions.length > 0
+                ? Math.round(allSessions.reduce((sum, s) => sum + (s.totalScore || 0), 0) / allSessions.length * 10) / 10
+                : 0
+        });
+    } catch (error) {
+        console.error('Deep work records error:', error);
+        return c.json({ error: String(error) }, 500);
     }
 });
 

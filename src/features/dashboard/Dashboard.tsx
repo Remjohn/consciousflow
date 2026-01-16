@@ -8,6 +8,7 @@ import { ScrollingQuotes } from '../../components/ScrollingQuotes';
 import { usePunishment } from '../../hooks/usePunishment';
 import { API_URL } from '../../lib/api';
 import { KegelsPomodoro } from '../kegels/KegelsPomodoro';
+import { DeepWorkStats } from './DeepWorkStats';
 
 type TimeScope = 'day' | 'week' | 'month';
 
@@ -151,6 +152,16 @@ export const Dashboard = () => {
 
                 {/* PROTOCOL TIMER */}
                 <ProtocolTimer />
+
+                {/* DEEP WORK ANALYTICS */}
+                <div className="space-y-2">
+                    <div className="px-1">
+                        <span className="text-[10px] font-mono font-bold text-gold tracking-widest flex items-center gap-2">
+                            🎯 DEEP WORK ANALYTICS
+                        </span>
+                    </div>
+                    <DeepWorkStats />
+                </div>
 
                 {/* DAILY EVIDENCE */}
                 {scope === 'day' && (
