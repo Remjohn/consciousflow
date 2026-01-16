@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --color-void: #050505;
+  --color-steel: #1F2937;
+  --color-blood: #DC2626;
+  --color-gold: #FFD700;
+  --color-concrete: #9CA3AF;
+  --color-hologram: #06b6d4;
+
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: 'Oswald', sans-serif;
+
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@layer base {
+  :root {
+    @apply bg-void text-concrete font-sans overflow-x-hidden;
+  }
+
+  body {
+    background-color: var(--color-void);
+    color: var(--color-concrete);
+    @apply antialiased min-h-screen selection:bg-blood selection:text-white;
+  }
+
+  /* Custom Scrollbar for 'The Fortress' feel */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #050505;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #1F2937;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #DC2626;
+  }
+}
