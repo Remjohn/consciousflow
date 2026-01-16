@@ -27,8 +27,9 @@ app.use('/uploads/*', serveStatic({ root: './public' }));
 const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
 
 // Ensure uploads directory exists
+// Ensure uploads directory exists (ONLY LOCAL)
 const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
-if (!fs.existsSync(UPLOADS_DIR)) {
+if (!process.env.NETLIFY && !fs.existsSync(UPLOADS_DIR)) {
     fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
