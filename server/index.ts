@@ -1,10 +1,12 @@
-import 'dotenv/config';
-import { serve } from '@hono/node-server';
+// ISOMORPHIC SERVER: Works in both Node.js (local) and Netlify Functions (Lambda)
+
+// Only load dotenv locally (Netlify injects env vars automatically)
+if (!process.env.NETLIFY) {
+    await import('dotenv/config');
+}
+
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { serveStatic } from '@hono/node-server/serve-static';
-import * as fs from 'fs';
-import * as path from 'path';
 import { db } from '../src/db';
 import { users, dailyLogs, challenges, goals, candidates, candidateLogs, candidateFlags, candidateQuestions, candidateAdjustments, coreTestQuestions } from '../src/db/schema';
 import { desc, eq, gte, and, sql } from 'drizzle-orm';
@@ -20,18 +22,22 @@ import {
 const app = new Hono();
 app.use('/*', cors());
 
-// Serve uploaded files statically
-app.use('/uploads/*', serveStatic({ root: './public' }));
+// ONLY in local development: serve static files and create upload directory
+let UPLOADS_DIR = '';
+if (!process.env.NETLIFY) {
+    const fs = await import('fs');
+    const path = await import('path');
+    const { serveStatic } = await import('@hono/node-server/serve-static');
+
+    UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
+    if (!fs.existsSync(UPLOADS_DIR)) {
+        fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    }
+    app.use('/uploads/*', serveStatic({ root: './public' }));
+}
 
 // Initialize Mistral (using native fetch to avoid extra deps)
 const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
-
-// Ensure uploads directory exists
-// Ensure uploads directory exists (ONLY LOCAL)
-const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
-if (!process.env.NETLIFY && !fs.existsSync(UPLOADS_DIR)) {
-    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
 
 // ============================================
 // CHAMPIONSHIP SCORE CONSTANTS
@@ -2692,6 +2698,7 @@ const port = 3000;
 
 // Only start local server when not in Netlify Functions
 if (!process.env.NETLIFY) {
+    const { serve } = await import('@hono/node-server');
     console.log(`Server is running on port ${port}`);
     serve({
         fetch: app.fetch,
