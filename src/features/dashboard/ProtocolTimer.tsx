@@ -2,51 +2,65 @@ import { useState, useEffect } from 'react';
 import { useUserStore } from '../../store/useUserStore';
 import { Play, Pause, RefreshCw, Timer, Maximize2 } from 'lucide-react';
 import { DeepWorkPomodoro } from './DeepWorkPomodoro';
+import { useTimer } from '../../hooks/useTimer';
+
+const WORK_DURATION_MS = 25 * 60 * 1000; // 25 minutes
+const BREAK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
 export const ProtocolTimer = () => {
     const { getCurrentScheduleMode, incrementMetric } = useUserStore();
     const [currentTime, setCurrentTime] = useState(new Date());
-    const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 mins in seconds
-    const [isActive, setIsActive] = useState(false);
     const [isBreak, setIsBreak] = useState(false);
     const [showFullscreen, setShowFullscreen] = useState(false);
 
     const schedule = getCurrentScheduleMode();
 
+    // Update current time display
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
-    useEffect(() => {
-        let interval: any = null;
-        if (isActive && timeLeft > 0) {
-            interval = setInterval(() => {
-                setTimeLeft(timeLeft - 1);
-            }, 1000);
-        } else if (isActive && timeLeft === 0) {
-            clearInterval(interval);
-            setIsActive(false);
-            if (!isBreak) {
-                // Work Session Complete
-                incrementMetric('production', 'pomodoros');
-                setIsBreak(true);
-                setTimeLeft(5 * 60); // 5 min break
-                // Play notification sound here in future
-            } else {
-                // Break Complete
-                setIsBreak(false);
-                setTimeLeft(25 * 60);
-            }
-        }
-        return () => clearInterval(interval);
-    }, [isActive, timeLeft, isBreak, incrementMetric]);
+    // Work timer
+    const workTimer = useTimer({
+        durationMs: WORK_DURATION_MS,
+        onComplete: () => {
+            incrementMetric('production', 'pomodoros');
+            setIsBreak(true);
+            breakTimer.start();
+        },
+        notificationTitle: '🏆 Deep Work Complete!',
+        notificationBody: 'Time for a 5-minute break.'
+    });
 
-    const toggleTimer = () => setIsActive(!isActive);
+    // Break timer
+    const breakTimer = useTimer({
+        durationMs: BREAK_DURATION_MS,
+        onComplete: () => {
+            setIsBreak(false);
+        },
+        notificationTitle: '⏰ Break Over!',
+        notificationBody: 'Ready for another Deep Work session.'
+    });
+
+    const activeTimer = isBreak ? breakTimer : workTimer;
+
+    const toggleTimer = () => {
+        if (activeTimer.isRunning) {
+            if (activeTimer.isPaused) {
+                activeTimer.resume();
+            } else {
+                activeTimer.pause();
+            }
+        } else {
+            activeTimer.start();
+        }
+    };
+
     const resetTimer = () => {
-        setIsActive(false);
+        workTimer.reset();
+        breakTimer.reset();
         setIsBreak(false);
-        setTimeLeft(25 * 60);
     };
 
     const formatTime = (seconds: number) => {
@@ -54,6 +68,8 @@ export const ProtocolTimer = () => {
         const secs = seconds % 60;
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
+
+    const isActive = activeTimer.isRunning && !activeTimer.isPaused;
 
     return (
         <>
@@ -86,7 +102,7 @@ export const ProtocolTimer = () => {
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-[50px] font-black font-display leading-none tracking-tighter tabular-nums text-concrete">
-                                    {formatTime(timeLeft)}
+                                    {formatTime(activeTimer.remainingSeconds)}
                                 </span>
                                 <span className="text-[9px] font-mono uppercase text-concrete/40 tracking-[0.2em]">
                                     {isBreak ? 'Recovery Protocol' : 'Deep Work Cycle'}
@@ -116,6 +132,13 @@ export const ProtocolTimer = () => {
                             </button>
                         </div>
                     </div>
+
+                    {/* Background Mode Hint */}
+                    {activeTimer.isRunning && (
+                        <div className="text-[9px] text-concrete/30 text-center">
+                            💡 Timer continues in background
+                        </div>
+                    )}
                 </div>
             </div>
 

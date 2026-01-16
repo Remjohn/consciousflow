@@ -3,6 +3,7 @@ import { X, Play, Pause, Volume2, VolumeX, Check, AlertTriangle, Zap, Target, Fo
 import { QUOTES } from '../../components/ScrollingQuotes';
 import { useUserStore } from '../../store/useUserStore';
 import { API_URL } from '../../lib/api';
+import { useTimer } from '../../hooks/useTimer';
 
 interface DeepWorkPomodoroProps {
     onClose: () => void;
@@ -33,6 +34,8 @@ const SCORE_OPTIONS = [
     { value: -2 as ScoreValue, label: 'POOR', emoji: '⚠', color: 'bg-blood/50 text-white', points: '-2' },
 ];
 
+const WORK_DURATION_MS = 25 * 60 * 1000; // 25 minutes
+
 export const DeepWorkPomodoro = ({ onClose }: DeepWorkPomodoroProps) => {
     const { incrementMetric } = useUserStore();
 
@@ -46,11 +49,7 @@ export const DeepWorkPomodoro = ({ onClose }: DeepWorkPomodoroProps) => {
 
     // Active session phase
     const [sessionId, setSessionId] = useState<number | null>(null);
-    const [secondsLeft, setSecondsLeft] = useState(25 * 60);
-    const [isPaused, setIsPaused] = useState(false);
     const [pauseCount, setPauseCount] = useState(0);
-    const [_totalPauseSeconds, setTotalPauseSeconds] = useState(0);
-    const [pauseStartTime, setPauseStartTime] = useState<Date | null>(null);
     const [soundEnabled, setSoundEnabled] = useState(true);
     const [currentQuote, setCurrentQuote] = useState(() =>
         QUOTES[Math.floor(Math.random() * QUOTES.length)]
@@ -65,37 +64,26 @@ export const DeepWorkPomodoro = ({ onClose }: DeepWorkPomodoroProps) => {
     // Complete phase
     const [finalScore, setFinalScore] = useState(0);
 
-    const workDuration = 25 * 60;
+    // Use the PWA-compatible timer hook
+    const timer = useTimer({
+        durationMs: WORK_DURATION_MS,
+        onComplete: () => {
+            setPhase('RATING');
+        },
+        notificationTitle: '🏆 Deep Work Complete!',
+        notificationBody: `${taskDescription.slice(0, 50)}... - Time to rate your session!`
+    });
 
-    // Timer logic
+    // Rotate quotes every 45 seconds during active phase
     useEffect(() => {
-        if (phase !== 'ACTIVE' || isPaused) return;
-
-        const interval = setInterval(() => {
-            setSecondsLeft(prev => {
-                if (prev <= 1) {
-                    clearInterval(interval);
-                    playSound('complete');
-                    setPhase('RATING');
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [phase, isPaused]);
-
-    // Rotate quotes every 45 seconds during active
-    useEffect(() => {
-        if (phase !== 'ACTIVE' || isPaused) return;
+        if (phase !== 'ACTIVE' || timer.isPaused) return;
 
         const quoteInterval = setInterval(() => {
             setCurrentQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
         }, 45000);
 
         return () => clearInterval(quoteInterval);
-    }, [phase, isPaused]);
+    }, [phase, timer.isPaused]);
 
     const playSound = useCallback((type: 'start' | 'complete' | 'pause') => {
         if (!soundEnabled) return;
@@ -140,40 +128,35 @@ export const DeepWorkPomodoro = ({ onClose }: DeepWorkPomodoroProps) => {
 
             if (data.session) {
                 setSessionId(data.session.id);
-                playSound('start');
-                setPhase('ACTIVE');
             }
         } catch (error) {
             console.error('Failed to start session:', error);
-            // Start anyway for offline mode
-            playSound('start');
-            setPhase('ACTIVE');
         }
+
+        // Start timer and transition to active phase
+        playSound('start');
+        timer.start();
+        setPhase('ACTIVE');
     };
 
     const handlePause = async () => {
-        if (isPaused) {
-            // Resuming - calculate pause duration
-            if (pauseStartTime) {
-                const pauseDuration = Math.floor((new Date().getTime() - pauseStartTime.getTime()) / 1000);
-                setTotalPauseSeconds(prev => prev + pauseDuration);
-
-                // Record pause on backend
-                if (sessionId) {
-                    fetch(`${API_URL}/api/deepwork/session/${sessionId}/pause`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ pauseDuration })
-                    }).catch(console.error);
-                }
-            }
-            setPauseStartTime(null);
+        if (timer.isPaused) {
+            // Resuming
+            timer.resume();
         } else {
-            // Starting pause
+            // Pausing
             setPauseCount(prev => prev + 1);
-            setPauseStartTime(new Date());
+            timer.pause();
+
+            // Record pause on backend
+            if (sessionId) {
+                fetch(`${API_URL}/api/deepwork/session/${sessionId}/pause`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pauseDuration: 0 }) // Duration tracked by hook
+                }).catch(console.error);
+            }
         }
-        setIsPaused(!isPaused);
     };
 
     const ratePillar = (pillar: keyof PillarRating, value: ScoreValue) => {
@@ -234,8 +217,6 @@ export const DeepWorkPomodoro = ({ onClose }: DeepWorkPomodoroProps) => {
         if (score >= -3) return { emoji: '⚠', label: 'WEAK', color: 'text-orange-500' };
         return { emoji: '💀', label: 'FAILED', color: 'text-blood' };
     };
-
-    const progress = ((workDuration - secondsLeft) / workDuration) * 100;
 
     return (
         <div className="fixed inset-0 z-[100] bg-void flex flex-col overflow-y-auto">
@@ -341,12 +322,12 @@ export const DeepWorkPomodoro = ({ onClose }: DeepWorkPomodoroProps) => {
                 <div className="flex-1 flex flex-col items-center justify-center p-8">
                     {/* Timer */}
                     <div className="text-center mb-6">
-                        <div className={`text-[120px] font-mono font-black leading-none tracking-tight ${isPaused ? 'text-orange-500 animate-pulse' : 'text-gold'
+                        <div className={`text-[120px] font-mono font-black leading-none tracking-tight ${timer.isPaused ? 'text-orange-500 animate-pulse' : 'text-gold'
                             }`}>
-                            {formatTime(secondsLeft)}
+                            {formatTime(timer.remainingSeconds)}
                         </div>
                         <div className="text-xs uppercase tracking-[0.3em] text-concrete/50 mt-2">
-                            {isPaused ? '⏸️ PAUSED' : '🔥 DEEP WORK MODE'}
+                            {timer.isPaused ? '⏸️ PAUSED' : '🔥 DEEP WORK MODE'}
                         </div>
                     </div>
 
@@ -354,7 +335,7 @@ export const DeepWorkPomodoro = ({ onClose }: DeepWorkPomodoroProps) => {
                     <div className="w-full max-w-md h-2 bg-steel/20 rounded-full mb-6 overflow-hidden">
                         <div
                             className="h-full bg-gold transition-all duration-1000"
-                            style={{ width: `${progress}%` }}
+                            style={{ width: `${timer.progress}%` }}
                         />
                     </div>
 
@@ -375,9 +356,9 @@ export const DeepWorkPomodoro = ({ onClose }: DeepWorkPomodoroProps) => {
                     <div className="flex gap-4">
                         <button
                             onClick={handlePause}
-                            className={`p-4 rounded-full ${isPaused ? 'bg-gold text-void' : 'bg-steel/20 text-concrete hover:bg-steel/30'}`}
+                            className={`p-4 rounded-full ${timer.isPaused ? 'bg-gold text-void' : 'bg-steel/20 text-concrete hover:bg-steel/30'}`}
                         >
-                            {isPaused ? <Play size={32} /> : <Pause size={32} />}
+                            {timer.isPaused ? <Play size={32} /> : <Pause size={32} />}
                         </button>
                     </div>
 
@@ -388,6 +369,11 @@ export const DeepWorkPomodoro = ({ onClose }: DeepWorkPomodoroProps) => {
                             <span>{pauseCount} pause{pauseCount > 1 ? 's' : ''} recorded - affects FLOW score</span>
                         </div>
                     )}
+
+                    {/* Background Mode Hint */}
+                    <div className="mt-6 text-xs text-concrete/30 text-center max-w-sm">
+                        💡 You can switch to other apps. Timer continues in background and will notify you when complete.
+                    </div>
                 </div>
             )}
 
