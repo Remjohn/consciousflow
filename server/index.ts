@@ -2730,11 +2730,11 @@ function calculateDeepWorkStats(sessions: any[], period: string) {
     const avgScore = totalScore / sessions.length;
 
     let performanceTier: 'LEGENDARY' | 'ELITE' | 'STRONG' | 'DECENT' | 'WEAK' | 'FAILED' | 'NONE' = 'DECENT';
-    if (totalScore >= 20) performanceTier = 'LEGENDARY';
-    else if (totalScore >= 15) performanceTier = 'ELITE';
-    else if (totalScore >= 10) performanceTier = 'STRONG';
-    else if (totalScore >= 5) performanceTier = 'DECENT';
-    else if (totalScore >= 0) performanceTier = 'WEAK';
+    if (totalScore >= 110) performanceTier = 'LEGENDARY';
+    else if (totalScore >= 100) performanceTier = 'ELITE';
+    else if (totalScore >= 80) performanceTier = 'STRONG';
+    else if (totalScore >= 60) performanceTier = 'DECENT';
+    else if (totalScore >= 40) performanceTier = 'WEAK';
     else performanceTier = 'FAILED';
 
     return {
