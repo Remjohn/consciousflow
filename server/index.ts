@@ -2708,33 +2708,8 @@ app.post('/api/mission/log', async (c) => {
 
 const port = 3000;
 
-// Only start local server when not in Netlify Functions
-// Wrapped in async IIFE to avoid top-level await (CJS compatibility)
-if (!process.env.NETLIFY) {
-    (async () => {
-        // Load dotenv for local development
-        await import('dotenv/config');
-
-        // Setup uploads directory
-        const fs = await import('fs');
-        const path = await import('path');
-        const { serveStatic } = await import('@hono/node-server/serve-static');
-
-        const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
-        if (!fs.existsSync(UPLOADS_DIR)) {
-            fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-        }
-        app.use('/uploads/*', serveStatic({ root: './public' }));
-
-        // Start server
-        const { serve } = await import('@hono/node-server');
-        console.log(`Server is running on port ${port}`);
-        serve({
-            fetch: app.fetch,
-            port
-        });
-    })();
-}
-
 // Export for Netlify Functions
 export default app;
+
+// Export port for local dev script
+export { port };
