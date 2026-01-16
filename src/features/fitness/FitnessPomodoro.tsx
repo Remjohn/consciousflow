@@ -27,6 +27,30 @@ const SESSION_VARIATIONS: Record<SessionType, string[]> = {
     CARDIO: ['Jump Rope', 'High Knees', 'Jump Squats', 'Tuck Jumps', 'Skaters']
 };
 
+// Motivational quotes that rotate during sessions
+const MOTIVATIONAL_QUOTES = [
+    { text: "Pain is temporary. Quitting lasts forever.", author: "Lance Armstrong" },
+    { text: "The body achieves what the mind believes.", author: "Napoleon Hill" },
+    { text: "You don't have to be great to start, but you have to start to be great.", author: "Zig Ziglar" },
+    { text: "The only bad workout is the one that didn't happen.", author: "Unknown" },
+    { text: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln" },
+    { text: "Your body can stand almost anything. It's your mind you have to convince.", author: "Unknown" },
+    { text: "The difference between try and triumph is just a little umph!", author: "Marvin Phillips" },
+    { text: "Strength does not come from physical capacity. It comes from an indomitable will.", author: "Mahatma Gandhi" },
+    { text: "The harder the battle, the sweeter the victory.", author: "Les Brown" },
+    { text: "Success is walking from failure to failure with no loss of enthusiasm.", author: "Winston Churchill" },
+    { text: "You are stronger than you think.", author: "Unknown" },
+    { text: "One more rep. One more set. One more day.", author: "Unknown" },
+    { text: "The pain you feel today will be the strength you feel tomorrow.", author: "Unknown" },
+    { text: "Champions are made when no one is watching.", author: "Unknown" },
+    { text: "Your future self is watching you right now through memories.", author: "Aubrey de Grey" },
+    { text: "Suffer now and live the rest of your life as a champion.", author: "Muhammad Ali" },
+    { text: "The iron never lies. The weights don't care about your excuses.", author: "Henry Rollins" },
+    { text: "Every rep brings you closer to the man you want to become.", author: "Unknown" },
+    { text: "This is not punishment. This is preparation.", author: "Unknown" },
+    { text: "Kimya is watching. Make her proud.", author: "Your Future Self" },
+];
+
 export const FitnessPomodoro = ({ sessionType, session, onClose, onComplete }: FitnessPomodoroProps) => {
     const [phase, setPhase] = useState<'PRE' | 'ACTIVE' | 'COMPLETE'>('PRE');
     const durationMinutes = session?.durationMinutes || 25;
@@ -35,11 +59,25 @@ export const FitnessPomodoro = ({ sessionType, session, onClose, onComplete }: F
     const [repCount, setRepCount] = useState(0);
     const [currentVariation, setCurrentVariation] = useState(0);
     const [perceivedExertion, setPerceivedExertion] = useState(7);
+    const [currentQuote, setCurrentQuote] = useState(() =>
+        MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)]
+    );
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     const variations = SESSION_VARIATIONS[sessionType];
     const totalDuration = durationMinutes * 60;
     const variationInterval = Math.floor(totalDuration / variations.length);
+
+    // Rotate quotes every 30 seconds during active phase
+    useEffect(() => {
+        if (phase !== 'ACTIVE' || isPaused) return;
+
+        const quoteInterval = setInterval(() => {
+            setCurrentQuote(MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)]);
+        }, 30000); // Change quote every 30 seconds
+
+        return () => clearInterval(quoteInterval);
+    }, [phase, isPaused]);
 
     // Start session on backend (only if session exists)
     useEffect(() => {
@@ -207,9 +245,19 @@ export const FitnessPomodoro = ({ sessionType, session, onClose, onComplete }: F
                     </div>
 
                     {/* Current Variation */}
-                    <div className="bg-white/10 py-4 px-6 mb-8 rounded-lg">
+                    <div className="bg-white/10 py-4 px-6 mb-4 rounded-lg">
                         <p className="text-xs uppercase tracking-widest opacity-50 mb-1">Current Variation</p>
                         <p className="text-2xl font-bold">{variations[currentVariation]}</p>
+                    </div>
+
+                    {/* Motivational Quote */}
+                    <div className="bg-white/5 border border-white/10 py-4 px-6 mb-8 rounded-lg animate-in fade-in duration-500">
+                        <p className="text-lg italic font-light leading-relaxed">
+                            "{currentQuote.text}"
+                        </p>
+                        <p className="text-sm opacity-60 mt-2">
+                            — {currentQuote.author}
+                        </p>
                     </div>
 
                     {/* Rep Counter */}
