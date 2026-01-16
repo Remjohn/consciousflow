@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const QUOTES = [
+export const QUOTES = [
     '💜 Kimya a dit "Mon Papa est FORT"',
     '💪 Kimya a dit "Moi je veux que tu sois comme HULK et personne ne peut être comme toi"',
     '⚡ I work faster than my enemies - Nothing left in the tank',
