@@ -332,21 +332,6 @@ const StatusCard = ({ label, value, target, urgent }: { label: string, value: nu
     )
 }
 
-const _FitnessCounter = ({ label, value, onInc, scope }: { label: string, value: number, onInc: () => void, scope: TimeScope }) => (
-    <div className="flex flex-col items-center gap-1">
-        <div className="text-xl font-bold text-concrete tabular-nums">{value}</div>
-        <span className="text-[7px] uppercase font-mono text-concrete/40">{label}</span>
-        {scope === 'day' && (
-            <button
-                onClick={onInc}
-                className="w-full bg-steel/10 hover:bg-steel/20 border border-steel/20 text-[8px] py-1 text-concrete"
-            >
-                +10
-            </button>
-        )}
-    </div>
-);
-
 const LifestyleToggle = ({ label, active, onClick, icon }: { label: string, active: boolean, onClick: () => void, icon: any }) => (
     <button onClick={onClick} className={`flex items-center justify-between p-2 rounded-sm border transition-all ${active ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-void border-steel/20 text-concrete/30 hover:bg-steel/5'}`}>
         <div className="flex items-center gap-2">
