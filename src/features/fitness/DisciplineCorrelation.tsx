@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, Activity, BarChart3 } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 
 interface CorrelationData {
     period: string;

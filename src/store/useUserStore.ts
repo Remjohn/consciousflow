@@ -431,7 +431,7 @@ export const useUserStore = create<UserState>()(
             } catch (err) { console.error(err); }
         },
 
-        updateCandidate: (id, updates) => {
+        updateCandidate: (_id, _updates) => {
             // Placeholder for local optimistic update or specific API call
             // For full integration, we should use specific setter actions (setAppearance, etc.)
             // This generic one might be deprecated or mapped to specific endpoints.

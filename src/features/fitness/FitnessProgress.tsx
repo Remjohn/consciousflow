@@ -338,7 +338,7 @@ export const FitnessProgress = () => {
                                     <Scale size={14} /> Weight Progress
                                 </h3>
                                 <div className="h-32 flex items-end gap-1">
-                                    {metrics.slice(0, 30).reverse().map((m, i) => {
+                                    {metrics.slice(0, 30).reverse().map((m, _i) => {
                                         const weight = m.weight || 0;
                                         const maxWeight = Math.max(...metrics.map(x => x.weight || 0));
                                         const minWeight = Math.min(...metrics.filter(x => x.weight).map(x => x.weight || 0));

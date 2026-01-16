@@ -7,7 +7,7 @@ import { ScoringModal } from './ScoringModal';
 const STAGES: CandidateStage[] = ['POOL', 'GROUP_STAGE', 'ROUND_OF_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINALS', 'CHAMPION'];
 
 export const Dating = () => {
-    const { candidates, addCandidate, moveCandidate, removeCandidate, fetchCandidates } = useUserStore();
+    const { candidates, addCandidate, moveCandidate, fetchCandidates } = useUserStore();
     const [viewMode, setViewMode] = useState<'PIPELINE' | 'GALLERY'>('GALLERY');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 

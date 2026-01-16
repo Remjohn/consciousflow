@@ -332,7 +332,7 @@ const StatusCard = ({ label, value, target, urgent }: { label: string, value: nu
     )
 }
 
-const FitnessCounter = ({ label, value, onInc, scope }: { label: string, value: number, onInc: () => void, scope: TimeScope }) => (
+const _FitnessCounter = ({ label, value, onInc, scope }: { label: string, value: number, onInc: () => void, scope: TimeScope }) => (
     <div className="flex flex-col items-center gap-1">
         <div className="text-xl font-bold text-concrete tabular-nums">{value}</div>
         <span className="text-[7px] uppercase font-mono text-concrete/40">{label}</span>
