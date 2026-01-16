@@ -14,7 +14,8 @@ interface FitnessSession {
 }
 
 interface FitnessPomodoroProps {
-    session: FitnessSession;
+    sessionType: SessionType;
+    session?: FitnessSession | null;
     onClose: () => void;
     onComplete: (data: { totalReps: number; perceivedExertion: number; notes?: string }) => void;
 }
@@ -26,27 +27,28 @@ const SESSION_VARIATIONS: Record<SessionType, string[]> = {
     CARDIO: ['Jump Rope', 'High Knees', 'Jump Squats', 'Tuck Jumps', 'Skaters']
 };
 
-export const FitnessPomodoro = ({ session, onClose, onComplete }: FitnessPomodoroProps) => {
+export const FitnessPomodoro = ({ sessionType, session, onClose, onComplete }: FitnessPomodoroProps) => {
     const [phase, setPhase] = useState<'PRE' | 'ACTIVE' | 'COMPLETE'>('PRE');
-    const [secondsLeft, setSecondsLeft] = useState(session.durationMinutes * 60);
+    const durationMinutes = session?.durationMinutes || 25;
+    const [secondsLeft, setSecondsLeft] = useState(durationMinutes * 60);
     const [isPaused, setIsPaused] = useState(false);
     const [repCount, setRepCount] = useState(0);
     const [currentVariation, setCurrentVariation] = useState(0);
     const [perceivedExertion, setPerceivedExertion] = useState(7);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
-    const variations = SESSION_VARIATIONS[session.sessionType];
-    const totalDuration = session.durationMinutes * 60;
+    const variations = SESSION_VARIATIONS[sessionType];
+    const totalDuration = durationMinutes * 60;
     const variationInterval = Math.floor(totalDuration / variations.length);
 
-    // Start session on backend
+    // Start session on backend (only if session exists)
     useEffect(() => {
-        if (phase === 'ACTIVE') {
+        if (phase === 'ACTIVE' && session?.id) {
             fetch(`${API_URL}/api/fitness/session/${session.id}/start`, {
                 method: 'POST'
             });
         }
-    }, [phase, session.id]);
+    }, [phase, session?.id]);
 
     // Timer logic
     useEffect(() => {
@@ -153,7 +155,7 @@ export const FitnessPomodoro = ({ session, onClose, onComplete }: FitnessPomodor
     };
 
     return (
-        <div className={`fixed inset-0 z-[100] bg-gradient-to-br ${sessionColors[session.sessionType]} flex flex-col items-center justify-center text-white`}>
+        <div className={`fixed inset-0 z-[100] bg-gradient-to-br ${sessionColors[sessionType]} flex flex-col items-center justify-center text-white`}>
             {/* Close Button */}
             <button
                 onClick={onClose}
@@ -165,11 +167,11 @@ export const FitnessPomodoro = ({ session, onClose, onComplete }: FitnessPomodor
             {/* PRE-SESSION */}
             {phase === 'PRE' && (
                 <div className="text-center animate-in fade-in duration-500">
-                    <div className="text-6xl mb-4">{sessionEmojis[session.sessionType]}</div>
+                    <div className="text-6xl mb-4">{sessionEmojis[sessionType]}</div>
                     <h1 className="font-display font-black text-5xl uppercase tracking-wider mb-2">
-                        {session.sessionType}
+                        {sessionType}
                     </h1>
-                    <p className="text-xl opacity-70 mb-8">{session.durationMinutes} minutes continuous</p>
+                    <p className="text-xl opacity-70 mb-8">{durationMinutes} minutes continuous</p>
 
                     <div className="mb-8">
                         <p className="text-sm uppercase tracking-widest opacity-50 mb-2">Variations</p>
@@ -265,7 +267,7 @@ export const FitnessPomodoro = ({ session, onClose, onComplete }: FitnessPomodor
                     <h1 className="font-display font-black text-4xl uppercase tracking-wider mb-2">
                         SESSION COMPLETE
                     </h1>
-                    <p className="text-xl opacity-70 mb-8">{repCount} reps in {session.durationMinutes} minutes</p>
+                    <p className="text-xl opacity-70 mb-8">{repCount} reps in {durationMinutes} minutes</p>
 
                     {/* RPE Scale */}
                     <div className="mb-8">

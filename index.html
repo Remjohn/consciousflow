@@ -36,14 +36,19 @@
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 
-  <!-- Service Worker Registration -->
+  <!-- Service Worker DISABLED - Unregister any existing to clear cache -->
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(reg => console.log('🏰 Fortress Service Worker registered:', reg.scope))
-          .catch(err => console.error('SW registration failed:', err));
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(reg => {
+          reg.unregister();
+          console.log('🧹 Unregistered stale Service Worker');
+        });
       });
+      // Also clear caches
+      if ('caches' in window) {
+        caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
+      }
     }
   </script>
 </body>

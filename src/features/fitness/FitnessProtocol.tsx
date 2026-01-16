@@ -5,14 +5,13 @@ import { FitnessPomodoro } from './FitnessPomodoro';
 import { API_URL } from '../../lib/api';
 
 type SessionType = 'PUSHUPS' | 'ABS' | 'BICEPS' | 'CARDIO';
-type SessionStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
 
 interface FitnessSession {
     id: number;
     date: string;
     sessionType: SessionType;
     scheduledTime: string;
-    status: SessionStatus;
+    status: 'PENDING' | 'COMPLETED' | 'SKIPPED' | 'IN_PROGRESS';
     totalReps?: number;
     durationMinutes: number;
     perceivedExertion?: number;
@@ -39,9 +38,13 @@ const SESSION_COLORS: Record<SessionType, { bg: string; border: string }> = {
     CARDIO: { bg: 'bg-purple-500/10', border: 'border-purple-500' }
 };
 
+// Default exercise types - ALWAYS shown
+const EXERCISE_TYPES: SessionType[] = ['PUSHUPS', 'ABS', 'BICEPS', 'CARDIO'];
+
 export const FitnessProtocol = () => {
     const [sessions, setSessions] = useState<FitnessSession[]>([]);
     const [summary, setSummary] = useState<FitnessSummary | null>(null);
+    const [activeSessionType, setActiveSessionType] = useState<SessionType | null>(null);
     const [activeSession, setActiveSession] = useState<FitnessSession | null>(null);
 
     useEffect(() => {
@@ -59,33 +62,52 @@ export const FitnessProtocol = () => {
         }
     };
 
-    const handleSessionComplete = async (data: { totalReps: number; perceivedExertion: number }) => {
-        if (!activeSession) return;
+    const startSession = async (type: SessionType) => {
+        // Check if session already exists for this type today
+        const existingSession = sessions.find(s => s.sessionType === type);
+        if (existingSession) {
+            setActiveSession(existingSession);
+            setActiveSessionType(type);
+        } else {
+            // Create a temporary session object for the pomodoro timer
+            // It will be saved when completed
+            setActiveSession(null);
+            setActiveSessionType(type);
+        }
+    };
 
-        await fetch(`${API_URL}/api/fitness/session/${activeSession.id}/complete`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
+    const handleSessionComplete = async (data: { totalReps: number; perceivedExertion: number }) => {
+        if (!activeSessionType) return;
+
+        if (activeSession) {
+            // Update existing session
+            await fetch(`${API_URL}/api/fitness/session/${activeSession.id}/complete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        } else {
+            // Create new session with completion data
+            await fetch(`${API_URL}/api/fitness/session`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sessionType: activeSessionType,
+                    totalReps: data.totalReps,
+                    perceivedExertion: data.perceivedExertion,
+                    durationMinutes: 25,
+                    status: 'COMPLETED'
+                })
+            });
+        }
 
         setActiveSession(null);
+        setActiveSessionType(null);
         fetchTodaySessions();
     };
 
-    const getSessionStatus = (session: FitnessSession) => {
-        const now = new Date();
-        const [hours, mins] = session.scheduledTime.split(':').map(Number);
-        const scheduledTime = new Date();
-        scheduledTime.setHours(hours, mins, 0, 0);
-
-        const diffMinutes = (now.getTime() - scheduledTime.getTime()) / 60000;
-
-        if (session.status === 'COMPLETED') return 'COMPLETED';
-        if (session.status === 'SKIPPED') return 'SKIPPED';
-        if (session.status === 'IN_PROGRESS') return 'IN_PROGRESS';
-        if (diffMinutes >= -30 && diffMinutes <= 120) return 'READY';
-        if (diffMinutes > 120) return 'MISSED';
-        return 'PENDING';
+    const getSessionForType = (type: SessionType) => {
+        return sessions.find(s => s.sessionType === type);
     };
 
     return (
@@ -113,87 +135,59 @@ export const FitnessProtocol = () => {
                     </div>
                 </div>
 
-                {/* Session Cards */}
+                {/* Exercise Cards - ALWAYS SHOW ALL 4 */}
                 <div className="grid grid-cols-4 gap-2">
-                    {sessions.map(session => {
-                        const status = getSessionStatus(session);
-                        const colors = SESSION_COLORS[session.sessionType];
+                    {EXERCISE_TYPES.map(type => {
+                        const session = getSessionForType(type);
+                        const isCompleted = session?.status === 'COMPLETED';
+                        const colors = SESSION_COLORS[type];
 
                         return (
                             <div
-                                key={session.id}
-                                className={`p-2 border ${status === 'COMPLETED' ? 'border-emerald-500 bg-emerald-500/10' :
-                                    status === 'READY' ? `${colors.border} ${colors.bg}` :
-                                        status === 'MISSED' ? 'border-blood bg-blood/10' :
-                                            'border-steel/20 bg-steel/5'
+                                key={type}
+                                className={`p-2 border ${isCompleted
+                                    ? 'border-emerald-500 bg-emerald-500/10'
+                                    : `${colors.border} ${colors.bg}`
                                     }`}
                             >
                                 <div className="text-center">
-                                    <div className="text-lg">{SESSION_ICONS[session.sessionType]}</div>
+                                    <div className="text-lg">{SESSION_ICONS[type]}</div>
                                     <div className="text-[9px] font-mono uppercase text-concrete/70">
-                                        {session.sessionType}
-                                    </div>
-                                    <div className="text-[8px] font-mono text-concrete/40">
-                                        {session.scheduledTime}
+                                        {type}
                                     </div>
 
                                     {/* Status/Action */}
-                                    {status === 'COMPLETED' ? (
+                                    {isCompleted ? (
                                         <div className="mt-1">
                                             <Check size={14} className="mx-auto text-emerald-500" />
                                             <div className="text-[8px] text-emerald-500">
-                                                {session.totalReps} reps
+                                                {session?.totalReps} reps
                                             </div>
                                         </div>
-                                    ) : status === 'READY' ? (
+                                    ) : (
                                         <button
-                                            onClick={() => setActiveSession(session)}
+                                            onClick={() => startSession(type)}
                                             className="mt-1 w-full bg-gold text-void py-1 text-[9px] font-bold uppercase flex items-center justify-center gap-1"
                                         >
                                             <Play size={10} /> GO
                                         </button>
-                                    ) : status === 'MISSED' ? (
-                                        <button
-                                            onClick={() => setActiveSession(session)}
-                                            className="mt-1 w-full bg-blood/50 text-white py-1 text-[8px] font-bold uppercase"
-                                        >
-                                            LATE START
-                                        </button>
-                                    ) : (
-                                        <div className="mt-1 text-[8px] text-concrete/30">
-                                            PENDING
-                                        </div>
                                     )}
                                 </div>
                             </div>
                         );
                     })}
                 </div>
-
-                {/* Quick Start Row */}
-                <div className="flex gap-1 mt-2">
-                    {(['PUSHUPS', 'ABS', 'BICEPS', 'CARDIO'] as SessionType[]).map(type => {
-                        const session = sessions.find(s => s.sessionType === type);
-                        if (!session || session.status === 'COMPLETED') return null;
-
-                        return (
-                            <button
-                                key={type}
-                                onClick={() => session && setActiveSession(session)}
-                                className="flex-1 bg-steel/10 hover:bg-steel/20 text-concrete/60 py-1 text-[8px] font-mono uppercase"
-                            >
-                                {SESSION_ICONS[type]} {type.substring(0, 4)}
-                            </button>
-                        );
-                    })}
-                </div>
             </div>
 
             {/* Full-Screen Pomodoro Timer */}
-            {activeSession && (
+            {activeSessionType && (
                 <FitnessPomodoro
+                    sessionType={activeSessionType}
                     session={activeSession}
-                    onClose={() => setActiveSession(null)}
+                    onClose={() => {
+                        setActiveSession(null);
+                        setActiveSessionType(null);
+                    }}
                     onComplete={handleSessionComplete}
                 />
             )}

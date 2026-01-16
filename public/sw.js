@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fortress-v2';
+const CACHE_NAME = 'fortress-v3';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
