@@ -127,6 +127,20 @@ app.get('/', (c) => {
     return c.text('The Fortress API is Online');
 });
 
+// Health check - doesn't use database, returns env status
+app.get('/api/health', (c) => {
+    return c.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        env: {
+            NETLIFY: !!process.env.NETLIFY,
+            DATABASE_URL_SET: !!process.env.DATABASE_URL,
+            MISTRAL_API_KEY_SET: !!process.env.MISTRAL_API_KEY,
+            NODE_ENV: process.env.NODE_ENV || 'not set'
+        }
+    });
+});
+
 // POST: Upload Candidate Photo
 // NOTE: File uploads only work locally. On Netlify, use external storage (S3, Cloudinary)
 app.post('/api/upload/photo', async (c) => {
