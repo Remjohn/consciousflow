@@ -1,12 +1,24 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  functions = "netlify/functions"
 
-# SPA fallback - redirect all routes to index.html for client-side routing
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["server/**", "src/db/**", "src/lib/**"]
+
+# API routes → Netlify Function
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# SPA fallback for frontend routes (MUST be last)
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# Environment variables can be set in Netlify dashboard
-# or in a .env file locally
+# Environment variables are set in Netlify Dashboard:
+# - DATABASE_URL (Neon connection string)
+# - MISTRAL_API_KEY

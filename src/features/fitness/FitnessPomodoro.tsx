@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Play, Pause, RotateCcw, Check, Plus, Minus } from 'lucide-react';
+import { API_URL } from '../../lib/api';
 
 type SessionType = 'PUSHUPS' | 'ABS' | 'BICEPS' | 'CARDIO';
 
@@ -41,7 +42,7 @@ export const FitnessPomodoro = ({ session, onClose, onComplete }: FitnessPomodor
     // Start session on backend
     useEffect(() => {
         if (phase === 'ACTIVE') {
-            fetch(`http://localhost:3000/api/fitness/session/${session.id}/start`, {
+            fetch(`${API_URL}/api/fitness/session/${session.id}/start`, {
                 method: 'POST'
             });
         }
@@ -277,8 +278,8 @@ export const FitnessPomodoro = ({ session, onClose, onComplete }: FitnessPomodor
                                     key={n}
                                     onClick={() => setPerceivedExertion(n)}
                                     className={`w-10 h-10 rounded-full font-bold ${n === perceivedExertion
-                                            ? 'bg-white text-void'
-                                            : 'bg-white/10 hover:bg-white/20'
+                                        ? 'bg-white text-void'
+                                        : 'bg-white/10 hover:bg-white/20'
                                         }`}
                                 >
                                     {n}

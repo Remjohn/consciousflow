@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BarChart3 } from 'lucide-react';
+import { API_URL } from '../../lib/api';
 
 interface CorrelationData {
     period: string;
@@ -21,7 +22,7 @@ export const DisciplineCorrelation = () => {
 
     const fetchCorrelation = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/fitness/correlation');
+            const res = await fetch(`${API_URL}/api/fitness/correlation`);
             const json = await res.json();
             setData(json);
         } catch (err) {

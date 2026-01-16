@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Candidate } from '../../store/useUserStore';
 import { X, Brain, Flag, Loader, User, MessageSquare, Calculator, History, Zap } from 'lucide-react';
+import { API_URL } from '../../lib/api';
 
 interface Props {
     candidate: Candidate;
@@ -156,7 +157,7 @@ export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
     // Fetch flag history
     useEffect(() => {
         if (activeTab === 'FLAGS') {
-            fetch(`http://localhost:3000/api/championship/candidate/${candidate.id}/flags`)
+            fetch(`${API_URL}/api/championship/candidate/${candidate.id}/flags`)
                 .then(res => res.json())
                 .then(data => setFlagHistory(data.flags || []))
                 .catch(console.error);
@@ -166,7 +167,7 @@ export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
     // Fetch core questions
     useEffect(() => {
         if (activeTab === 'QUESTIONS') {
-            fetch('http://localhost:3000/api/championship/questions')
+            fetch('${API_URL}/api/championship/questions')
                 .then(res => res.json())
                 .then(data => setCoreQuestions(data.questions || []))
                 .catch(console.error);
@@ -192,7 +193,7 @@ export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
     const saveSocialLinks = async () => {
         setLoading(true);
         try {
-            await fetch(`http://localhost:3000/api/championship/candidate/${candidate.id}/social`, {
+            await fetch(`${API_URL}/api/championship/candidate/${candidate.id}/social`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -209,7 +210,7 @@ export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
     const saveAppearance = async () => {
         setLoading(true);
         try {
-            await fetch(`http://localhost:3000/api/championship/candidate/${candidate.id}/appearance`, {
+            await fetch(`${API_URL}/api/championship/candidate/${candidate.id}/appearance`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(appearance)
@@ -222,7 +223,7 @@ export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
     const saveNumerology = async () => {
         setLoading(true);
         try {
-            await fetch(`http://localhost:3000/api/championship/candidate/${candidate.id}/numerology`, {
+            await fetch(`${API_URL}/api/championship/candidate/${candidate.id}/numerology`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(numerology)
@@ -235,7 +236,7 @@ export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
     const saveMetrics = async () => {
         setLoading(true);
         try {
-            await fetch(`http://localhost:3000/api/championship/candidate/${candidate.id}/metrics`, {
+            await fetch(`${API_URL}/api/championship/candidate/${candidate.id}/metrics`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(metrics)
@@ -249,7 +250,7 @@ export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
         if (!newFlag.category || !newFlag.description) return;
         setLoading(true);
         try {
-            await fetch(`http://localhost:3000/api/championship/candidate/${candidate.id}/flag`, {
+            await fetch(`${API_URL}/api/championship/candidate/${candidate.id}/flag`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -261,7 +262,7 @@ export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
             onRefresh();
             setNewFlag({ type: 'RED', category: '', description: '' });
             // Refresh history
-            const res = await fetch(`http://localhost:3000/api/championship/candidate/${candidate.id}/flags`);
+            const res = await fetch(`${API_URL}/api/championship/candidate/${candidate.id}/flags`);
             const data = await res.json();
             setFlagHistory(data.flags || []);
         } catch (e) { console.error(e); }
@@ -272,7 +273,7 @@ export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
         if (!newAdjustment.reason || newAdjustment.points <= 0) return;
         setLoading(true);
         try {
-            await fetch(`http://localhost:3000/api/championship/candidate/${candidate.id}/adjustment`, {
+            await fetch(`${API_URL}/api/championship/candidate/${candidate.id}/adjustment`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -292,7 +293,7 @@ export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
         if (!qa?.answer) return;
         setLoading(true);
         try {
-            await fetch(`http://localhost:3000/api/championship/candidate/${candidate.id}/question`, {
+            await fetch(`${API_URL}/api/championship/candidate/${candidate.id}/question`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Camera, TrendingUp, Scale, Ruler, Dumbbell, Save, ChevronLeft, ChevronRight } from 'lucide-react';
+import { API_URL } from '../../lib/api';
 
 interface BodyMetric {
     id: number;
@@ -33,7 +34,7 @@ export const FitnessProgress = () => {
 
     const fetchHistory = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/body-metrics/history?days=365');
+            const res = await fetch(`${API_URL}/api/body-metrics/history?days=365`);
             const data = await res.json();
             setMetrics(data.metrics || []);
         } catch (err) {
@@ -43,7 +44,7 @@ export const FitnessProgress = () => {
 
     const handleSave = async () => {
         try {
-            await fetch('http://localhost:3000/api/body-metrics', {
+            await fetch(`${API_URL}/api/body-metrics`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(currentEntry)
@@ -60,7 +61,7 @@ export const FitnessProgress = () => {
         formData.append('photo', file);
 
         try {
-            const res = await fetch('http://localhost:3000/api/upload/photo', {
+            const res = await fetch(`${API_URL}/api/upload/photo`, {
                 method: 'POST',
                 body: formData
             });

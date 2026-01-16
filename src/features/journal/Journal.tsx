@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Save, Bot, Loader, RefreshCw, Zap, TrendingUp } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isFuture } from 'date-fns';
 import { useUserStore } from '../../store/useUserStore';
+import { API_URL } from '../../lib/api';
 
 interface MonthDay {
     videos: number;
@@ -40,7 +41,7 @@ export const Journal = () => {
         const fetchMonthHistory = async () => {
             try {
                 const yearMonth = format(viewDate, 'yyyy-MM');
-                const res = await fetch(`http://localhost:3000/api/journal/month/${yearMonth}`);
+                const res = await fetch(`${API_URL}/api/journal/month/${yearMonth}`);
                 const data = await res.json();
                 setMonthHistory(data.days || {});
             } catch (error) {
@@ -54,7 +55,7 @@ export const Journal = () => {
     useEffect(() => {
         const fetchSummary = async () => {
             try {
-                const res = await fetch('http://localhost:3000/api/stats/summary');
+                const res = await fetch(`${API_URL}/api/stats/summary`);
                 const data = await res.json();
                 setSummary(data);
             } catch (error) {
@@ -69,7 +70,7 @@ export const Journal = () => {
         const fetchEntry = async () => {
             setIsLoading(true);
             try {
-                const res = await fetch(`http://localhost:3000/api/journal/${selectedDate}`);
+                const res = await fetch(`${API_URL}/api/journal/${selectedDate}`);
                 const data = await res.json();
                 setEntry(data.entry || '');
                 setAiResponse(data.aiResponse || '');
@@ -87,7 +88,7 @@ export const Journal = () => {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            await fetch('http://localhost:3000/api/dashboard/update', {
+            await fetch(`${API_URL}/api/dashboard/update`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -112,7 +113,7 @@ export const Journal = () => {
 
         setIsGenerating(true);
         try {
-            const res = await fetch('http://localhost:3000/api/mission/log', {
+            const res = await fetch(`${API_URL}/api/mission/log`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

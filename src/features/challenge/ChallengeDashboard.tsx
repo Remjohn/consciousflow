@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Target, Calendar, TrendingUp, AlertTriangle, CheckCircle, XCircle, Clock, Dumbbell, Play, RotateCcw } from 'lucide-react';
+import { API_URL } from '../../lib/api';
 
 interface Challenge {
     id: number;
@@ -37,7 +38,7 @@ export const ChallengeDashboard = () => {
 
     const fetchChallenge = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/challenge/active');
+            const res = await fetch(`${API_URL}/api/challenge/active`);
             const data = await res.json();
             setChallenge(data.challenge);
         } catch (error) {
@@ -47,7 +48,7 @@ export const ChallengeDashboard = () => {
 
     const fetchHistory = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/challenge/history');
+            const res = await fetch(`${API_URL}/api/challenge/history`);
             const data = await res.json();
             setHistory(data.challenges || []);
         } catch (error) {
@@ -58,7 +59,7 @@ export const ChallengeDashboard = () => {
     const createChallenge = async () => {
         setIsCreating(true);
         try {
-            const res = await fetch('http://localhost:3000/api/challenge/create', {
+            const res = await fetch(`${API_URL}/api/challenge/create`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

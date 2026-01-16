@@ -52,11 +52,21 @@ export const dailyLogs = pgTable('daily_logs', {
     burpees: integer('burpees').default(0),
     fitnessComplete: boolean('fitness_complete').default(false),
 
-    // Lifestyle
+    // Lifestyle (Core)
     sleepHours: decimal('sleep_hours').default('0'),
     meditation: boolean('meditation').default(false),
     noSocialMedia: boolean('no_social_media').default(false),
     noYouTube: boolean('no_youtube').default(false),
+
+    // Phone Usage Tracking (PRIORITY #1)
+    phoneHours: decimal('phone_hours').default('0'),
+    phonePickups: integer('phone_pickups').default(0),
+
+    // Extended Lifestyle Protocols
+    coldShower: boolean('cold_shower').default(false),
+    journaling: boolean('journaling').default(false),
+    reading: boolean('reading').default(false),
+    kegels: boolean('kegels').default(false),  // Pelvic floor training completion
 
     // Timing
     firstActivityTime: time('first_activity_time'),
@@ -316,6 +326,42 @@ export const bodyMetrics = pgTable('body_metrics', {
     photoFront: text('photo_front'),
     photoSide: text('photo_side'),
     photoBack: text('photo_back'),
+
+    createdAt: timestamp('created_at').defaultNow()
+});
+
+// ============================================
+// KEGELS PROTOCOL (Pelvic Floor Training)
+// ============================================
+
+export const kegelSessions = pgTable('kegel_sessions', {
+    id: serial('id').primaryKey(),
+    userId: integer('user_id').references(() => users.id),
+    date: date('date').notNull(),
+
+    // Session Type
+    sessionType: text('session_type').notNull().default('GUIDED'), // GUIDED, FREE, QUICK
+    durationMinutes: integer('duration_minutes').default(10),
+
+    // 5 Pelvic Floor Exercises
+    deepBreathingReps: integer('deep_breathing_reps').default(0),
+    birdDogReps: integer('bird_dog_reps').default(0),
+    deadBugReps: integer('dead_bug_reps').default(0),
+    gluteBridgeReps: integer('glute_bridge_reps').default(0),
+    childPoseSeconds: integer('child_pose_seconds').default(0),  // Recovery/stretch
+
+    // Traditional Kegel Metrics
+    quickContractions: integer('quick_contractions').default(0),
+    holdContractions: integer('hold_contractions').default(0),
+    holdDurationSeconds: integer('hold_duration_seconds').default(5),
+
+    // Performance
+    perceivedExertion: integer('perceived_exertion'), // 1-10 RPE
+    notes: text('notes'),
+
+    // Timing
+    startedAt: timestamp('started_at'),
+    completedAt: timestamp('completed_at'),
 
     createdAt: timestamp('created_at').defaultNow()
 });

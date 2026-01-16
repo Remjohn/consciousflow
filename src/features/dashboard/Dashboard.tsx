@@ -6,6 +6,8 @@ import { FitnessProtocol } from '../fitness/FitnessProtocol';
 import { DisciplineCorrelation } from '../fitness/DisciplineCorrelation';
 import { ScrollingQuotes } from '../../components/ScrollingQuotes';
 import { usePunishment } from '../../hooks/usePunishment';
+import { API_URL } from '../../lib/api';
+import { KegelsPomodoro } from '../kegels/KegelsPomodoro';
 
 type TimeScope = 'day' | 'week' | 'month';
 
@@ -56,7 +58,7 @@ export const Dashboard = () => {
         formData.append('photo', file);
 
         try {
-            const res = await fetch('http://localhost:3000/api/upload/photo', {
+            const res = await fetch(`${API_URL}/api/upload/photo`, {
                 method: 'POST',
                 body: formData
             });
@@ -75,7 +77,14 @@ export const Dashboard = () => {
         hungerState === 'STARVATION' ? 'text-blood animate-pulse' :
             hungerState === 'SUSTENANCE' ? 'text-gold' : 'text-emerald-500';
 
-    const lifestyle = today.lifestyle || { sleep: 0, meditation: false, noSocial: false, noYouTube: false };
+    const lifestyle = today.lifestyle || {
+        sleep: 0, meditation: false, noSocial: false, noYouTube: false,
+        phoneHours: 0, phonePickups: 0,
+        coldShower: false, journaling: false, reading: false, kegels: false
+    };
+
+    // Kegels Pomodoro modal state
+    const [showKegelsModal, setShowKegelsModal] = useState(false);
 
     // Goal Logic (150/35/5)
     const monthVideos = goalStatus?.monthVideos || 0;
@@ -88,229 +97,283 @@ export const Dashboard = () => {
     const weeklyTarget = 35;
 
     return (
-        <div className="h-full flex flex-col p-4 gap-4 overflow-y-auto max-w-lg mx-auto pb-24 scrollbar-hide">
+        <>
+            <div className="h-full flex flex-col p-4 gap-4 overflow-y-auto max-w-lg mx-auto pb-24 scrollbar-hide">
 
-            {/* PUNISHMENT BANNER */}
-            {isPunished && (
-                <div className="bg-blood/20 border-2 border-blood text-blood p-4 flex items-center gap-3 animate-pulse">
-                    <AlertTriangle className="w-6 h-6" />
-                    <div>
-                        <div className="font-display font-black uppercase tracking-wider">PUNISHMENT PROTOCOL ACTIVE</div>
-                        <div className="text-[10px] font-mono opacity-70">TARGET MISSED — COLD SHOWER MANDATORY</div>
+                {/* PUNISHMENT BANNER */}
+                {isPunished && (
+                    <div className="bg-blood/20 border-2 border-blood text-blood p-4 flex items-center gap-3 animate-pulse">
+                        <AlertTriangle className="w-6 h-6" />
+                        <div>
+                            <div className="font-display font-black uppercase tracking-wider">PUNISHMENT PROTOCOL ACTIVE</div>
+                            <div className="text-[10px] font-mono opacity-70">TARGET MISSED — COLD SHOWER MANDATORY</div>
+                        </div>
                     </div>
+                )}
+
+                {/* SCROLLING KIMYA QUOTES */}
+                <ScrollingQuotes />
+
+                {/* 0. PROTOCOL STATUS WIDGET (150/35/5) */}
+                <div className="grid grid-cols-3 gap-2">
+                    <StatusCard label="MONTHLY" value={monthVideos} target={monthTarget} />
+                    <StatusCard label="WEEKLY" value={weeklyVideos} target={weeklyTarget} />
+                    <StatusCard label="DAILY" value={dayVideos} target={dayTarget} urgent={dayVideos < dayTarget} />
                 </div>
-            )}
 
-            {/* SCROLLING KIMYA QUOTES */}
-            <ScrollingQuotes />
+                {/* CHALLENGE MINI-WIDGET */}
+                <ChallengeWidget />
 
-            {/* 0. PROTOCOL STATUS WIDGET (150/35/5) */}
-            <div className="grid grid-cols-3 gap-2">
-                <StatusCard label="MONTHLY" value={monthVideos} target={monthTarget} />
-                <StatusCard label="WEEKLY" value={weeklyVideos} target={weeklyTarget} />
-                <StatusCard label="DAILY" value={dayVideos} target={dayTarget} urgent={dayVideos < dayTarget} />
-            </div>
-
-            {/* CHALLENGE MINI-WIDGET */}
-            <ChallengeWidget />
-
-            {/* DATE HEADER & EDIT TOGGLE */}
-            <div className="flex justify-between items-center px-1">
-                <div className="flex flex-col">
-                    <span className="text-[10px] font-mono text-concrete/40 uppercase tracking-widest">Active Operative Date</span>
-                    <span className="text-xl font-display font-black text-concrete uppercase">
-                        {new Date(currentDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
-                    </span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button onClick={() => setEditMode(!editMode)} className={`p-2 rounded border ${editMode ? 'bg-concrete text-void border-concrete' : 'text-concrete/30 border-steel/20'}`}>
-                        <Edit2 size={12} />
-                    </button>
-                    <ConnectionStatus isLoading={isLoading} lastFetch={lastFetch} onRefresh={fetchFromBackend} />
-                </div>
-            </div>
-
-            {/* TIME SCOPE */}
-            <div className="grid grid-cols-3 gap-1 bg-steel/10 p-1 rounded-sm border border-steel/20">
-                {(['day', 'week', 'month'] as TimeScope[]).map((s) => (
-                    <button key={s} onClick={() => setScope(s)} className={`text-[10px] font-mono uppercase tracking-widest py-2 transition-all ${scope === s ? 'bg-concrete text-void font-bold shadow-sm' : 'text-concrete/40 hover:text-concrete'}`}>
-                        {s}
-                    </button>
-                ))}
-            </div>
-
-            {/* PROTOCOL TIMER */}
-            <ProtocolTimer />
-
-            {/* DAILY EVIDENCE */}
-            {scope === 'day' && (
-                <div className={`p-3 border flex flex-col gap-2 ${today.production.proofPhotoUrl ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-steel/30 bg-void'}`}>
-                    <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-mono font-bold uppercase tracking-widest flex items-center gap-2 text-concrete">
-                            <Camera size={12} className={today.production.proofPhotoUrl ? 'text-emerald-500' : 'text-concrete/50'} />
-                            Daily Evidence
+                {/* DATE HEADER & EDIT TOGGLE */}
+                <div className="flex justify-between items-center px-1">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-mono text-concrete/40 uppercase tracking-widest">Active Operative Date</span>
+                        <span className="text-xl font-display font-black text-concrete uppercase">
+                            {new Date(currentDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
-                        {today.production.proofPhotoUrl && <Check size={12} className="text-emerald-500" />}
                     </div>
-
-                    <div className="flex gap-2">
-                        <div className="flex-1 relative">
-                            <div className="absolute inset-y-0 left-2 flex items-center pointer-events-none text-concrete/30">
-                                <LinkIcon size={10} />
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Paste Photo URL or Upload..."
-                                value={evidenceUrl}
-                                onChange={(e) => setEvidenceUrl(e.target.value)}
-                                className="w-full bg-steel/10 border border-steel/20 py-2 pl-8 pr-2 text-[10px] font-mono text-concrete focus:border-gold/50 outline-none"
-                            />
-                        </div>
-                        <label className="bg-steel/20 hover:bg-concrete hover:text-void text-concrete border border-steel/20 px-4 py-2 text-[10px] font-bold uppercase transition-colors cursor-pointer flex items-center">
-                            Upload
-                            <input type="file" onChange={handleFileUpload} className="hidden" accept="image/*" />
-                        </label>
-                        <button onClick={handleEvidenceSubmit} className="bg-gold hover:bg-gold/80 text-void border border-gold px-4 py-2 text-[10px] font-bold uppercase transition-colors">
-                            Save
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* RIGOUR STATE */}
-            <RigourTracker getRigourState={getRigourState} />
-
-            {/* PRODUCTION HUB */}
-            <div className="bg-void border border-steel/30 relative group">
-                <div className="bg-steel/10 px-3 py-2 flex justify-between items-center border-b border-steel/20">
-                    <span className="text-[10px] font-mono font-bold text-concrete tracking-widest flex items-center gap-2">
-                        <Monitor size={12} /> PRODUCTION
-                    </span>
-                    <div className="text-[10px] text-concrete/30 font-mono">{scope.toUpperCase()}</div>
-                </div>
-
-                <div className="p-4 grid grid-cols-2 gap-4">
-                    {/* Videos */}
-                    <div className="flex flex-col items-center">
-                        <div className="text-4xl font-black text-concrete tabular-nums leading-none">
-                            {getStats(scope, 'production', 'videos')}
-                        </div>
-                        <span className="text-[9px] font-mono text-concrete/40 mt-1 uppercase">Videos</span>
-                        {scope === 'day' && (
-                            <div className="flex gap-1 mt-2">
-                                {editMode && <button onClick={() => setMetric('production', 'videos', Math.max(0, today.production.videos - 1))} className="text-[10px] bg-steel/20 hover:bg-blood/20 text-concrete hover:text-blood px-2 py-1 font-bold">-</button>}
-                                <button onClick={() => incrementMetric('production', 'videos')} className="text-[10px] bg-blood text-white px-3 py-1 font-bold uppercase tracking-wider hover:bg-red-600 transition-colors clip-path-polygon">Log Video</button>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Pomodoros */}
-                    <div className="flex flex-col items-center">
-                        <div className="text-4xl font-black text-concrete/70 tabular-nums leading-none">
-                            {getStats(scope, 'production', 'pomodoros')}
-                        </div>
-                        <span className="text-[9px] font-mono text-concrete/40 mt-1 uppercase">Sessions</span>
-                        {scope === 'day' && editMode && (
-                            <div className="flex gap-1 mt-2">
-                                <button onClick={() => setMetric('production', 'pomodoros', Math.max(0, today.production.pomodoros - 1))} className="text-[10px] bg-steel/20 hover:bg-blood/20 text-concrete hover:text-blood px-2 py-1 font-bold">-</button>
-                                <button onClick={() => incrementMetric('production', 'pomodoros')} className="text-[10px] bg-steel/20 hover:bg-emerald-500/20 text-concrete hover:text-emerald-500 px-2 py-1 font-bold">+</button>
-                            </div>
-                        )}
-                        {!editMode && <div className="mt-2 text-[8px] font-mono text-concrete/30 uppercase tracking-widest">Auto-Logged</div>}
-                    </div>
-                </div>
-            </div>
-
-            {/* FITNESS PROTOCOL */}
-            <div className="bg-void border border-blood/20 relative">
-                <div className="bg-blood/5 px-3 py-2 flex justify-between items-center border-b border-blood/10">
-                    <span className="text-[10px] font-mono font-bold text-blood tracking-widest flex items-center gap-2">
-                        <Dumbbell size={12} /> BIOLOGICAL
-                    </span>
-                    <div className="text-[10px] text-blood font-bold font-mono uppercase animate-pulse">
-                        {hungerState}
-                    </div>
-                </div>
-
-                <div className="p-4">
-                    {/* NEW: 4×25 Fitness Protocol Widget */}
-                    <FitnessProtocol />
-
-                    {/* Discipline Correlation */}
-                    <DisciplineCorrelation />
-                </div>
-
-                {/* Hunger Status Bar */}
-                <div className="bg-void border border-steel/20 p-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Utensils className={`w-3 h-3 ${hungerColor}`} />
-                        <span className={`text-[10px] font-mono font-bold ${hungerColor}`}>{hungerState}</span>
-                    </div>
-                    <div className="text-[9px] text-concrete/40 font-mono">
-                        {today.production.videos}/5 TARGET
+                        <button onClick={() => setEditMode(!editMode)} className={`p-2 rounded border ${editMode ? 'bg-concrete text-void border-concrete' : 'text-concrete/30 border-steel/20'}`}>
+                            <Edit2 size={12} />
+                        </button>
+                        <ConnectionStatus isLoading={isLoading} lastFetch={lastFetch} onRefresh={fetchFromBackend} />
                     </div>
                 </div>
-            </div>
 
-            {/* FINANCE HUB */}
-            <div className="bg-void border border-gold/20 relative">
-                <div className="bg-gold/5 px-3 py-2 flex justify-between items-center border-b border-gold/10">
-                    <span className="text-[10px] font-mono font-bold text-gold tracking-widest flex items-center gap-2">
-                        <DollarSign size={12} /> FINANCE
-                    </span>
+                {/* TIME SCOPE */}
+                <div className="grid grid-cols-3 gap-1 bg-steel/10 p-1 rounded-sm border border-steel/20">
+                    {(['day', 'week', 'month'] as TimeScope[]).map((s) => (
+                        <button key={s} onClick={() => setScope(s)} className={`text-[10px] font-mono uppercase tracking-widest py-2 transition-all ${scope === s ? 'bg-concrete text-void font-bold shadow-sm' : 'text-concrete/40 hover:text-concrete'}`}>
+                            {s}
+                        </button>
+                    ))}
                 </div>
-                <div className="p-4 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="flex flex-col">
-                            <span className="text-[9px] font-mono text-gold/50 uppercase">Earnings ({scope})</span>
-                            <div className="text-2xl font-black text-gold tabular-nums tracking-tight">
-                                ${getStats(scope, 'finance', 'revenue').toLocaleString()}
-                            </div>
+
+                {/* PROTOCOL TIMER */}
+                <ProtocolTimer />
+
+                {/* DAILY EVIDENCE */}
+                {scope === 'day' && (
+                    <div className={`p-3 border flex flex-col gap-2 ${today.production.proofPhotoUrl ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-steel/30 bg-void'}`}>
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-widest flex items-center gap-2 text-concrete">
+                                <Camera size={12} className={today.production.proofPhotoUrl ? 'text-emerald-500' : 'text-concrete/50'} />
+                                Daily Evidence
+                            </span>
+                            {today.production.proofPhotoUrl && <Check size={12} className="text-emerald-500" />}
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-[9px] font-mono text-gold/50 uppercase">Active Clients</span>
-                            <div className="flex items-center gap-3">
-                                <div className="text-xl font-bold text-gold/70 tabular-nums tracking-tight">
-                                    {today.finance.activeClients}
+
+                        <div className="flex gap-2">
+                            <div className="flex-1 relative">
+                                <div className="absolute inset-y-0 left-2 flex items-center pointer-events-none text-concrete/30">
+                                    <LinkIcon size={10} />
                                 </div>
-                                {scope === 'day' && editMode && (
-                                    <div className="flex gap-1">
-                                        <button onClick={() => setMetric('finance', 'activeClients', Math.max(0, today.finance.activeClients - 1))} className="text-[8px] bg-gold/10 hover:bg-gold/20 p-1 text-gold border border-gold/20">-</button>
-                                        <button onClick={() => setMetric('finance', 'activeClients', today.finance.activeClients + 1)} className="text-[8px] bg-gold/10 hover:bg-gold/20 p-1 text-gold border border-gold/20">+</button>
+                                <input
+                                    type="text"
+                                    placeholder="Paste Photo URL or Upload..."
+                                    value={evidenceUrl}
+                                    onChange={(e) => setEvidenceUrl(e.target.value)}
+                                    className="w-full bg-steel/10 border border-steel/20 py-2 pl-8 pr-2 text-[10px] font-mono text-concrete focus:border-gold/50 outline-none"
+                                />
+                            </div>
+                            <label className="bg-steel/20 hover:bg-concrete hover:text-void text-concrete border border-steel/20 px-4 py-2 text-[10px] font-bold uppercase transition-colors cursor-pointer flex items-center">
+                                Upload
+                                <input type="file" onChange={handleFileUpload} className="hidden" accept="image/*" />
+                            </label>
+                            <button onClick={handleEvidenceSubmit} className="bg-gold hover:bg-gold/80 text-void border border-gold px-4 py-2 text-[10px] font-bold uppercase transition-colors">
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* RIGOUR STATE */}
+                <RigourTracker getRigourState={getRigourState} />
+
+                {/* PRODUCTION HUB */}
+                <div className="bg-void border border-steel/30 relative group">
+                    <div className="bg-steel/10 px-3 py-2 flex justify-between items-center border-b border-steel/20">
+                        <span className="text-[10px] font-mono font-bold text-concrete tracking-widest flex items-center gap-2">
+                            <Monitor size={12} /> PRODUCTION
+                        </span>
+                        <div className="text-[10px] text-concrete/30 font-mono">{scope.toUpperCase()}</div>
+                    </div>
+
+                    <div className="p-4 grid grid-cols-2 gap-4">
+                        {/* Videos */}
+                        <div className="flex flex-col items-center">
+                            <div className="text-4xl font-black text-concrete tabular-nums leading-none">
+                                {getStats(scope, 'production', 'videos')}
+                            </div>
+                            <span className="text-[9px] font-mono text-concrete/40 mt-1 uppercase">Videos</span>
+                            {scope === 'day' && (
+                                <div className="flex gap-1 mt-2">
+                                    {editMode && <button onClick={() => setMetric('production', 'videos', Math.max(0, today.production.videos - 1))} className="text-[10px] bg-steel/20 hover:bg-blood/20 text-concrete hover:text-blood px-2 py-1 font-bold">-</button>}
+                                    <button onClick={() => incrementMetric('production', 'videos')} className="text-[10px] bg-blood text-white px-3 py-1 font-bold uppercase tracking-wider hover:bg-red-600 transition-colors clip-path-polygon">Log Video</button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Pomodoros */}
+                        <div className="flex flex-col items-center">
+                            <div className="text-4xl font-black text-concrete/70 tabular-nums leading-none">
+                                {getStats(scope, 'production', 'pomodoros')}
+                            </div>
+                            <span className="text-[9px] font-mono text-concrete/40 mt-1 uppercase">Sessions</span>
+                            {scope === 'day' && editMode && (
+                                <div className="flex gap-1 mt-2">
+                                    <button onClick={() => setMetric('production', 'pomodoros', Math.max(0, today.production.pomodoros - 1))} className="text-[10px] bg-steel/20 hover:bg-blood/20 text-concrete hover:text-blood px-2 py-1 font-bold">-</button>
+                                    <button onClick={() => incrementMetric('production', 'pomodoros')} className="text-[10px] bg-steel/20 hover:bg-emerald-500/20 text-concrete hover:text-emerald-500 px-2 py-1 font-bold">+</button>
+                                </div>
+                            )}
+                            {!editMode && <div className="mt-2 text-[8px] font-mono text-concrete/30 uppercase tracking-widest">Auto-Logged</div>}
+                        </div>
+                    </div>
+                </div>
+
+                {/* FITNESS PROTOCOL */}
+                <div className="bg-void border border-blood/20 relative">
+                    <div className="bg-blood/5 px-3 py-2 flex justify-between items-center border-b border-blood/10">
+                        <span className="text-[10px] font-mono font-bold text-blood tracking-widest flex items-center gap-2">
+                            <Dumbbell size={12} /> BIOLOGICAL
+                        </span>
+                        <div className="text-[10px] text-blood font-bold font-mono uppercase animate-pulse">
+                            {hungerState}
+                        </div>
+                    </div>
+
+                    <div className="p-4">
+                        {/* NEW: 4×25 Fitness Protocol Widget */}
+                        <FitnessProtocol />
+
+                        {/* Discipline Correlation */}
+                        <DisciplineCorrelation />
+                    </div>
+
+                    {/* Hunger Status Bar */}
+                    <div className="bg-void border border-steel/20 p-2 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Utensils className={`w-3 h-3 ${hungerColor}`} />
+                            <span className={`text-[10px] font-mono font-bold ${hungerColor}`}>{hungerState}</span>
+                        </div>
+                        <div className="text-[9px] text-concrete/40 font-mono">
+                            {today.production.videos}/5 TARGET
+                        </div>
+                    </div>
+                </div>
+
+                {/* FINANCE HUB */}
+                <div className="bg-void border border-gold/20 relative">
+                    <div className="bg-gold/5 px-3 py-2 flex justify-between items-center border-b border-gold/10">
+                        <span className="text-[10px] font-mono font-bold text-gold tracking-widest flex items-center gap-2">
+                            <DollarSign size={12} /> FINANCE
+                        </span>
+                    </div>
+                    <div className="p-4 space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="flex flex-col">
+                                <span className="text-[9px] font-mono text-gold/50 uppercase">Earnings ({scope})</span>
+                                <div className="text-2xl font-black text-gold tabular-nums tracking-tight">
+                                    ${getStats(scope, 'finance', 'revenue').toLocaleString()}
+                                </div>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[9px] font-mono text-gold/50 uppercase">Active Clients</span>
+                                <div className="flex items-center gap-3">
+                                    <div className="text-xl font-bold text-gold/70 tabular-nums tracking-tight">
+                                        {today.finance.activeClients}
                                     </div>
-                                )}
+                                    {scope === 'day' && editMode && (
+                                        <div className="flex gap-1">
+                                            <button onClick={() => setMetric('finance', 'activeClients', Math.max(0, today.finance.activeClients - 1))} className="text-[8px] bg-gold/10 hover:bg-gold/20 p-1 text-gold border border-gold/20">-</button>
+                                            <button onClick={() => setMetric('finance', 'activeClients', today.finance.activeClients + 1)} className="text-[8px] bg-gold/10 hover:bg-gold/20 p-1 text-gold border border-gold/20">+</button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* LIFESTYLE */}
-            <div className="bg-void border border-emerald-500/20 relative">
-                <div className="bg-emerald-500/5 px-3 py-2 flex justify-between items-center border-b border-emerald-500/10">
-                    <span className="text-[10px] font-mono font-bold text-emerald-500 tracking-widest flex items-center gap-2">
-                        <Zap size={12} /> LIFESTYLE PROTOCOLS
-                    </span>
-                </div>
-                <div className="p-4 grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-3">
-                        <LifestyleToggle label="No Social Media" active={lifestyle.noSocial} onClick={() => setMetric('lifestyle', 'noSocial', !lifestyle.noSocial)} icon={<Smartphone size={10} />} />
-                        <LifestyleToggle label="No YouTube" active={lifestyle.noYouTube} onClick={() => setMetric('lifestyle', 'noYouTube', !lifestyle.noYouTube)} icon={<Monitor size={10} />} />
-                        <LifestyleToggle label="Meditation" active={lifestyle.meditation} onClick={() => setMetric('lifestyle', 'meditation', !lifestyle.meditation)} icon={<Brain size={10} />} />
+                {/* LIFESTYLE */}
+                <div className="bg-void border border-emerald-500/20 relative">
+                    <div className="bg-emerald-500/5 px-3 py-2 flex justify-between items-center border-b border-emerald-500/10">
+                        <span className="text-[10px] font-mono font-bold text-emerald-500 tracking-widest flex items-center gap-2">
+                            <Zap size={12} /> LIFESTYLE PROTOCOLS
+                        </span>
                     </div>
-                    <div className="border-l border-steel/10 pl-4 flex flex-col justify-center">
-                        <span className="text-[9px] font-mono text-emerald-500/50 uppercase mb-2 flex items-center gap-1"><Moon size={10} /> Sleep (Hours)</span>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => setMetric('lifestyle', 'sleep', Math.max(0, lifestyle.sleep - 0.5))} className="p-1 bg-steel/10 hover:bg-emerald-500/20 text-emerald-500 rounded">-</button>
-                            <span className="text-xl font-bold text-concrete tabular-nums">{lifestyle.sleep}</span>
-                            <button onClick={() => setMetric('lifestyle', 'sleep', lifestyle.sleep + 0.5)} className="p-1 bg-steel/10 hover:bg-emerald-500/20 text-emerald-500 rounded">+</button>
+                    <div className="p-4 space-y-4">
+
+                        {/* PHONE USAGE - PRIORITY #1 */}
+                        <div className="bg-blood/10 border border-blood/30 p-3 rounded">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-[10px] font-mono text-blood uppercase flex items-center gap-1">📱 Phone Hours</span>
+                                <span className="text-[9px] font-mono text-blood/50">TARGET: &lt;2h</span>
+                            </div>
+                            <div className="flex items-center justify-center gap-4">
+                                <button onClick={() => setMetric('lifestyle', 'phoneHours', Math.max(0, (lifestyle.phoneHours || 0) - 0.5))} className="w-8 h-8 bg-blood/20 hover:bg-blood/30 text-blood rounded font-bold">-</button>
+                                <div className="text-center">
+                                    <span className={`text-3xl font-display font-black tabular-nums ${(lifestyle.phoneHours || 0) <= 2 ? 'text-emerald-500' : 'text-blood'}`}>{lifestyle.phoneHours || 0}</span>
+                                    <span className="text-sm text-concrete/50 ml-1">hours</span>
+                                </div>
+                                <button onClick={() => setMetric('lifestyle', 'phoneHours', (lifestyle.phoneHours || 0) + 0.5)} className="w-8 h-8 bg-blood/20 hover:bg-blood/30 text-blood rounded font-bold">+</button>
+                            </div>
+                            {(lifestyle.phoneHours || 0) > 2 && (
+                                <div className="mt-2 text-center text-[9px] font-mono text-blood">⚠️ OVER TARGET - DIGITAL SIRENS WINNING</div>
+                            )}
+                        </div>
+
+                        {/* Core Protocols Grid */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="flex flex-col gap-3">
+                                <LifestyleToggle label="No Social Media" active={lifestyle.noSocial} onClick={() => setMetric('lifestyle', 'noSocial', !lifestyle.noSocial)} icon={<Smartphone size={10} />} />
+                                <LifestyleToggle label="No YouTube" active={lifestyle.noYouTube} onClick={() => setMetric('lifestyle', 'noYouTube', !lifestyle.noYouTube)} icon={<Monitor size={10} />} />
+                                <LifestyleToggle label="Meditation" active={lifestyle.meditation} onClick={() => setMetric('lifestyle', 'meditation', !lifestyle.meditation)} icon={<Brain size={10} />} />
+                                <LifestyleToggle label="Cold Shower" active={lifestyle.coldShower} onClick={() => setMetric('lifestyle', 'coldShower', !lifestyle.coldShower)} icon={<Zap size={10} />} />
+                            </div>
+                            <div className="flex flex-col gap-3">
+                                <LifestyleToggle label="Journaling" active={lifestyle.journaling} onClick={() => setMetric('lifestyle', 'journaling', !lifestyle.journaling)} icon={<Brain size={10} />} />
+                                <LifestyleToggle label="Reading" active={lifestyle.reading} onClick={() => setMetric('lifestyle', 'reading', !lifestyle.reading)} icon={<Monitor size={10} />} />
+                                {/* Kegels with START button */}
+                                <div className="flex items-center gap-2">
+                                    <LifestyleToggle label="Kegels" active={lifestyle.kegels} onClick={() => setMetric('lifestyle', 'kegels', !lifestyle.kegels)} icon={<Zap size={10} />} />
+                                    <button
+                                        onClick={() => setShowKegelsModal(true)}
+                                        className="text-[9px] bg-purple-500/30 hover:bg-purple-500/50 text-purple-300 px-2 py-0.5 rounded font-bold uppercase"
+                                    >
+                                        ▶ START
+                                    </button>
+                                </div>
+                                {/* Sleep */}
+                                <div className="flex flex-col">
+                                    <span className="text-[9px] font-mono text-emerald-500/50 uppercase mb-1 flex items-center gap-1"><Moon size={10} /> Sleep</span>
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={() => setMetric('lifestyle', 'sleep', Math.max(0, lifestyle.sleep - 0.5))} className="p-1 bg-steel/10 hover:bg-emerald-500/20 text-emerald-500 rounded">-</button>
+                                        <span className="text-lg font-bold text-concrete tabular-nums">{lifestyle.sleep}h</span>
+                                        <button onClick={() => setMetric('lifestyle', 'sleep', lifestyle.sleep + 0.5)} className="p-1 bg-steel/10 hover:bg-emerald-500/20 text-emerald-500 rounded">+</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                {/* End of main content */}
             </div>
 
-            {/* End of main content */}
-        </div>
+            {/* Kegels Pomodoro Modal */}
+            {
+                showKegelsModal && (
+                    <KegelsPomodoro
+                        onClose={() => setShowKegelsModal(false)}
+                        onComplete={() => {
+                            setShowKegelsModal(false);
+                            setMetric('lifestyle', 'kegels', true);
+                        }}
+                    />
+                )
+            }
+        </>
     );
 };
 
@@ -418,7 +481,7 @@ const ChallengeWidget = () => {
     } | null>(null);
 
     useEffect(() => {
-        fetch('http://localhost:3000/api/challenge/active')
+        fetch(`${API_URL}/api/challenge/active`)
             .then(res => res.json())
             .then(data => setChallenge(data.challenge))
             .catch(() => setChallenge(null));

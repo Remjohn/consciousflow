@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Play, Check, Clock, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { FitnessPomodoro } from './FitnessPomodoro';
+import { API_URL } from '../../lib/api';
 
 type SessionType = 'PUSHUPS' | 'ABS' | 'BICEPS' | 'CARDIO';
 type SessionStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
@@ -49,7 +50,7 @@ export const FitnessProtocol = () => {
 
     const fetchTodaySessions = async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/fitness/today');
+            const res = await fetch('${API_URL}/api/fitness/today');
             const data = await res.json();
             setSessions(data.sessions || []);
             setSummary(data.summary || null);
@@ -61,7 +62,7 @@ export const FitnessProtocol = () => {
     const handleSessionComplete = async (data: { totalReps: number; perceivedExertion: number }) => {
         if (!activeSession) return;
 
-        await fetch(`http://localhost:3000/api/fitness/session/${activeSession.id}/complete`, {
+        await fetch(`${API_URL}/api/fitness/session/${activeSession.id}/complete`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)

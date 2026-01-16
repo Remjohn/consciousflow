@@ -2688,9 +2688,15 @@ app.post('/api/mission/log', async (c) => {
 });
 
 const port = 3000;
-console.log(`Server is running on port ${port}`);
 
-serve({
-    fetch: app.fetch,
-    port
-});
+// Only start local server when not in Netlify Functions
+if (!process.env.NETLIFY) {
+    console.log(`Server is running on port ${port}`);
+    serve({
+        fetch: app.fetch,
+        port
+    });
+}
+
+// Export for Netlify Functions
+export default app;

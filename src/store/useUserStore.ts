@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { isSameWeek, isSameMonth, parseISO } from 'date-fns';
+import { API_URL } from '../lib/api';
 
 // --- DATA STRUCTURES ---
 
@@ -25,6 +26,14 @@ export interface Metrics {
         meditation: boolean;
         noSocial: boolean;
         noYouTube: boolean;
+        // Phone Usage (Priority #1)
+        phoneHours: number;
+        phonePickups: number;
+        // Extended Protocols
+        coldShower: boolean;
+        journaling: boolean;
+        reading: boolean;
+        kegels: boolean;  // Pelvic floor training
     };
 }
 
@@ -158,7 +167,11 @@ const INITIAL_METRICS: Metrics = {
     production: { videos: 0, pomodoros: 0, proofPhotoUrl: '' },
     finance: { revenue: 0, activeClients: 0, total2026: 0 },
     fitness: { pushups: 0, abs: 0, biceps: 0, burpees: 0 },
-    lifestyle: { sleep: 0, meditation: false, noSocial: false, noYouTube: false }
+    lifestyle: {
+        sleep: 0, meditation: false, noSocial: false, noYouTube: false,
+        phoneHours: 0, phonePickups: 0,
+        coldShower: false, journaling: false, reading: false, kegels: false
+    }
 };
 
 export const useUserStore = create<UserState>()(
@@ -180,7 +193,7 @@ export const useUserStore = create<UserState>()(
         fetchFromBackend: async () => {
             set({ isLoading: true });
             try {
-                const res = await fetch('http://localhost:3000/api/dashboard/today');
+                const res = await fetch(`${API_URL}/api/dashboard/today`);
                 if (!res.ok) throw new Error('Backend unavailable');
 
                 const data = await res.json();
@@ -315,7 +328,7 @@ export const useUserStore = create<UserState>()(
                     newToday.finance.revenue += (amount * 25);
                     newToday.finance.total2026 += (amount * 25);
 
-                    fetch('http://localhost:3000/api/dashboard/update', {
+                    fetch(`${API_URL}/api/dashboard/update`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ field: 'videos', value: newToday.production.videos })
@@ -323,7 +336,7 @@ export const useUserStore = create<UserState>()(
                 }
                 else if (category === 'production' && field === 'pomodoros') {
                     newToday.production.pomodoros += amount;
-                    fetch('http://localhost:3000/api/dashboard/update', {
+                    fetch(`${API_URL}/api/dashboard/update`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ field: 'pomodoros', value: newToday.production.pomodoros })
@@ -336,7 +349,7 @@ export const useUserStore = create<UserState>()(
                     // @ts-ignore
                     newToday[category][field] += amount;
                     // Sync fitness to backend
-                    fetch('http://localhost:3000/api/dashboard/update', {
+                    fetch(`${API_URL}/api/dashboard/update`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ field: field, value: newToday.fitness[field as keyof typeof newToday.fitness] })
@@ -357,7 +370,7 @@ export const useUserStore = create<UserState>()(
                 newToday[category][field] = value;
 
                 // Sync ALL changes to backend (write-through)
-                fetch('http://localhost:3000/api/dashboard/update', {
+                fetch(`${API_URL}/api/dashboard/update`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ field: field, value: value })
@@ -397,7 +410,7 @@ export const useUserStore = create<UserState>()(
 
         fetchCandidates: async () => {
             try {
-                const res = await fetch('http://localhost:3000/api/championship/leaderboard');
+                const res = await fetch(`${API_URL}/api/championship/leaderboard`);
                 if (!res.ok) throw new Error('Failed to fetch candidates');
                 const data = await res.json();
                 set({ candidates: data.candidates });
@@ -409,7 +422,7 @@ export const useUserStore = create<UserState>()(
         addCandidate: async (candidate) => {
             // Now assumes calling with { name, nickname, dob, photoUrl, notes }
             try {
-                const res = await fetch('http://localhost:3000/api/championship/candidate', {
+                const res = await fetch(`${API_URL}/api/championship/candidate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(candidate)
@@ -422,7 +435,7 @@ export const useUserStore = create<UserState>()(
 
         moveCandidate: async (id, stage) => {
             try {
-                await fetch(`http://localhost:3000/api/championship/candidate/${id}/advance`, {
+                await fetch(`${API_URL}/api/championship/candidate/${id}/advance`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ targetStage: stage }) // Assuming simple move for now

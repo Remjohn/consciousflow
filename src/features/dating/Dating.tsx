@@ -3,6 +3,7 @@ import { useUserStore } from '../../store/useUserStore';
 import type { CandidateStage, Candidate } from '../../store/useUserStore';
 import { Plus, User, Trophy, X, ChevronRight, ChevronLeft, RefreshCw, LayoutGrid, Kanban, Upload, Loader } from 'lucide-react';
 import { ScoringModal } from './ScoringModal';
+import { API_URL } from '../../lib/api';
 
 const STAGES: CandidateStage[] = ['POOL', 'GROUP_STAGE', 'ROUND_OF_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINALS', 'CHAMPION'];
 
@@ -43,7 +44,7 @@ export const Dating = () => {
             const formDataUpload = new FormData();
             formDataUpload.append('photo', file);
 
-            const res = await fetch('http://localhost:3000/api/upload/photo', {
+            const res = await fetch('${API_URL}/api/upload/photo', {
                 method: 'POST',
                 body: formDataUpload
             });
@@ -113,7 +114,7 @@ export const Dating = () => {
                             const confirmed = window.confirm('⚡ AUTO-ADVANCE\n\nThis will:\n• Disqualify candidates with age > 24, beauty < 14, or 3+ red flags\n• Rank all candidates by total score\n• Assign stages based on ranking\n\nProceed?');
                             if (!confirmed) return;
                             try {
-                                const res = await fetch('http://localhost:3000/api/championship/auto-advance', { method: 'POST' });
+                                const res = await fetch('${API_URL}/api/championship/auto-advance', { method: 'POST' });
                                 const data = await res.json();
                                 alert(`✅ Auto-Advance Complete!\n\n• Disqualified: ${data.autoDisqualified}\n• Stage Changes: ${data.stageAdvances?.length || 0}`);
                                 fetchCandidates();
@@ -170,7 +171,7 @@ export const Dating = () => {
                                                             onClick={() => setScoringCandidate(candidate)}
                                                         >
                                                             {candidate.photoUrl ? (
-                                                                <img src={`http://localhost:3000${candidate.photoUrl}`} alt={candidate.name} className="w-full h-full object-cover" />
+                                                                <img src={`${API_URL}${candidate.photoUrl}`} alt={candidate.name} className="w-full h-full object-cover" />
                                                             ) : (
                                                                 <User className="w-4 h-4 text-concrete/30" />
                                                             )}
@@ -221,7 +222,7 @@ export const Dating = () => {
                             <div key={candidate.id} className="aspect-[3/4] bg-steel/10 border border-steel/20 relative group overflow-hidden hover:border-gold/50 transition-all">
                                 {candidate.photoUrl ? (
                                     <img
-                                        src={`http://localhost:3000${candidate.photoUrl}`}
+                                        src={`${API_URL}${candidate.photoUrl}`}
                                         alt={candidate.name}
                                         className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all grayscale group-hover:grayscale-0"
                                     />
