@@ -44,7 +44,7 @@ export const Dating = () => {
             const formDataUpload = new FormData();
             formDataUpload.append('photo', file);
 
-            const res = await fetch('${API_URL}/api/upload/photo', {
+            const res = await fetch(`${API_URL}/api/upload/photo`, {
                 method: 'POST',
                 body: formDataUpload
             });
@@ -114,7 +114,7 @@ export const Dating = () => {
                             const confirmed = window.confirm('⚡ AUTO-ADVANCE\n\nThis will:\n• Disqualify candidates with age > 24, beauty < 14, or 3+ red flags\n• Rank all candidates by total score\n• Assign stages based on ranking\n\nProceed?');
                             if (!confirmed) return;
                             try {
-                                const res = await fetch('${API_URL}/api/championship/auto-advance', { method: 'POST' });
+                                const res = await fetch(`${API_URL}/api/championship/auto-advance`, { method: 'POST' });
                                 const data = await res.json();
                                 alert(`✅ Auto-Advance Complete!\n\n• Disqualified: ${data.autoDisqualified}\n• Stage Changes: ${data.stageAdvances?.length || 0}`);
                                 fetchCandidates();

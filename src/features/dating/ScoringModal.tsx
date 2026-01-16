@@ -167,7 +167,7 @@ export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
     // Fetch core questions
     useEffect(() => {
         if (activeTab === 'QUESTIONS') {
-            fetch('${API_URL}/api/championship/questions')
+            fetch(`${API_URL}/api/championship/questions`)
                 .then(res => res.json())
                 .then(data => setCoreQuestions(data.questions || []))
                 .catch(console.error);

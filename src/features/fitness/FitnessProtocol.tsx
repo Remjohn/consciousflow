@@ -50,7 +50,7 @@ export const FitnessProtocol = () => {
 
     const fetchTodaySessions = async () => {
         try {
-            const res = await fetch('${API_URL}/api/fitness/today');
+            const res = await fetch(`${API_URL}/api/fitness/today`);
             const data = await res.json();
             setSessions(data.sessions || []);
             setSummary(data.summary || null);

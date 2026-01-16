@@ -51,14 +51,14 @@ export const Investments = () => {
 
     useEffect(() => {
         // Auto-renew recurring investments on mount
-        fetch('${API_URL}/api/investments/renew', { method: 'POST' })
+        fetch(`${API_URL}/api/investments/renew`, { method: 'POST' })
             .then(() => fetchAffordability())
             .catch(() => fetchAffordability());
     }, []);
 
     const fetchAffordability = async () => {
         try {
-            const res = await fetch('${API_URL}/api/investments/affordability');
+            const res = await fetch(`${API_URL}/api/investments/affordability`);
             const data = await res.json();
             setAffordability(data);
             setInvestments(data.investments || []);
@@ -96,7 +96,7 @@ export const Investments = () => {
     };
 
     const addSubItem = async (parentId: number, data: any) => {
-        await fetch('${API_URL}/api/investments', {
+        await fetch(`${API_URL}/api/investments`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...data, parentId })
@@ -377,7 +377,7 @@ const NewInvestmentModal = ({ onClose, onCreated }: { onClose: () => void; onCre
             return;
         }
 
-        await fetch('${API_URL}/api/investments', {
+        await fetch(`${API_URL}/api/investments`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(form)
@@ -491,7 +491,7 @@ const NewInvestmentModal = ({ onClose, onCreated }: { onClose: () => void; onCre
                                     const formData = new FormData();
                                     formData.append('photo', file);
                                     try {
-                                        const res = await fetch('${API_URL}/api/upload/photo', {
+                                        const res = await fetch(`${API_URL}/api/upload/photo`, {
                                             method: 'POST',
                                             body: formData
                                         });
