@@ -1,9 +1,5 @@
 // ISOMORPHIC SERVER: Works in both Node.js (local) and Netlify Functions (Lambda)
-
-// Only load dotenv locally (Netlify injects env vars automatically)
-if (!process.env.NETLIFY) {
-    await import('dotenv/config');
-}
+// NOTE: No top-level await - CommonJS compatible
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
@@ -21,20 +17,6 @@ import {
 
 const app = new Hono();
 app.use('/*', cors());
-
-// ONLY in local development: serve static files and create upload directory
-let UPLOADS_DIR = '';
-if (!process.env.NETLIFY) {
-    const fs = await import('fs');
-    const path = await import('path');
-    const { serveStatic } = await import('@hono/node-server/serve-static');
-
-    UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
-    if (!fs.existsSync(UPLOADS_DIR)) {
-        fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-    }
-    app.use('/uploads/*', serveStatic({ root: './public' }));
-}
 
 // Initialize Mistral (using native fetch to avoid extra deps)
 const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
@@ -146,13 +128,29 @@ app.get('/', (c) => {
 });
 
 // POST: Upload Candidate Photo
+// NOTE: File uploads only work locally. On Netlify, use external storage (S3, Cloudinary)
 app.post('/api/upload/photo', async (c) => {
     try {
+        // File uploads don't work on Netlify (read-only filesystem)
+        if (process.env.NETLIFY) {
+            return c.json({ error: 'File uploads not supported in production. Use image URL instead.' }, 400);
+        }
+
         const body = await c.req.parseBody();
         const file = body['photo'];
 
         if (!file || !(file instanceof File)) {
             return c.json({ error: 'No file uploaded' }, 400);
+        }
+
+        // Dynamic imports for local development only
+        const fs = await import('fs');
+        const path = await import('path');
+        const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
+
+        // Ensure directory exists
+        if (!fs.existsSync(UPLOADS_DIR)) {
+            fs.mkdirSync(UPLOADS_DIR, { recursive: true });
         }
 
         // Generate unique filename
@@ -2697,13 +2695,31 @@ app.post('/api/mission/log', async (c) => {
 const port = 3000;
 
 // Only start local server when not in Netlify Functions
+// Wrapped in async IIFE to avoid top-level await (CJS compatibility)
 if (!process.env.NETLIFY) {
-    const { serve } = await import('@hono/node-server');
-    console.log(`Server is running on port ${port}`);
-    serve({
-        fetch: app.fetch,
-        port
-    });
+    (async () => {
+        // Load dotenv for local development
+        await import('dotenv/config');
+
+        // Setup uploads directory
+        const fs = await import('fs');
+        const path = await import('path');
+        const { serveStatic } = await import('@hono/node-server/serve-static');
+
+        const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
+        if (!fs.existsSync(UPLOADS_DIR)) {
+            fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+        }
+        app.use('/uploads/*', serveStatic({ root: './public' }));
+
+        // Start server
+        const { serve } = await import('@hono/node-server');
+        console.log(`Server is running on port ${port}`);
+        serve({
+            fetch: app.fetch,
+            port
+        });
+    })();
 }
 
 // Export for Netlify Functions
