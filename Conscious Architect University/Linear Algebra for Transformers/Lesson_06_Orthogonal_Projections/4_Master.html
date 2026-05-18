@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 06 - Master Layer</title>
+  <style>
+    :root {
+      --bg: #09090b;
+      --panel: #111114;
+      --line: rgba(255,255,255,0.08);
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --accent: #f97316;
+      --good: #22c55e;
+      --bad: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #0b0b0e 0%, #09090b 100%);
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+    }
+
+    .hud {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 20;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(9, 9, 11, 0.92);
+      font: 700 0.86rem/1 Arial, Helvetica, sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #f8fafc;
+    }
+
+    .shell {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 34px 18px 90px;
+    }
+
+    .hero,
+    .card,
+    .result {
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+      padding: 24px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 12px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 14px;
+      line-height: 1.08;
+      font-weight: 500;
+    }
+
+    h1 { font-size: clamp(2.2rem, 4vw, 3.8rem); }
+    h2 { font-size: clamp(1.4rem, 2.7vw, 2rem); }
+    h3 { font-size: 1.08rem; }
+    p { margin: 0 0 14px; }
+
+    .divider {
+      height: 1px;
+      margin: 22px 0;
+      background: linear-gradient(90deg, transparent, rgba(249,115,22,0.3), transparent);
+    }
+
+    .mono {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.95rem;
+    }
+
+    .meta {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 18px;
+    }
+
+    .meta div {
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .meta span {
+      display: block;
+      color: var(--muted);
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .card { margin-top: 18px; }
+
+    .qnum {
+      color: #fdba74;
+      font: 700 0.78rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .points {
+      color: var(--muted);
+      font: 700 0.8rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .choices {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .choice {
+      width: 100%;
+      text-align: left;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      transition: border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .choice.selected {
+      border-color: rgba(249,115,22,0.7);
+      background: rgba(249,115,22,0.08);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 170px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(249,115,22,0.55);
+      box-shadow: 0 0 0 4px rgba(249,115,22,0.12);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      padding: 14px 18px;
+      border-radius: 999px;
+      font: 700 0.94rem/1 Arial, Helvetica, sans-serif;
+      transition: transform 0.18s ease, opacity 0.18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .result {
+      margin-top: 22px;
+      display: none;
+    }
+
+    .result.show { display: block; }
+
+    .score {
+      font: 700 1.2rem/1.3 Arial, Helvetica, sans-serif;
+      margin-bottom: 14px;
+    }
+
+    .pass { color: var(--good); }
+    .fail { color: var(--bad); }
+
+    .breakdown {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .breakdown div {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .footnote {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.96rem;
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 720px) {
+      .hud {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        justify-content: space-between;
+      }
+      .meta { grid-template-columns: 1fr; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+      .shell { padding: 74px 14px 60px; }
+      .hero, .card, .result { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <span>Master Exam</span>
+    <span id="timer">10:00</span>
+  </div>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Lesson 06 - Master / Integration Layer</p>
+      <h1>Projection is semantic surgery.</h1>
+      <div class="divider"></div>
+      <p>This is the terminal assessment for Orthogonal Projections. No diagrams. No shadows on walls. No projection planes. You either understand how to isolate, measure, subtract, and inject concept directions mathematically, or you do not.</p>
+      <div class="meta">
+        <div><span>Questions</span>12 total</div>
+        <div><span>Time</span>10 minutes</div>
+        <div><span>Passing Score</span>160 / 200</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="startExam()">Start exam</button>
+      </div>
+    </section>
+
+    <form id="examForm" class="hidden" onsubmit="return false;">
+      <section class="card">
+        <div class="qnum">Question 1</div>
+        <div class="points">10 points</div>
+        <h2>Core meaning</h2>
+        <p>What does an orthogonal projection extract?</p>
+        <div class="choices" data-question="q1">
+          <button type="button" class="choice" onclick="pickChoice('q1','A',this)">The component of a vector that lies along a target direction</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','B',this)">Only the vector norm</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','C',this)">A random low-rank approximation</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','D',this)">The null space directly</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 2</div>
+        <div class="points">10 points</div>
+        <h2>Residual meaning</h2>
+        <p>What does the orthogonal residual represent after projection?</p>
+        <input id="q2" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 3</div>
+        <div class="points">10 points</div>
+        <h2>Invariant</h2>
+        <p>What dot-product relation must hold between the residual and the target direction?</p>
+        <div class="choices" data-question="q3">
+          <button type="button" class="choice" onclick="pickChoice('q3','A',this)">Residual · target = 1</button>
+          <button type="button" class="choice" onclick="pickChoice('q3','B',this)">Residual · target = 0</button>
+          <button type="button" class="choice" onclick="pickChoice('q3','C',this)">Residual · target = ||target||</button>
+          <button type="button" class="choice" onclick="pickChoice('q3','D',this)">There is no fixed relation</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 4</div>
+        <div class="points">10 points</div>
+        <h2>Least-squares meaning</h2>
+        <p>Why is the projection called the least-squares approximation on the target line?</p>
+        <input id="q4" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 5</div>
+        <div class="points">10 points</div>
+        <h2>Transformer projections</h2>
+        <p>What do the Q/K/V projection matrices do to the 768-dimensional hidden state?</p>
+        <div class="choices" data-question="q5">
+          <button type="button" class="choice" onclick="pickChoice('q5','A',this)">They preserve all 768 dimensions unchanged</button>
+          <button type="button" class="choice" onclick="pickChoice('q5','B',this)">They project it into lower-dimensional specialized subspaces, destroying irrelevant directions</button>
+          <button type="button" class="choice" onclick="pickChoice('q5','C',this)">They bypass the residual stream entirely</button>
+          <button type="button" class="choice" onclick="pickChoice('q5','D',this)">They compute only scalar norms</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 6</div>
+        <div class="points">10 points</div>
+        <h2>Worked example</h2>
+        <p>In the lesson's volatility example, what is the final steered state after subtracting the projection?</p>
+        <input id="q6" type="text" placeholder="Example: (10, 10, 4)">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 7</div>
+        <div class="points">10 points</div>
+        <h2>Subspace trap</h2>
+        <p>If you project a 768D state onto a basis of 3 independent concept vectors, what is the maximum rank of the result?</p>
+        <div class="choices" data-question="q7">
+          <button type="button" class="choice" onclick="pickChoice('q7','A',this)">768</button>
+          <button type="button" class="choice" onclick="pickChoice('q7','B',this)">64</button>
+          <button type="button" class="choice" onclick="pickChoice('q7','C',this)">3</button>
+          <button type="button" class="choice" onclick="pickChoice('q7','D',this)">1</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 8</div>
+        <div class="points">10 points</div>
+        <h2>KV override limit</h2>
+        <p>Why can injecting a brilliant synthetic Key vector still fail inside a smaller model?</p>
+        <input id="q8" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 9</div>
+        <div class="points">15 points</div>
+        <h2>CASAL logic</h2>
+        <p>Explain how CASAL uses projection magnitude to detect hallucination risk, and why an amortized projection boundary can miss novel generated content.</p>
+        <textarea id="q9" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 10</div>
+        <div class="points">15 points</div>
+        <h2>SV-RAG and KV steering</h2>
+        <p>Explain the difference between SV-RAG's dual projection spaces and KV Cache Steering's direct synthetic key/value injection.</p>
+        <textarea id="q10" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 11</div>
+        <div class="points">15 points</div>
+        <h2>Cross-domain mapping</h2>
+        <p>Pick one non-AI analogy from the lesson and explain how projection isolates a target component while leaving a meaningful residual.</p>
+        <textarea id="q11" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 12</div>
+        <div class="points">35 points</div>
+        <h2>Feynman Compression</h2>
+        <p>Explain how orthogonal projection lets a transformer or CCP system isolate, measure, or remove a concept while preserving the rest of the state. Minimum length: 220 characters.</p>
+        <p class="footnote">Full credit requires all three structural elements: extracting the aligned component along a direction, preserving an orthogonal residual, and an application to transformer projection matrices or steering/auditing systems.</p>
+        <textarea id="q12" placeholder="Write the mechanism, not a slogan."></textarea>
+      </section>
+
+      <div class="actions">
+        <button class="btn btn-primary" type="button" onclick="submitExam(false)">Submit exam</button>
+        <button class="btn btn-secondary" type="button" onclick="scrollToTop()">Back to top</button>
+      </div>
+    </form>
+
+    <section id="result" class="result">
+      <div class="eyebrow">Result</div>
+      <div id="scoreLine" class="score"></div>
+      <p id="resultSummary"></p>
+      <div id="breakdown" class="breakdown"></div>
+      <p id="timeoutNote" class="footnote"></p>
+    </section>
+  </main>
+
+  <script>
+    const answers = {};
+    let examStarted = false;
+    let examSubmitted = false;
+    let secondsRemaining = 600;
+    let timerHandle = null;
+
+    function pickChoice(question, value, element) {
+      if (examSubmitted) return;
+      answers[question] = value;
+      document.querySelectorAll('[data-question="' + question + '"] .choice').forEach((btn) => btn.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function startExam() {
+      if (examStarted) return;
+      examStarted = true;
+      document.getElementById('examForm').classList.remove('hidden');
+      window.scrollTo({ top: document.getElementById('examForm').offsetTop - 20, behavior: 'smooth' });
+      timerHandle = setInterval(tick, 1000);
+    }
+
+    function tick() {
+      if (examSubmitted) return;
+      secondsRemaining -= 1;
+      if (secondsRemaining <= 0) {
+        secondsRemaining = 0;
+        updateTimer();
+        submitExam(true);
+        return;
+      }
+      updateTimer();
+    }
+
+    function updateTimer() {
+      const mins = String(Math.floor(secondsRemaining / 60)).padStart(2, '0');
+      const secs = String(secondsRemaining % 60).padStart(2, '0');
+      document.getElementById('timer').textContent = mins + ':' + secs;
+    }
+
+    function textValue(id) {
+      return (document.getElementById(id)?.value || '').trim().toLowerCase();
+    }
+
+    function containsAny(value, options) {
+      return options.some((option) => value.includes(option));
+    }
+
+    function gradeRichText(value, keywordGroups) {
+      if (!value) return 0;
+      let hits = 0;
+      keywordGroups.forEach((group) => {
+        if (containsAny(value, group)) hits += 1;
+      });
+      return hits;
+    }
+
+    function submitExam(fromTimeout) {
+      if (examSubmitted) return;
+      examSubmitted = true;
+      clearInterval(timerHandle);
+
+      document.querySelectorAll('input, textarea, button.choice').forEach((el) => el.disabled = true);
+
+      let total = 0;
+      const breakdown = [];
+
+      const q1 = answers.q1 === 'A' ? 10 : 0;
+      total += q1;
+      breakdown.push(['Q1', q1, 'Projection extracts the aligned component']);
+
+      const q2hits = gradeRichText(textValue('q2'), [['remainder', 'everything else', 'rest of the state'], ['orthogonal', 'perpendicular'], ['after subtraction', 'residual']]);
+      const q2 = Math.min(10, q2hits * 4);
+      total += q2;
+      breakdown.push(['Q2', q2, 'Residual = remainder orthogonal to target direction']);
+
+      const q3 = answers.q3 === 'B' ? 10 : 0;
+      total += q3;
+      breakdown.push(['Q3', q3, 'Residual is orthogonal to target']);
+
+      const q4hits = gradeRichText(textValue('q4'), [['closest point', 'nearest'], ['line', 'target direction'], ['least squares', 'minimal error', 'minimal change']]);
+      const q4 = Math.min(10, q4hits * 4);
+      total += q4;
+      breakdown.push(['Q4', q4, 'Projection is the closest-point approximation']);
+
+      const q5 = answers.q5 === 'B' ? 10 : 0;
+      total += q5;
+      breakdown.push(['Q5', q5, 'Q/K/V are destructive lower-dimensional projections']);
+
+      const q6value = textValue('q6');
+      const q6 = containsAny(q6value, ['(10, 10, 4)', '10,10,4', '10 10 4']) ? 10 : 0;
+      total += q6;
+      breakdown.push(['Q6', q6, 'Worked steered state']);
+
+      const q7 = answers.q7 === 'C' ? 10 : 0;
+      total += q7;
+      breakdown.push(['Q7', q7, 'Projection output rank capped by target subspace']);
+
+      const q8hits = gradeRichText(textValue('q8'), [['query', 'wq', 'blind'], ['null space', 'not trained to look for'], ['dot product near zero', 'no alignment']]);
+      const q8 = Math.min(10, q8hits * 4);
+      total += q8;
+      breakdown.push(['Q8', q8, 'Injected keys fail if queries cannot see them']);
+
+      const q9hits = gradeRichText(textValue('q9'), [['project', 'projection magnitude', 'hallucination direction'], ['high magnitude', 'risk'], ['novel', 'outside prefill', 'null space', 'amortized matrix can miss']]);
+      const q9 = Math.min(15, q9hits * 5);
+      total += q9;
+      breakdown.push(['Q9', q9, 'CASAL projection-based anomaly detection']);
+
+      const q10hits = gradeRichText(textValue('q10'), [['sv-rag', 'dual projection', 'retriever', 'generator'], ['kv cache steering', 'inject synthetic keys and values'], ['difference', 'retrieval subspace versus forced reasoning path']]);
+      const q10 = Math.min(15, q10hits * 5);
+      total += q10;
+      breakdown.push(['Q10', q10, 'SV-RAG separates spaces; KV steering injects beacons']);
+
+      const q11hits = gradeRichText(textValue('q11'), [['football', 'gaming', 'audio', 'culinary', 'psychology'], ['isolate', 'extract', 'target component'], ['residual', 'everything else', 'remainder']]);
+      const q11 = Math.min(15, q11hits * 5);
+      total += q11;
+      breakdown.push(['Q11', q11, 'Cross-domain projection plus residual']);
+
+      const q12Value = textValue('q12');
+      let q12 = 0;
+      let missing = [];
+      if (q12Value.length < 220) {
+        missing = ['minimum length not met'];
+      } else {
+        const hasExtraction = containsAny(q12Value, ['project', 'aligned component', 'shadow', 'direction']);
+        const hasResidual = containsAny(q12Value, ['residual', 'orthogonal', 'everything else', 'subtract']);
+        const hasApplication = containsAny(q12Value, ['q/k/v', 'transformer', 'casal', 'sv-rag', 'kv cache', 'steering', 'auditing']);
+        const count = [hasExtraction, hasResidual, hasApplication].filter(Boolean).length;
+        if (count === 3) q12 = 35;
+        if (count === 2) q12 = 22;
+        if (count < 2) q12 = 0;
+        if (!hasExtraction) missing.push('extracting the aligned component along a direction');
+        if (!hasResidual) missing.push('preserving an orthogonal residual');
+        if (!hasApplication) missing.push('application to transformer projection matrices or steering/auditing');
+      }
+      total += q12;
+      breakdown.push(['Q12', q12, missing.length ? 'Missing: ' + missing.join(', ') : 'All three structural elements present']);
+
+      const pass = total >= 160;
+      const scoreLine = document.getElementById('scoreLine');
+      scoreLine.textContent = total + ' / 200';
+      scoreLine.className = 'score ' + (pass ? 'pass' : 'fail');
+
+      document.getElementById('resultSummary').textContent =
+        pass
+          ? 'Passing threshold reached. The lesson held as semantic surgery: projection for extraction, residual for preservation, and transformer/CCP systems as precise latent-space operators.'
+          : 'Passing threshold not reached. The missing pieces are structural: extraction along a direction, orthogonal remainder handling, or the transformer/steering application is still unstable under pressure.';
+
+      const breakdownNode = document.getElementById('breakdown');
+      breakdownNode.innerHTML = '';
+      breakdown.forEach(([label, score, note]) => {
+        const row = document.createElement('div');
+        row.innerHTML = '<strong>' + label + ': ' + score + ' points</strong><br>' + note;
+        breakdownNode.appendChild(row);
+      });
+
+      document.getElementById('timeoutNote').textContent = fromTimeout
+        ? 'Exam auto-submitted at time expiration.'
+        : 'Exam submitted before time expiration.';
+
+      document.getElementById('result').classList.add('show');
+      document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    updateTimer();
+  </script>
+</body>
+</html>

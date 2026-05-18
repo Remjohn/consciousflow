@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCP Skill Node | Lesson 15: HuggingFace & Transformers - Capability</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0c0a08;
+            --card-color: #151210;
+            --text-main: #e2dcd0;
+            --text-muted: #8b8378;
+            --accent-blue: #3291ff;
+            --accent-green: #00ffaa;
+            --accent-red: #ff3366;
+            --accent-purple: #b05cff;
+            --border-color: #2a2520;
+            --font-main: 'Inter', sans-serif;
+            --font-code: 'Space Mono', monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        h1, h2, h3 {
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--accent-blue);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        h2 {
+            font-size: 1.75rem;
+            margin-top: 3rem;
+            color: #fff;
+        }
+
+        p {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+        }
+
+        strong {
+            color: #fff;
+        }
+
+        pre {
+            background-color: #000;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            font-family: var(--font-code);
+            font-size: 0.95rem;
+            color: #56B6C2; /* syntax highlighting base */
+        }
+
+        code {
+            font-family: var(--font-code);
+            background-color: #1a1a1a;
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #ff8800;
+        }
+
+        .prediction-gate {
+            background-color: var(--card-color);
+            border-left: 4px solid var(--accent-purple);
+            border-radius: 0 8px 8px 0;
+            padding: 2rem;
+            margin: 2rem 0;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .prediction-gate h3 {
+            margin-top: 0;
+            color: var(--accent-purple);
+            font-family: var(--font-code);
+            font-size: 1.1rem;
+            text-transform: uppercase;
+        }
+
+        textarea.predict-input {
+            width: 100%;
+            background-color: #000;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            font-family: var(--font-code);
+            padding: 1rem;
+            border-radius: 6px;
+            resize: vertical;
+            min-height: 100px;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+        }
+
+        textarea.predict-input:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+        }
+
+        button.lock-btn {
+            background-color: var(--accent-purple);
+            color: #000;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            font-family: var(--font-code);
+            font-weight: 700;
+            font-size: 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button.lock-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(176, 92, 255, 0.4);
+        }
+
+        button.lock-btn:disabled {
+            background-color: #333;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .revelation {
+            display: none;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .revelation.active {
+            display: block;
+        }
+
+        .revelation-header {
+            font-weight: 700;
+            color: var(--accent-green);
+            margin-bottom: 0.5rem;
+            font-family: var(--font-code);
+        }
+
+        .gauntlet-card {
+            background-color: var(--card-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .gauntlet-card h4 {
+            color: var(--accent-blue);
+            margin-top: 0;
+            font-family: var(--font-code);
+        }
+
+        .gauntlet-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .gauntlet-option {
+            background-color: #000;
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .gauntlet-option:hover {
+            border-color: #444;
+        }
+
+        .gauntlet-option input[type="radio"] {
+            margin-top: 0.3rem;
+            accent-color: var(--accent-blue);
+        }
+
+        .gauntlet-reveal {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 6px;
+            background-color: rgba(0, 255, 170, 0.05);
+            border-left: 3px solid var(--accent-green);
+        }
+
+        .gauntlet-reveal.active {
+            display: block;
+        }
+
+        .gauntlet-reveal.incorrect {
+            background-color: rgba(255, 51, 102, 0.05);
+            border-left: 3px solid var(--accent-red);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .locked-state {
+            color: var(--accent-green);
+            font-family: var(--font-code);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .locked-state::before {
+            content: "🔒";
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🔵 CAPABILITY LAYER: HuggingFace & Transformers</h1>
+
+    <h2>1. THE CCP FAILURE SCENARIO (OPENING HOOK)</h2>
+    <p>A live coaching session with a high-paying executive client is initiated. The Context Premise Engine evaluates the graph state and selects Jean Pierre's Voice DNA for the interaction, demanding extreme confrontation and high cognitive strain. The JIT Skill Compiler routes the instruction to the orchestration pipeline. The pipeline reaches out to the HuggingFace <code>transformers</code> library to load the exact LoRA adapter that contains Jean Pierre’s aggressive linguistic archetype.</p>
+    <p>But there’s a configuration failure. The architectural instruction did not enforce <code>torch_dtype=torch.float16</code> during the instantiation of the causal language model via <code>AutoModelForCausalLM</code>.</p>
+    <p>Instead of loading the 72-billion parameter Qwen model in efficient 16-bit precision, the framework implicitly attempts to load it in uncompressed 32-bit floating point. Instantly, the memory requirement spikes from 144GB of VRAM to 288GB. The server’s A100 GPUs hit an immediate Out of Memory (OOM) fatal exception.</p>
+    <p>The process halts. The Pi agentic harness records a catastrophic hardware limitation error. The FastAPI WebSocket connection times out. The executive client, mid-sentence in a critical vulnerability exercise, receives utter silence.</p>
+    <p><strong>This happens because the Architect treated HuggingFace as a magical black box that "just works" instead of a rigorous payload management layer. When you do not deliberately command your model warehouse, the physics of GPU memory will violently reject your assumptions.</strong></p>
+
+    <!-- ARCHITECTURAL DEFINITION -->
+    <h2>2. THE ARCHITECTURAL DEFINITION (CONCEPT AS FORCE MULTIPLIER)</h2>
+    <p>If DSPy is the Machinist, and FastAPI is the Foreman handling logistics, then HuggingFace is the <strong>Model Warehouse</strong> of the Factory Floor.</p>
+    <p>HuggingFace does not build models from raw material, nor does it decide <em>what</em> prompt to send them. Instead, it is the ecosystem that gives the Sovereign Architect the ultimate capability: <strong>the power to instantly manifest isolated, highly specialized cognitive engines on demand.</strong></p>
+    <p>When you use HuggingFace in the CCP, you are performing three distinct architectural maneuvers:</p>
+    <ol style="margin-bottom: 2rem;">
+        <li><strong>The Core Requisition (<code>AutoModelForCausalLM</code>):</strong> Pulling a massive baseline cognitive engine (like Qwen) out of the warehouse and mounting it onto GPU hardware, explicitly dictating how much VRAM it allowed to consume.</li>
+        <li><strong>The Translation Protocol (<code>AutoTokenizer</code>):</strong> Defining the mathematical bridging dictionary that converts the client’s English text into numeric vector IDs the model can compute.</li>
+        <li><strong>The Personality Graft (<code>PeftModel</code>):</strong> Hot-swapping a 100MB LoRA adapter matrix on top of a 72B parameter engine, instantly mutating its behavior to adopt a specific Coach Voice DNA without retraining.</li>
+    </ol>
+    <p>As a Sovereign Architect, you command this warehouse to prove one critical rule: <em>We own the cognitive engine.</em> HuggingFace is the capability that makes true architectural sovereignty possible.</p>
+
+    <!-- PREDICTION GATES -->
+    <h2>3. THE MINIMAL CODE READING</h2>
+    <p>Read the following blocks carefully. You are inspecting how the Architect loads models into the factory. Commit to an answer before reading the revelation.</p>
+
+    <!-- GATE 1 -->
+    <div class="prediction-gate" id="gate-1">
+        <h3>Code Block 1: The Core Requisition</h3>
+        <pre><code>from transformers import AutoModelForCausalLM
+import torch
+
+voice_dna_model: AutoModelForCausalLM = AutoModelForCausalLM.from_pretrained(
+    "Qwen/Qwen3.5-72B",
+    torch_dtype=torch.float16,
+    device_map="auto"
+)</code></pre>
+        <p><strong>Prediction Gate 1:</strong> What does the <code>device_map="auto"</code> argument command the hardware to do with the <code>voice_dna_model</code>?</p>
+        <div class="input-area">
+            <textarea class="predict-input" placeholder="Pause. Type your exact mechanistic reasoning here. Do not blindly proceed."></textarea>
+            <button class="lock-btn" onclick="unlockGate(1)">Predict & Lock State</button>
+        </div>
+        <div class="revelation" id="rev-1">
+            <div class="revelation-header">REVELATION & STRUCTURAL TRUTH</div>
+            <p>It commands the HuggingFace warehouse to automatically <strong>shard (split)</strong> the massive 72-billion parameter model across multiple GPUs. If it were missing, HuggingFace would attempt to load the entire engine onto <code>cuda:0</code> (the first GPU), instantly causing a fatal Out of Memory crash.</p>
+        </div>
+    </div>
+
+    <!-- GATE 2 -->
+    <div class="prediction-gate" id="gate-2">
+        <h3>Code Block 2: The Translation Protocol</h3>
+        <pre><code>from transformers import AutoTokenizer
+
+session_tokenizer: AutoTokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3.5-72B")
+
+coaching_script_input: str = "Client states they feel unmotivated."
+tokenized_state: dict[str, torch.Tensor] = session_tokenizer(
+    coaching_script_input, 
+    return_tensors="pt"
+)</code></pre>
+        <p><strong>Prediction Gate 2:</strong> What is the specific data type of <code>tokenized_state["input_ids"]</code>, and why must it be that format rather than a Python List?</p>
+        <div class="input-area">
+            <textarea class="predict-input" placeholder="State your architectural hypothesis here..."></textarea>
+            <button class="lock-btn" onclick="unlockGate(2)">Predict & Lock State</button>
+        </div>
+        <div class="revelation" id="rev-2">
+            <div class="revelation-header">REVELATION & STRUCTURAL TRUTH</div>
+            <p>It is a <code>torch.Tensor</code> (specifically enforced by <code>return_tensors="pt"</code>). It must be a PyTorch tensor because the loaded language model operates entirely in GPU space using hardware-accelerated linear algebra. A standard Python list cannot be processed by a GPU.</p>
+        </div>
+    </div>
+
+    <!-- GATE 3 -->
+    <div class="prediction-gate" id="gate-3">
+        <h3>Code Block 3: The Personality Graft</h3>
+        <pre><code>from peft import PeftModel
+
+base_qwen_engine: AutoModelForCausalLM = load_base_engine()
+jean_pierre_dna: PeftModel = PeftModel.from_pretrained(
+    base_qwen_engine, 
+    "ccp_adapters/jean_pierre_v4"
+)</code></pre>
+        <p><strong>Prediction Gate 3:</strong> Does <code>PeftModel.from_pretrained</code> replace the <code>base_qwen_engine</code> with an entirely new 72-billion parameter model?</p>
+        <div class="input-area">
+            <textarea class="predict-input" placeholder="Commit to memory mechanisms..."></textarea>
+            <button class="lock-btn" onclick="unlockGate(3)">Predict & Lock State</button>
+        </div>
+        <div class="revelation" id="rev-3">
+            <div class="revelation-header">REVELATION & STRUCTURAL TRUTH</div>
+            <p>No. It <em>wraps</em> the existing base engine, inserting a tiny, lightweight adapter matrix (LoRA) into the existing attention layers. The vast majority of the original <code>base_qwen_engine</code> weights remain frozen. This is why we can switch from Jean Pierre to Audrey's Voice DNA in milliseconds without reloading 144GB of data.</p>
+        </div>
+    </div>
+
+    <!-- THE FACTORY FLOOR CONNECTION -->
+    <h2>4. THE FACTORY FLOOR CONNECTION</h2>
+    <p>Where does HuggingFace sit in the CCP’s orchestration pipeline?</p>
+    <ol>
+        <li><strong>Client Request:</strong> The client sends an audio stream or text input via WebSockets.</li>
+        <li><strong>FastAPI Route (The Foreman):</strong> Extracts the text and routes the payload to the specific coaching logic.</li>
+        <li><strong>Pydantic Validation (The QA Department):</strong> Ensures the input structure is correct, verifying <code>client_id</code>, <code>session_state</code>.</li>
+        <li><strong>DSPy Signature (The Machinist):</strong> Optimizes the prompt template to ensure reasoning steps will be maximally efficient.</li>
+        <li><strong>HuggingFace (The Laser Cutter):</strong> The core isolated execution node. HuggingFace tokenizes the input, executes the massive matrix multiplications using the specific LoRA adapter mounted via <code>peft</code>, and decodes the resulting raw integers back into text.</li>
+    </ol>
+    <p>In the <strong>Orchestration Dichotomy</strong>, HuggingFace represents <strong>The Laser Cutter</strong>. It is the brutal, raw computational engine at the center of the factory. It knows nothing of the client’s trauma or the logic of WebSockets. It merely spins up its massive tensors, processes numeric input, and burns numeric output.</p>
+
+    <!-- CONSEQUENCE MAP -->
+    <h2>5. THE CONSEQUENCE MAP</h2>
+    <p>If a Sovereign Architect incorrectly utilizes the HuggingFace capability layer, consequences do not merely corrupt data—they crash the physical hardware layer.</p>
+    <ul>
+        <li><strong style="color:var(--accent-red)">Model Precision Mismatch:</strong> If the Architect forgets <code>torch_dtype=torch.float16</code>, memory footprint doubles. The PyTorch tensor allocation exceeds VRAM, resulting in an unrecoverable CUDA OOM crash.</li>
+        <li><strong style="color:var(--accent-red)">Tokenizer Desynchronization:</strong> Loading Gemma-4 but accidentally loading the Qwen tokenizer. The client's string gets converted to wrong index IDs. The model outputs pure computational gibberish.</li>
+        <li><strong style="color:var(--accent-red)">Frozen Payload Overwrite:</strong> If <code>PeftModel</code> is bypassed, the system drops the Voice DNA adapter entirely. Jean Pierre (Aggressive) suddenly talks like a generic AI assistant, completely breaching the psychological coaching contract.</li>
+    </ul>
+
+    <!-- CAPABILITY GAUNTLET -->
+    <h2>6. PREDICTION EXERCISES (CAPABILITY GAUNTLET)</h2>
+    <p>You are standing above the factory floor observing the execution queues. Predict the outcome of each execution.</p>
+
+    <!-- Q1 -->
+    <div class="gauntlet-card" id="q-1">
+        <h4>Scenario 1: Hardware Bypass</h4>
+        <pre><code>model_id: str = "mistralai/Mistral-7B-Instruct-v0.2"
+base_model = AutoModelForCausalLM.from_pretrained(model_id, device_map="cpu")</code></pre>
+        <p>What happens to the execution speed of the coaching session here?</p>
+        <div class="gauntlet-options">
+            <label class="gauntlet-option"><input type="radio" name="q1" value="A"> A) It runs normally but with slight latency.</label>
+            <label class="gauntlet-option"><input type="radio" name="q1" value="B"> B) Generation speed plummets to ~1 token per second because it bypassed the GPU.</label>
+            <label class="gauntlet-option"><input type="radio" name="q1" value="C"> C) It crashes immediately due to lack of CUDA.</label>
+        </div>
+        <button class="lock-btn" onclick="checkGauntlet(1, 'B')">Evaluate Output</button>
+        <div class="gauntlet-reveal" id="g-rev-1"></div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="gauntlet-card" id="q-2">
+        <h4>Scenario 2: Serialization Typings</h4>
+        <pre><code>tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen1.5-7B")
+tokens = tokenizer.encode("Confrontation required.")
+print(type(tokens))</code></pre>
+        <p>What is the Python type returned by <code>.encode()</code> when <code>return_tensors</code> is not explicitly set to "pt"?</p>
+        <div class="gauntlet-options">
+            <label class="gauntlet-option"><input type="radio" name="q2" value="A"> A) A PyTorch torch.Tensor</label>
+            <label class="gauntlet-option"><input type="radio" name="q2" value="B"> B) A NumPy np.array</label>
+            <label class="gauntlet-option"><input type="radio" name="q2" value="C"> C) A standard Python list of integers list[int]</label>
+        </div>
+        <button class="lock-btn" onclick="checkGauntlet(2, 'C')">Evaluate Output</button>
+        <div class="gauntlet-reveal" id="g-rev-2"></div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="gauntlet-card" id="q-3">
+        <h4>Scenario 3: Evaluation Lock</h4>
+        <pre><code>from peft import PeftModel
+model = PeftModel.from_pretrained(base_model, "audrey_dna_v2")
+model.eval()</code></pre>
+        <p>Why must the Sovereign Architect explicitly invoke <code>.eval()</code> before routing client requests?</p>
+        <div class="gauntlet-options">
+            <label class="gauntlet-option"><input type="radio" name="q3" value="A"> A) It prevents the LoRA adapter from updating its weights during a session, locking deterministic state.</label>
+            <label class="gauntlet-option"><input type="radio" name="q3" value="B"> B) It evaluates the model's accuracy against a dataset.</label>
+            <label class="gauntlet-option"><input type="radio" name="q3" value="C"> C) It reduces the memory size by half.</label>
+        </div>
+        <button class="lock-btn" onclick="checkGauntlet(3, 'A')">Evaluate Output</button>
+        <div class="gauntlet-reveal" id="g-rev-3"></div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="gauntlet-card" id="q-4">
+        <h4>Scenario 4: Inverse Translation</h4>
+        <pre><code>tokenizer = AutoTokenizer.from_pretrained("google/gemma-7b")
+text = tokenizer.decode([2, 5321, 654, 108])</code></pre>
+        <p>What does the <code>decode</code> function provide the Architect?</p>
+        <div class="gauntlet-options">
+            <label class="gauntlet-option"><input type="radio" name="q4" value="A"> A) It translates English into binary code.</label>
+            <label class="gauntlet-option"><input type="radio" name="q4" value="B"> B) It translates raw mathematical output IDs emitted by the Laser Cutter back into natural language.</label>
+            <label class="gauntlet-option"><input type="radio" name="q4" value="C"> C) It decrypts encrypted client payloads.</label>
+        </div>
+        <button class="lock-btn" onclick="checkGauntlet(4, 'B')">Evaluate Output</button>
+        <div class="gauntlet-reveal" id="g-rev-4"></div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="gauntlet-card" id="q-5">
+        <h4>Scenario 5: Streaming Execution</h4>
+        <pre><code>output = model.generate(input_ids, max_new_tokens=4000)</code></pre>
+        <p>If this generation runs in the middle of a WebSocket stream, what is the fatal architectural flaw?</p>
+        <div class="gauntlet-options">
+            <label class="gauntlet-option"><input type="radio" name="q5" value="A"> A) max_new_tokens is too low.</label>
+            <label class="gauntlet-option"><input type="radio" name="q5" value="B"> B) `generate()` blocks the thread until all 4000 tokens are produced, freezing real-time streaming.</label>
+            <label class="gauntlet-option"><input type="radio" name="q5" value="C"> C) input_ids lacks a Pydantic schema validation.</label>
+        </div>
+        <button class="lock-btn" onclick="checkGauntlet(5, 'B')">Evaluate Output</button>
+        <div class="gauntlet-reveal" id="g-rev-5"></div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="gauntlet-card" id="q-6">
+        <h4>Scenario 6: Device Parity</h4>
+        <pre><code>input_payload = tokenizer("Are you ready?", return_tensors="pt").to("cuda:1")
+output = model.generate(**input_payload)</code></pre>
+        <p>If <code>model</code> was instantiated on <code>cuda:0</code>, what happens at line 2?</p>
+        <div class="gauntlet-options">
+            <label class="gauntlet-option"><input type="radio" name="q6" value="A"> A) The model automatically moves to cuda:1.</label>
+            <label class="gauntlet-option"><input type="radio" name="q6" value="B"> B) A device mismatch error is thrown because tensors on GPU 1 cannot be multiplied by a model on GPU 0.</label>
+            <label class="gauntlet-option"><input type="radio" name="q6" value="C"> C) It generates output at half speed.</label>
+        </div>
+        <button class="lock-btn" onclick="checkGauntlet(6, 'B')">Evaluate Output</button>
+        <div class="gauntlet-reveal" id="g-rev-6"></div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="gauntlet-card" id="q-7">
+        <h4>Scenario 7: Adapter Memory Footprint</h4>
+        <pre><code>base_model = AutoModelForCausalLM.from_pretrained("baseline")
+lora_a = PeftModel.from_pretrained(base_model, "audrey_dna")
+lora_jp = PeftModel.from_pretrained(base_model, "jp_dna")</code></pre>
+        <p>What happens to the VRAM when loading multiple LoRA adapters on the same base model?</p>
+        <div class="gauntlet-options">
+            <label class="gauntlet-option"><input type="radio" name="q7" value="A"> A) VRAM triples because three 72B models are loaded.</label>
+            <label class="gauntlet-option"><input type="radio" name="q7" value="B"> B) VRAM barely increases; the mass base model is shared and only tiny 100MB adapters are added.</label>
+            <label class="gauntlet-option"><input type="radio" name="q7" value="C"> C) VRAM crashes because an engine can only possess one adapter.</label>
+        </div>
+        <button class="lock-btn" onclick="checkGauntlet(7, 'B')">Evaluate Output</button>
+        <div class="gauntlet-reveal" id="g-rev-7"></div>
+    </div>
+
+    <!-- COMPRESSION LAYER -->
+    <h2>7. COMPRESSION LAYER</h2>
+    <p>You now understand how the CCP pulls heavy mechanical engines from the HuggingFace model warehouse, shapes input via tokenization, and hot-swaps personalities via PEFT. However, this engine does not know who the client is, their previous history, or what triggers are most effective. To provide that specific operational history into the prompt stream, you need a deterministic state machine. In the next lesson, we will master how the Memory Engine stores and retrieves perfectly mapped Context Premises.</p>
+
+    <div style="background-color:#151210; border-left:4px solid var(--accent-blue); padding:1.5rem; margin-top:2rem;">
+        <h3 style="margin-top:0; color:var(--accent-blue);">SINGLE-SENTENCE TRUTH</h3>
+        <p style="margin-bottom:0;">A Sovereign Architect must command HuggingFace because true platform control requires holding the actual neural weights, dictating their precise execution memory, and fusing custom coaching DNA directly into the matrix, completely isolated from the outside world.</p>
+    </div>
+
+</div>
+
+<script>
+    function unlockGate(gateNumber) {
+        const textarea = document.querySelector(`#gate-${gateNumber} textarea`);
+        if(textarea.value.trim().length < 10) {
+            alert("Architect, you must commit to an actual hypothesis (min 10 characters) before unlocking the machinery.");
+            return;
+        }
+        
+        textarea.disabled = true;
+        
+        const btn = document.querySelector(`#gate-${gateNumber} .lock-btn`);
+        btn.style.display = 'none';
+
+        const lockedMsg = document.createElement('div');
+        lockedMsg.className = 'locked-state';
+        lockedMsg.textContent = 'Hypothesis Locked into Context.';
+        textarea.parentNode.insertBefore(lockedMsg, textarea);
+
+        const revelation = document.getElementById(`rev-${gateNumber}`);
+        revelation.classList.add('active');
+    }
+
+    const gauntletAnswers = {
+        1: { correct: 'B', why: "Forcing device_map='cpu' means the 7 billion parameters are relying on standard algorithmic processing via the CPU, collapsing inference velocity." },
+        2: { correct: 'C', why: "By default, HuggingFace tokenizers return standard Python lists of integers unless explicitly instructed to format output for a neural net using return_tensors='pt'." },
+        3: { correct: 'A', why: "Leaving a model in .train() mode leaves stochastic elements like Dropout layers active, making the output non-deterministic and hallucination-prone." },
+        4: { correct: 'B', why: "The model strictly generates numerical IDs, decode translates those indices back into the human-readable text that DSPy and Pydantic will interpret." },
+        5: { correct: 'B', why: "model.generate is synchronous and blocks execution. In a streaming context, generation must be yielded token-by-token or managed in a separate thread." },
+        6: { correct: 'B', why: "PyTorch demands strict device colocation. Tensors and model weights must reside on the exact same physical GPU memory pool to perform math." },
+        7: { correct: 'B', why: "PEFT allows multiple personalities to reside atop a single heavily loaded base engine with negligible memory overhead." }
+    };
+
+    function checkGauntlet(qNumber, correctVal) {
+        const selected = document.querySelector(`input[name="q${qNumber}"]:checked`);
+        if(!selected) {
+            alert("Lock in an answer first.");
+            return;
+        }
+
+        const btn = document.querySelector(`#q-${qNumber} .lock-btn`);
+        const reveal = document.getElementById(`g-rev-${qNumber}`);
+        const data = gauntletAnswers[qNumber];
+        const isCorrect = selected.value === correctVal;
+
+        btn.disabled = true;
+        
+        // Disable all inputs in that form
+        const radios = document.querySelectorAll(`input[name="q${qNumber}"]`);
+        radios.forEach(r => r.disabled = true);
+
+        reveal.classList.remove('incorrect');
+        if(isCorrect) {
+            reveal.innerHTML = `<strong>[✓] ARCHITECTURAL ALIGNMENT CONFIRMED.</strong><br><br>${data.why}`;
+            reveal.style.borderColor = "var(--accent-green)";
+            reveal.style.backgroundColor = "rgba(0, 255, 170, 0.05)";
+        } else {
+            reveal.classList.add('incorrect');
+            reveal.innerHTML = `<strong>[✗] FATAL EXECUTION ERROR.</strong><br><br>Correct Architecture was ${correctVal}.<br>${data.why}`;
+        }
+        
+        reveal.classList.add('active');
+    }
+</script>
+
+</body>
+</html>

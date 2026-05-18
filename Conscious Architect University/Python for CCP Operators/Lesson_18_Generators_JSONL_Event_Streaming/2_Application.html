@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 18 — Application Layer: Generators & JSONL</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#09090d;--fg:#e6e4de;--muted:#6a7078;--accent:#4a9e9e;
+      --accent-dim:#2d6363;--err:#c45c4a;--ok:#6b9e6b;
+      --card:#111416;--border:#1e2225;--inp:#0c0e10;--int:#c45c4a;
+      --gold:#f59e0b;--violet:#8b5cf6;
+    }
+    html{font-size:16px;scroll-behavior:smooth}
+    body{font-family:'DM Sans',sans-serif;color:var(--fg);background:var(--bg);min-height:100vh;line-height:1.7;overflow-x:hidden;}
+    #app{max-width:740px;margin:0 auto;padding:52px 24px 110px}
+    .sec{display:none;opacity:0;transform:translateY(14px)}
+    .sec.visible{display:block;opacity:1;transform:none;transition:opacity .45s,transform .45s}
+    .sec.entering{display:block;opacity:0;transform:translateY(14px)}
+
+    h1{font-family:'Space Mono',monospace;font-size:clamp(1.2rem,3vw,1.45rem);font-weight:700;letter-spacing:-.02em;margin-bottom:6px}
+    h2{font-family:'Space Mono',monospace;font-size:clamp(.82rem,2.2vw,.96rem);font-weight:700;color:var(--accent);letter-spacing:.04em;margin-bottom:12px;text-transform:uppercase}
+    p{color:var(--fg);margin-bottom:12px;font-weight:300}
+    p strong{font-weight:700;color:var(--fg)}
+    .muted{color:var(--muted);font-size:.9rem}
+    code{font-family:'Space Mono',monospace;font-size:.88rem;color:var(--accent);background:rgba(74,158,158,.07);padding:2px 5px;border-radius:3px}
+
+    /* Code blocks */
+    .code-block{background:var(--inp);border:1px solid var(--border);border-radius:6px;
+      padding:16px 20px;margin:12px 0;font-family:'Space Mono',monospace;font-size:.84rem;
+      line-height:1.8;white-space:pre;overflow-x:auto;color:#c2d4e0;}
+    .kw{color:#56c5ff} .fn{color:#ffd166} .st{color:#6ec99a} .cm{color:#3a5060;font-style:italic}
+    .tp{color:#c084fc} .nu{color:#fb923c} .bl{color:#60a5fa}
+
+    /* Spaced interrupt */
+    .interrupt{border-left:3px solid var(--int);background:rgba(196,92,74,.04);
+      padding:22px 26px;margin:32px 0;border-radius:0 5px 5px 0}
+    .interrupt p{color:var(--fg);font-size:.98rem}
+
+    /* Prompt box */
+    .prompt{background:var(--card);border:1px solid var(--border);border-radius:5px;padding:20px 24px;margin:22px 0}
+    .artifact-tag{font-family:'Space Mono',monospace;font-size:.65rem;text-transform:uppercase;
+      letter-spacing:.12em;color:var(--accent);margin-bottom:12px;display:block;opacity:.8}
+    .strat-cite{font-family:'Space Mono',monospace;font-size:.7rem;color:var(--muted);
+      border-top:1px solid var(--border);margin-top:12px;padding-top:10px}
+
+    /* Options */
+    .opt-grid{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+    .opt{font-family:'DM Sans',sans-serif;font-size:.92rem;text-align:left;
+      background:var(--inp);border:1px solid var(--border);border-radius:5px;
+      color:var(--fg);padding:12px 16px;cursor:pointer;transition:all .2s}
+    .opt:hover:not(:disabled){border-color:var(--accent-dim);background:rgba(74,158,158,.04)}
+    .opt:disabled{cursor:default}
+    .opt.sel{border-color:var(--accent);background:rgba(74,158,158,.07)}
+    .opt.sel.wrong{border-color:var(--err);background:rgba(196,92,74,.07);color:var(--err)}
+    .opt.sel.right{border-color:var(--ok);background:rgba(107,158,107,.07);color:var(--ok)}
+    .opt.dimmed{opacity:.35}
+
+    /* Inputs */
+    .inp-row{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+    .inp{font-family:'Space Mono',monospace;font-size:.9rem;background:var(--inp);
+      border:1px solid var(--border);border-radius:4px;color:var(--fg);
+      padding:9px 13px;outline:none;transition:border-color .2s;flex:1}
+    .inp:focus{border-color:var(--accent)}
+    .inp.locked{border-color:var(--accent-dim);opacity:.65;pointer-events:none}
+    .inp.wrong{border-color:var(--err)} .inp.right{border-color:var(--ok)}
+    textarea.inp{min-height:90px;resize:vertical;flex:none;width:100%}
+
+    /* Submit button */
+    .sub-btn{font-family:'Space Mono',monospace;font-size:.76rem;letter-spacing:.06em;
+      background:none;border:1px solid var(--accent-dim);color:var(--accent);
+      padding:9px 22px;border-radius:4px;cursor:pointer;transition:all .2s;text-transform:uppercase}
+    .sub-btn:hover:not(:disabled){border-color:var(--accent);background:rgba(74,158,158,.07)}
+    .sub-btn:disabled{opacity:.3;cursor:default}
+
+    /* Feedback */
+    .fb{margin-top:12px;padding:13px 17px;border-radius:4px;font-size:.9rem;line-height:1.7;display:none}
+    .fb.show{display:block;animation:fadeUp .3s ease}
+    .fb.err{background:rgba(196,92,74,.06);border-left:3px solid var(--err)}
+    .fb.ok{background:rgba(107,158,107,.06);border-left:3px solid var(--ok)}
+    .fb .mis{font-family:'Space Mono',monospace;font-size:.72rem;letter-spacing:.05em;
+      color:var(--err);text-transform:uppercase;margin-bottom:7px;display:block}
+    .cmp{font-family:'Space Mono',monospace;font-size:.83rem;background:var(--inp);
+      border:1px solid var(--border);border-radius:4px;padding:10px 14px;margin:10px 0;display:none}
+    .cmp.show{display:block}
+    .cmp .row{display:flex;justify-content:space-between;gap:16px;padding:2px 0}
+    .cmp .lbl{color:var(--muted)} .cmp .val{color:var(--fg)}
+    .cmp .wv{color:var(--err);text-decoration:line-through} .cmp .rv{color:var(--ok)}
+
+    /* Continue / sub-gate */
+    .cont-wrap{margin-top:24px;display:none}
+    .cont-wrap.show{display:block;animation:fadeUp .3s ease}
+    .cont-btn{font-family:'Space Mono',monospace;font-size:.76rem;letter-spacing:.06em;
+      background:none;border:1px solid var(--accent-dim);color:var(--accent);
+      padding:8px 28px;border-radius:4px;cursor:pointer;transition:all .2s}
+    .cont-btn:hover{border-color:var(--accent);background:rgba(74,158,158,.05)}
+    .sub-gate{margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:none}
+    .sub-gate.show{display:block;animation:fadeUp .3s ease}
+
+    /* Gauntlet */
+    .gc-counter{font-family:'Space Mono',monospace;font-size:.8rem;color:var(--muted);letter-spacing:.04em;margin-bottom:18px}
+    .gc-card{background:var(--card);border:1px solid var(--border);border-radius:5px;padding:18px 20px;margin-bottom:12px}
+    .gc-q{font-size:.92rem;margin-bottom:10px;line-height:1.6}
+    .gc-mfb{font-family:'Space Mono',monospace;font-size:.78rem;margin-top:7px;padding:6px 11px;border-radius:3px;display:none}
+    .gc-mfb.show{display:block}
+    .gc-mfb.c{color:var(--ok);background:rgba(107,158,107,.05)}
+    .gc-mfb.w{color:var(--err);background:rgba(196,92,74,.05)}
+    .gc-card.done{opacity:.52;pointer-events:none}
+    .final-score{font-family:'Space Mono',monospace;text-align:center;padding:26px 0}
+    .final-score .sn{font-size:2.1rem;font-weight:700;color:var(--accent)}
+    .final-score .sl{font-size:.8rem;color:var(--muted);letter-spacing:.06em;margin-top:3px}
+    .divider{width:120px;height:1px;background:var(--accent);opacity:.2;margin:36px auto}
+
+    @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @media(max-width:480px){#app{padding:32px 14px 80px}.inp{font-size:.82rem}}
+  </style>
+</head>
+<body>
+<div id="app">
+
+<!-- ════ S0: SPACED INTERRUPT ════ -->
+<section id="s0" class="sec visible">
+  <div class="interrupt">
+    <p>Without looking back at Layer 1 — <strong>what two things must every yielded JSONL line include for the CCP frontend parser to work correctly?</strong></p>
+    <p class="muted" style="margin-top:6px;">Answer with both requirements to unlock Layer 2.</p>
+    <div class="inp-row">
+      <input type="text" id="s0-inp" class="inp" style="width:100%" placeholder="e.g. a ... and a ..." autocomplete="off">
+      <button class="sub-btn" id="s0-btn" onclick="submitS0()">Lock Answer</button>
+    </div>
+    <div class="fb" id="s0-fb"></div>
+  </div>
+</section>
+
+<!-- ════ S1: ARTIFACT A — PYDANTIC QA DEPARTMENT ════ -->
+<section id="s1" class="sec">
+  <h2>Production Artifact 1</h2>
+  <h1>The QA Department — Pydantic Stream Validation</h1>
+  <div class="prompt">
+    <span class="artifact-tag">// CCP Subsystem: QA Department · Pydantic BaseModel · Stream intercept</span>
+    <div class="code-block"><span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel, Field, ValidationError
+<span class="kw">from</span> typing <span class="kw">import</span> Generator
+
+<span class="kw">class</span> <span class="tp">TelemetryEvent</span>(BaseModel):
+    event_type: <span class="tp">str</span> = Field(..., pattern=<span class="st">r"^(thought|tool_call|tool_result|final_output)$"</span>)
+    timestamp_ms: <span class="tp">int</span>
+    payload: <span class="tp">dict</span> = Field(default_factory=<span class="tp">dict</span>)
+
+<span class="kw">def</span> <span class="fn">validated_stream</span>(raw_gen: Generator[<span class="tp">str</span>, <span class="bl">None</span>, <span class="bl">None</span>]) -> Generator[<span class="tp">str</span>, <span class="bl">None</span>, <span class="bl">None</span>]:
+    <span class="cm"># QA intercept proxy — sits between Pi Harness and FastAPI</span>
+    <span class="kw">for</span> line <span class="kw">in</span> raw_gen:
+        TelemetryEvent.model_validate_json(line)  <span class="cm"># raises if invalid</span>
+        <span class="kw">yield</span> line  <span class="cm"># only valid lines pass downstream</span></div>
+    <div class="strat-cite">Strategic Source: OpenProse Contract Vocabulary — Requires/Ensures pattern on stream boundaries.</div>
+  </div>
+  <p>The Pi Harness emits this line: <code>{"event_type": "reasoning", "timestamp_ms": 171345, "payload": {}}</code></p>
+  <p style="font-weight:600;color:var(--gold);">What happens at line 11 (<code>TelemetryEvent.model_validate_json(line)</code>)?</p>
+  <div class="opt-grid" id="s1-opts">
+    <button class="opt" onclick="s1Check(this,'a')">Passes validation — "reasoning" is a valid event_type string.</button>
+    <button class="opt" onclick="s1Check(this,'b')">Raises ValidationError — "reasoning" does not match the regex pattern constraint.</button>
+    <button class="opt" onclick="s1Check(this,'c')">Raises TypeError — model_validate_json expects bytes not a string.</button>
+    <button class="opt" onclick="s1Check(this,'d')">Passes, but the line is silently dropped rather than yielded.</button>
+  </div>
+  <div class="fb" id="s1-fb"></div>
+  <div class="cont-wrap" id="s1-cont"><button class="cont-btn" onclick="reveal('s2')">Continue →</button></div>
+</section>
+
+<!-- ════ S2: ARTIFACT B — ROBOT ARM SUBPROCESS ════ -->
+<section id="s2" class="sec">
+  <h2>Production Artifact 2</h2>
+  <h1>The Robot Arm — Pi Harness Subprocess Capture</h1>
+  <div class="prompt">
+    <span class="artifact-tag">// CCP Subsystem: Robot Arm · subprocess.Popen · live stdout streaming</span>
+    <div class="code-block"><span class="kw">import</span> subprocess, json
+<span class="kw">from</span> typing <span class="kw">import</span> Generator
+
+<span class="kw">def</span> <span class="fn">stream_agent_subprocess</span>(command_list: <span class="tp">list</span>[<span class="tp">str</span>]) -> Generator[<span class="tp">str</span>, <span class="bl">None</span>, <span class="bl">None</span>]:
+    proc = subprocess.Popen(
+        command_list,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=<span class="bl">True</span>
+    )
+    <span class="kw">for</span> line <span class="kw">in</span> <span class="fn">iter</span>(proc.stdout.readline, <span class="st">""</span>):  <span class="cm"># line-by-line live read</span>
+        event = {<span class="st">"type"</span>: <span class="st">"subprocess_stdout"</span>, <span class="st">"content"</span>: line.strip()}
+        <span class="kw">yield</span> json.dumps(event) + <span class="st">"\n"</span>
+    proc.stdout.close()
+    proc.wait()</div>
+    <div class="strat-cite">Strategic Source: Pi Agentic Harness (pi-mono Architect) — stateless stdout collection with real-time transmission.</div>
+  </div>
+  <p style="font-weight:600;color:var(--gold);">If <code>proc.communicate()</code> was used instead of <code>iter(proc.stdout.readline, "")</code>, what is the architectural consequence?</p>
+  <div class="opt-grid" id="s2-opts">
+    <button class="opt" onclick="s2Check(this,'a')">No consequence — communicate() and readline() produce identical timing behaviour.</button>
+    <button class="opt" onclick="s2Check(this,'b')">communicate() blocks execution until the subprocess completes, destroying the real-time streaming. The Foreman goes blind.</button>
+    <button class="opt" onclick="s2Check(this,'c')">communicate() raises a RuntimeError because it cannot be used with PIPE.</button>
+    <button class="opt" onclick="s2Check(this,'d')">communicate() streams faster because it reads all output simultaneously.</button>
+  </div>
+  <div class="fb" id="s2-fb"></div>
+  <div class="cont-wrap" id="s2-cont"><button class="cont-btn" onclick="reveal('s3')">Continue →</button></div>
+</section>
+
+<!-- ════ S3: ARTIFACT C — FASTAPI CHASSIS ════ -->
+<section id="s3" class="sec">
+  <h2>Production Artifact 3</h2>
+  <h1>The Chassis — FastAPI StreamingResponse</h1>
+  <div class="prompt">
+    <span class="artifact-tag">// CCP Subsystem: Chassis · FastAPI · StreamingResponse · HTTP ndjson</span>
+    <div class="code-block"><span class="kw">from</span> fastapi <span class="kw">import</span> APIRouter, Depends
+<span class="kw">from</span> fastapi.responses <span class="kw">import</span> StreamingResponse
+
+router = APIRouter()
+
+<span class="bl">@router.post</span>(<span class="st">"/execute/pi-agent/{session_id}"</span>)
+<span class="kw">async def</span> <span class="fn">orchestrate_session</span>(session_id: <span class="tp">str</span>, harness=Depends(<span class="fn">get_pi_harness</span>)):
+    <span class="kw">async def</span> <span class="fn">event_generator</span>():
+        <span class="kw">async for</span> raw_line <span class="kw">in</span> harness.run_session(session_id):
+            <span class="kw">yield</span> raw_line.encode(<span class="st">"utf-8"</span>)   <span class="cm"># ← critical</span>
+    <span class="kw">return</span> StreamingResponse(
+        <span class="fn">event_generator</span>(),
+        media_type=<span class="st">"application/x-ndjson"</span>
+    )</div>
+    <div class="strat-cite">Strategic Source: Building Effective Terminal Agents (190/200) — stream-first transport mandatory for real-time observability.</div>
+  </div>
+  <p style="font-weight:600;color:var(--gold);">If <code>.encode("utf-8")</code> is removed and the raw string is yielded directly — what happens at the network transmission layer?</p>
+  <div class="opt-grid" id="s3-opts">
+    <button class="opt" onclick="s3Check(this,'a')">Nothing — FastAPI automatically encodes strings to bytes internally.</button>
+    <button class="opt" onclick="s3Check(this,'b')">FastAPI raises an error during transmission. HTTP streams require bytes — strings are not valid network payloads at this layer.</button>
+    <button class="opt" onclick="s3Check(this,'c')">The string is sent as-is, but the client receives garbled characters.</button>
+    <button class="opt" onclick="s3Check(this,'d')">The generator skips all string yields and only transmits when it encounters bytes.</button>
+  </div>
+  <div class="fb" id="s3-fb"></div>
+  <div class="cont-wrap" id="s3-cont"><button class="cont-btn" onclick="reveal('s4')">Continue →</button></div>
+</section>
+
+<!-- ════ S4: ARTIFACT D — DSPY MACHINIST ════ -->
+<section id="s4" class="sec">
+  <h2>Production Artifact 4</h2>
+  <h1>The Machinist — DSPy Iterative Synthesis</h1>
+  <div class="prompt">
+    <span class="artifact-tag">// CCP Subsystem: Machinist · DSPy · iterative context streaming · O(1) memory</span>
+    <div class="code-block"><span class="kw">import</span> dspy
+
+<span class="kw">class</span> <span class="tp">SessionSynthesisSignature</span>(dspy.Signature):
+    <span class="st">"""Summarise the psychological trajectory of one session."""</span>
+    session_transcript = dspy.InputField(desc=<span class="st">"Raw JSON transcript string"</span>)
+    psychological_vector = dspy.OutputField(desc=<span class="st">"Distilled state label"</span>)
+
+<span class="kw">def</span> <span class="fn">dspy_context_stream</span>(session_cursor) -> Generator[<span class="tp">str</span>, <span class="bl">None</span>, <span class="bl">None</span>]:
+    synthesizer = dspy.Predict(SessionSynthesisSignature)
+    <span class="kw">for</span> record <span class="kw">in</span> session_cursor:          <span class="cm"># cursor = 50 DB records</span>
+        result = synthesizer(session_transcript=record)
+        <span class="kw">yield</span> result.psychological_vector  <span class="cm"># one string per session</span></div>
+    <div class="strat-cite">Strategic Source: DSPy Paper (185/200) — atomic modular compilation outperforms monolithic context loading.</div>
+  </div>
+  <p>The <code>session_cursor</code> holds 50 sessions averaging 12,000 tokens each — <strong>600,000 tokens total</strong>.</p>
+  <p style="font-weight:600;color:var(--gold);">What is the memory footprint of <code>dspy_context_stream</code> at any single point during execution?</p>
+  <div class="opt-grid" id="s4-opts">
+    <button class="opt" onclick="s4Check(this,'a')">O(n) — grows with 50 sessions, each in memory simultaneously.</button>
+    <button class="opt" onclick="s4Check(this,'b')">O(1) — only one session is loaded, processed, and yielded; then discarded by the garbage collector before the next starts.</button>
+    <button class="opt" onclick="s4Check(this,'c')">O(n²) — DSPy creates a copy of each result for its optimization trace.</button>
+    <button class="opt" onclick="s4Check(this,'d')">O(log n) — DSPy batches sessions in logarithmic groups.</button>
+  </div>
+  <div class="fb" id="s4-fb"></div>
+  <div class="cont-wrap" id="s4-cont"><button class="cont-btn" onclick="reveal('s5')">Continue to Data Flow Trace →</button></div>
+</section>
+
+<!-- ════ S5: DATA FLOW TRACE ════ -->
+<section id="s5" class="sec">
+  <h2>Data Flow Trace</h2>
+  <h1>Trace the client reflection → agent stream path</h1>
+  <div class="prompt">
+    <p>A client submits: <code>{"note": "I feel stuck today"}</code> via WebSocket. Arrange the 5 pipeline stages in order by typing the correct stage label in each field.</p>
+    <p class="muted" style="margin-top:6px;">Stages: <strong>A</strong> Pydantic QA validation · <strong>B</strong> Pi Harness yield JSONL · <strong>C</strong> WebSocket delivery · <strong>D</strong> FastAPI receives &amp; routes · <strong>E</strong> Client submits note</p>
+    <div style="margin-top:14px;display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">
+      <div style="text-align:center"><p class="muted" style="font-size:.78rem;margin-bottom:4px;">Step 1</p><input type="text" id="fl1" class="inp" style="text-align:center" maxlength="1" placeholder="?"></div>
+      <div style="text-align:center"><p class="muted" style="font-size:.78rem;margin-bottom:4px;">Step 2</p><input type="text" id="fl2" class="inp" style="text-align:center" maxlength="1" placeholder="?"></div>
+      <div style="text-align:center"><p class="muted" style="font-size:.78rem;margin-bottom:4px;">Step 3</p><input type="text" id="fl3" class="inp" style="text-align:center" maxlength="1" placeholder="?"></div>
+      <div style="text-align:center"><p class="muted" style="font-size:.78rem;margin-bottom:4px;">Step 4</p><input type="text" id="fl4" class="inp" style="text-align:center" maxlength="1" placeholder="?"></div>
+      <div style="text-align:center"><p class="muted" style="font-size:.78rem;margin-bottom:4px;">Step 5</p><input type="text" id="fl5" class="inp" style="text-align:center" maxlength="1" placeholder="?"></div>
+    </div>
+    <div class="inp-row" style="margin-top:12px;"><button class="sub-btn" onclick="submitFlow()">Lock Sequence</button></div>
+    <div class="fb" id="fl-fb"></div>
+    <div class="cmp" id="fl-cmp">
+      <div class="row"><span class="lbl">Your sequence</span><span class="val wv" id="fl-your"></span></div>
+      <div class="row"><span class="lbl">Correct</span><span class="val rv">E → D → B → A → C</span></div>
+    </div>
+  </div>
+  <div class="cont-wrap" id="s5-cont"><button class="cont-btn" onclick="reveal('mastery')">Continue to Mastery Gate →</button></div>
+</section>
+
+<!-- ════ MASTERY GATE ════ -->
+<section id="mastery" class="sec">
+  <h2>Mastery Gate</h2>
+  <h1>Novel CCP Artifact — Read and classify</h1>
+  <div class="prompt">
+    <span class="artifact-tag">// Novel context — classify this generator's defect type</span>
+    <div class="code-block"><span class="kw">def</span> <span class="fn">stream_session_history</span>(db_session, user_id: <span class="tp">str</span>):
+    query = <span class="st">f"MATCH (n:Memory) WHERE n.uid = '{user_id}' RETURN n"</span>
+    results = db_session.run(query)
+    history = [node.data() <span class="kw">for</span> node <span class="kw">in</span> results]   <span class="cm"># ← concern</span>
+    <span class="kw">for</span> node <span class="kw">in</span> history:
+        <span class="kw">yield</span> json.dumps(node) + <span class="st">"\n"</span></div>
+    <p style="margin-top:12px;font-weight:600;color:var(--gold);">There are TWO structural violations. Name both — one on line 2 and one on line 4. What are they?</p>
+    <textarea id="mg-inp" class="inp" placeholder="Line 2 violates... because... Line 4 violates... because..."></textarea>
+    <div class="inp-row"><button class="sub-btn" onclick="submitMastery()">Lock Answer</button></div>
+    <div class="fb" id="mg-fb"></div>
+  </div>
+  <div class="cont-wrap" id="mg-cont"><button class="cont-btn" onclick="reveal('gauntlet')">Enter Application Gauntlet →</button></div>
+</section>
+
+<!-- ════ GAUNTLET ════ -->
+<section id="gauntlet" class="sec">
+  <h2>Application Gauntlet</h2>
+  <h1>7 questions. No scaffolding.</h1>
+  <div class="gc-counter" id="gc-ctr">0 / 7</div>
+  <div id="gc-container"></div>
+  <div class="final-score" id="gc-final" style="display:none">
+    <div class="sn" id="gc-sn"></div>
+    <div class="sl">out of 7 correct</div>
+    <div style="margin-top:18px;display:none" id="gc-done-wrap">
+      <button class="cont-btn" onclick="finishLayer()">Complete Application Layer</button>
+    </div>
+  </div>
+</section>
+
+<!-- ════ DONE ════ -->
+<section id="done" class="sec">
+  <div class="divider"></div>
+  <h1>Application layer complete.</h1>
+  <p class="muted">You traced JSONL through the Pydantic QA gate, the Pi Harness subprocess capture, the FastAPI StreamingResponse, and the DSPy iterative synthesis pipeline. You identified the memory impact of O(1) streaming vs O(n) accumulation, and you classified defects in novel CCP artifacts.</p>
+  <p class="muted" style="margin-top:10px;">In Layer 3, the same generator pattern will appear in all 6 CCP subsystems simultaneously. You will identify it, explain why it is needed in each context, and predict what breaks when it is removed.</p>
+  <p style="margin-top:22px;color:var(--accent);font-weight:500;">The telemetry umbilical is now visible across every layer of the sovereign stack.</p>
+</section>
+
+</div>
+
+<script>
+function reveal(id) {
+  const el = document.getElementById(id);
+  el.classList.add('entering');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.classList.remove('entering');
+    el.classList.add('visible');
+  }));
+  setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  if (id === 'gauntlet') buildGauntlet();
+}
+
+function showFB(id, type, html) {
+  const el = document.getElementById(id);
+  el.className = 'fb show ' + type;
+  el.innerHTML = html;
+}
+
+function mk(id, cls) {
+  const el = document.getElementById(id);
+  el.classList.remove('wrong', 'right');
+  el.classList.add(cls);
+}
+
+function lockOpts(containerId) {
+  document.querySelectorAll('#' + containerId + ' .opt').forEach(b => b.disabled = true);
+}
+
+// ── S0 SPACED INTERRUPT ──
+function submitS0() {
+  const raw = document.getElementById('s0-inp').value.trim().toLowerCase();
+  if (!raw) return;
+  document.getElementById('s0-btn').disabled = true;
+  document.getElementById('s0-inp').classList.add('locked');
+  const hasJson = /json|dict|\{|seriali/.test(raw);
+  const hasNl = /newline|\\n|line break|delimiter|boundary/.test(raw);
+  if (hasJson && hasNl) {
+    document.getElementById('s0-inp').classList.add('right');
+    showFB('s0-fb', 'ok', 'Correct. A valid JSON object (serialised dict) + a newline terminator \\n. Both are mandatory. The JSON encodes the payload; the newline tells the stream parser where each packet ends.');
+    setTimeout(() => reveal('s1'), 800);
+  } else {
+    document.getElementById('s0-inp').classList.add('wrong');
+    showFB('s0-fb', 'err', 'Incomplete. Every JSONL line needs: (1) a complete JSON object — e.g. the result of json.dumps({...}) — and (2) a newline \\n terminator so parsers know where each object ends. Both are required.');
+    setTimeout(() => { mk('s0-inp', ''); document.getElementById('s0-inp').classList.remove('locked'); document.getElementById('s0-inp').value = ''; document.getElementById('s0-btn').disabled = false; document.getElementById('s0-fb').className = 'fb'; }, 1500);
+  }
+}
+
+// ── S1 PYDANTIC QA ──
+function s1Check(btn, choice) {
+  lockOpts('s1-opts');
+  const ok = choice === 'b';
+  btn.classList.add('sel', ok ? 'right' : 'wrong');
+  document.querySelectorAll('#s1-opts .opt').forEach(b => { if (!b.classList.contains('sel')) b.classList.add('dimmed'); });
+  if (!ok) document.querySelectorAll('#s1-opts .opt')[1].classList.add('right');
+  showFB('s1-fb', ok ? 'ok' : 'err',
+    ok ? 'Correct. The regex pattern <code>^(thought|tool_call|tool_result|final_output)$</code> is an exact whitelist. "reasoning" is not in the list. Pydantic raises <code>ValidationError</code>. The validated_stream generator does NOT yield this line. The hallucinated telemetry type is blocked before it reaches the WebSocket.'
+       : '<span class="mis">QA Gate Failure</span>Pydantic\'s <code>pattern</code> field constraint is a regex whitelist. Only the four listed event_types pass. "reasoning" is not one of them — it raises <code>ValidationError</code>, not a pass. This is the entire purpose of the QA Department: blocking schema-drift before it propagates to the client.');
+  document.getElementById('s1-cont').classList.add('show');
+}
+
+// ── S2 SUBPROCESS ROBOT ARM ──
+function s2Check(btn, choice) {
+  lockOpts('s2-opts');
+  const ok = choice === 'b';
+  btn.classList.add('sel', ok ? 'right' : 'wrong');
+  document.querySelectorAll('#s2-opts .opt').forEach(b => { if (!b.classList.contains('sel')) b.classList.add('dimmed'); });
+  if (!ok) document.querySelectorAll('#s2-opts .opt')[1].classList.add('right');
+  showFB('s2-fb', ok ? 'ok' : 'err',
+    ok ? 'Correct. <code>communicate()</code> is synchronous — it buffers all stdout internally until the subprocess terminates, then returns the entire chunk at once. This reintroduces the same black-box problem as <code>return</code>. The Foreman sees nothing during a 40-second compilation. <code>iter(readline, "")</code> reads one line at a time, yielding each immediately.'
+       : '<span class="mis">Synchronous Trap</span><code>communicate()</code> blocks the entire execution thread until the subprocess completes. It cannot stream. The generator pattern is meaningless if the data source itself is synchronous and holistic. <code>iter(proc.stdout.readline, "")</code> is the streaming primitive — it reads one line as it appears, without waiting for the process to finish.');
+  document.getElementById('s2-cont').classList.add('show');
+}
+
+// ── S3 FASTAPI CHASSIS ──
+function s3Check(btn, choice) {
+  lockOpts('s3-opts');
+  const ok = choice === 'b';
+  btn.classList.add('sel', ok ? 'right' : 'wrong');
+  document.querySelectorAll('#s3-opts .opt').forEach(b => { if (!b.classList.contains('sel')) b.classList.add('dimmed'); });
+  if (!ok) document.querySelectorAll('#s3-opts .opt')[1].classList.add('right');
+  showFB('s3-fb', ok ? 'ok' : 'err',
+    ok ? 'Correct. HTTP at the network layer operates on raw bytes. FastAPI\'s <code>StreamingResponse</code> expects the generator to yield <code>bytes</code> objects. Yielding a Python <code>str</code> causes a type violation at the transmission layer — FastAPI raises an internal error or silently fails to send. <code>.encode("utf-8")</code> is the mandatory byte-level bridge.'
+       : '<span class="mis">String-Bytes Conflation</span>FastAPI does NOT auto-encode string yields inside <code>StreamingResponse</code>. The HTTP transport layer works in raw bytes. The generator must explicitly produce <code>bytes</code> via <code>.encode("utf-8")</code>. This is a physical network constraint — not a FastAPI quirk.');
+  document.getElementById('s3-cont').classList.add('show');
+}
+
+// ── S4 DSPY MACHINIST ──
+function s4Check(btn, choice) {
+  lockOpts('s4-opts');
+  const ok = choice === 'b';
+  btn.classList.add('sel', ok ? 'right' : 'wrong');
+  document.querySelectorAll('#s4-opts .opt').forEach(b => { if (!b.classList.contains('sel')) b.classList.add('dimmed'); });
+  if (!ok) document.querySelectorAll('#s4-opts .opt')[1].classList.add('right');
+  showFB('s4-fb', ok ? 'ok' : 'err',
+    ok ? 'Correct. At any instant, the generator holds exactly one session record. After the DSPy call, <code>result</code> is yielded and immediately becomes eligible for garbage collection. The cursor moves to the next record. Memory usage is flat — O(1) — regardless of whether there are 50 or 50,000 sessions. This is the core memory advantage of generator-based iteration.'
+       : '<span class="mis">Memory Model Misconception</span>A generator processes one item at a time. After yielding, the previous result is no longer referenced inside the generator\'s execution frame — Python\'s garbage collector reclaims it. The memory footprint stays constant at roughly one session\'s size, regardless of total session count. Only a <code>list</code> accumulator grows linearly with n.');
+  document.getElementById('s4-cont').classList.add('show');
+}
+
+// ── DATA FLOW ──
+function submitFlow() {
+  const seq = ['fl1','fl2','fl3','fl4','fl5'].map(id => document.getElementById(id).value.trim().toUpperCase()).join('→');
+  const correct = 'E→D→B→A→C';
+  if (seq === correct) {
+    showFB('fl-fb', 'ok', 'Correct sequence: Client (E) → FastAPI receives (D) → Pi Harness yields JSONL (B) → Pydantic validates (A) → WebSocket delivers (C). The QA gate sits between generation and delivery — never before or after the pipeline.');
+    document.getElementById('s5-cont').classList.add('show');
+  } else {
+    document.getElementById('fl-your').textContent = seq;
+    document.getElementById('fl-cmp').classList.add('show');
+    showFB('fl-fb', 'err', 'Incorrect sequence. The correct order is E → D → B → A → C. The Pydantic QA gate must intercept AFTER the Pi Harness generates — not before. FastAPI routes the initial request before any harness logic runs.');
+    setTimeout(() => {
+      ['fl1','fl2','fl3','fl4','fl5'].forEach(id => { document.getElementById(id).value = ''; });
+      document.getElementById('fl-cmp').classList.remove('show');
+      document.getElementById('fl-fb').className = 'fb';
+    }, 3000);
+  }
+}
+
+// ── MASTERY GATE ──
+function submitMastery() {
+  const val = document.getElementById('mg-inp').value.trim().toLowerCase();
+  const line2 = /injection|f-string|cypher|sql|user_id|format|unsafe|string interp/.test(val);
+  const line4 = /list|accumul|memory|array|o\(n\)|all at once|exhausts|consume/.test(val);
+  const hits = (line2 ? 1 : 0) + (line4 ? 1 : 0);
+  document.getElementById('mg-inp').classList.add('locked');
+  if (hits >= 2) {
+    showFB('mg-fb', 'ok', 'Both violations identified. Line 2: Cypher injection — the f-string embeds user_id directly into the query, allowing arbitrary Cypher injection via the user identifier. Line 4: Memory accumulation — list comprehension loads ALL 50,000+ nodes into RAM before the generator can yield a single item, defeating the O(1) memory contract and risking OOM termination.');
+    document.getElementById('mg-cont').classList.add('show');
+  } else {
+    document.getElementById('mg-inp').classList.remove('locked');
+    showFB('mg-fb', 'err', `${hits}/2 violations found. Line 2 violation: string f-string injection (unsanitised user_id in Cypher query). Line 4 violation: list comprehension accumulates ALL records in RAM before the first yield — destroying the O(1) memory invariant. The fix: iterate the cursor directly with <code>for node in results: yield ...</code>`);
+  }
+}
+
+// ── GAUNTLET ──
+const GQ = [
+  { text: 'A generator function contains <code>yield</code>. Another contains <code>return</code>. Which one can be used inside FastAPI\'s StreamingResponse to stream data to a client?', opts: ['The one with yield — it produces data incrementally', 'The one with return — it produces all data at once', 'Either one — StreamingResponse handles both identically', 'Neither — StreamingResponse requires a list'], ans: 0,
+    wrong: { 1: 'return produces a single chunk — not a stream. FastAPI StreamingResponse requires a generator that produces data iteratively.', 2: 'StreamingResponse requires a generator protocol. A function using return produces one value and ends.', 3: 'StreamingResponse is designed specifically for generator-based streaming.' }},
+  { text: 'A Pydantic BaseModel uses <code>model_validate_json(line)</code> inside a stream intercept. The line contains valid JSON but with an extra field not defined in the model. What happens by default?', opts: ['ValidationError — extra fields are forbidden by default', 'The extra field is silently ignored — Pydantic passes the model', 'The model raises a JSONDecodeError', 'The model includes the extra field in the validated output'], ans: 1,
+    wrong: { 0: 'Pydantic v2 allows extra fields by default unless model_config extra="forbid" is set.', 2: 'JSONDecodeError comes from the json standard library — Pydantic raises ValidationError on schema violations.', 3: 'Extra fields are not included in the model output unless the model is configured to do so.' }},
+  { text: 'Why does <code>iter(proc.stdout.readline, "")</code> produce live streaming while <code>proc.communicate()</code> does not?', opts: ['readline reads one byte at a time while communicate reads chunks', 'communicate buffers all stdout until process terminates; readline reads each line as it appears', 'communicate() uses async I/O while readline() is synchronous', 'They behave identically — the difference is only in error handling'], ans: 1,
+    wrong: { 0: 'readline reads one line at a time — not one byte. The key difference is blocking vs streaming behaviour.', 2: 'Both are synchronous. The difference is when data is returned — per line vs all-at-once after termination.', 3: 'communicate() fundamentally blocks until process completion. readline() resumes each time a new line appears.' }},
+  { text: 'An Architect uses the same generator variable twice: first to validate all events, then to stream them. The validation loop completes without error. What does the streaming loop receive?', opts: ['All events again — generators reset after iteration', 'Nothing — the generator is exhausted after the first loop', 'Only events that passed validation', 'A StopIteration error on the first call'], ans: 1,
+    wrong: { 0: 'Generators are one-way pipelines. They do not reset. Once exhausted, they produce no further values.', 2: 'A valid description of how validation should work — but not what happens when you reuse an exhausted generator.', 3: 'StopIteration is raised internally by for-loops but is not the user-visible behaviour when iterating an empty generator.' }},
+  { text: 'The CCP Chassis encodes all JSONL with <code>.encode("utf-8")</code> before transmitting. Which architectural boundary makes this mandatory?', opts: ['The Pydantic schema layer requires bytes for model_validate_json', 'The HTTP network transport layer operates on raw bytes, not Python strings', 'The Pi Harness accepts only bytes from external subprocesses', 'FastAPI\'s routing layer strips non-byte responses'], ans: 1,
+    wrong: { 0: 'model_validate_json actually accepts strings — the encoding is needed for network transmission, not schema validation.', 2: 'The Pi Harness generates strings (Python str). The encoding happens at the outbound network boundary in FastAPI.', 3: 'FastAPI routing handles both — but StreamingResponse transmission requires bytes at the socket level.' }},
+  { text: 'DSPy\'s <code>dspy_context_stream</code> processes 50 sessions using a generator. If each session holds 12,000 tokens and the container has a 512MB memory limit — what is the maximum memory used at any one time?', opts: ['600,000 tokens × average token size ≈ total all sessions in memory', 'Approximately one session (12,000 tokens) at a time — O(1) per yield cycle', 'Two sessions — current and next (pre-fetched for performance)', 'Zero — DSPy offloads all memory to the LLM provider'], ans: 1,
+    wrong: { 0: 'This is what happens with list comprehension, not generator iteration. The generator holds one session at a time.', 2: 'Generators do not pre-fetch. They halt at each yield until explicitly pulled again.', 3: 'The session transcript exists in Python memory during DSPy processing — only yielding and garbage collection free it.' }},
+  { text: 'What is the correct architectural classification of the <code>stream_session_history</code> function that uses an f-string Cypher query with user-controlled input?', opts: ['Omission — the function lacks a newline terminator', 'Hallucination — the function invented non-CCP logic', 'Misapplication — valid Python syntax used insecurely in a DB query context', 'Correct — f-strings in Cypher queries are standard CCP practice'], ans: 2,
+    wrong: { 0: 'JSONL newlines are present. The violation is in the query construction, not the stream format.', 1: 'Hallucination means the agent invented logic outside boundaries. This is valid Python — just dangerously misapplied.', 3: 'F-string injection in database queries is a critical security vulnerability. CCP enforces parameterised queries.' }}
+];
+
+let gcAnswered = 0;
+
+function buildGauntlet() {
+  const c = document.getElementById('gc-container');
+  c.innerHTML = GQ.map((q, i) => `
+    <div class="gc-card" id="gcc-${i}">
+      <p class="gc-q">${q.text}</p>
+      <div class="opt-grid">
+        ${q.opts.map((o, j) => `<button class="opt" onclick="gcCheck(${i},${j})">${o}</button>`).join('')}
+      </div>
+      <div class="gc-mfb" id="gcfb-${i}"></div>
+    </div>`).join('');
+}
+
+function gcCheck(qi, sel) {
+  const card = document.getElementById('gcc-' + qi);
+  card.querySelectorAll('.opt').forEach(b => b.disabled = true);
+  const ok = sel === GQ[qi].ans;
+  card.querySelectorAll('.opt')[sel].classList.add('sel', ok ? 'right' : 'wrong');
+  if (!ok) card.querySelectorAll('.opt')[GQ[qi].ans].classList.add('right');
+  const fb = document.getElementById('gcfb-' + qi);
+  fb.className = 'gc-mfb show ' + (ok ? 'c' : 'w');
+  fb.textContent = ok ? '✓ Correct.' : ('✗ ' + (GQ[qi].wrong[sel] || 'Incorrect.'));
+  card.classList.add('done');
+  gcAnswered++;
+  document.getElementById('gc-ctr').textContent = gcAnswered + ' / 7';
+  if (gcAnswered === 7) {
+    const correct = GQ.filter((_, i) => {
+      const opts = document.getElementById('gcc-' + i).querySelectorAll('.opt');
+      return opts[_.ans].classList.contains('right');
+    }).length;
+    const fs = document.getElementById('gc-final');
+    fs.style.display = 'block';
+    document.getElementById('gc-sn').textContent = correct + '/7';
+    document.getElementById('gc-done-wrap').style.display = 'block';
+  }
+}
+
+function finishLayer() {
+  reveal('done');
+}
+</script>
+</body>
+</html>

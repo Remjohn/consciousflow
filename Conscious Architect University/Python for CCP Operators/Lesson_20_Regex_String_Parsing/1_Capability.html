@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regex & String Parsing — Capability Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--amber);background:rgba(245,158,11,0.08);padding:.1em .4em;border-radius:4px;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1.2;min-width:320px;}
+.visual-col{flex:1;min-width:280px;}
+
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-amber{background:var(--amber);color:#000;}
+.btn-amber:hover{background:#fbbf24;transform:translateY(-1px);}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text-muted);color:var(--text);}
+.btn-outline.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow);}
+
+.quiz-option{display:block;width:100%;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:.88rem;color:var(--text-muted);transition:all .25s;text-align:left;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;}
+.quiz-option:hover{border-color:var(--border-light);color:var(--text);}
+.quiz-option.correct{border-color:var(--emerald);color:var(--emerald);background:var(--emerald-glow);}
+.quiz-option.wrong{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+.quiz-option.disabled{pointer-events:none;opacity:.6;}
+.quiz-explanation{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+.quiz-explanation.show{max-height:300px;}
+
+.input-field{width:100%;background:var(--bg-elevated);border:1px solid var(--border);border-radius:6px;padding:.75rem;color:var(--text);font-family:'JetBrains Mono';font-size:.85rem;margin-bottom:.5rem;transition:border-color .3s;}
+.input-field:focus{outline:none;border-color:var(--amber);}
+
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+.scroll-hint{animation:bounce 2s ease infinite;}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column-reverse!important;}
+  .canvas-wrap{min-height:300px!important;}
+  .nav-links{display:none;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">REGEX & STRING PARSING</span>
+    <div class="nav-links">
+      <a href="#scanner" class="nav-link active" data-section="scanner">The Scanner</a>
+      <a href="#naive" class="nav-link" data-section="naive">Naive Failure</a>
+      <a href="#guard" class="nav-link" data-section="guard">The Guard</a>
+      <a href="#checkpoint" class="nav-link" data-section="checkpoint">Checkpoint</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 20 — CAPABILITY LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Regular Expressions<br><span style="color:var(--text-muted);font-weight:300;">The Optical Scanner</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      In an agentic system, 99% of your data is chaotic, generative strings. Regex is the sovereign lens that forces unpredictable language into deterministic, executable structure.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: The Intuition -->
+<section id="scanner" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — THE INTUITION</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Isolating Signal from Noise</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          The CCP interacts with LLMs constantly. LLMs do not return neat, compiled binaries. They return <em>words</em>. Hallucinations, formatting quirks, apologies ("Sure, here is the JSON you requested...").
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          If your pipeline relies on an LLM output matching a strict format, simple Python string methods will fail you. You need an <strong>Optical Scanner</strong>.
+        </p>
+        <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1.5rem;font-size:.95rem;">
+          <li style="margin-bottom:.5rem;"><strong>The Lens:</strong> A Regular Expression (Regex) acts as a microscopic lens, filtering out everything that doesn't strictly match a defined topological structure.</li>
+          <li><strong>The Laser:</strong> It sweeps across massive monolithic blocks of token diarrhea, instantly locking onto target payloads (like hex codes, tool triggers, or parameter JSONs).</li>
+        </ul>
+        <div class="insight">
+          <strong>Regex is a separate language</strong> embedded inside Python. It evaluates structure exactly, refusing any approximation. It converts generative ambiguity into architectural certainty.
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:350px;">
+          <canvas id="scannerCanvas"></canvas>
+        </div>
+        <p style="font-size:.78rem;color:var(--text-dim);text-align:center;margin-top:.75rem;">
+          <i class="fas fa-hand-pointer"></i> Drag the scanner lens to reveal the structured payload hidden in the generative noise.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: Naive Failure -->
+<section id="naive" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--rose);margin-bottom:.5rem;">02 — PREDICTION LOCK</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">The Collapse of Naive Matching</h2>
+    <div class="flex-layout">
+      <div class="visual-col">
+        <div class="card" style="padding:1.5rem;">
+          <h4 style="margin-bottom:1rem;color:var(--rose);">The Vulnerability Context</h4>
+          <p style="color:var(--text-muted);font-size:.9rem;line-height:1.6;margin-bottom:1rem;">
+             You are building a trigger sensor. If the agent types <code>execute_tool()</code>, the Robot Arm should fire the tool. You use naive string logic:
+          </p>
+          <div style="background:#0d0d10;padding:1rem;border-radius:6px;border:1px solid var(--border);margin-bottom:1.5rem;">
+            <code><span style="color:#c678dd;">if</span> <span style="color:#98c379;">"execute_tool"</span> <span style="color:#c678dd;">in</span> model_response:<br>&nbsp;&nbsp;&nbsp;&nbsp;fire_arm()</code>
+          </div>
+          <p style="color:var(--text-muted);font-size:.9rem;line-height:1.6;margin-bottom:1rem;">
+             <strong>Predict the breakdown:</strong> Write an LLM hallucination below (as a single string) that contains the word "execute_tool" but clearly indicates the AI does <em>not</em> want to execute the tool. This string will violently trigger your naive check anyway.
+          </p>
+          <input type="text" id="naiveInput" class="input-field" placeholder="Type a hallucination bypassing the check...">
+          <button id="testNaiveBtn" class="btn btn-amber" style="width:100%;justify-content:center;margin-top:.5rem;">Inject String Into Naive Check</button>
+          
+          <div id="naiveFeedback" style="display:none;margin-top:1rem;padding:1rem;border-radius:8px;border:1px solid var(--rose);background:var(--rose-glow);">
+            <strong style="color:var(--rose);display:block;margin-bottom:.25rem;">CRITICAL BREACH</strong>
+            <span style="font-size:.85rem;color:var(--text-muted);">The check fired. If the LLM writes "I am sorry, but I cannot execute_tool right now", the naive check reads <code>True</code> and rips the gun out of the holster anyway. You have lost sovereign control.</span>
+          </div>
+        </div>
+      </div>
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          Naive parsing relies on <code>in</code> operators or <code>.find()</code>. These do not understand <strong>boundaries</strong> or <strong>context</strong>. They are blind sensors.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          If you search for <code>"hex"</code> inside a payload, string parsing will incorrectly match against the word <code>"the hex code is"</code> but also against the word <code>"she exhausted herself"</code> (s<strong>hex</strong>hausted). 
+        </p>
+        <div class="insight rose">
+          Agentic pipelines break gracefully. An AI will often politely refuse a command while quoting the command verbatim. A naive parser reads the quote and executes the refusal as a directive.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: The Regex Guard -->
+<section id="guard" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">03 — THE STRUCTURAL CONTRACT</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Regex Enforces Boundaries</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          To stop naive leaking, you import Python's <code>re</code> module. Instead of searching for the loose string, you define an exact structural boundary.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          Let's enforce that a tool trigger must be at the exact <strong>start of a line</strong>, followed by parentheses, and cannot just be inside dialogue.
+        </p>
+        <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1.25rem;font-family:'JetBrains Mono';font-size:.85rem;line-height:1.6;margin-bottom:1.5rem;">
+          <span style="color:var(--text-dim);"># The Regex Pattern</span><br>
+          pattern = <span style="color:#98c379;">r"^execute_tool\((.*?)\)"</span><br><br>
+          <span style="color:var(--text-dim);"># Breakdown:</span><br>
+          <span style="color:#e06c75;">^</span>             <span style="color:var(--text-dim);">-> Must be start of line</span><br>
+          <span style="color:#98c379;">execute_tool</span>  <span style="color:var(--text-dim);">-> Exact token match</span><br>
+          <span style="color:#e06c75;">\(</span>            <span style="color:var(--text-dim);">-> Literal open paren</span><br>
+          <span style="color:#d19a66;">(.*?)</span>         <span style="color:var(--text-dim);">-> Capture everything inside lazily (payload)</span><br>
+          <span style="color:#e06c75;">\)</span>            <span style="color:var(--text-dim);">-> Literal close paren</span>
+        </div>
+        <div class="insight emerald">
+          When the structure is this rigorous, the AI cannot accidentally trigger it via hallucination. It forces the system into a binary state: Perfect formatting triggers the pipeline; anything else is dismissed as generative noise.
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="card" style="padding:1.5rem;height:100%;">
+           <h4 style="margin-bottom:1rem;color:var(--emerald);">Interactive Validation</h4>
+           <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem;">Test the exact regex <code>^execute_tool\((.*?)\)</code> against different inputs.</p>
+           
+           <div style="display:flex;flex-direction:column;gap:.5rem;">
+             <button class="btn btn-outline" style="justify-content:flex-start;text-transform:none;" onclick="testReg('Sure! execute_tool(fix_db)')">
+               <code>Sure! execute_tool(fix_db)</code>
+             </button>
+             <button class="btn btn-outline" style="justify-content:flex-start;text-transform:none;" onclick="testReg('execute_tool(fix_db)')">
+               <code>execute_tool(fix_db)</code>
+             </button>
+             <button class="btn btn-outline" style="justify-content:flex-start;text-transform:none;" onclick="testReg('EXECUTE_TOOL(fix_db)')">
+               <code>EXECUTE_TOOL(fix_db)</code>
+             </button>
+           </div>
+           
+           <div id="regFeedback" style="margin-top:1.5rem;min-height:80px;font-family:'JetBrains Mono';font-size:.85rem;border-left:3px solid var(--border);padding-left:1rem;color:var(--text-dim);">
+             Awaiting test run...
+           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 4: Quiz -->
+<section id="checkpoint" class="section">
+  <div class="section-inner" style="max-width:800px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">04 — CHECKPOINT</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Test Your Intuition</h2>
+    <div id="quizContainer" style="display:flex;flex-direction:column;gap:1.5rem;"></div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem 4rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);margin-top:2rem;">
+  <p style="max-width:600px;margin:0 auto 1.5rem;line-height:1.6;">
+    <strong>Architectural Necessity:</strong> Regex is not string matching. It is a structural enforcer. By treating textual boundaries as physical constraints, you protect the execution context from the inevitable erratic mutations generated by the underlying LLM layer.
+  </p>
+  Python For CCP Operators — Lesson 20: Regex & String Parsing
+</footer>
+
+<script>
+const DPR = window.devicePixelRatio || 1;
+function setupCanvas(c){
+  const p=c.parentElement,r=p.getBoundingClientRect();
+  c.width=r.width*DPR;c.height=r.height*DPR;
+  c.style.width=r.width+'px';c.style.height=r.height+'px';
+  const ctx=c.getContext('2d');ctx.scale(DPR,DPR);
+  return{ctx,w:r.width,h:r.height};
+}
+
+/* Hero Canvas Background (Falling Code/Regex matches) */
+(function(){
+  const c=document.getElementById('heroCanvas');
+  let W,H,ctx;
+  function resize(){
+    const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;
+    c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';
+    ctx=c.getContext('2d');ctx.scale(DPR,DPR);
+  }
+  resize();window.addEventListener('resize',resize);
+  const chars="ABCDEF1234[](){}\\/*^$+?|".split('');
+  const drops=[];
+  for(let i=0;i<40;i++) drops.push({x:Math.random(),y:Math.random(), speed:Math.random()*0.005+0.002, str:chars[Math.floor(Math.random()*chars.length)]});
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.font='14px JetBrains Mono';
+    drops.forEach(d=>{
+      d.y+=d.speed; if(d.y>1) { d.y=0; d.x=Math.random(); d.str=chars[Math.floor(Math.random()*chars.length)]; }
+      // Highlight regex symbols vs normal text
+      const isRegex = "[](){}\\/*^$+?|".includes(d.str);
+      ctx.fillStyle=isRegex?'rgba(245,158,11,0.4)':'rgba(255,255,255,0.05)';
+      ctx.fillText(d.str, d.x*W, d.y*H);
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* The Scanner Canvas */
+(function(){
+  const canvas=document.getElementById('scannerCanvas');
+  let scanner = {x: 150, y: 150, radius: 60};
+  let isDragging = false;
+  
+  const textBody = `Here is the output from the analysis:
+Agent encountered a fault while reading.
+But don't worry, here is the secret id:
+TX-9021-AF
+We will proceed to check the database.
+If you need any more info, just ask me.
+The previous system dumped XYZ-12.`;
+
+  function draw(){
+    const {ctx,w,h}=setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+    
+    // Draw base text (dimmed)
+    ctx.font='14px JetBrains Mono';
+    ctx.fillStyle='rgba(255,255,255,0.15)';
+    const lines = textBody.split('\n');
+    let lineH = 24;
+    let startY = h/2 - (lines.length*lineH)/2;
+    lines.forEach((l,i)=>{
+      ctx.fillText(l, 30, startY + i*lineH);
+    });
+    
+    // Draw scanner lens (clip region)
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(scanner.x, scanner.y, scanner.radius, 0, Math.PI*2);
+    ctx.clip();
+    
+    // Inside lens background
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle='var(--bg-elevated)';
+    ctx.fillRect(0,0,w,h);
+    
+    // Draw text inside lens (bright white, and highlight targets)
+    lines.forEach((l,i)=>{
+      const y = startY + i*lineH;
+      // Regex check: [A-Z]{2}-\d{4}-[A-Z]{2}
+      const match = l.match(/[A-Z]{2}-\d{4}-[A-Z]{2}/);
+      if(match){
+         const idx = l.indexOf(match[0]);
+         const t1=l.substring(0,idx);
+         const w1=ctx.measureText(t1).width;
+         ctx.fillStyle='#fafafa'; ctx.fillText(t1, 30, y);
+         ctx.fillStyle='var(--amber)'; ctx.fillText(match[0], 30+w1, y);
+         const w2=ctx.measureText(match[0]).width;
+         ctx.fillStyle='#fafafa'; ctx.fillText(l.substring(idx+match[0].length), 30+w1+w2, y);
+      } else {
+         ctx.fillStyle='#fafafa'; ctx.fillText(l, 30, y);
+      }
+    });
+    
+    // Scanner UI overlay
+    ctx.restore();
+    ctx.beginPath();
+    ctx.arc(scanner.x, scanner.y, scanner.radius, 0, Math.PI*2);
+    ctx.strokeStyle='rgba(245,158,11,0.8)';
+    ctx.lineWidth=2;
+    ctx.stroke();
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();
+    ctx.moveTo(scanner.x-scanner.radius, scanner.y); ctx.lineTo(scanner.x+scanner.radius, scanner.y);
+    ctx.moveTo(scanner.x, scanner.y-scanner.radius); ctx.lineTo(scanner.x, scanner.y+scanner.radius);
+    ctx.strokeStyle='rgba(245,158,11,0.3)';
+    ctx.stroke();
+  }
+  
+  canvas.addEventListener('mousedown',(e)=>{
+    const r=canvas.getBoundingClientRect();
+    const mx=e.clientX-r.left, my=e.clientY-r.top;
+    if(Math.hypot(mx-scanner.x,my-scanner.y) < scanner.radius) isDragging=true;
+  });
+  window.addEventListener('mousemove',(e)=>{
+    if(!isDragging)return;
+    const r=canvas.getBoundingClientRect();
+    scanner.x=e.clientX-r.left; scanner.y=e.clientY-r.top;
+    draw();
+  });
+  window.addEventListener('mouseup',()=>{isDragging=false;});
+  window.addEventListener('mouseleave',()=>{isDragging=false;});
+  
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Naive Failure Logic */
+document.getElementById('testNaiveBtn').addEventListener('click',()=>{
+  const val = document.getElementById('naiveInput').value.trim();
+  const fbk = document.getElementById('naiveFeedback');
+  if(val.length < 5) return;
+  
+  if(val.includes("execute_tool")){
+    fbk.style.display='block';
+    fbk.style.borderColor='var(--rose)';
+    fbk.style.background='var(--rose-glow)';
+    fbk.innerHTML = `<strong style="color:var(--rose);display:block;margin-bottom:.25rem;">CRITICAL BREACH</strong><span style="font-size:.85rem;color:var(--text-muted);">The naive check read <code>"execute_tool" in text</code> and returned TRUE. You just executed a hallucination payload!</span>`;
+  } else {
+    fbk.style.display='block';
+    fbk.style.borderColor='var(--amber)';
+    fbk.style.background='var(--amber-glow)';
+    fbk.innerHTML = `<strong style="color:var(--amber);display:block;margin-bottom:.25rem;">MISSING PAYLOAD</strong><span style="font-size:.85rem;color:var(--text-muted);">It didn't trigger because you didn't include the exact word 'execute_tool' to break it. Try again.</span>`;
+  }
+});
+
+/* Regex Interactive Test */
+window.testReg = function(str){
+  const fbk = document.getElementById('regFeedback');
+  // Pattern: ^execute_tool\((.*?)\)
+  // In JS, start of line is ^ but we just do full match for display
+  const match = str.match(/^execute_tool\((.*?)\)/);
+  if(match){
+     fbk.style.borderLeftColor = 'var(--emerald)';
+     fbk.innerHTML = `<strong style="color:var(--emerald);">[ MATCH SUCCESS ]</strong><br><br>Source:<br>"${str}"<br><br>Payload Group 1 captured:<br><strong style="color:#fff;">"${match[1]}"</strong>`;
+  } else {
+     fbk.style.borderLeftColor = 'var(--rose)';
+     fbk.innerHTML = `<strong style="color:var(--rose);">[ REGEX FAILED ]</strong><br><br>Source:<br>"${str}"<br><br>The structure violated the specific sequence enforced by the pattern (Start of string or case sensitivity). Execution halted safely.`;
+  }
+};
+
+/* Quiz */
+(function(){
+  const questions=[
+    {q:"Your pipeline checks if an LLM returned a JSON block using `if '{' in text: parse(text)`. What happens when the LLM says 'I cannot {do that} right now'?",
+     opts:["It fails cleanly.","It crashes the JSON parser.","It correctly extracts the text.","Python automatically converts it to a dictionary."],
+     correct:1,explanation:"Naive string checking sees the '{' and immediately fires the parser hook. The parser hits the gibberish inside and triggers a fatal JSONDecodeError, crashing the node."},
+    {q:"What is the primary architectural purpose of using `re.match` over `text.find()` inside an agentic framework?",
+     opts:["`re.match` is significantly faster on GPU matrices.","`re.match` implicitly defines robust boundaries and structural constraints that actively reject generative noise.","`re.match` automatically formats LLM output into Pydantic models.","There is no architectural difference; one is just older syntax."],
+     correct:1,explanation:"Regex acts as a structural bouncer. It doesn't just 'look' for a string; it enforces topological boundaries (start of line, exact character sequencing, no trailing noise) which is critical for securing LLM boundaries."},
+    {q:"If an LLM issues a command encapsulated in a specific XML tag format like `<SQL>SELECT *</SQL>`, why does naive string splitting (e.g. `split('<SQL>')`) pose a security threat in automated systems?",
+     opts:["It doesn't. Splitting is perfectly safe.","You might capture malformed responses where the AI forgets the closing tag, passing raw conversational noise straight into your database engine.","Python limits the number of splits allowed.","XML natively corrupts Python strings."],
+     correct:1,explanation:"Naive bounds checking ignores closing constraints. A Regex like `<SQL>(.*?)</SQL>` inherently demands both tags exist to match. Splitting just blindly grabs everything after the anchor."}
+  ];
+  const container=document.getElementById('quizContainer');
+  questions.forEach((q,qi)=>{
+    const card=document.createElement('div');card.className='card';card.style.padding='1.25rem';
+    let optsHTML='';
+    q.opts.forEach((o,oi)=>{optsHTML+=`<button class="quiz-option" data-q="${qi}" data-o="${oi}">${o}</button>`;});
+    card.innerHTML=`<p style="font-size:.82rem;font-weight:600;color:var(--text-dim);margin-bottom:.75rem;">Question ${qi+1}</p>
+      <p style="font-size:.92rem;line-height:1.6;margin-bottom:1rem;">${q.q}</p>
+      <div id="qO${qi}">${optsHTML}</div>
+      <div class="quiz-explanation" id="qE${qi}" style="margin-top:.75rem;"><div class="insight">${q.explanation}</div></div>`;
+    container.appendChild(card);
+  });
+  container.addEventListener('click',(e)=>{
+    const btn=e.target.closest('.quiz-option');if(!btn)return;
+    const qi=+btn.dataset.q,oi=+btn.dataset.o;
+    const opts=document.querySelectorAll(`#qO${qi} .quiz-option`);
+    if(opts[0].classList.contains('disabled'))return;
+    opts.forEach((o,i)=>{o.classList.add('disabled');
+      if(i===questions[qi].correct)o.classList.add('correct');
+      else if(i===oi&&oi!==questions[qi].correct)o.classList.add('wrong');});
+    document.getElementById(`qE${qi}`).classList.add('show');
+  });
+})();
+</script>
+</body>
+</html>

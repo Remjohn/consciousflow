@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classes & Inheritance — Master Assessment</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{
+  --bg:#050505;--surface:#0f0f12;--surface2:#17171c;--surface3:#202025;
+  --text:#fafafa;--muted:#a1a1aa;--border:#27272a;
+  --accent:#3b82f6;--accent-glow:rgba(59, 130, 246, 0.12);
+  --red:#f43f5e;--red-glow:rgba(244, 63, 94, 0.12);
+  --green:#10b981;--green-glow:rgba(16, 185, 129, 0.12);
+  --amber:#f59e0b;--amber-glow:rgba(245, 158, 11, 0.12);
+  --cyan:#06b6d4;--cyan-glow:rgba(6, 182, 212, 0.12);
+  --mono:'JetBrains Mono',monospace;--sans:'DM Sans',sans-serif;--grotesk:'Space Grotesk',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.65;overflow-x:hidden;}
+.container{max-width:850px;margin:0 auto;padding:4rem 2rem 10rem;}
+
+h1{font-family:var(--grotesk);font-size:clamp(2.5rem,5.5vw,3.5rem);line-height:1.1;margin-bottom:1.5rem;letter-spacing:-0.03em;}
+h2{font-family:var(--grotesk);font-size:1.8rem;margin-bottom:1rem;color:var(--text);font-weight:700;}
+h3{font-family:var(--grotesk);font-size:1.3rem;margin-bottom:1rem;color:var(--accent);font-weight:600;}
+p{margin-bottom:1.4rem;color:var(--muted);font-size:1.05rem;line-height:1.7;}
+strong{color:var(--text);}
+code{font-family:var(--mono);font-size:0.85em;background:var(--surface2);padding:0.2em 0.4em;border-radius:4px;color:var(--amber);}
+
+pre{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:1.2rem;overflow-x:auto;margin-bottom:1.5rem;}
+pre code{background:transparent;padding:0;color:var(--text);font-size:0.9rem;}
+.keyword{color:#c678dd;} .string{color:#98c379;} .class{color:#e5c07b;} .param{color:#d19a66;} .type{color:#56b6c2;} .comment{color:#5c6370;font-style:italic;}
+
+/* TIMER BAR */
+.timer-bar{position:fixed;top:0;left:0;width:100%;height:4px;background:var(--surface3);z-index:100;}
+.timer-fill{height:100%;background:var(--red);width:100%;transition:width 1s linear;}
+.timer-display{position:fixed;top:15px;right:20px;font-family:var(--mono);font-size:1.5rem;font-weight:600;color:var(--red);z-index:100;background:rgba(5,5,5,0.8);padding:0.4rem 0.8rem;border-radius:6px;border:1px solid var(--red);text-shadow:0 0 10px rgba(244,63,94,0.5);}
+
+/* TERMINAL MODAL */
+.exam-modal{position:fixed;inset:0;background:rgba(5,5,5,0.98);z-index:200;display:flex;align-items:center;justify-content:center;transition:opacity 0.4s;}
+.exam-modal.hidden{opacity:0;pointer-events:none;}
+.exam-box{background:var(--surface);border:1px solid var(--border);border-top:4px solid var(--red);border-radius:8px;padding:3rem;max-width:650px;width:90%;text-align:center;}
+.exam-title{font-family:var(--grotesk);font-size:2rem;color:var(--text);margin-bottom:1rem;}
+.exam-meta{font-family:var(--mono);color:var(--red);margin-bottom:2rem;letter-spacing:0.1em;text-transform:uppercase;}
+
+.btn{background:var(--red);color:#fff;border:none;padding:1rem 2rem;font-family:var(--grotesk);font-weight:600;font-size:1.1rem;border-radius:6px;cursor:pointer;transition:all 0.18s;letter-spacing:0.05em;text-transform:uppercase;}
+.btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 20px -10px rgba(244,63,94,0.5);}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+.btn-submit{background:var(--green);width:100%;margin-top:2rem;font-size:1.2rem;padding:1.25rem;}
+.btn-submit:hover:not(:disabled){box-shadow:0 10px 20px -10px rgba(16,185,129,0.5);}
+
+/* SECTIONS */
+.section-header{border-bottom:2px solid var(--surface3);padding-bottom:1rem;margin:4rem 0 2rem;display:flex;justify-content:space-between;align-items:flex-end;}
+.section-title{font-family:var(--grotesk);font-size:1.6rem;color:#fff;}
+.section-pts{font-family:var(--mono);color:var(--muted);font-size:0.9rem;}
+
+.q-box{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:6px;padding:2rem;margin-bottom:2rem;}
+.q-title{display:flex;justify-content:space-between;font-family:var(--grotesk);font-size:1.15rem;margin-bottom:1rem;font-weight:600;}
+.q-pts{font-family:var(--mono);color:var(--accent);font-size:0.85rem;}
+.q-context{font-size:0.95rem;color:var(--muted);margin-bottom:1rem;font-style:italic;}
+
+.textarea-code{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:0.9rem;padding:1rem;border-radius:6px;min-height:150px;resize:vertical;line-height:1.5;}
+.textarea-code:focus{outline:none;border-color:var(--accent);}
+
+/* TRIAGE BUTTONS */
+.triage-grid{display:grid;grid-template-columns:repeat(2, 1fr);gap:1rem;margin-top:1.5rem;}
+.triage-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:1rem;border-radius:6px;font-family:var(--mono);font-size:0.9rem;cursor:pointer;transition:all 0.2s;}
+.triage-btn:hover{background:var(--surface3);}
+.triage-btn.selected{border-color:var(--cyan);background:var(--cyan-glow);color:var(--cyan);}
+
+/* RUBRIC REVEAL */
+.rubric-panel{display:none;margin-top:1.5rem;padding:1.5rem;background:var(--surface2);border:1px dashed var(--border);border-radius:6px;}
+.rubric-panel.visible{display:block;animation:fadein 0.4s;}
+.rubric-title{font-family:var(--mono);font-size:0.75rem;color:var(--green);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;}
+
+@keyframes fadein{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+textarea:disabled{opacity:0.6;}
+
+</style>
+</head>
+<body>
+
+<div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+<div class="timer-display" id="timerText">12:00</div>
+
+<div class="exam-modal" id="startModal">
+  <div class="exam-box">
+    <div class="exam-title">Master Layer Assessment</div>
+    <div class="exam-meta">Classes & Inheritance | Time Limit: 12 Minutes | Threshold: 160/200</div>
+    <p style="color:var(--muted);margin-bottom:2.5rem;line-height:1.6;">You are evaluating the capability and resilience of the Conscious Coaching Platform (CCP). You are not writing software. You are engineering sovereign control. The platform's determinism relies exclusively on your ability to enforce structural blueprints.<br><br>Auto-submission executes when the timer hits zero. Good luck, Foreman.</p>
+    <button class="btn" onclick="startExam()">Initiate Sequence</button>
+  </div>
+</div>
+
+<div class="container" id="examContent" style="display:none;opacity:0;transition:opacity 0.6s;">
+
+  <div style="font-family:var(--mono);font-size:0.75rem;color:var(--red);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.15em;">Lesson 04 · Layer 4 — Master</div>
+  <h1>Capstone Assessment</h1>
+  <p>Construct the strict class architectures required for sovereign control. No hints provided. All submissions final.</p>
+
+  <!-- SECTION 1 -->
+  <div class="section-header">
+    <div class="section-title">SECTION 1: CONTRACT SPECIFICATION</div>
+    <div class="section-pts">[60 Points]</div>
+  </div>
+
+  <div class="q-box">
+    <div class="q-title"><span>Scenario A: Pydantic State Schema Blueprint</span><span class="q-pts">12 pts</span></div>
+    <div class="q-context">Context: The Memory Engine requires a rigorous data contract to manage a client's "Coaching Intervention Loop."</div>
+    <ul style="color:var(--muted);font-size:0.95rem;margin-bottom:1rem;padding-left:1.5rem;line-height:1.6;">
+      <li>Create <code>InterventionState</code> inheriting from <code>BaseModel</code>.</li>
+      <li><code>intervention_id</code> (string).</li>
+      <li><code>severity_index</code> (float mapping 0.0 to 10.0).</li>
+      <li><code>is_resolved</code> (bool, default False).</li>
+      <li><code>coach_directive</code> (optional string).</li>
+      <li>Include a validator guaranteeing that if severity > 8.5, directive cannot be null.</li>
+    </ul>
+    <textarea class="textarea-code" id="q1_input" placeholder="Draft Python architecture here..."></textarea>
+    <div class="rubric-panel">
+      <div class="rubric-title">Evaluation Rubric & Answer Structure</div>
+      <p style="font-size:0.9rem;border-left:2px solid var(--green);padding-left:1rem;color:var(--muted);">
+        <strong>Grading:</strong> Inherits BaseModel (3pts) | Field types/constraints (3pts) | Defaults (3pts) | Validator logic mapping (3pts).
+      </p>
+<pre style="margin-top:1rem;"><code>class InterventionState(BaseModel):
+    intervention_id: str
+    severity_index: float = Field(..., ge=0.0, le=10.0)
+    is_resolved: bool = False
+    coach_directive: Optional[str] = None
+
+    @model_validator(mode='after')
+    def check_req(self):
+        if self.severity_index > 8.5 and not self.coach_directive:
+            raise ValueError()
+        return self</code></pre>
+    </div>
+  </div>
+
+  <div class="q-box">
+    <div class="q-title"><span>Scenario B: DSPy Signature Declaration</span><span class="q-pts">12 pts</span></div>
+    <div class="q-context">Context: The Machinist demands a predictive pipeline schema comparing historical resistance against a new confrontational prompt.</div>
+    <ul style="color:var(--muted);font-size:0.95rem;margin-bottom:1rem;padding-left:1.5rem;line-height:1.6;">
+      <li>Define <code>RefineConfrontationStrategy</code> inheriting <code>dspy.Signature</code>.</li>
+      <li>Include docstring.</li>
+      <li>Inputs: <code>resistance_history</code> (str), <code>baseline_prompt</code> (str).</li>
+      <li>Outputs: <code>refined_strategy</code> (str), <code>escalation_risk</code> (float).</li>
+      <li>Must use <code>desc="..."</code> mapping explicitly on OutputFields.</li>
+    </ul>
+    <textarea class="textarea-code" id="q2_input" placeholder="Draft DSPy Signature here..."></textarea>
+    <div class="rubric-panel">
+      <div class="rubric-title">Evaluation Rubric & Answer Structure</div>
+      <p style="font-size:0.9rem;border-left:2px solid var(--green);padding-left:1rem;color:var(--muted);">
+        <strong>Grading:</strong> Inherits dspy.Signature (3pts) | Input/OutputField bounds (3pts) | Type hints (3pts) | DSPy meta-class syntax (3pts).
+      </p>
+<pre style="margin-top:1rem;"><code>class RefineConfrontationStrategy(dspy.Signature):
+    """Analyze historical resistance against baseline..."""
+    resistance_history: str = dspy.InputField()
+    baseline_prompt: str = dspy.InputField()
+    refined_strategy: str = dspy.OutputField(desc="...")
+    escalation_risk: float = dspy.OutputField(desc="0.0-1.0 float...")</code></pre>
+    </div>
+  </div>
+
+
+  <!-- SECTION 2 -->
+  <div class="section-header">
+    <div class="section-title">SECTION 2: DEFECT TRIAGE</div>
+    <div class="section-pts">[60 Points]</div>
+  </div>
+
+  <div class="q-box" style="border-left-color:var(--red);">
+    <div class="q-title"><span>Defect Block 1: The Hollow Subclass</span><span class="q-pts" style="color:var(--red);">8.5 pts</span></div>
+    <div class="q-context">A coder agent committed this block targeting FastAPI routing logic. Assess validity immediately.</div>
+<pre><code>class CoreMetric(BaseModel):
+    trust_score: float
+
+class AdvancedMetric(CoreMetric):
+    alignment_score: float
+
+def process_metrics(metric_data: dict):
+    parsed = AdvancedMetric(**metric_data)
+    return parsed.trust_score * parsed.alignment_score</code></pre>
+    <div class="triage-grid" id="t1_options">
+      <button class="triage-btn" onclick="selectTriage(1, this)">✅ Correct implementation</button>
+      <button class="triage-btn" onclick="selectTriage(1, this)">🔴 Omission (Orchestration Boundary)</button>
+      <button class="triage-btn" onclick="selectTriage(1, this)">🟡 Hallucination (Inheritance mapping)</button>
+      <button class="triage-btn" onclick="selectTriage(1, this)">🔵 Misapplication (Method execution)</button>
+    </div>
+    <div class="rubric-panel" id="t1_rubric">
+      <div class="rubric-title">Triage Evaluation</div>
+      <p style="font-size:0.95rem;color:var(--text);"><strong>🔴 Omission.</strong> The function signature explicitly specifies `dict`. By waiting until line 9 to invoke `AdvancedMetric(**metric_data)`, the API ingress firewall is bypassed, enabling raw unverified payloads to enter execution space prior to mathematical validation.</p>
+    </div>
+  </div>
+
+  <div class="q-box" style="border-left-color:var(--red);">
+    <div class="q-title"><span>Defect Block 2: The Hallucinated Target</span><span class="q-pts" style="color:var(--red);">8.5 pts</span></div>
+    <div class="q-context">A DSPy optimization agent wrote this pipeline block.</div>
+<pre><code>class AnalyzeSentimentPipeline(dspy.ChainOfThought):
+    """Extract emotion from client text."""
+    input_text: str = dspy.InputField()
+    dominant_emotion: str = dspy.OutputField()</code></pre>
+    <div class="triage-grid" id="t2_options">
+      <button class="triage-btn" onclick="selectTriage(2, this)">✅ Correct implementation</button>
+      <button class="triage-btn" onclick="selectTriage(2, this)">🔴 Omission (Class Methods)</button>
+      <button class="triage-btn" onclick="selectTriage(2, this)">🟡 Hallucination (Invalid Inheritance)</button>
+      <button class="triage-btn" onclick="selectTriage(2, this)">🔵 Misapplication (Field assignment)</button>
+    </div>
+    <div class="rubric-panel" id="t2_rubric">
+      <div class="rubric-title">Triage Evaluation</div>
+      <p style="font-size:0.95rem;color:var(--text);"><strong>🟡 Hallucination.</strong> It attempts to define a Signature contract by declaring input/output fields, but erroneously inherits from `dspy.ChainOfThought` rather than `dspy.Signature`. This fundamentally crashes DSPy's meta-class processing arrays upon compilation.</p>
+    </div>
+  </div>
+
+
+  <!-- SECTION 3 -->
+  <div class="section-header">
+    <div class="section-title">SECTION 3: ARCHITECTURAL REASONING</div>
+    <div class="section-pts">[40 Points]</div>
+  </div>
+
+  <div class="q-box" style="border-left-color:var(--cyan);">
+    <div class="q-title"><span>Question 1: Pydantic Inheritance vs Dict Iteration</span><span class="q-pts" style="color:var(--cyan);">10 pts</span></div>
+    <div class="q-context">Why does the CCP strictly enforce inheriting nested `BaseModel` classes over writing custom `if key in dict:` loop validation structures for AI payload checks?</div>
+    <textarea class="textarea-code" id="q3_input" placeholder="Execute reasoning..."></textarea>
+    <div class="rubric-panel">
+      <div class="rubric-title">Evaluation Rubric</div>
+      <p style="font-size:0.9rem;border-left:2px solid var(--cyan);padding-left:1rem;color:var(--muted);">
+        Custom loops scale exponentially in complexity and fail silently against arbitrary outputs. BaseModel provides an O(1) immutable geometric firewall executed natively in C, preventing unpredictable stochastic mutations from breaching the orchestration logic paths.
+      </p>
+    </div>
+  </div>
+
+  <!-- SECTION 4 -->
+  <div class="section-header">
+    <div class="section-title">SECTION 4: FEYNMAN COMPRESSION</div>
+    <div class="section-pts">[40 Points]</div>
+  </div>
+
+  <div class="q-box" style="border-left-color:#fff;">
+    <div class="q-title"><span>The Sovereign Truth</span><span class="q-pts" style="color:#fff;">40 pts</span></div>
+    <div class="q-context">Explain why Class Inheritance is an absolute necessity for sovereign control rather than relying on sequential logic flows. Must integrate: The QA Department, Execution Context Bleed, and Pi Harness.</div>
+    <textarea class="textarea-code" id="q4_input" style="min-height:250px;" placeholder="Synthesize architectural boundaries..." oninput="checkFeynman()"></textarea>
+    <div style="display:flex;gap:1.5rem;margin-top:1rem;font-family:var(--mono);font-size:0.75rem;color:var(--muted);" id="fey-badges">
+      <span id="fb1"><i class="fa-solid fa-circle-xmark" style="color:var(--border)"></i> QA Department</span>
+      <span id="fb2"><i class="fa-solid fa-circle-xmark" style="color:var(--border)"></i> Context Bleed</span>
+      <span id="fb3"><i class="fa-solid fa-circle-xmark" style="color:var(--border)"></i> Pi Harness</span>
+    </div>
+    <div class="rubric-panel">
+      <div class="rubric-title">Evaluation Rubric</div>
+      <p style="font-size:0.9rem;border-left:2px solid #fff;padding-left:1rem;color:var(--muted);">
+        A sovereign system cannot rely on fragile loop logic targeting stochastic outputs. Inheritance forces fluid outputs into geometric cages before memory transmission. Structural boundaries prevent variable overwrites across execution boundaries.
+      </p>
+    </div>
+  </div>
+
+  <button class="btn btn-submit" id="submitBtn" onclick="submitExam()">CONCLUDE ASSESSMENT</button>
+
+</div>
+
+<script>
+let totalSeconds = 12 * 60;
+let timerInt;
+
+function startExam() {
+  document.getElementById('startModal').classList.add('hidden');
+  const main = document.getElementById('examContent');
+  main.style.display = 'block';
+  setTimeout(() => main.style.opacity = '1', 50);
+  
+  timerInt = setInterval(updateTimer, 1000);
+}
+
+function updateTimer() {
+  totalSeconds--;
+  if(totalSeconds <= 0) {
+    clearInterval(timerInt);
+    document.getElementById('timerText').textContent = "00:00";
+    document.getElementById('timerFill').style.width = "0%";
+    submitExam();
+    return;
+  }
+  
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  document.getElementById('timerText').textContent = 
+    `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  
+  const pct = (totalSeconds / (12*60)) * 100;
+  document.getElementById('timerFill').style.width = pct + "%";
+}
+
+function selectTriage(q, el) {
+  const btns = document.getElementById(`t${q}_options`).querySelectorAll('.triage-btn');
+  btns.forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function checkFeynman() {
+  const v = document.getElementById('q4_input').value.toLowerCase();
+  
+  const b1 = v.includes('qa') || v.includes('quality');
+  const b2 = v.includes('bleed') || v.includes('bleeding');
+  const b3 = v.includes('pi harness') || v.includes('robot arm');
+  
+  updateBadge('fb1', b1);
+  updateBadge('fb2', b2);
+  updateBadge('fb3', b3);
+}
+
+function updateBadge(id, state) {
+  const el = document.getElementById(id);
+  if(state) {
+    el.innerHTML = `<i class="fa-solid fa-circle-check" style="color:var(--green)"></i> ` + el.innerText.trim();
+    el.style.color = 'var(--text)';
+  } else {
+    el.innerHTML = `<i class="fa-solid fa-circle-xmark" style="color:var(--border)"></i> ` + el.innerText.trim();
+    el.style.color = 'var(--muted)';
+  }
+}
+
+function submitExam() {
+  clearInterval(timerInt);
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('submitBtn').textContent = "EVALUATION SCALES REVEALED";
+  document.getElementById('submitBtn').style.background = "var(--surface3)";
+  
+  const textareas = document.querySelectorAll('textarea');
+  textareas.forEach(t => t.disabled = true);
+  
+  const triage = document.querySelectorAll('.triage-btn');
+  triage.forEach(b => b.onclick = null);
+  
+  const rubrics = document.querySelectorAll('.rubric-panel');
+  rubrics.forEach(r => r.classList.add('visible'));
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

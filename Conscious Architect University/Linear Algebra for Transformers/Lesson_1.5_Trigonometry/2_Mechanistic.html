@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trigonometry — Mechanistic Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--amber);background:rgba(245,158,11,0.08);padding:.1em .4em;border-radius:4px;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-amber{background:var(--amber);color:#000;}
+.btn-amber:hover{background:#fbbf24;transform:translateY(-1px);}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text-muted);color:var(--text);}
+.btn-outline.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow);}
+.btn-sm{padding:.4rem .8rem;font-size:.78rem;}
+
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+.insight.teal{border-color:var(--teal);background:var(--teal-glow);}
+.insight.teal strong{color:var(--teal);}
+.insight.rose{border-color:var(--rose);background:var(--rose-glow);}
+.insight.rose strong{color:var(--rose);}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1;min-width:280px;}
+.visual-col{flex:1.2;min-width:320px;}
+
+.formula-block{background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--text-muted);line-height:1.8;overflow-x:auto;margin-bottom:1rem;}
+.formula-block .highlight{color:var(--amber);font-weight:600;}
+.formula-block .teal{color:var(--teal);}
+.formula-block .rose{color:var(--rose);}
+
+.step-indicator{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--amber-glow);border:1px solid var(--amber);color:var(--amber);font-family:'Space Grotesk';font-weight:700;font-size:.78rem;margin-right:.5rem;}
+
+.quiz-option{display:block;width:100%;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:.88rem;color:var(--text-muted);transition:all .25s;text-align:left;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;}
+.quiz-option:hover{border-color:var(--border-light);color:var(--text);}
+.quiz-option.correct{border-color:var(--emerald);color:var(--emerald);background:var(--emerald-glow);}
+.quiz-option.wrong{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+.quiz-option.disabled{pointer-events:none;opacity:.6;}
+.quiz-explanation{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+.quiz-explanation.show{max-height:300px;}
+
+input[type=range]{-webkit-appearance:none;background:transparent;width:100%;}
+input[type=range]::-webkit-slider-track{height:4px;background:var(--border);border-radius:2px;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--amber);border-radius:50%;margin-top:-6px;cursor:pointer;}
+
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+.scroll-hint{animation:bounce 2s ease infinite;}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column!important;}
+  .canvas-wrap{min-height:280px!important;}
+  .nav-links{gap:.5rem;}.nav-link{font-size:.7rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">TRIGONOMETRY</span>
+    <div class="nav-links">
+      <a href="#formulas" class="nav-link active" data-section="formulas">Formulas</a>
+      <a href="#pipeline" class="nav-link" data-section="pipeline">GPU Pipeline</a>
+      <a href="#posenc" class="nav-link" data-section="posenc">Pos. Encoding</a>
+      <a href="#highdim" class="nav-link" data-section="highdim">High-D Curse</a>
+      <a href="#checkpoint" class="nav-link" data-section="checkpoint">Checkpoint</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 1.5 — MECHANISTIC LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Trigonometry<br><span style="color:var(--text-muted);font-weight:300;">The Formula Engine</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      Step-by-step GPU pipeline for Cosine Similarity, Positional Encoding derivation, and the high-dimensional curse that recalibrates everything.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: Formal Definitions & Live Calculator -->
+<section id="formulas" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — FORMAL DEFINITIONS</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">The Cosine Similarity Formula</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <div class="formula-block">
+          <span class="highlight">cos(θ)</span> = (<span class="teal">A · B</span>) / (<span class="rose">‖A‖₂</span> × <span class="rose">‖B‖₂</span>)
+        </div>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          Where <code>A · B</code> is the dot product (accumulated projection), and <code>‖A‖₂</code> is the L2 norm (magnitude). Cosine Similarity forcefully divides out volume, returning a bounded scalar in <strong style="color:var(--text);">[-1, +1]</strong> that measures pure directional alignment.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          <strong style="color:var(--text);">Why not raw distance?</strong> Euclidean distance is computationally unstable in high dimensions — a user typing "I feel fake" (tiny magnitude) and a user writing a paragraph about impostor syndrome (massive magnitude) point in the same direction but sit miles apart in raw distance. Cosine measures only trajectory.
+        </p>
+        <div class="insight teal">
+          <strong>Enter two vectors below</strong> to compute the full Cosine Similarity pipeline step-by-step — matching the exact GPU execution order.
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="card" style="padding:1.25rem;">
+          <div style="margin-bottom:1rem;">
+            <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:.4rem;">Vector A <span style="color:var(--amber);">(x, y)</span></label>
+            <div style="display:flex;gap:.5rem;">
+              <input type="number" id="vecAx" value="4" style="flex:1;background:var(--bg-elevated);border:1px solid var(--border);border-radius:6px;padding:.5rem;color:var(--text);font-family:'JetBrains Mono';font-size:.9rem;">
+              <input type="number" id="vecAy" value="12" style="flex:1;background:var(--bg-elevated);border:1px solid var(--border);border-radius:6px;padding:.5rem;color:var(--text);font-family:'JetBrains Mono';font-size:.9rem;">
+            </div>
+          </div>
+          <div style="margin-bottom:1rem;">
+            <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:.4rem;">Vector B <span style="color:var(--teal);">(x, y)</span></label>
+            <div style="display:flex;gap:.5rem;">
+              <input type="number" id="vecBx" value="1" style="flex:1;background:var(--bg-elevated);border:1px solid var(--border);border-radius:6px;padding:.5rem;color:var(--text);font-family:'JetBrains Mono';font-size:.9rem;">
+              <input type="number" id="vecBy" value="3" style="flex:1;background:var(--bg-elevated);border:1px solid var(--border);border-radius:6px;padding:.5rem;color:var(--text);font-family:'JetBrains Mono';font-size:.9rem;">
+            </div>
+          </div>
+          <button id="calcBtn" class="btn btn-amber" style="width:100%;justify-content:center;"><i class="fas fa-calculator"></i> Compute Pipeline</button>
+
+          <div id="pipelineSteps" style="margin-top:1rem;display:none;">
+            <div style="margin-bottom:.75rem;">
+              <div style="display:flex;align-items:center;margin-bottom:.3rem;"><span class="step-indicator">1</span><span style="font-size:.82rem;font-weight:600;">Magnitude Normalization</span></div>
+              <div class="formula-block" style="margin-bottom:0;">
+                ‖A‖₂ = √(<span id="s1ax">4</span>² + <span id="s1ay">12</span>²) = <span class="highlight" id="s1magA">12.649</span><br>
+                ‖B‖₂ = √(<span id="s1bx">1</span>² + <span id="s1by">3</span>²) = <span class="teal" id="s1magB">3.162</span>
+              </div>
+            </div>
+            <div style="margin-bottom:.75rem;">
+              <div style="display:flex;align-items:center;margin-bottom:.3rem;"><span class="step-indicator">2</span><span style="font-size:.82rem;font-weight:600;">Dot Product</span></div>
+              <div class="formula-block" style="margin-bottom:0;">
+                A·B = (<span id="s2ax">4</span>×<span id="s2bx">1</span>) + (<span id="s2ay">12</span>×<span id="s2by">3</span>) = <span class="highlight" id="s2dot">40</span>
+              </div>
+            </div>
+            <div style="margin-bottom:.75rem;">
+              <div style="display:flex;align-items:center;margin-bottom:.3rem;"><span class="step-indicator">3</span><span style="font-size:.82rem;font-weight:600;">Cosine Similarity</span></div>
+              <div class="formula-block" style="margin-bottom:0;">
+                cos(θ) = <span id="s3dot">40</span> / (<span id="s3magA">12.649</span> × <span id="s3magB">3.162</span>) = <span class="highlight" style="font-size:1.1em;" id="s3result">1.000</span>
+              </div>
+            </div>
+            <div id="s3verdict" class="insight" style="margin-top:.5rem;">
+              <strong>Perfect alignment.</strong> Despite A being 4× the magnitude of B, Cosine strips the volume and reveals identical geometric trajectories.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: GPU Pipeline Visualization -->
+<section id="pipeline" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">02 — GPU PIPELINE</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">The 4-Step Execution Flow</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          When the CCP infrastructure compares an incoming query vector <code>Q ∈ ℝ⁷⁶⁸</code> against thousands of stored premise vectors, this is the exact GPU execution order:
+        </p>
+        <div style="display:flex;flex-direction:column;gap:.75rem;margin-bottom:1rem;">
+          <div class="card" style="padding:.75rem;border-left:3px solid var(--rose);">
+            <div style="font-size:.78rem;color:var(--rose);font-weight:600;margin-bottom:.25rem;">STEP 1 — METRIC VERIFICATION</div>
+            <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">Euclidean distance is unstable in 768D. The system mandates bounded angle measurement via cosine.</p>
+          </div>
+          <div class="card" style="padding:.75rem;border-left:3px solid var(--amber);">
+            <div style="font-size:.78rem;color:var(--amber);font-weight:600;margin-bottom:.25rem;">STEP 2 — DUAL NORMALIZATION</div>
+            <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">GPU calculates ‖Q‖₂, divides every component by it. Now ‖Q_norm‖ = 1.0. Repeat for K. Both vectors are dragged onto the unit hypersphere.</p>
+          </div>
+          <div class="card" style="padding:.75rem;border-left:3px solid var(--teal);">
+            <div style="font-size:.78rem;color:var(--teal);font-weight:600;margin-bottom:.25rem;">STEP 3 — PAIRWISE DOT PRODUCT</div>
+            <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">Since magnitudes are now 1, the dot product of normalized vectors directly equals cos(θ). Execute 768 multiplications + sum.</p>
+          </div>
+          <div class="card" style="padding:.75rem;border-left:3px solid var(--emerald);">
+            <div style="font-size:.78rem;color:var(--emerald);font-weight:600;margin-bottom:.25rem;">STEP 4 — BOUNDED RANKING</div>
+            <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">Results are guaranteed in [-1, +1]. Stack globally, rank highest scores, extract for contextual injection.</p>
+          </div>
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:420px;">
+          <canvas id="pipelineCanvas"></canvas>
+        </div>
+        <p style="font-size:.75rem;color:var(--text-dim);text-align:center;margin-top:.5rem;">
+          <i class="fas fa-hand-pointer"></i> Drag vectors to see the normalization → dot product → cosine pipeline execute in real-time.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: Positional Encoding Deep Dive -->
+<section id="posenc" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:.5rem;">03 — POSITIONAL ENCODING DERIVATION</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Why Exponential Frequency Scaling?</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <div class="formula-block">
+          PE(<span class="highlight">pos</span>, 2i) = sin(<span class="highlight">pos</span> / 10000^(2i/<span class="teal">d_model</span>))<br>
+          PE(<span class="highlight">pos</span>, 2i+1) = cos(<span class="highlight">pos</span> / 10000^(2i/<span class="teal">d_model</span>))
+        </div>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          <strong style="color:var(--text);">Why not raw integers?</strong> Injecting pos = 1, 2, …, 1024 as scalars would give token 1024 a coordinate thousands of times larger than token 1 — destroying gradient stability.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          <strong style="color:var(--text);">Why multiple frequencies?</strong> A single fast sine wave aliases — position 4 and position 16 both land on the same crest. Stacking hundreds of waves at exponentially decreasing speeds creates a unique harmonic fingerprint for every position.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          <strong style="color:var(--text);">Why alternating sin/cos?</strong> This lets attention layers compute <em>relative</em> distances via rotation matrix offsets — mathematically deducing how far apart tokens sit.
+        </p>
+        <div class="insight" style="border-color:var(--violet);background:var(--violet-glow);">
+          <strong style="color:var(--violet);">Adjust the dimension slider</strong> to see how frequency changes across the 768D embedding. Low dimensions = fast oscillation (local detail). High dimensions = slow oscillation (global structure).
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:380px;">
+          <canvas id="peCanvas"></canvas>
+        </div>
+        <div style="padding:.75rem 1rem;">
+          <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:.4rem;">Embedding Dimension <code id="dimLabel">i = 0</code></label>
+          <input type="range" id="dimSlider" min="0" max="383" value="0" style="width:100%;">
+          <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--text-dim);margin-top:.25rem;">
+            <span>dim 0 (fastest)</span><span>dim 383 (slowest)</span>
+          </div>
+          <div style="display:flex;gap:1rem;margin-top:.5rem;font-size:.82rem;">
+            <span>Wavelength: <strong id="wavelengthVal" style="color:var(--violet);">6.28</strong></span>
+            <span>Frequency: <strong id="freqVal" style="color:var(--amber);">1.000</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 4: High-Dimensional Curse -->
+<section id="highdim" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--rose);margin-bottom:.5rem;">04 — THE HIGH-DIMENSIONAL CURSE</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Why 0.40 Cosine Is Massive In 768D</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          In 2D, two random vectors have a reasonable chance of pointing similarly. In <strong style="color:var(--text);">768 dimensions</strong>, the sheer volume of empty space means nearly all random vectors are <strong style="color:var(--rose);">perfectly orthogonal</strong> — their cosine similarity defaults to ~0.000.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          This is the <strong style="color:var(--text);">concentration of measure</strong>. Achieving even cos = 0.40 in ℝ⁷⁶⁸ requires staggering, purposeful non-random alignment. What feels "weak" in 2D is actually a <strong style="color:var(--emerald);">massive structural signal</strong> in production AI.
+        </p>
+        <div class="insight rose" style="margin-bottom:1rem;">
+          <strong>The simulation below</strong> generates random vector pairs in increasing dimensions and plots their cosine similarity distribution. Watch how the distribution collapses toward zero as dimensions increase.
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm dim-btn active" data-dims="2">2D</button>
+          <button class="btn btn-outline btn-sm dim-btn" data-dims="10">10D</button>
+          <button class="btn btn-outline btn-sm dim-btn" data-dims="50">50D</button>
+          <button class="btn btn-outline btn-sm dim-btn" data-dims="200">200D</button>
+          <button class="btn btn-outline btn-sm dim-btn" data-dims="768">768D</button>
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:380px;">
+          <canvas id="curseCanvas"></canvas>
+        </div>
+        <div style="display:flex;gap:1rem;padding:.75rem 1rem;">
+          <div class="card" style="flex:1;padding:.75rem;text-align:center;">
+            <div style="font-size:.72rem;color:var(--text-dim);margin-bottom:.2rem;">MEAN COSINE</div>
+            <div id="curseMean" style="font-size:1.2rem;font-weight:800;font-family:'Space Grotesk';color:var(--amber);">0.012</div>
+          </div>
+          <div class="card" style="flex:1;padding:.75rem;text-align:center;">
+            <div style="font-size:.72rem;color:var(--text-dim);margin-bottom:.2rem;">STD DEV</div>
+            <div id="curseStd" style="font-size:1.2rem;font-weight:800;font-family:'Space Grotesk';color:var(--teal);">0.710</div>
+          </div>
+          <div class="card" style="flex:1;padding:.75rem;text-align:center;">
+            <div style="font-size:.72rem;color:var(--text-dim);margin-bottom:.2rem;">DIMENSIONS</div>
+            <div id="curseDims" style="font-size:1.2rem;font-weight:800;font-family:'Space Grotesk';color:var(--rose);">2</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 5: Checkpoint Quiz -->
+<section id="checkpoint" class="section">
+  <div class="section-inner" style="max-width:720px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">05 — CHECKPOINT</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Test Your Mechanistic Understanding</h2>
+    <p style="color:var(--text-muted);line-height:1.7;margin-bottom:2rem;">Four questions probing the GPU pipeline, PE derivation, and high-dimensional geometry.</p>
+    <div id="quizContainer" style="display:flex;flex-direction:column;gap:1.5rem;"></div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);">
+  Interactive Visual Learning — Trigonometry: The Mechanistic Layer
+</footer>
+
+<script>
+const DPR = window.devicePixelRatio || 1;
+function setupCanvas(c){
+  const p=c.parentElement,r=p.getBoundingClientRect();
+  c.width=r.width*DPR;c.height=r.height*DPR;
+  c.style.width=r.width+'px';c.style.height=r.height+'px';
+  const ctx=c.getContext('2d');ctx.scale(DPR,DPR);
+  return{ctx,w:r.width,h:r.height};
+}
+
+/* Hero background */
+(function(){
+  const c=document.getElementById('heroCanvas');
+  let W,H,ctx;
+  function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+  resize();window.addEventListener('resize',resize);
+  let t=0;
+  function draw(){ctx.clearRect(0,0,W,H);
+    for(let i=0;i<5;i++){ctx.beginPath();const f=0.004+i*0.002,a=25+i*12,yb=H*0.25+i*H*0.14;
+      for(let x=0;x<W;x++){const y=yb+Math.sin(x*f+t*0.015+i)*a;x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+      ctx.strokeStyle=`rgba(${i%2?'20,184,166':'139,92,246'},${0.06-i*0.01})`;ctx.lineWidth=1.5;ctx.stroke();}
+    t++;requestAnimationFrame(draw);}
+  draw();
+})();
+
+/* Section 1: Cosine Similarity Calculator */
+(function(){
+  const btn=document.getElementById('calcBtn');
+  btn.addEventListener('click',()=>{
+    const ax=parseFloat(document.getElementById('vecAx').value)||0;
+    const ay=parseFloat(document.getElementById('vecAy').value)||0;
+    const bx=parseFloat(document.getElementById('vecBx').value)||0;
+    const by=parseFloat(document.getElementById('vecBy').value)||0;
+    const magA=Math.sqrt(ax*ax+ay*ay);
+    const magB=Math.sqrt(bx*bx+by*by);
+    const dot=ax*bx+ay*by;
+    const cos=(magA>0.001&&magB>0.001)?dot/(magA*magB):0;
+
+    document.getElementById('s1ax').textContent=ax;document.getElementById('s1ay').textContent=ay;
+    document.getElementById('s1bx').textContent=bx;document.getElementById('s1by').textContent=by;
+    document.getElementById('s1magA').textContent=magA.toFixed(3);
+    document.getElementById('s1magB').textContent=magB.toFixed(3);
+    document.getElementById('s2ax').textContent=ax;document.getElementById('s2bx').textContent=bx;
+    document.getElementById('s2ay').textContent=ay;document.getElementById('s2by').textContent=by;
+    document.getElementById('s2dot').textContent=dot.toFixed(1);
+    document.getElementById('s3dot').textContent=dot.toFixed(1);
+    document.getElementById('s3magA').textContent=magA.toFixed(3);
+    document.getElementById('s3magB').textContent=magB.toFixed(3);
+    document.getElementById('s3result').textContent=cos.toFixed(4);
+
+    const v=document.getElementById('s3verdict');
+    if(cos>0.95) v.innerHTML='<strong>Near-perfect alignment.</strong> The vectors point in nearly identical directions. Cosine strips the magnitude difference and reveals matching trajectories.';
+    else if(cos>0.5) v.innerHTML='<strong>Strong alignment.</strong> Significant directional overlap. In 768D this would be an extremely strong match.';
+    else if(cos>-0.1) v.innerHTML='<strong>Weak/Orthogonal.</strong> Little to no directional relationship. The vectors live in independent geometric subspaces.';
+    else v.innerHTML='<strong>Hostile opposition.</strong> The vectors actively point against each other. Negative cosine signals semantic conflict.';
+    v.className='insight'+(cos>0.5?'':cos>-0.1?' teal':' rose');
+
+    document.getElementById('pipelineSteps').style.display='block';
+  });
+})();
+
+/* Section 2: Pipeline Canvas — live normalization visualization */
+(function(){
+  const canvas=document.getElementById('pipelineCanvas');
+  let vecA={x:5,y:3},vecB={x:2,y:7},dragging=null;
+
+  function draw(){
+    const{ctx,w,h}=setupCanvas(canvas);
+    const cx=w*0.5,cy=h*0.5,scale=Math.min(w,h)/20;
+    ctx.clearRect(0,0,w,h);
+
+    // Grid
+    for(let i=-8;i<=8;i++){ctx.strokeStyle=`rgba(255,255,255,${i===0?0:0.05})`;ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(cx+i*scale,0);ctx.lineTo(cx+i*scale,h);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(0,cy-i*scale);ctx.lineTo(w,cy-i*scale);ctx.stroke();}
+    ctx.strokeStyle='rgba(255,255,255,0.12)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(w,cy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,0);ctx.lineTo(cx,h);ctx.stroke();
+
+    // Unit circle
+    ctx.beginPath();ctx.arc(cx,cy,scale,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=1;ctx.stroke();
+
+    const magA=Math.sqrt(vecA.x**2+vecA.y**2);
+    const magB=Math.sqrt(vecB.x**2+vecB.y**2);
+
+    // Normalized vectors (on unit circle)
+    if(magA>0.01&&magB>0.01){
+      const nAx=vecA.x/magA,nAy=vecA.y/magA;
+      const nBx=vecB.x/magB,nBy=vecB.y/magB;
+      // Dashed normalized arrows
+      ctx.setLineDash([5,4]);ctx.lineWidth=1.5;
+      ctx.strokeStyle='rgba(245,158,11,0.4)';
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+nAx*scale,cy-nAy*scale);ctx.stroke();
+      ctx.strokeStyle='rgba(20,184,166,0.4)';
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+nBx*scale,cy-nBy*scale);ctx.stroke();
+      ctx.setLineDash([]);
+      // Dots on unit circle
+      ctx.beginPath();ctx.arc(cx+nAx*scale,cy-nAy*scale,4,0,Math.PI*2);ctx.fillStyle='rgba(245,158,11,0.6)';ctx.fill();
+      ctx.beginPath();ctx.arc(cx+nBx*scale,cy-nBy*scale,4,0,Math.PI*2);ctx.fillStyle='rgba(20,184,166,0.6)';ctx.fill();
+      // Angle arc between normalized
+      const angA=Math.atan2(-nAy,-nAx)+Math.PI;
+      const angB=Math.atan2(-nBy,-nBx)+Math.PI;
+      ctx.beginPath();ctx.arc(cx,cy,scale*0.5,-(Math.atan2(nAy,nAx)),-(Math.atan2(nBy,nBx)),nAy*nBx-nAx*nBy>0);
+      ctx.strokeStyle='rgba(139,92,246,0.5)';ctx.lineWidth=2;ctx.stroke();
+    }
+
+    // Full vectors
+    function drawVec(v,color,label){
+      const tx=cx+v.x*scale,ty=cy-v.y*scale;
+      const dx=tx-cx,dy=ty-cy,len=Math.sqrt(dx*dx+dy*dy);
+      if(len<2)return;
+      const ang=Math.atan2(dy,dx),hl=Math.min(12,len*0.25);
+      ctx.save();ctx.shadowColor=color;ctx.shadowBlur=6;
+      ctx.strokeStyle=color;ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(tx,ty);ctx.stroke();ctx.restore();
+      ctx.beginPath();ctx.moveTo(tx,ty);
+      ctx.lineTo(tx-hl*Math.cos(ang-0.35),ty-hl*Math.sin(ang-0.35));
+      ctx.lineTo(tx-hl*Math.cos(ang+0.35),ty-hl*Math.sin(ang+0.35));
+      ctx.closePath();ctx.fillStyle=color;ctx.fill();
+      ctx.beginPath();ctx.arc(tx,ty,5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
+      ctx.font='600 11px Space Grotesk';ctx.fillStyle=color;ctx.textAlign='left';
+      ctx.fillText(label,tx+8,ty-10);
+    }
+    drawVec(vecA,'#f59e0b','A ('+vecA.x.toFixed(1)+','+vecA.y.toFixed(1)+')');
+    drawVec(vecB,'#14b8a6','B ('+vecB.x.toFixed(1)+','+vecB.y.toFixed(1)+')');
+
+    // Cosine readout on canvas
+    const dot=vecA.x*vecB.x+vecA.y*vecB.y;
+    const cos=(magA>0.01&&magB>0.01)?dot/(magA*magB):0;
+    ctx.font='700 14px Space Grotesk';ctx.fillStyle=cos>0.5?'#10b981':cos>-0.1?'#f59e0b':'#f43f5e';
+    ctx.textAlign='right';ctx.fillText('cos θ = '+cos.toFixed(3),w-16,24);
+    ctx.font='11px DM Sans';ctx.fillStyle='#52525b';
+    ctx.fillText('Dashed = unit-normalized projections',w-16,42);
+  }
+
+  function getMath(e){
+    const r=canvas.getBoundingClientRect(),w=r.width,h=r.height,s=Math.min(w,h)/20;
+    return{x:(e.clientX-r.left-w*0.5)/s,y:(h*0.5-(e.clientY-r.top))/s};
+  }
+  canvas.addEventListener('mousedown',(e)=>{
+    const m=getMath(e);
+    if(Math.hypot(m.x-vecA.x,m.y-vecA.y)<1.2)dragging='A';
+    else if(Math.hypot(m.x-vecB.x,m.y-vecB.y)<1.2)dragging='B';
+  });
+  canvas.addEventListener('mousemove',(e)=>{if(!dragging)return;const m=getMath(e);
+    if(dragging==='A'){vecA.x=m.x;vecA.y=m.y;}else{vecB.x=m.x;vecB.y=m.y;}draw();});
+  canvas.addEventListener('mouseup',()=>{dragging=null;});
+  canvas.addEventListener('mouseleave',()=>{dragging=null;});
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Section 3: Positional Encoding Waveform */
+(function(){
+  const canvas=document.getElementById('peCanvas');
+  const slider=document.getElementById('dimSlider');
+  const dimLabel=document.getElementById('dimLabel');
+  const wlVal=document.getElementById('wavelengthVal');
+  const fqVal=document.getElementById('freqVal');
+  const dModel=768, maxPos=128;
+
+  function draw(){
+    const{ctx,w,h}=setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+    const i=parseInt(slider.value);
+    const freq=1/Math.pow(10000,2*i/dModel);
+    const wavelength=2*Math.PI/freq;
+    dimLabel.textContent='i = '+i;
+    wlVal.textContent=wavelength>9999?'∞':wavelength.toFixed(1);
+    fqVal.textContent=freq.toFixed(6);
+
+    const padL=50,padR=20,padT=30,padB=30;
+    const plotW=w-padL-padR,plotH=(h-padT-padB)/2;
+
+    // Sin wave
+    const sinMid=padT+plotH*0.5;
+    ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(padL,sinMid);ctx.lineTo(w-padR,sinMid);ctx.stroke();
+    ctx.font='600 10px Space Grotesk';ctx.fillStyle='#f59e0b';ctx.textAlign='right';
+    ctx.fillText('sin',padL-8,sinMid+4);
+
+    ctx.beginPath();
+    for(let p=0;p<=maxPos;p++){
+      const x=padL+(p/maxPos)*plotW;
+      const y=sinMid-Math.sin(p*freq)*plotH*0.4;
+      p===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;ctx.globalAlpha=0.8;ctx.stroke();ctx.globalAlpha=1;
+
+    // Cos wave
+    const cosMid=padT+plotH*1.5;
+    ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(padL,cosMid);ctx.lineTo(w-padR,cosMid);ctx.stroke();
+    ctx.fillStyle='#14b8a6';ctx.textAlign='right';
+    ctx.fillText('cos',padL-8,cosMid+4);
+
+    ctx.beginPath();
+    for(let p=0;p<=maxPos;p++){
+      const x=padL+(p/maxPos)*plotW;
+      const y=cosMid-Math.cos(p*freq)*plotH*0.4;
+      p===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle='#14b8a6';ctx.lineWidth=2;ctx.globalAlpha=0.8;ctx.stroke();ctx.globalAlpha=1;
+
+    // Position tick marks
+    ctx.font='9px DM Sans';ctx.fillStyle='#3f3f46';ctx.textAlign='center';
+    for(let p=0;p<=maxPos;p+=16){
+      const x=padL+(p/maxPos)*plotW;
+      ctx.fillText(p,x,h-8);
+      ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(x,padT);ctx.lineTo(x,h-padB);ctx.stroke();
+    }
+
+    // Bounded markers
+    ctx.font='9px JetBrains Mono';ctx.fillStyle='#52525b';ctx.textAlign='right';
+    ctx.fillText('+1',padL-4,sinMid-plotH*0.4+4);
+    ctx.fillText('-1',padL-4,sinMid+plotH*0.4+4);
+  }
+
+  slider.addEventListener('input',draw);
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Section 4: High-Dimensional Curse Simulation */
+(function(){
+  const canvas=document.getElementById('curseCanvas');
+  let currentDims=2;
+
+  function generateSamples(dims,n){
+    const sims=[];
+    for(let s=0;s<n;s++){
+      let a=[],b=[];
+      for(let d=0;d<dims;d++){a.push(Math.random()*2-1);b.push(Math.random()*2-1);}
+      let dot=0,magA=0,magB=0;
+      for(let d=0;d<dims;d++){dot+=a[d]*b[d];magA+=a[d]**2;magB+=b[d]**2;}
+      magA=Math.sqrt(magA);magB=Math.sqrt(magB);
+      if(magA>0.001&&magB>0.001)sims.push(dot/(magA*magB));
+    }
+    return sims;
+  }
+
+  function draw(){
+    const{ctx,w,h}=setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+    const samples=generateSamples(currentDims,500);
+    const padL=50,padR=20,padT=30,padB=40;
+    const plotW=w-padL-padR,plotH=h-padT-padB;
+    const bins=40;
+    const binW=plotW/bins;
+    const counts=new Array(bins).fill(0);
+    samples.forEach(s=>{
+      const idx=Math.max(0,Math.min(bins-1,Math.floor((s+1)/2*bins)));
+      counts[idx]++;
+    });
+    const maxC=Math.max(...counts,1);
+
+    // Bars
+    counts.forEach((c,i)=>{
+      const x=padL+i*binW;
+      const barH=(c/maxC)*plotH;
+      const hue=i<bins/2?0+i*(120/(bins/2)):120;
+      ctx.fillStyle=`hsla(${Math.min(160,hue)},70%,50%,0.6)`;
+      ctx.fillRect(x,padT+plotH-barH,binW-1,barH);
+    });
+
+    // Axis
+    ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(padL,padT+plotH);ctx.lineTo(w-padR,padT+plotH);ctx.stroke();
+    ctx.font='9px DM Sans';ctx.fillStyle='#52525b';ctx.textAlign='center';
+    for(let v=-1;v<=1;v+=0.5){
+      const x=padL+((v+1)/2)*plotW;
+      ctx.fillText(v.toFixed(1),x,h-8);
+    }
+    ctx.fillText('Cosine Similarity',w/2,h-0);
+    ctx.font='600 11px Space Grotesk';ctx.fillStyle='var(--text)';ctx.textAlign='left';
+    ctx.fillText(currentDims+'D — '+samples.length+' random pairs',padL,20);
+
+    // Stats
+    const mean=samples.reduce((a,b)=>a+b,0)/samples.length;
+    const std=Math.sqrt(samples.reduce((a,b)=>a+(b-mean)**2,0)/samples.length);
+    document.getElementById('curseMean').textContent=mean.toFixed(4);
+    document.getElementById('curseStd').textContent=std.toFixed(4);
+    document.getElementById('curseDims').textContent=currentDims;
+  }
+
+  document.querySelectorAll('.dim-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.dim-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentDims=parseInt(btn.dataset.dims);
+      draw();
+    });
+  });
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Quiz */
+(function(){
+  const questions=[
+    {q:"The GPU has normalized both vectors to ‖v‖=1. What does the dot product of the normalized vectors directly equal?",
+     opts:["The Euclidean distance between them","The cosine of the angle between them","The sum of their magnitudes","The cross product"],
+     correct:1,explanation:"When magnitudes are forced to 1, the dot product formula simplifies: A·B = 1×1×cos(θ) = cos(θ). The dot product of unit vectors IS the cosine similarity directly."},
+    {q:"In the PE formula, what happens to the wave frequency as embedding dimension index i increases?",
+     opts:["It increases — higher dimensions oscillate faster","It stays constant across all dimensions","It decreases exponentially — higher dimensions oscillate much slower","It alternates between fast and slow"],
+     correct:2,explanation:"The denominator 10000^(2i/d_model) grows exponentially with i. This makes higher-dimension waves rotate monumentally slowly, ensuring they track long-range positional structure while low dimensions capture local detail."},
+    {q:"Two random vectors in ℝ⁷⁶⁸ return cosine similarity of 0.45. Is this a strong or weak match?",
+     opts:["Weak — 0.45 is barely halfway to perfect alignment","Extremely strong — in 768D, random vectors default to ~0.0 cosine. 0.45 is a massive deliberate alignment.","Meaningless — cosine doesn't work in high dimensions","Moderate — about average for 768D"],
+     correct:1,explanation:"Due to concentration of measure, random vectors in 768D are almost perfectly orthogonal (cos ≈ 0). Achieving 0.45 requires intense purposeful alignment — this is an extremely strong semantic match in production."},
+    {q:"What invariant guarantees that cosine similarity can never exceed +1 or drop below -1?",
+     opts:["The softmax normalization applied afterward","The Pythagorean identity: sin²θ + cos²θ = 1, which bounds cosine to [-1,+1]","The gradient clipping during training","The ReLU activation function"]
+     ,correct:1,explanation:"Because sin²θ + cos²θ = 1 for all angles, cosine is geometrically bounded. No physical angle can project a shadow longer than the generating vector's own radius on the unit circle."}
+  ];
+  const container=document.getElementById('quizContainer');
+  questions.forEach((q,qi)=>{
+    const card=document.createElement('div');card.className='card';card.style.padding='1.25rem';
+    let optsHTML='';
+    q.opts.forEach((o,oi)=>{optsHTML+=`<button class="quiz-option" data-q="${qi}" data-o="${oi}">${o}</button>`;});
+    card.innerHTML=`<p style="font-size:.82rem;font-weight:600;color:var(--text-dim);margin-bottom:.75rem;">Question ${qi+1}</p>
+      <p style="font-size:.92rem;line-height:1.6;margin-bottom:1rem;">${q.q}</p>
+      <div id="qO${qi}">${optsHTML}</div>
+      <div class="quiz-explanation" id="qE${qi}" style="margin-top:.75rem;"><div class="insight">${q.explanation}</div></div>`;
+    container.appendChild(card);
+  });
+  container.addEventListener('click',(e)=>{
+    const btn=e.target.closest('.quiz-option');if(!btn)return;
+    const qi=+btn.dataset.q,oi=+btn.dataset.o;
+    const opts=document.querySelectorAll(`#qO${qi} .quiz-option`);
+    if(opts[0].classList.contains('disabled'))return;
+    opts.forEach((o,i)=>{o.classList.add('disabled');
+      if(i===questions[qi].correct)o.classList.add('correct');
+      else if(i===oi&&oi!==questions[qi].correct)o.classList.add('wrong');});
+    document.getElementById(`qE${qi}`).classList.add('show');
+  });
+})();
+
+/* Nav scroll tracking */
+(function(){
+  const links=document.querySelectorAll('.nav-link');
+  const ids=['formulas','pipeline','posenc','highdim','checkpoint'];
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+100;let active=ids[0];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+    links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));
+  });
+})();
+</script>
+</body>
+</html>

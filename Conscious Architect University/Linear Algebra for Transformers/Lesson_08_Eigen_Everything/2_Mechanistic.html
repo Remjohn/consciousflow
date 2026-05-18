@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eigen-Everything — Mechanistic Laboratory</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050505;--surface:#111;--surface2:#1a1a1a;--surface3:#252525;
+  --text:#FAFAFA;--muted:#888;--border:#333;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.7;overflow-x:hidden;}
+.container{max-width:800px;margin:0 auto;padding:4rem 2rem 8rem;}
+
+h1{font-weight:700;font-size:2.4rem;line-height:1.1;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-weight:700;font-size:1.5rem;margin:3rem 0 1rem;letter-spacing:-0.01em;color:#fff;}
+h3{font-weight:600;font-size:1.1rem;margin:2rem 0 0.75rem;color:var(--accent);}
+p{margin-bottom:1.3rem;color:var(--muted);font-size:1rem;}
+strong{color:#fff;}
+.lesson-tag{font-family:var(--mono);font-size:0.72rem;color:var(--red);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.12em;display:block;}
+
+/* INTERACTION BOX */
+.ibox{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2.25rem;margin:2rem 0;}
+.ibox-hdr{font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.4rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border);}
+.ibox-hdr.interrupt{color:var(--red);}
+.ibox-hdr.gate{color:var(--accent);}
+.q-text{font-size:1.08rem;font-weight:500;margin-bottom:1.75rem;color:#fff;line-height:1.65;}
+
+/* BUTTONS */
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.65rem 1.3rem;font-family:var(--sans);font-weight:600;font-size:0.92rem;border-radius:4px;cursor:pointer;transition:all 0.18s;}
+.btn:hover:not(:disabled){transform:translateY(-2px);background:#fff;}
+.btn:disabled{opacity:0.45;cursor:not-allowed;transform:none !important;}
+.btn-o{background:transparent;border:1px solid var(--muted);color:var(--text);}
+.btn-o:hover:not(:disabled){background:var(--surface3);border-color:#ccc;}
+.bg{display:flex;gap:0.9rem;flex-wrap:wrap;}
+
+/* INPUT */
+.inp-wrap{display:flex;gap:0.9rem;margin-bottom:0;}
+.inp{background:var(--bg);border:2px solid var(--border);color:#fff;font-family:var(--mono);font-size:1rem;padding:0.65rem 0.9rem;flex:1;border-radius:4px;transition:border-color 0.2s;text-align:center;}
+.inp:focus{outline:none;border-color:var(--accent);}
+.inp:disabled{opacity:0.45;}
+.inp::placeholder{color:#555;text-align:center;}
+
+/* MULTI-INPUT */
+.multi-inp{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;}
+.inp-label{font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem;display:block;}
+
+/* FEEDBACK */
+.fb{display:none;margin-top:1.6rem;padding:1.3rem 1.5rem;border-radius:5px;font-size:0.93rem;line-height:1.65;}
+.fb.show{display:block;animation:fi 0.35s ease;}
+.fb.err{background:rgba(231,111,81,0.08);border-left:3px solid var(--red);color:#ffb9a6;}
+.fb.ok{background:rgba(42,157,143,0.08);border-left:3px solid var(--green);color:#a5ebe1;}
+.fbt{font-family:var(--mono);font-size:0.67rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;font-weight:700;}
+@keyframes fi{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+
+/* GATED */
+.gated{opacity:0;pointer-events:none;transform:translateY(18px);transition:all 0.45s ease;display:none;}
+.gated.unlocked{opacity:1;pointer-events:auto;transform:translateY(0);display:block;}
+
+/* INLINE MATH */
+.im{font-family:var(--mono);background:var(--surface2);padding:0.12rem 0.38rem;border-radius:3px;color:var(--accent);font-size:0.88rem;}
+
+/* DERIVATION STEPS */
+.derivation{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:1.5rem;margin:1.25rem 0;font-family:var(--mono);font-size:0.88rem;line-height:2;}
+.deriv-step{color:#ccc;border-bottom:1px solid #1d1d1d;padding:0.35rem 0;}
+.deriv-step:last-child{border-bottom:none;color:var(--accent);font-weight:600;}
+.deriv-label{color:var(--muted);font-size:0.75rem;margin-right:0.5rem;}
+
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse;font-size:0.85rem;margin:1.25rem 0;}
+.data-table th{background:var(--surface2);padding:0.55rem 0.8rem;text-align:left;color:var(--muted);font-family:var(--mono);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border);}
+.data-table td{padding:0.55rem 0.8rem;border-bottom:1px solid #1a1a1a;color:#ccc;font-family:var(--mono);font-size:0.85rem;}
+.data-table tr:last-child td{border-bottom:none;}
+.ok-c{color:var(--green);}
+.warn-c{color:var(--accent);}
+.err-c{color:var(--red);}
+
+/* SECTION DIVIDER */
+.sdiv{border-top:1px solid var(--border);margin:3.5rem 0 3rem;padding-top:0;}
+
+/* GAUNTLET */
+.gauntlet-wrap{margin-top:4rem;border-top:2px solid var(--border);padding-top:3rem;}
+.q-block{background:var(--surface2);padding:1.5rem 1.75rem;border-radius:6px;margin-bottom:1.5rem;border:1px solid var(--border);}
+.q-num{font-family:var(--mono);font-size:0.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;}
+.q-text-g{font-size:0.99rem;margin-bottom:1.3rem;font-weight:500;color:#fff;line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <span class="lesson-tag">Lesson 08 · Layer 2 — Mechanistic Laboratory</span>
+  <h1>Computation &amp; Derivation</h1>
+
+  <!-- ══════════════════════════════════════════════════
+       SPACED RETRIEVAL INTERRUPT — from Layer 1
+  ═══════════════════════════════════════════════════ -->
+  <div class="ibox" id="interrupt-box">
+    <div class="ibox-hdr interrupt">⚡ Spaced Retrieval Interrupt — Layer 1 Recall</div>
+    <div class="q-text">
+      No preamble. No context. From Lesson 08 Layer 1:<br><br>
+      Matrix <span class="im">A = [[3, 1], [0, 2]]</span> was applied to vector <span class="im">v = [1, −1]</span>. What was the eigenvalue (scale factor) of this eigenvector — the integer by which <span class="im">v</span> was scaled?
+    </div>
+    <div class="inp-wrap">
+      <input type="text" id="int-inp" class="inp" placeholder="Integer eigenvalue…" autocomplete="off">
+      <button class="btn" id="int-btn" onclick="checkInterrupt()">Lock</button>
+    </div>
+    <div class="fb" id="fb-int"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SECTION 1 — Formal Definitions
+  ═══════════════════════════════════════════════════ -->
+  <div class="gated" id="s1">
+    <h2>Formal Definitions</h2>
+    <p>The eigenvalue equation is <span class="im">Av = λv</span>. For this to have a non-trivial solution (<span class="im">v ≠ 0</span>), the matrix <span class="im">(A − λI)</span> must be <strong>singular</strong> — it must collapse space, meaning its determinant equals zero:</p>
+    <p style="text-align:center;font-family:var(--mono);font-size:1rem;color:var(--accent);padding:1rem;background:var(--surface2);border-radius:4px;margin:1rem 0;">det(A − λI) = 0</p>
+    <p>This determinant expands into a polynomial in λ — the <strong>characteristic polynomial</strong>. Its roots are the eigenvalues. Once eigenvalues are known, substituting each back into <span class="im">(A − λI)v = 0</span> gives the corresponding eigenvectors.</p>
+    <p>If a matrix has n linearly independent eigenvectors, it can be diagonalized: <span class="im">A = PDP⁻¹</span>, where P's columns are eigenvectors and D is diagonal with eigenvalues on the main diagonal. In this eigenvector basis, A IS D — pure independent scaling with zero cross-dimensional mixing.</p>
+
+    <div class="sdiv"></div>
+    <h2>Full 4-Step Derivation — A = [[4, 2], [1, 3]]</h2>
+    <p>We will derive eigenvalues, eigenvectors, and the diagonalization completely by hand.</p>
+
+    <!-- PREDICTION GATE: eigenvalues -->
+    <div class="ibox" id="gate-ev">
+      <div class="ibox-hdr gate">Prediction Gate — Eigenvalues</div>
+      <div class="q-text">
+        <strong>Step 1: Characteristic Polynomial.</strong><br><br>
+        We compute <span class="im">det([[4−λ, 2], [1, 3−λ]])</span>.<br>
+        Expanding: <span class="im">(4−λ)(3−λ) − 2×1 = λ² − 7λ + 10 = (λ−5)(λ−2) = 0</span><br><br>
+        Before the derivation continues — predict both eigenvalues. Enter the LARGER eigenvalue first, then the smaller.
+      </div>
+      <div class="multi-inp">
+        <div>
+          <span class="inp-label">λ₁ (larger)</span>
+          <input type="text" id="ev1" class="inp" placeholder="λ₁ = ?" autocomplete="off">
+        </div>
+        <div>
+          <span class="inp-label">λ₂ (smaller)</span>
+          <input type="text" id="ev2" class="inp" placeholder="λ₂ = ?" autocomplete="off">
+        </div>
+      </div>
+      <button class="btn" id="ev-btn" onclick="checkEV()">Lock Both Eigenvalues</button>
+      <div class="fb" id="fb-ev"></div>
+    </div>
+  </div>
+
+  <!-- SECTION 2 — Eigenvectors + Diagonalization -->
+  <div class="gated" id="s2">
+    <h3>Step 2 — Eigenvectors</h3>
+    <p><strong>For λ₁ = 5:</strong> Substitute into <span class="im">(A − 5I)v = 0</span>:</p>
+    <div class="derivation">
+      <div class="deriv-step"><span class="deriv-label">Matrix:</span>[−1, 2; 1, −2]·v = 0</div>
+      <div class="deriv-step"><span class="deriv-label">Row 1:</span>−v₁ + 2v₂ = 0  →  v₁ = 2v₂</div>
+      <div class="deriv-step"><span class="deriv-label">Choose v₂=1:</span>v₁ = [2, 1]ᵀ</div>
+    </div>
+    <p><strong>For λ₂ = 2:</strong> Substitute into <span class="im">(A − 2I)v = 0</span>:</p>
+    <div class="derivation">
+      <div class="deriv-step"><span class="deriv-label">Matrix:</span>[2, 2; 1, 1]·v = 0</div>
+      <div class="deriv-step"><span class="deriv-label">Row 1:</span>2v₁ + 2v₂ = 0  →  v₁ = −v₂</div>
+      <div class="deriv-step"><span class="deriv-label">Choose v₂=1:</span>v₂ = [−1, 1]ᵀ</div>
+    </div>
+
+    <h3>Step 3 — Verification Gate</h3>
+
+    <div class="ibox" id="gate-verify">
+      <div class="ibox-hdr gate">Verification Gate</div>
+      <div class="q-text">
+        Verify <span class="im">A × v₁ = λ₁ × v₁</span> by computing <span class="im">[[4,2],[1,3]] × [2,1]</span>.<br><br>
+        The result should be a vector <span class="im">[r₁, r₂]</span>. Enter both components:
+      </div>
+      <div class="multi-inp">
+        <div>
+          <span class="inp-label">r₁ (top component)</span>
+          <input type="text" id="r1" class="inp" placeholder="r₁ = ?" autocomplete="off">
+        </div>
+        <div>
+          <span class="inp-label">r₂ (bottom component)</span>
+          <input type="text" id="r2" class="inp" placeholder="r₂ = ?" autocomplete="off">
+        </div>
+      </div>
+      <button class="btn" id="verify-btn" onclick="checkVerify()">Lock Verification</button>
+      <div class="fb" id="fb-verify"></div>
+    </div>
+  </div>
+
+  <!-- SECTION 3 — Power Computation + SVD -->
+  <div class="gated" id="s3">
+    <h3>Step 4 — Diagonalization</h3>
+    <p>The complete factorization: <span class="im">A = PDP⁻¹</span></p>
+    <div class="derivation">
+      <div class="deriv-step"><span class="deriv-label">P =</span>[2, −1; 1, 1]  (columns = eigenvectors)</div>
+      <div class="deriv-step"><span class="deriv-label">D =</span>[5, 0; 0, 2]  (diagonal = eigenvalues)</div>
+      <div class="deriv-step"><span class="deriv-label">In eigenvector basis:</span>A IS D — stretch by 5 along [2,1], stretch by 2 along [−1,1]</div>
+    </div>
+
+    <h3>Power Computation Payoff</h3>
+    <p>Computing <span class="im">A¹⁰</span> in the eigenvector basis:</p>
+    <div class="derivation">
+      <div class="deriv-step"><span class="deriv-label">Standard method:</span>9 separate matrix multiplications</div>
+      <div class="deriv-step"><span class="deriv-label">Eigenvector basis:</span>D¹⁰ = diag(5¹⁰, 2¹⁰)</div>
+      <div class="deriv-step"><span class="deriv-label">5¹⁰ =</span>9,765,625   |   2¹⁰ = 1,024</div>
+      <div class="deriv-step">After 10 applications, the [2,1] direction is 9,537× larger than the [−1,1] direction. Every vector converges toward the dominant eigenvector.</div>
+    </div>
+
+    <!-- PREDICTION GATE: power -->
+    <div class="ibox" id="gate-power">
+      <div class="ibox-hdr gate">Prediction Gate — Dominant Convergence</div>
+      <div class="q-text">
+        After 10 applications of A, the component along eigenvector <span class="im">v₁ = [2,1]</span> has grown by factor 5¹⁰ = 9,765,625. The component along <span class="im">v₂ = [−1,1]</span> has grown by 2¹⁰ = 1,024.<br><br>
+        What is the RATIO between the dominant and secondary growth — how many times larger is the <span class="im">v₁</span> component relative to <span class="im">v₂</span>? Round to the nearest integer.
+      </div>
+      <div class="inp-wrap">
+        <input type="text" id="pow-inp" class="inp" placeholder="Ratio (integer)…">
+        <button class="btn" id="pow-btn" onclick="checkPower()">Lock</button>
+      </div>
+      <div class="fb" id="fb-pow"></div>
+    </div>
+  </div>
+
+  <!-- SECTION 4 — SVD -->
+  <div class="gated" id="s4">
+    <div class="sdiv"></div>
+    <h2>Singular Value Decomposition (SVD)</h2>
+    <p>Eigenvalue decomposition requires a <strong>square</strong> matrix. But attention projections like <span class="im">W_Q ∈ ℝ^(d_k × d)</span> are non-square. The generalization is <strong>SVD</strong>:</p>
+    <p style="text-align:center;font-family:var(--mono);font-size:0.95rem;color:var(--accent);padding:1rem;background:var(--surface2);border-radius:4px;margin:1rem 0;">W = U Σ Vᵀ</p>
+    <p>Where: U contains the left singular vectors (eigenvectors of WWᵀ), Σ is diagonal with singular values <span class="im">σᵢ = √λᵢ(WᵀW)</span>, and V contains the right singular vectors (eigenvectors of WᵀW). The singular values measure how much W stretches along each orthogonal direction.</p>
+    <p><strong>LoRA connection:</strong> LoRA's rank-r approximation keeps only the top r singular values. If the singular values decay rapidly (a few large, then near-zero), the matrix is effectively low-rank — LoRA with r=4 or r=8 captures nearly all behavior. If the singular values are all similar (flat spectrum), the matrix is truly high-rank and LoRA will lose significant information.</p>
+
+    <!-- SVD GATE: Rogue Scalpel numerical -->
+    <div class="ibox" id="gate-svd">
+      <div class="ibox-hdr gate">Computation Gate — Adversarial Amplification Ratio</div>
+      <div class="q-text">
+        A coaching head's W_V has been analyzed via SVD. Top singular values: <span class="im">σ₁ = 4.2, σ₂ = 2.1, σ₃ = 0.8</span>.<br><br>
+        A perturbation δ aligned with the dominant right singular vector <span class="im">v₁</span> produces output change <span class="im">||Δo|| = σ₁ × ||δ||</span>.<br>
+        A perturbation aligned with the minor vector <span class="im">v₃</span> produces <span class="im">||Δo|| = σ₃ × ||δ||</span>.<br><br>
+        Compute the exact amplification ratio: how many times more impact does the adversary get by targeting <span class="im">v₁</span> vs. <span class="im">v₃</span>? Express as a decimal to two places.
+      </div>
+      <div class="inp-wrap">
+        <input type="text" id="svd-inp" class="inp" placeholder="e.g. 5.25">
+        <button class="btn" id="svd-btn" onclick="checkSVD()">Lock</button>
+      </div>
+      <div class="fb" id="fb-svd"></div>
+    </div>
+  </div>
+
+  <!-- SECTION 5 — HeadKV SCR + Hessian Table -->
+  <div class="gated" id="s5">
+    <div class="sdiv"></div>
+    <h2>HeadKV — Spectral Concentration Ratio</h2>
+    <p>HeadKV ranks all attention heads by their <strong>spectral concentration ratio (SCR)</strong>:</p>
+    <p style="text-align:center;font-family:var(--mono);font-size:0.9rem;color:var(--accent);padding:0.9rem;background:var(--surface2);border-radius:4px;margin:1rem 0;">SCR(h) = λ₁ / Σᵢλᵢ</p>
+    <p>High SCR → one eigenvalue dominates → <strong>focused retriever → PROTECT.</strong> Low SCR → eigenvalues spread → broad integrator → compress.</p>
+
+    <h3>Two Head Comparison</h3>
+    <p><strong>Head A</strong> eigenvalues: <span class="im">[0.97, 0.02, 0.008, 0.002]</span> — SCR = 0.97/1.0 = 0.97. Spectral entropy = 0.15. <strong>→ Protect.</strong></p>
+    <p><strong>Head B</strong> eigenvalues: <span class="im">[0.99, 0.04, −0.02, −0.01]</span> — The spectral gap (λ₁ − λ₂ = 0.95 for A vs 0.95 for B) is similar here, so HeadKV uses the full entropy metric. Spectral entropy = 0.92. <strong>→ Compress (4-bit cache).</strong></p>
+
+    <!-- SCR GATE -->
+    <div class="ibox" id="gate-scr">
+      <div class="ibox-hdr gate">Computation Gate — SCR Calculation</div>
+      <div class="q-text">
+        A head has eigenvalues <span class="im">[0.80, 0.10, 0.06, 0.04]</span>.<br><br>
+        Compute its SCR. Sum = 0.80 + 0.10 + 0.06 + 0.04 = 1.0. Express as a decimal (e.g. 0.80).
+      </div>
+      <div class="inp-wrap">
+        <input type="text" id="scr-inp" class="inp" placeholder="SCR = ?">
+        <button class="btn" id="scr-btn" onclick="checkSCR()">Lock</button>
+      </div>
+      <div class="fb" id="fb-scr"></div>
+    </div>
+
+    <div class="sdiv"></div>
+    <h2>Hessian Eigenvalues — Learning Rate Safety</h2>
+    <p>The Hessian H is the matrix of second-order loss derivatives. It is <strong>symmetric</strong>, so all eigenvalues are real (Spectral Theorem). Hessian eigenvalue interpretation:</p>
+    <ul style="color:var(--muted);padding-left:1.5rem;margin-bottom:1rem;">
+      <li style="margin-bottom:0.5rem;">λᵢ > 0 → loss curves UPWARD in direction vᵢ (local minimum along this axis)</li>
+      <li style="margin-bottom:0.5rem;">λᵢ < 0 → loss curves DOWNWARD (local maximum — saddle point)</li>
+      <li>λᵢ = 0 → flat — loss is insensitive to movement along this axis</li>
+    </ul>
+    <p><strong>Maximum safe learning rate:</strong> <span class="im">η_max = 2 / λ_max(H)</span></p>
+    <p>Exceeding this threshold causes oscillation and divergence along the sharpest curvature direction. This is the eigenvalue-based explanation for gradient explosion from Lesson 11.</p>
+
+    <h3>Epoch-by-Epoch Safety Table — LoRA Voice DNA Training</h3>
+    <table class="data-table">
+      <thead><tr><th>Epoch</th><th>λ_max(H)</th><th>η_max = 2/λ_max</th><th>Actual η</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>50</td><td>0.04000</td><td>0.001</td><td class="ok-c">✅ Safe</td></tr>
+        <tr><td>5</td><td>200</td><td>0.01000</td><td>0.001</td><td class="ok-c">✅ Safe</td></tr>
+        <tr><td>10</td><td>800</td><td>0.00250</td><td>0.001</td><td class="warn-c">⚠️ Approaching limit</td></tr>
+        <tr><td>12</td><td>2500</td><td>0.00080</td><td>0.001</td><td class="err-c">❌ DANGER — η &gt; η_max</td></tr>
+      </tbody>
+    </table>
+
+    <!-- HESSIAN GATE -->
+    <div class="ibox" id="gate-hess">
+      <div class="ibox-hdr gate">Computation Gate — Learning Rate Bound</div>
+      <div class="q-text">
+        At epoch 12, <span class="im">λ_max(H) = 2500</span>. The actual learning rate is <span class="im">η = 0.001</span>.<br><br>
+        Compute the maximum safe learning rate using <span class="im">η_max = 2 / λ_max</span>. Is the current training safe or in danger? Enter the η_max value (4 decimal places, e.g. 0.0008).
+      </div>
+      <div class="inp-wrap">
+        <input type="text" id="hess-inp" class="inp" placeholder="η_max = ?">
+        <button class="btn" id="hess-btn" onclick="checkHess()">Lock</button>
+      </div>
+      <div class="fb" id="fb-hess"></div>
+    </div>
+  </div>
+
+  <!-- SECTION 6 — Invariants -->
+  <div class="gated" id="s6">
+    <div class="sdiv"></div>
+    <h2>The Invariants — Core Laws</h2>
+    <p>These properties hold for ALL square matrices regardless of coordinate system:</p>
+    <table class="data-table">
+      <thead><tr><th>Invariant</th><th>Formula</th><th>Operational Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>Trace</td><td class="ok-c">tr(A) = Σλᵢ</td><td>Sum of diagonal entries = sum of eigenvalues</td></tr>
+        <tr><td>Determinant</td><td class="ok-c">det(A) = Πλᵢ</td><td>Volume scaling = product of eigenvalues. Any λ=0 → singular matrix.</td></tr>
+        <tr><td>Spectral radius</td><td class="ok-c">ρ(A) = max|λᵢ|</td><td>Maximum amplification factor; determines stability</td></tr>
+        <tr><td>Condition number</td><td class="ok-c">κ = λ_max/λ_min</td><td>Optimization difficulty; κ≫1 requires adaptive rates (Adam)</td></tr>
+        <tr><td>Eigenvalues of Aⁿ</td><td class="ok-c">λᵢⁿ</td><td>Explains gradient explosion (λ>1) and vanishing (λ&lt;1)</td></tr>
+        <tr><td>Similar matrices</td><td class="ok-c">B = P⁻¹AP</td><td>Same eigenvalues — eigenvalues are basis-invariant</td></tr>
+      </tbody>
+    </table>
+
+    <!-- INVARIANTS GATE -->
+    <div class="ibox" id="gate-inv">
+      <div class="ibox-hdr gate">Computation Gate — Trace and Determinant</div>
+      <div class="q-text">
+        Matrix <span class="im">A = [[4, 2], [1, 3]]</span> has eigenvalues λ₁ = 5 and λ₂ = 2.<br><br>
+        Verify both invariants by computing from the eigenvalues directly. Enter both values:
+      </div>
+      <div class="multi-inp">
+        <div>
+          <span class="inp-label">Trace = λ₁ + λ₂</span>
+          <input type="text" id="tr-inp" class="inp" placeholder="tr(A) = ?" autocomplete="off">
+        </div>
+        <div>
+          <span class="inp-label">Determinant = λ₁ × λ₂</span>
+          <input type="text" id="det-inp" class="inp" placeholder="det(A) = ?" autocomplete="off">
+        </div>
+      </div>
+      <button class="btn" id="inv-btn" onclick="checkInv()">Lock Both</button>
+      <div class="fb" id="fb-inv"></div>
+    </div>
+  </div>
+
+  <!-- GAUNTLET -->
+  <div class="gated" id="gauntlet-section">
+    <div class="gauntlet-wrap">
+      <h2>Mechanistic Protocol Gauntlet</h2>
+      <p style="color:var(--muted);font-size:0.9rem;margin-bottom:2rem;">Rapid-fire numeric and structural mechanics. No scaffolding.</p>
+      <div id="q-container"></div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ─── UTILITY ──────────────────────────────────────────────────────────────────
+function showFB(id, type, html) {
+  const fb = document.getElementById(id);
+  fb.className = `fb ${type} show`;
+  fb.innerHTML = html;
+}
+function fbt(t) { return `<div class="fbt">${t}</div>`; }
+function unlock(id) {
+  setTimeout(() => {
+    const el = document.getElementById(id);
+    el.style.display = 'block';
+    requestAnimationFrame(() => el.classList.add('unlocked'));
+    setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  }, 650);
+}
+function lockInputs(...ids) {
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = true;
+  });
+}
+function resetGate(inputId, btnId, fbId) {
+  lockInputs(); // unlock them
+  const inp = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  const fb  = document.getElementById(fbId);
+  if (inp) { inp.disabled = false; inp.value = ''; }
+  if (btn) btn.disabled = false;
+  if (fb)  fb.className = 'fb';
+}
+
+// ─── INTERRUPT ────────────────────────────────────────────────────────────────
+function checkInterrupt() {
+  const val = document.getElementById('int-inp').value.trim();
+  if (!val) return;
+  lockInputs('int-inp', 'int-btn');
+
+  if (val === '2') {
+    showFB('fb-int', 'ok',
+      fbt('Memory Retained') +
+      `Correct. A × [1,−1] = [3(1)+1(−1), 0(1)+2(−1)] = [2,−2] = 2 × [1,−1]. Eigenvalue λ = 2.`
+    );
+    unlock('s1');
+  } else {
+    showFB('fb-int', 'err',
+      fbt('Recall Failure') +
+      `The computation: A × [1,−1] = [3−1, 0−2] = [2,−2] = 2×[1,−1]. The eigenvalue was 2 — the vector doubled in length without rotating. Review Layer 1 before proceeding.<br><br>
+      <button class="btn btn-o" style="margin-top:0.9rem;" onclick="resetGate('int-inp','int-btn','fb-int')">Retry</button>`
+    );
+  }
+}
+
+// ─── EIGENVALUE GATE ─────────────────────────────────────────────────────────
+function checkEV() {
+  const v1 = document.getElementById('ev1').value.trim();
+  const v2 = document.getElementById('ev2').value.trim();
+  if (!v1 || !v2) return;
+  lockInputs('ev1', 'ev2', 'ev-btn');
+
+  if (v1 === '5' && v2 === '2') {
+    showFB('fb-ev', 'ok',
+      fbt('Both Eigenvalues Correct') +
+      `λ₁ = 5 and λ₂ = 2. The characteristic polynomial (λ−5)(λ−2) = 0 yields these two roots. Now we find the eigenvectors by substituting each eigenvalue back into (A−λI)v = 0.`
+    );
+    unlock('s2');
+  } else if (v1 === '2' && v2 === '5') {
+    showFB('fb-ev', 'err',
+      fbt('Order Reversed') +
+      `Both eigenvalues are correct (5 and 2), but the prompt asked for the LARGER first. λ₁ = 5 (dominant), λ₂ = 2 (secondary).<br><br>
+      <button class="btn btn-o" style="margin-top:0.9rem;" onclick="resetGateMulti('ev1','ev2','ev-btn','fb-ev')">Retry</button>`
+    );
+  } else {
+    showFB('fb-ev', 'err',
+      fbt('Computation Error') +
+      `The characteristic polynomial expands to: (4−λ)(3−λ) − 2 = λ² − 7λ + 10. Factor: (λ−5)(λ−2) = 0. Roots: λ₁ = 5, λ₂ = 2.<br><br>
+      <button class="btn btn-o" style="margin-top:0.9rem;" onclick="resetGateMulti('ev1','ev2','ev-btn','fb-ev')">Retry</button>`
+    );
+  }
+}
+
+function resetGateMulti(id1, id2, btnId, fbId) {
+  ['id1','id2'].forEach(k => { /* nothing */ });
+  [id1, id2].forEach(id => { const el = document.getElementById(id); if(el){el.disabled=false;el.value='';} });
+  document.getElementById(btnId).disabled = false;
+  document.getElementById(fbId).className = 'fb';
+}
+
+// ─── VERIFICATION GATE ────────────────────────────────────────────────────────
+function checkVerify() {
+  const r1 = document.getElementById('r1').value.trim();
+  const r2 = document.getElementById('r2').value.trim();
+  if (!r1 || !r2) return;
+  lockInputs('r1', 'r2', 'verify-btn');
+
+  if (r1 === '10' && r2 === '5') {
+    showFB('fb-verify', 'ok',
+      fbt('Verification Confirmed') +
+      `Correct. [[4,2],[1,3]] × [2,1] = [4×2+2×1, 1×2+3×1] = [10, 5] = 5 × [2,1]. ✓ The eigenvector equation holds: Av₁ = λ₁v₁ = 5×[2,1].`
+    );
+    unlock('s3');
+  } else {
+    showFB('fb-verify', 'err',
+      fbt('Computation Error') +
+      `Row 1: 4×2 + 2×1 = 8 + 2 = 10. Row 2: 1×2 + 3×1 = 2 + 3 = 5. The result is [10, 5] = 5×[2,1].<br><br>
+      <button class="btn btn-o" style="margin-top:0.9rem;" onclick="resetGateMulti('r1','r2','verify-btn','fb-verify')">Retry</button>`
+    );
+  }
+}
+
+// ─── POWER GATE ───────────────────────────────────────────────────────────────
+function checkPower() {
+  const val = document.getElementById('pow-inp').value.trim().replace(/,/g, '');
+  if (!val) return;
+  lockInputs('pow-inp', 'pow-btn');
+  const num = parseInt(val);
+  // 9765625 / 1024 = 9536.74... ≈ 9537
+  if (num >= 9530 && num <= 9540) {
+    showFB('fb-pow', 'ok',
+      fbt('Correct') +
+      `9,765,625 ÷ 1,024 ≈ 9,537. After 10 applications, the dominant eigenvector direction is over 9,500× stronger than the secondary direction. This is why attention "collapses" toward dominant tokens — the largest eigenvalue exponentially drowns out all others.`
+    );
+    unlock('s4');
+  } else {
+    showFB('fb-pow', 'err',
+      fbt('Computation Error') +
+      `5¹⁰ = 9,765,625 and 2¹⁰ = 1,024. Divide: 9,765,625 ÷ 1,024 ≈ 9,537. The dominant direction is roughly 9,537× stronger.<br><br>
+      <button class="btn btn-o" style="margin-top:0.9rem;" onclick="resetGate('pow-inp','pow-btn','fb-pow')">Retry</button>`
+    );
+  }
+}
+
+// ─── SVD GATE ─────────────────────────────────────────────────────────────────
+function checkSVD() {
+  const val = document.getElementById('svd-inp').value.trim();
+  if (!val) return;
+  lockInputs('svd-inp', 'svd-btn');
+  const num = parseFloat(val);
+  if (Math.abs(num - 5.25) < 0.05) {
+    showFB('fb-svd', 'ok',
+      fbt('Correct — 5.25× Amplification') +
+      `4.2 ÷ 0.8 = 5.25. Targeting the dominant singular vector gives the adversary 5.25× more behavioral disruption per unit of detectable input modification. This is why adversarial attacks preferentially align with eigenvector directions — maximum damage per unit of concealment effort.`
+    );
+    unlock('s5');
+  } else {
+    showFB('fb-svd', 'err',
+      fbt('Computation Error') +
+      `Ratio = σ₁ / σ₃ = 4.2 / 0.8 = 5.25. The dominant singular direction amplifies the attack 5.25× more than the minor direction.<br><br>
+      <button class="btn btn-o" style="margin-top:0.9rem;" onclick="resetGate('svd-inp','svd-btn','fb-svd')">Retry</button>`
+    );
+  }
+}
+
+// ─── SCR GATE ─────────────────────────────────────────────────────────────────
+function checkSCR() {
+  const val = document.getElementById('scr-inp').value.trim();
+  if (!val) return;
+  lockInputs('scr-inp', 'scr-btn');
+  const num = parseFloat(val);
+  if (Math.abs(num - 0.80) < 0.02) {
+    showFB('fb-scr', 'ok',
+      fbt('Correct') +
+      `SCR = 0.80 / 1.0 = 0.80. This head is moderately focused — not as concentrated as Head A (0.97) but clearly not a flat broad integrator. HeadKV would classify this as a middle-quartile head: 8-bit quantized KV cache (neither full-precision nor 4-bit compressed).`
+    );
+    unlock('s6'); // skip straight to invariants after SCR — Hessian is embedded in s5
+  } else {
+    showFB('fb-scr', 'err',
+      fbt('Computation Error') +
+      `SCR = λ₁ / Σλᵢ = 0.80 / (0.80+0.10+0.06+0.04) = 0.80 / 1.0 = 0.80.<br><br>
+      <button class="btn btn-o" style="margin-top:0.9rem;" onclick="resetGate('scr-inp','scr-btn','fb-scr')">Retry</button>`
+    );
+  }
+}
+
+// ─── HESSIAN GATE ─────────────────────────────────────────────────────────────
+function checkHess() {
+  const val = document.getElementById('hess-inp').value.trim();
+  if (!val) return;
+  lockInputs('hess-inp', 'hess-btn');
+  const num = parseFloat(val);
+  if (Math.abs(num - 0.0008) < 0.00005) {
+    showFB('fb-hess', 'ok',
+      fbt('Correct — Training Is in Danger') +
+      `η_max = 2 / 2500 = 0.0008. The actual η = 0.001 > 0.0008 — the current learning rate EXCEEDS the stability bound. The next gradient step will overshoot the minimum along the sharpest curvature direction, causing divergence. Curvature-Aligned Probing action: reduce η to 0.0005 immediately.`
+    );
+    unlock('s6');
+  } else {
+    showFB('fb-hess', 'err',
+      fbt('Computation Error') +
+      `η_max = 2 / λ_max = 2 / 2500 = 0.0008. Since η = 0.001 > 0.0008, training is already beyond the safety bound.<br><br>
+      <button class="btn btn-o" style="margin-top:0.9rem;" onclick="resetGate('hess-inp','hess-btn','fb-hess')">Retry</button>`
+    );
+  }
+}
+
+// ─── INVARIANTS GATE ─────────────────────────────────────────────────────────
+function checkInv() {
+  const tr  = document.getElementById('tr-inp').value.trim();
+  const det = document.getElementById('det-inp').value.trim();
+  if (!tr || !det) return;
+  lockInputs('tr-inp', 'det-inp', 'inv-btn');
+
+  const trOk  = tr  === '7';
+  const detOk = det === '10';
+
+  if (trOk && detOk) {
+    showFB('fb-inv', 'ok',
+      fbt('Both Invariants Confirmed') +
+      `tr(A) = λ₁ + λ₂ = 5 + 2 = 7. Verify: diagonal of A is [4, 3] → sum = 7. ✓<br>
+      det(A) = λ₁ × λ₂ = 5 × 2 = 10. Verify: det([[4,2],[1,3]]) = 4×3 − 2×1 = 10. ✓<br><br>
+      These eigenvalue invariants hold in ANY coordinate system — they are properties of the transformation itself, not of how you measure it.`
+    );
+    unlock('gauntlet-section');
+    renderGauntlet();
+  } else {
+    const msg = (!trOk ? `Trace: λ₁+λ₂ = 5+2 = 7 (not ${tr}). ` : '') +
+                (!detOk ? `Det: λ₁×λ₂ = 5×2 = 10 (not ${det}).` : '');
+    showFB('fb-inv', 'err',
+      fbt('Computation Error') + msg +
+      `<br><br><button class="btn btn-o" style="margin-top:0.9rem;" onclick="resetGateMulti('tr-inp','det-inp','inv-btn','fb-inv')">Retry</button>`
+    );
+  }
+}
+
+// ─── GAUNTLET ─────────────────────────────────────────────────────────────────
+const GAUNTLET = [
+  {
+    type: 'text', match: ['eigenvalue'],
+    q: 'The Trace of a matrix is the sum of its diagonal entries. What second quantity is the Trace invariantly equal to?',
+    exp: 'The sum of its eigenvalues. tr(A) = λ₁ + λ₂ + … + λₙ. This holds for ALL square matrices, regardless of diagonalizability.'
+  },
+  {
+    type: 'text', match: ['product'],
+    q: 'The Determinant geometrically represents total volume scaling. What eigenvalue operation does the determinant invariantly equal?',
+    exp: 'Product of eigenvalues. det(A) = λ₁ × λ₂ × … × λₙ. If any eigenvalue is 0, det = 0 — the matrix is singular (collapses space).'
+  },
+  {
+    type: 'bool', ans: true,
+    q: 'True or False: For symmetric matrices (like the Hessian), the Spectral Theorem guarantees all eigenvalues are real and all eigenvectors are orthogonal.',
+    exp: 'True. This is the Spectral Theorem. Symmetric matrices (A = Aᵀ) are always diagonalizable with real eigenvalues and orthogonal eigenvectors. The Hessian, WᵀW, and covariance matrices all qualify — they are the "safe" cases for eigenanalysis.'
+  },
+  {
+    type: 'text', match: ['svd', 'singular value'],
+    q: 'Eigenvalue decomposition requires a square matrix. What generalized decomposition (acronym) handles non-square matrices like W_Q ∈ ℝ^(d_k × d)?',
+    exp: 'SVD — Singular Value Decomposition. W = UΣVᵀ where Σ holds the singular values σᵢ = √λᵢ(WᵀW). SVD is the correct tool for all non-square Transformer weight matrices.'
+  },
+  {
+    type: 'bool', ans: false,
+    q: 'True or False: A saddle point in the loss landscape has all positive Hessian eigenvalues.',
+    exp: 'False. A saddle point has SOME positive and SOME negative eigenvalues — it is a minimum in some directions and a maximum in others. ALL positive eigenvalues = local minimum (positive definite Hessian). The sign pattern of eigenvalues identifies the type of critical point.'
+  },
+  {
+    type: 'text', match: ['4', 'four'],
+    q: 'A weight matrix update ΔW has effective rank r_eff ≈ 4 (computed from its eigenvalue distribution). What minimum LoRA rank r is needed to faithfully approximate this update?',
+    exp: 'r = 4. If r_eff ≈ 4, then LoRA with r = 4 captures essentially all of the update\'s meaningful content. The effective rank directly tells you the minimum rank needed — using r < r_eff loses information; r > r_eff wastes parameters.'
+  },
+  {
+    type: 'text', match: ['entropy', 'spectral entropy'],
+    q: 'HeadKV uses two metrics to classify heads: the spectral concentration ratio (SCR) and the ____ of the eigenvalue distribution. Low value = focused retriever. High value = broad integrator.',
+    exp: 'Spectral entropy. H_spectral = −Σ(|λᵢ|/Σ|λⱼ|) × log(|λᵢ|/Σ|λⱼ|). Low entropy = concentrated = protect. High entropy = diffuse = compress. HeadKV uses this instead of SCR alone because the stationary eigenvalue λ₁≈1 is always dominant in stochastic matrices.'
+  }
+];
+
+function renderGauntlet() {
+  const container = document.getElementById('q-container');
+  if (container.innerHTML.trim()) return;
+  let html = '';
+  GAUNTLET.forEach((item, i) => {
+    html += `<div class="q-block" id="gq-${i}">
+      <div class="q-num">Drill 0${i+1} / ${GAUNTLET.length}</div>
+      <div class="q-text-g">${item.q}</div>`;
+    if (item.type === 'bool') {
+      html += `<div class="bg">
+        <button class="btn btn-o" onclick="answerBool(${i}, true, this)">True</button>
+        <button class="btn btn-o" onclick="answerBool(${i}, false, this)">False</button>
+      </div>`;
+    } else {
+      html += `<div class="inp-wrap">
+        <input type="text" id="gi-${i}" class="inp" placeholder="Keyword or value…">
+        <button class="btn" onclick="answerText(${i}, this)">Lock</button>
+      </div>`;
+    }
+    html += `<div class="fb" id="gfb-${i}"></div></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function answerBool(i, val, btn) {
+  btn.closest('.bg').querySelectorAll('button').forEach(b => b.disabled = true);
+  const correct = (val === GAUNTLET[i].ans);
+  if (correct) { btn.style.background='rgba(42,157,143,0.2)'; btn.style.borderColor='var(--green)'; }
+  else         { btn.style.background='rgba(231,111,81,0.2)'; btn.style.borderColor='var(--red)'; }
+  const fb = document.getElementById(`gfb-${i}`);
+  fb.className = `fb ${correct ? 'ok' : 'err'} show`;
+  fb.innerHTML = fbt(correct ? 'Correct' : 'Incorrect') + GAUNTLET[i].exp;
+}
+
+function answerText(i, btn) {
+  const input = document.getElementById(`gi-${i}`);
+  const val = input.value.toLowerCase().trim();
+  if (!val) return;
+  input.disabled = true; btn.disabled = true;
+  const correct = GAUNTLET[i].match.some(m => val.includes(m.toLowerCase()));
+  const fb = document.getElementById(`gfb-${i}`);
+  fb.className = `fb ${correct ? 'ok' : 'err'} show`;
+  fb.innerHTML = fbt(correct ? 'Correct' : 'Incorrect') + GAUNTLET[i].exp;
+}
+</script>
+</body>
+</html>

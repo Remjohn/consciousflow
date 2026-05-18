@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 07 - Orchestration Layer</title>
+  <style>
+    :root {
+      --bg: #08111a;
+      --line: rgba(255,255,255,0.08);
+      --text: #f3f7fb;
+      --muted: #9ab0c2;
+      --accent: #8f7cff;
+      --good: #2ecc71;
+      --bad: #ff5c73;
+      --gold: #ffd166;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--text);
+      font-family: Georgia, "Times New Roman", serif; line-height: 1.6;
+      background: radial-gradient(circle at 15% 10%, rgba(143,124,255,0.12), transparent 28%),
+                  radial-gradient(circle at 82% 14%, rgba(86,197,255,0.12), transparent 28%),
+                  linear-gradient(180deg, #071018 0%, #08111a 48%, #09131c 100%);
+    }
+    .progress { position: fixed; top: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.05); z-index: 50; }
+    .progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, #8f7cff, #56c5ff, #2ecc71); transition: width 0.35s ease; }
+    .shell { max-width: 1120px; margin: 0 auto; padding: 42px 18px 80px; }
+    .stage { display: none; animation: fadeUp 0.45s ease; }
+    .stage.active { display: block; }
+    .card {
+      border-radius: 26px; border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
+      box-shadow: 0 26px 56px rgba(0,0,0,0.24); overflow: hidden;
+      padding: 28px; margin-top: 18px;
+    }
+    .eyebrow { color: var(--accent); text-transform: uppercase; letter-spacing: 0.2em; font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif; margin-bottom: 12px; }
+    .section-count { display: inline-block; padding: 4px 12px; border-radius: 999px; background: rgba(143,124,255,0.15); color: #c4b5fd; text-transform: uppercase; letter-spacing: 0.12em; font: 700 0.7rem/1.2 Arial, Helvetica, sans-serif; margin-bottom: 16px; }
+    h1, h2, h3 { margin: 0 0 14px; line-height: 1.08; font-weight: 500; }
+    h1 { font-size: clamp(2rem, 4vw, 3.8rem); margin-bottom: 24px; }
+    h2 { font-size: clamp(1.4rem, 2.8vw, 2.1rem); }
+    p { margin: 0 0 14px; }
+    .lede { font-size: 1.12rem; color: #d9e4ec; margin-bottom: 24px; }
+    
+    .grid-2 { display: grid; gap: 24px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mono { font-family: Consolas, Monaco, "Courier New", monospace; font-size: 0.95rem; }
+    .code-block { background: #050a10; padding: 20px; border-radius: 12px; font-family: Consolas, monospace; font-size: 0.9rem; color: #e7eef5; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 16px; white-space: pre-wrap; line-height: 1.4; box-shadow: inset 0 2px 8px rgba(0,0,0,0.4); overflow-x: auto; }
+    .keyword { color: #ff7a18; }
+    .func { color: #56c5ff; }
+    .string { color: #2ecc71; }
+    .comment { color: #89a1b2; font-style: italic; }
+    
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+    .btn { border: 0; cursor: pointer; padding: 14px 18px; border-radius: 999px; font: 700 0.94rem/1 Arial, Helvetica, sans-serif; transition: transform 0.18s ease, opacity 0.18s ease; }
+    .btn-primary { background: linear-gradient(90deg, #8f7cff, #56c5ff); color: white; }
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.15); }
+    
+    .choices { display: grid; gap: 12px; margin-top: 16px; }
+    .choice { width: 100%; text-align: left; padding: 16px 18px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); color: #e7eef5; font: 400 1rem/1.45 Arial, Helvetica, sans-serif; cursor: pointer; transition: border-color 0.18s ease, background 0.18s ease; }
+    .choice.selected { border-color: rgba(143,124,255,0.78); background: rgba(143,124,255,0.08); }
+    .locked { margin-top: 12px; color: #ffd7a6; text-transform: uppercase; letter-spacing: 0.08em; font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif; }
+    
+    .feedback { display: none; margin-top: 18px; padding: 18px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255,255,255,0.04); }
+    .feedback.show { display: block; }
+    .feedback.good { border-color: rgba(46,204,113,0.38); border-left: 4px solid var(--good); background: linear-gradient(90deg, rgba(46,204,113,0.08), transparent); }
+    .feedback.bad { border-color: rgba(255,92,115,0.38); border-left: 4px solid var(--bad); background: linear-gradient(90deg, rgba(255,92,115,0.08), transparent); }
+    .hidden { display: none; }
+    
+    input[type="text"] { width: 100%; padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.03); color: var(--text); font: 400 1rem/1.45 Arial, Helvetica, sans-serif; }
+    
+    .gauntlet-grid { display: grid; gap: 14px; margin-top: 18px; }
+    .q-card { padding: 16px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
+    .q-card label { display: block; margin-bottom: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true"><div id="progressFill" class="progress-fill"></div></div>
+  <main class="shell">
+    
+    <!-- Stage 0: Hero -->
+    <section id="stage-0" class="stage active">
+      <div class="card">
+        <p class="eyebrow">Lesson 07 - Orchestration Layer</p>
+        <h1>Universal Domain Mapping</h1>
+        <p class="lede">You have seen Pathlib secure single layers. Now you will witness this identical concept operate across all six major subsystems of the Conscious Coaching Platform. By seeing the identical rule applied across vastly different architectures, the sovereign rule becomes permanent.</p>
+        <div class="actions"><button class="btn btn-primary" onclick="goToStage(1)">Begin the Structural Tour</button></div>
+      </div>
+    </section>
+
+    <!-- Stage 1 -->
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <span class="section-count">1. The Memory Engine Context</span>
+        <h2>Atomic Replace vs String Decay</h2>
+        <p>The Neo4j graphing module relies on caching state metadata locally. Let's examine how Pathlib governs execution.</p>
+        <div class="grid-2">
+          <div class="code-block"><span class="keyword">def</span> <span class="func">cache_state</span>(payload: dict, cache_dir: Path):
+    node_file: Path = cache_dir / <span class="string">"node.cache"</span>
+    temp_file: Path = node_file.with_suffix(<span class="string">".tmp"</span>)
+    
+    <span class="keyword">try</span>:
+        <span class="keyword">with</span> temp_file.open(<span class="string">"w"</span>) <span class="keyword">as</span> f:
+            json.dump(payload, f)
+        <span class="comment"># Atomic rename guarantees integrity</span>
+        temp_file.rename(node_file)
+    <span class="keyword">except</span> <span class="func">Exception</span>:
+        <span class="keyword">if</span> temp_file.exists(): temp_file.unlink()</div>
+          <div>
+            <p>What structural guarantee does <span class="mono">.rename()</span> give the cluster if the physical server loses power explicitly halfway through writing the payload data?</p>
+            <div class="choices" data-group="p1">
+              <button class="choice" data-value="A" onclick="selectChoice('p1','A',this)">The file "node.cache" will safely roll back to its previous uncorrupted state.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('p1','B',this)">The file "node.cache" will be half-written and crash the engine upon the next reboot.</button>
+            </div>
+            <div id="p1-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions"><button id="p1-submit" class="btn btn-primary" onclick="submitChoice('p1','A',p1Feedback)">Lock prediction</button></div>
+            <div id="p1-feedback" class="feedback"></div>
+            <div id="p1-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(2)">Next Context</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stage 2 -->
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <span class="section-count">2. The Skill Compiler Context</span>
+        <h2>The Navigational Discovery Engine</h2>
+        <p>The compiler ingests thousands of individual markdown templates by walking dynamically through physical directories without hard-coding the filepaths.</p>
+        <div class="grid-2">
+          <div class="code-block"><span class="keyword">def</span> <span class="func">compile_triggers</span>(dna_dir: Path):
+    <span class="keyword">for</span> trigger_file <span class="keyword">in</span> dna_dir.rglob(<span class="string">"*.markdown"</span>):
+        taxonomy = trigger_file.parent.name
+        content = trigger_file.read_text()
+        <span class="comment"># Compiles mapped structure...</span></div>
+          <div>
+            <p>Which specific component of the Path abstraction allows the system to effortlessly auto-detect the taxonomy classification (e.g., "anxiety", "humor") of the trigger being loaded?</p>
+            <div class="choices" data-group="p2">
+              <button class="choice" data-value="A" onclick="selectChoice('p2','A',this)">The `.rglob` search parameters automatically read the markdown headers natively.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('p2','B',this)">The `trigger_file.parent.name` property resolves the physical folder it resides in.</button>
+            </div>
+            <div id="p2-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions"><button id="p2-submit" class="btn btn-primary" onclick="submitChoice('p2','B',p2Feedback)">Lock prediction</button></div>
+            <div id="p2-feedback" class="feedback"></div>
+            <div id="p2-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(3)">Next Context</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stage 3 -->
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <span class="section-count">3. Scenario Analysis</span>
+        <h2>The Universal .resolve() Purge</h2>
+        <p>A junior developer creates a pull request that deletes <span class="mono">.resolve()</span> from all Pydantic validators in the entire CCP codebase, leaving only standard Path checks.</p>
+        <p>They argue: <em>"The validators already use <span class="mono">must_be_valid</span> and <span class="mono">.exists()</span> checks. Resolving the absolute path is unnecessary processing overhead."</em></p>
+        <div class="choices" data-group="p3">
+          <button class="choice" data-value="A" onclick="selectChoice('p3','A',this)">The developer is correct. Pydantic `.exists()` is fully capable of navigating relative paths accurately regardless of root execution.</button>
+          <button class="choice" data-value="B" onclick="selectChoice('p3','B',this)">The developer is catastrophic. Different Docker microservices possess different Working Directories. Without `.resolve()`, "../models/" collapses as it seeks a directory relative to the runner, not the immutable server root.</button>
+        </div>
+        <div id="p3-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions"><button id="p3-submit" class="btn btn-primary" onclick="submitChoice('p3','B',p3Feedback)">Lock prediction</button></div>
+        <div id="p3-feedback" class="feedback"></div>
+        <div id="p3-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(4)">Test your knowledge</button></div>
+      </div>
+    </section>
+
+    <!-- Stage 4 Gauntlet -->
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="eyebrow">Orchestration Gauntlet</p>
+        <h2>Seven rapid structural queries</h2>
+        <div class="gauntlet-grid">
+          <div class="q-card"><label>1. Does `pathlib.Path` operate primarily as a string manipulater or an Object abstraction?</label><input id="g1" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label>2. Which pipeline (Chassis, Machinist, Robot Arm) writes chaotic terminal strings dynamically to log files using `.open('w')`?</label><input id="g2" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label>3. If the Skill Compiler uses `.rglob()`, what type of execution does the QA Department typically utilize statically to reject `.bin` payloads? (Validation, Execution)</label><input id="g3" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label>4. If a script writes to `"node_01.tmp"` then calls `.rename()`, what specific OS security is invoked? (Asynchronous, Atomic)</label><input id="g4" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label>5. How does FastAPI prevent path exploitation? (Using regex filters, Using `.startswith` on resolved paths)</label><input id="g5" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label>6. Can the `with` context manager natively prevent two parallel backend workers from writing into the exact same log file at the exact same millisecond? (Yes, No)</label><input id="g6" type="text" placeholder="Short answer (Yes/No)"></div>
+          <div class="q-card"><label>7. If `cwd` goes unspecified in `subprocess.run()`, where does the execution randomly output files globally?</label><input id="g7" type="text" placeholder="Short answer"></div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="gradeGauntlet()">Submit gauntlet</button></div>
+        <div id="gauntlet-feedback" class="feedback"></div>
+        <div id="final-box" class="final-box hidden"><p class="eyebrow" style="margin-bottom:10px;">Layer 3 Complete</p></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const totalStages = 5;
+    const selections = {};
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = 'feedback show ' + type;
+      box.innerHTML = '<h3>' + title + '</h3><p>' + body + '</p>';
+    }
+
+    function selectChoice(groupId, value, element) {
+      if (document.querySelector(`[data-group="${groupId}"]`).dataset.locked === 'true') return;
+      selections[groupId] = value;
+      document.querySelectorAll(`[data-group="${groupId}"] .choice`).forEach(b => b.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function submitChoice(groupId, correct, feedbackPack) {
+      const selected = selections[groupId];
+      if (!selected) {
+        showFeedback(groupId + '-feedback', 'bad', 'Prediction required', 'Commit to an answer before the reveal.');
+        return;
+      }
+      document.querySelector(`[data-group="${groupId}"]`).dataset.locked = 'true';
+      document.getElementById(groupId + '-submit').disabled = true;
+      document.getElementById(groupId + '-lock').classList.remove('hidden');
+      
+      const isCorrect = selected === correct;
+      const payload = isCorrect ? feedbackPack.good : feedbackPack.bad;
+      showFeedback(groupId + '-feedback', isCorrect ? 'good' : 'bad', payload.title, payload.body);
+      document.getElementById(groupId + '-next').classList.remove('hidden');
+    }
+
+    const p1Feedback = {
+      good: { title: 'Correct: Operating System Level Atomicity.', body: 'By utilizing `.with_suffix(".tmp")` and exclusively saving logic to the tmp file first, the target node file remains untouched until `.rename()` is called. `.rename()` is handled atomically by the OS. It is a single, impenetrable operation. Safe rollback achieved.' },
+      bad: { title: 'Misconception exposed.', body: 'You assumed the OS would leave partial bytes corrupted in the target file. However, because `.rename()` triggers an atomic inode swap, "node.cache" is physically isolated from the write destruction until it officially flips over. No partial write is possible.' }
+    };
+
+    const p2Feedback = {
+      good: { title: 'Correct: The Filesystem as Database.', body: 'Pathlib naturally exposes the nested hierarchies of the disk by using `.parent.name`. Instead of regex or maintaining dictionaries, the Compiler seamlessly retrieves taxonomies directly from the parent physical folder classification.' },
+      bad: { title: 'Misconception exposed.', body: 'The `.rglob` function is physically searching filesystem names. It does not parse or have any comprehension of the interior Markdown headers inside the file payloads.' }
+    };
+
+    const p3Feedback = {
+      good: { title: 'Correct: Absolute reality check.', body: 'The system would become deeply non-sovereign. If a Docker container starts from `/bin/` while a bare-metal supervisor starts from `/ccp/`, their identical relative paths crash because they refer to divergent spatial dimensions. `.resolve()` freezes relative dimensions into Absolute Truth.' },
+      bad: { title: 'Misconception exposed.', body: 'Relative paths are dynamic aliases. They depend utterly on the origin executing process. Leaving paths unresolved is the premier cause of multi-server infrastructure collapse.' }
+    };
+
+    function containsAny(value, options) {
+      return options.some(opt => value.includes(opt));
+    }
+
+    function gradeGauntlet() {
+      const answers = { 
+        g1: ['object'], 
+        g2: ['robot', 'robot arm', 'harness', 'subprocess', 'pi'], 
+        g3: ['validation'], 
+        g4: ['atomic'], 
+        g5: ['startswith', 'start', 'startswith()', 'resolve'], 
+        g6: ['no', 'false'], 
+        g7: ['working directory', 'cwd', 'root', 'current', 'worker'] 
+      };
+      let score = 0;
+      Object.entries(answers).forEach(([id, kws]) => {
+        const val = document.getElementById(id).value.trim().toLowerCase();
+        if (val && containsAny(val, kws)) {
+          document.getElementById(id).style.borderColor = 'rgba(46,204,113,0.8)';
+          score++;
+        } else {
+          document.getElementById(id).style.borderColor = 'rgba(255,92,115,0.8)';
+        }
+      });
+      if (score >= 5) {
+        showFeedback('gauntlet-feedback', 'good', `Cleared: ${score}/7`, 'Your multi-system architecture mapping is flawless. Proceed to the timed Master examination.');
+        document.getElementById('final-box').classList.remove('hidden');
+      } else {
+        showFeedback('gauntlet-feedback', 'bad', `Failed: ${score}/7`, 'Re-evaluate the structural deployments across the subsystems before entering the Terminal Assessment.');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 12 — Orchestration Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--violet);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--violet);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1.2;min-width:320px;}
+.visual-col{flex:1;min-width:280px;}
+
+.insight{border-left:3px solid var(--violet);padding:.8rem 1rem;background:var(--violet-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--violet);}
+.insight.rose{border-left-color:var(--rose);background:var(--rose-glow);}
+.insight.rose strong{color:var(--rose);}
+.insight.teal{border-left-color:var(--teal);background:var(--teal-glow);}
+.insight.teal strong{color:var(--teal);}
+
+.tab-btn{padding:.6rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-dim);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.85rem;transition:all .2s;}
+.tab-btn:hover{color:var(--text);border-color:var(--border-light);}
+.tab-btn.active{background:var(--violet-glow);color:var(--violet);border-color:var(--violet);}
+
+.domain-content{display:none;}
+.domain-content.active{display:block;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.code-block {font-family: Consolas, Monaco, "Courier New", monospace;background: #050a0f;border: 1px solid rgba(255,255,255,0.1);padding: 16px;border-radius: 12px;color: #8b5cf6;font-size: 0.9rem;margin-bottom: 16px;white-space: pre-wrap;}
+
+.scroll-hint{animation:bounce 2s ease infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+
+.quiz-option{display:block;width:100%;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:.88rem;color:var(--text-muted);transition:all .25s;text-align:left;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;}
+.quiz-option:hover{border-color:var(--border-light);color:var(--text);}
+.quiz-option.correct{border-color:var(--emerald);color:var(--emerald);background:var(--emerald-glow);}
+.quiz-option.wrong{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+.quiz-option.disabled{pointer-events:none;opacity:.6;}
+.quiz-explanation{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+.quiz-explanation.show{max-height:300px;}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column-reverse!important;}
+  .canvas-wrap{min-height:300px!important;}
+  .nav-links{display:none;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--violet);">FASTAPI — ORCHESTRATION LAYER</span>
+    <div class="nav-links">
+      <a href="#subsystems" class="nav-link active" data-section="subsystems">6 Subsystems</a>
+      <a href="#dichotomy" class="nav-link" data-section="dichotomy">Dichotomy</a>
+      <a href="#checkpoint" class="nav-link" data-section="checkpoint">Gauntlet</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:1rem;">LESSON 12 — ORCHESTRATION LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      The Factory Flow<br><span style="color:var(--text-muted);font-weight:300;">Commanding the 6 Subsystems</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      FastAPI does not generate AI responses. It orchestrates the flow of data across the Chassis, Pydantic, DSPy, Memory Graphs, and Pipecat WebSockets. See how the HTTP Backbone integrates them all.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: 6 Subsystems -->
+<section id="subsystems" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — ARCHITECTURAL INTEGRATION</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">The 6-Context Case Study Tour</h2>
+
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.5rem;">
+      <button class="tab-btn active" data-target="sys_chassis">1. The Chassis</button>
+      <button class="tab-btn" data-target="sys_qa">2. QA Validation</button>
+      <button class="tab-btn" data-target="sys_mach">3. The Machinist</button>
+      <button class="tab-btn" data-target="sys_robot">4. Robot Arm</button>
+      <button class="tab-btn" data-target="sys_mem">5. Memory Engine</button>
+      <button class="tab-btn" data-target="sys_jit">6. Skill Compiler</button>
+    </div>
+
+    <div class="flex-layout">
+      <div class="reading-col">
+        <!-- Chassis -->
+        <div id="sys_chassis" class="domain-content active">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--violet);">1. The Chassis (Uvicorn / Router Edge)</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            Incoming JSON hits the Uvicorn ASGI server natively bound to FastAPI's event loop.
+          </p>
+          <div class="code-block">@app.post("/api/v1/trigger")
+async def trigger_run():
+    # Only code within endpoints natively accesses HTTP context headers.</div>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+            <strong>Orchestration Role:</strong> The singular Front Door. Prevents internal Python logic from needing to know how HTTP TCP/IP packets are formatted.
+          </p>
+        </div>
+
+        <!-- QA -->
+        <div id="sys_qa" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--violet);">2. QA Validation (Pydantic Layer)</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            FastAPI offloads payload structuring to Pydantic before allowing the endpoint function to execute.
+          </p>
+          <div class="code-block">async def trigger_run(payload: TriggerModel):
+    # If payload lacks required fields, FastAPI returns an HTTP 422 immediately.
+    # The code below this line is guaranteed safe.</div>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+            <strong>Orchestration Role:</strong> Rejects malformed physical inputs (missing keys, typing failures) before the Machinist wastes tokens processing them.
+          </p>
+        </div>
+
+        <!-- Machinist -->
+        <div id="sys_mach" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--violet);">3. The Machinist (DSPy Synthesizer)</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            The payload safely traverses into the neural inference module (DSPy).
+          </p>
+          <div class="code-block">prediction = dspy_module(
+    client_state=payload.state,
+    history=history_block
+)</div>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+            <strong>Orchestration Role:</strong> FastAPI steps out of the way. It `awaits` the Machinist, allowing other clients to hit the chassis while DSPy takes 4 seconds to predict.
+          </p>
+        </div>
+
+        <!-- Robot Arm -->
+        <div id="sys_robot" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--violet);">4. The Robot Arm (External WebSockets)</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            For streaming output, Pipecat needs constant latency-free channels.
+          </p>
+          <div class="code-block">@app.websocket("/stream")
+async def audio_stream(ws: WebSocket):
+    await ws.accept()
+    # Holds connection open permanently for Pipecat.</div>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+            <strong>Orchestration Role:</strong> Maintains bidirectional, long-lived pipelines bypassing the REST statelessness, pushing TTS bytes the millisecond they are compiled.
+          </p>
+        </div>
+
+        <!-- Memory -->
+        <div id="sys_mem" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--violet);">5. The Memory Engine (Neo4j Context)</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            The endpoint needs historical coaching context before requesting inference.
+          </p>
+          <div class="code-block">async def trigger_run(
+    payload: TriggerModel,
+    db: AsyncSession = Depends(get_neo4j)
+):
+    history = await db.run("MATCH (c:Client)-[:SAID]->(a) RETURN a")</div>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+            <strong>Orchestration Role:</strong> Uses `Depends()` to inject the DB driver precisely when requested, guaranteeing closure and preventing connection exhaustion on scale.
+          </p>
+        </div>
+
+        <!-- Skill Compiler -->
+        <div id="sys_jit" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--violet);">6. The Skill Compiler (JIT Operations)</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            If the system determines a new cognitive Skill is needed for the user, it requires background compilation so the client isn't waiting.
+          </p>
+          <div class="code-block">async def trigger_run(bg_tasks: BackgroundTasks):
+    bg_tasks.add_task(compile_new_skill, client_id)
+    return {"status": "skill compilation queued"}</div>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+            <strong>Orchestration Role:</strong> Releases the HTTP response (and the client terminal) immediately, then quietly executes the heavy 3-minute synthesis on the server without hanging Uvicorn.
+          </p>
+        </div>
+      </div>
+
+      <!-- Visual Column: Diagram Simulator -->
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:400px; background:radial-gradient(circle at 50% 50%, rgba(139,92,246,0.1) 0%, transparent 70%);">
+          <canvas id="orchCanvas"></canvas>
+        </div>
+        <div class="card" style="padding:1rem; margin-top:1rem; text-align:center;">
+             <p style="font-size:.8rem;color:var(--text-muted);" id="orchCaption">Select a subsystem on the left to highlight its exact zone in the orchestrator.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: Dichotomy -->
+<section id="dichotomy" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">02 — DICTUMS OF CONTROL</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">The Architecture of Sovereignty</h2>
+    
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;">
+      <div class="card" style="padding:1.5rem; border-top:3px solid var(--amber);">
+          <h3 style="font-size:1.2rem; color:var(--amber);">1. Deterministic Execution Boundaries</h3>
+          <p style="font-size:.9rem; color:var(--text-muted); line-height:1.6;">
+              FastAPI sets a hard boundary. Everything <em>outside</em> is chaotic, unpredictable client data. Everything <em>inside</em> the Pydantic-validated endpoint is strongly typed, predictable Python structurally guaranteed to execute. The system never relies on "hope."
+          </p>
+      </div>
+      <div class="card" style="padding:1.5rem; border-top:3px solid var(--rose);">
+          <h3 style="font-size:1.2rem; color:var(--rose);">2. Decoupled Memory Injection</h3>
+          <p style="font-size:.9rem; color:var(--text-muted); line-height:1.6;">
+              By leveraging `Depends`, DB Sessions are decoupled from physical routing syntax. FastApi manages the async tear-down safely. If a session throws an error, the pipeline gracefully cleans the socket before terminating, ensuring 100% memory integrity.
+          </p>
+      </div>
+      <div class="card" style="padding:1.5rem; border-top:3px solid var(--emerald);">
+          <h3 style="font-size:1.2rem; color:var(--emerald);">3. Native Async Concurrency</h3>
+          <p style="font-size:.9rem; color:var(--text-muted); line-height:1.6;">
+              FastAPI runs on the ASGI standard, natively awaiting DSPy Network I/O without blocking the CPU Event Loop. A 12-second LLM inference does not bottleneck the server from accepting 5,000 other WebSocket connections simultaneously.
+          </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: Checkpoint Gauntlet -->
+<section id="checkpoint" class="section">
+  <div class="section-inner" style="max-width:720px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">03 — CHECKPOINT</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Orchestration Gauntlet</h2>
+    <div id="quizContainer" style="display:flex;flex-direction:column;gap:1.5rem;"></div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);margin-top:2rem;">
+  Interactive Visual Learning — Lesson 12: FastAPI Orchestration Layer
+</footer>
+
+<script>
+const DPR=window.devicePixelRatio||1;
+function setupCanvas(c){const p=c.parentElement,r=p.getBoundingClientRect();c.width=r.width*DPR;c.height=r.height*DPR;c.style.width=r.width+'px';c.style.height=r.height+'px';const ctx=c.getContext('2d');ctx.scale(DPR,DPR);return{ctx,w:r.width,h:r.height};}
+
+/* Hero bg */
+(function(){const c=document.getElementById('heroCanvas');let W,H,ctx;
+function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+resize();window.addEventListener('resize',resize);
+let t=0;
+function draw(){ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='rgba(139, 92, 246, 0.04)';
+  ctx.lineWidth=2;
+  for(let i=0; i<15; i++) {
+     ctx.beginPath();
+     ctx.arc(W/2, H/2, i*40 + Math.sin(t*0.02 + i)*15, 0, Math.PI*2);
+     ctx.stroke();
+  }
+  t++;requestAnimationFrame(draw);}
+draw();})();
+
+/* Subsystem Diagram */
+(function(){
+  const canvas=document.getElementById('orchCanvas');
+  let currentTab = 'sys_chassis';
+  
+  const nodes = {
+     chassis: {x: 150, y: 80, label: "Uvicorn ASGI", color: "#8b5cf6"},
+     qa: {x: 150, y: 160, label: "Pydantic Shield", color: "#f59e0b"},
+     memory: {x: 250, y: 160, label: "Neo4j DB (Depends)", color: "#14b8a6"},
+     mach: {x: 150, y: 250, label: "DSPy Inference", color: "#3b82f6"},
+     jit: {x: 250, y: 320, label: "Background Tasks", color: "#10b981"},
+     socket: {x: 50, y: 250, label: "WebSockets", color: "#f43f5e"}
+  };
+
+  const mapToTab = {
+      'sys_chassis': ['chassis'],
+      'sys_qa': ['qa'],
+      'sys_mach': ['mach'],
+      'sys_robot': ['socket'],
+      'sys_mem': ['memory'],
+      'sys_jit': ['jit']
+  };
+
+  function draw(){
+    const{ctx,w,h}=setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+    
+    // Links
+    ctx.strokeStyle = "rgba(255,255,255,0.1)";
+    ctx.lineWidth = 2;
+    
+    [[nodes.chassis, nodes.qa], [nodes.qa, nodes.mach], [nodes.qa, nodes.memory], [nodes.chassis, nodes.socket], [nodes.mach, nodes.jit]].forEach(([n1, n2]) => {
+        ctx.beginPath(); ctx.moveTo(n1.x, n1.y); ctx.lineTo(n2.x, n2.y); ctx.stroke();
+    });
+
+    const activeNodes = mapToTab[currentTab];
+
+    Object.entries(nodes).forEach(([key, n]) => {
+        const isActive = activeNodes.includes(key);
+        
+        ctx.fillStyle = isActive ? n.color : "rgba(255,255,255,0.05)";
+        ctx.strokeStyle = isActive ? "#fff" : "rgba(255,255,255,0.2)";
+        ctx.beginPath();
+        ctx.roundRect(n.x - 40, n.y - 20, 80, 40, 8);
+        ctx.fill(); ctx.stroke();
+        
+        if (isActive) {
+           ctx.shadowColor = n.color;
+           ctx.shadowBlur = 15;
+           ctx.stroke();
+           ctx.shadowBlur = 0;
+        }
+
+        ctx.fillStyle = isActive ? "#000" : "#a1a1aa";
+        ctx.font = isActive ? "bold 9px Space Grotesk" : "9px Space Grotesk";
+        ctx.textAlign = "center";
+        
+        let words = n.label.split(" ");
+        if (words.length > 2) {
+             ctx.fillText(words[0]+" "+words[1], n.x, n.y - 2);
+             ctx.fillText(words.slice(2).join(" "), n.x, n.y + 8);
+        } else {
+             ctx.fillText(n.label, n.x, n.y + 3);
+        }
+    });
+  }
+
+  // Tab events
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTab=btn.dataset.target;
+      document.querySelectorAll('.domain-content').forEach(c=>c.classList.remove('active'));
+      document.getElementById(currentTab).classList.add('active');
+      
+      const captions = {
+          sys_chassis: "The Entrance Gate. Processes raw TCP/IP data into Python-readable arguments.",
+          sys_qa: "The Verifier. Validates JSON typing constraints to prevent internal crashes.",
+          sys_mach: "The Brain. Sits quietly while chassis routes IO; executes heavy context logic.",
+          sys_robot: "The Streamer. Handles persistent state connections replacing stateless POST sequences.",
+          sys_mem: "The DB Architect. Injects lifecycle-managed sessions avoiding deadlocks.",
+          sys_jit: "The Queue Worker. Background compiled arrays pushing the LLM tasking async."
+      };
+      document.getElementById('orchCaption').textContent = captions[currentTab];
+      draw();
+    });
+  });
+
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Quiz */
+(function(){
+  const questions=[
+    {q:"Does FastAPI run the LLM operations?",
+     opts:["Yes, it contains the weights internally.","No. FastAPI handles only HTTP connection tracking and argument structuring; DSPy handles generation.","Yes, if Pydantic permits it.","No, Uvicorn connects directly to PyTorch via WebSockets."],
+     correct:1,explanation:"FastAPI holds no machine inference power. It purely delegates requests and enforces strict type boundaries."},
+    {q:"If the system needs to compress 10,000 words of memory after completing an HTTP request for a client, what FastAPI system should it use?",
+     opts:["A `Depends()` injection module.","An async def while-loop structure.","FastAPI's BackgroundTasks component.","It must happen on a different microservice container entirely."],
+     correct:2,explanation:"Using BackgroundTasks releases the HTTP response to the client immediately, shifting the 10,000-word processing to post-response local execution threads without dropping chassis efficiency."},
+    {q:"Does Pydantic validation happen before or after the endpoint logic executes?",
+     opts:["After, via `response_model`.","Before, validating physical inputs.","Both. It guards inputs via parameter type hints and checks outputs via `response_model` decoration.","Simultaneously via asynchronous threading multiplexing."],
+     correct:2,explanation:"Pydantic serves two gates: Input (checking what enters the def payload) and Output (verifying what the def generated via response_model)."},
+    {q:"If a WebSocket handler is programmed with a `time.sleep(20)` command, what occurs at the chassis layer?",
+     opts:["Nothing, sockets are parallel.","The client socket disconnects.","The FastAPI central event loop stalls, freezing all system connections synchronously.","The machine re-computes the AST graph."],
+     correct:2,explanation:"In asyncio logic grids natively driving Uvicorn/FastAPI, blocking physical sleep operations hijack the core thread, halting everything else."}
+  ];
+  const container=document.getElementById('quizContainer');
+  questions.forEach((q,qi)=>{
+    const card=document.createElement('div');card.className='card';card.style.padding='1.25rem';
+    let optsHTML='';q.opts.forEach((o,oi)=>{optsHTML+=`<button class="quiz-option" data-q="${qi}" data-o="${oi}">${o}</button>`;});
+    card.innerHTML=`<p style="font-size:.82rem;font-weight:600;color:var(--text-dim);margin-bottom:.75rem;">Question ${qi+1}</p>
+      <p style="font-size:.92rem;line-height:1.6;margin-bottom:1rem;">${q.q}</p>
+      <div id="qO${qi}">${optsHTML}</div>
+      <div class="quiz-explanation" id="qE${qi}" style="margin-top:.75rem;"><div class="insight">${q.explanation}</div></div>`;
+    container.appendChild(card);
+  });
+  container.addEventListener('click',(e)=>{
+    const btn=e.target.closest('.quiz-option');if(!btn)return;
+    const qi=+btn.dataset.q,oi=+btn.dataset.o;
+    const opts=document.querySelectorAll(`#qO${qi} .quiz-option`);
+    if(opts[0].classList.contains('disabled'))return;
+    opts.forEach((o,i)=>{o.classList.add('disabled');
+      if(i===questions[qi].correct)o.classList.add('correct');
+      else if(i===oi&&oi!==questions[qi].correct)o.classList.add('wrong');});
+    document.getElementById(`qE${qi}`).classList.add('show');
+  });
+})();
+
+/* Nav */
+(function(){
+  const links=document.querySelectorAll('.nav-link');
+  const ids=['subsystems','dichotomy','checkpoint'];
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+100;let active=ids[0];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+    links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));
+  });
+})();
+</script>
+</body>
+</html>

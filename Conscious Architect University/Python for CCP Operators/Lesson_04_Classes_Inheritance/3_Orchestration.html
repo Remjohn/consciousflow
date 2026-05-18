@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classes & Inheritance — Orchestration Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{
+  --bg:#09090b;--surface:#131316;--surface2:#1a1a1f;--surface3:#27272a;
+  --text:#fafafa;--muted:#a1a1aa;--border:#27272a;
+  --accent:#3b82f6;--accent-glow:rgba(59, 130, 246, 0.12);
+  --red:#f43f5e;--red-glow:rgba(244, 63, 94, 0.12);
+  --green:#10b981;--green-glow:rgba(16, 185, 129, 0.12);
+  --amber:#f59e0b;--amber-glow:rgba(245, 158, 11, 0.12);
+  --magenta:#d946ef;--magenta-glow:rgba(217, 70, 239, 0.12);
+  --mono:'JetBrains Mono',monospace;--sans:'DM Sans',sans-serif;--grotesk:'Space Grotesk',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.65;overflow-x:hidden;}
+.container{max-width:800px;margin:0 auto;padding:4rem 2rem 10rem;}
+
+h1{font-family:var(--grotesk);font-size:clamp(2.5rem,5.5vw,3.5rem);line-height:1.1;margin-bottom:1.5rem;letter-spacing:-0.03em;}
+h2{font-family:var(--grotesk);font-size:1.8rem;margin-bottom:1rem;color:var(--text);font-weight:700;}
+h3{font-family:var(--grotesk);font-size:1.3rem;margin-bottom:1rem;color:var(--accent);font-weight:600;}
+p{margin-bottom:1.4rem;color:var(--muted);font-size:1.05rem;line-height:1.7;}
+strong{color:var(--text);}
+code{font-family:var(--mono);font-size:0.85em;background:var(--surface2);padding:0.2em 0.4em;border-radius:4px;color:var(--amber);}
+
+pre{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:1.2rem;overflow-x:auto;margin-bottom:1.5rem;}
+pre code{background:transparent;padding:0;color:var(--text);font-size:0.9rem;}
+.keyword{color:#c678dd;} .string{color:#98c379;} .class{color:#e5c07b;} .param{color:#d19a66;} .type{color:#56b6c2;} .comment{color:#5c6370;font-style:italic;}
+
+/* CONTEXT CARDS */
+.grid{display:grid;grid-template-columns:repeat(2, 1fr);gap:1.5rem;margin-bottom:3rem;margin-top:2rem;}
+@media(max-width:700px){.grid{grid-template-columns:1fr;}}
+.ctx-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.5rem;position:relative;cursor:pointer;transition:all 0.2s;}
+.ctx-card:hover{border-color:var(--accent);transform:translateY(-2px);background:var(--surface2);}
+.ctx-icon{font-size:1.5rem;color:var(--magenta);margin-bottom:1rem;}
+.ctx-title{font-family:var(--grotesk);font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;}
+.ctx-desc{font-size:0.9rem;color:var(--muted);line-height:1.5;}
+
+.ctx-modal{position:fixed;inset:0;background:rgba(9,9,11,0.95);backdrop-filter:blur(8px);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s;}
+.ctx-modal.active{opacity:1;pointer-events:auto;}
+.ctx-modal-content{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--magenta);border-radius:8px;width:90%;max-width:700px;max-height:90vh;overflow-y:auto;padding:2.5rem;position:relative;transform:translateY(20px);transition:transform 0.3s;}
+.ctx-modal.active .ctx-modal-content{transform:translateY(0);}
+.close-btn{position:absolute;top:1rem;right:1.5rem;background:transparent;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer;transition:color 0.2s;}
+.close-btn:hover{color:var(--text);}
+.modal-role{font-family:var(--mono);font-size:0.75rem;color:var(--magenta);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.5rem;}
+
+/* CHALLENGES */
+.challenge-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2rem;margin-bottom:2rem;position:relative;overflow:hidden;}
+.challenge-box::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--amber);}
+.chal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;}
+.chal-title{font-family:var(--grotesk);font-size:1.2rem;font-weight:600;}
+.chal-tag{font-family:var(--mono);font-size:0.7rem;color:var(--amber);background:var(--amber-glow);padding:0.3rem 0.6rem;border-radius:4px;text-transform:uppercase;}
+
+.input-text{background:var(--bg);border:1px solid var(--border);color:#fff;font-family:var(--mono);font-size:0.95rem;padding:0.75rem 1rem;flex:1;border-radius:6px;width:100%;margin-bottom:1rem;resize:vertical;}
+.input-text:focus{outline:none;border-color:var(--amber);}
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.75rem 1.5rem;font-family:var(--grotesk);font-weight:600;font-size:0.95rem;border-radius:6px;cursor:pointer;transition:all 0.18s;}
+.btn:hover:not(:disabled){transform:translateY(-1px);background:#e4e4e7;}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+
+.lock-display{display:none;margin-top:1.5rem;padding:1.5rem;background:var(--surface2);border-radius:6px;border:1px dashed var(--border);}
+.lock-display.visible{display:block;}
+.reveal-text{font-size:0.95rem;color:var(--muted);line-height:1.6;}
+.reveal-text strong{color:var(--amber);}
+
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div style="font-family:var(--mono);font-size:0.75rem;color:var(--magenta);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.15em;">Lesson 04 · Layer 3 — Orchestration</div>
+  <h1>Multi-Context Case Studies</h1>
+  <p style="font-size:1.15rem;margin-bottom:2.5rem;color:var(--text);">The Class structure shape-shifts across the CCP's core subsystems while executing the exact identical architectural purpose: geometric constraint.</p>
+
+  <p>To master the CCP, you must abstract the concept out of its specific implementation and see the physics moving seamlessly across departments. Explore the 6 fundamental contexts below.</p>
+
+  <div class="grid">
+    <div class="ctx-card" onclick="openCtx('ctx1')">
+      <div class="ctx-icon"><i class="fa-solid fa-server"></i></div>
+      <div class="ctx-title">1. The Chassis (FastAPI)</div>
+      <div class="ctx-desc">The deterministic ingress orchestrator blocking broken payloads.</div>
+    </div>
+    <div class="ctx-card" onclick="openCtx('ctx2')">
+      <div class="ctx-icon"><i class="fa-solid fa-check-double"></i></div>
+      <div class="ctx-title">2. The QA Department (Pydantic)</div>
+      <div class="ctx-desc">The structural inspection station executing strict mathematical gating.</div>
+    </div>
+    <div class="ctx-card" onclick="openCtx('ctx3')">
+      <div class="ctx-icon"><i class="fa-solid fa-microchip"></i></div>
+      <div class="ctx-title">3. The Machinist (DSPy)</div>
+      <div class="ctx-desc">The optimization compiler bridging logic modules for AI.</div>
+    </div>
+    <div class="ctx-card" onclick="openCtx('ctx4')">
+      <div class="ctx-icon"><i class="fa-solid fa-robot"></i></div>
+      <div class="ctx-title">4. The Robot Arm (Pi Harness)</div>
+      <div class="ctx-desc">Subprocess isolation preventing execution state bleeding over shell loops.</div>
+    </div>
+    <div class="ctx-card" onclick="openCtx('ctx5')">
+      <div class="ctx-icon"><i class="fa-solid fa-diagram-project"></i></div>
+      <div class="ctx-title">5. The Memory Engine (Neo4j)</div>
+      <div class="ctx-desc">Graph serializers bridging pure python into raw native Cypher objects.</div>
+    </div>
+    <div class="ctx-card" onclick="openCtx('ctx6')">
+      <div class="ctx-icon"><i class="fa-solid fa-tachograph-digital"></i></div>
+      <div class="ctx-title">6. The Skill Compiler (Voice DNA)</div>
+      <div class="ctx-desc">Dynamic template builders systematically layering prompt overrides safely.</div>
+    </div>
+  </div>
+
+  <div id="challenges" style="display:none;opacity:0;transition:opacity 0.6s;margin-top:5rem;">
+    <h2 style="margin-bottom:2rem;border-top:1px solid var(--border);padding-top:3rem;">Critical Thinking Challenges</h2>
+    <p>Trace the conceptual framework limits across these architectural edge-case variations. Formulate your reasoning and lock your structural critique.</p>
+
+    <div class="challenge-box">
+      <div class="chal-header">
+        <div class="chal-title">Challenge 1: The Missing Graph Gate</div>
+        <div class="chal-tag">Memory Engine</div>
+      </div>
+<pre><code><span class="keyword">def</span> <span class="type">insert_feedback</span>(<span class="param">data</span>: <span class="type">dict</span>):
+    driver.session().run(<span class="string">"CREATE (n:Feedback {text: $text})"</span>, text=data[<span class="string">"feedback"</span>])</code></pre>
+      <p style="font-size:0.95rem;"><strong>WHERE</strong> is the architectural structural gap here? <strong>WHAT</strong> crashes natively internally specifically under stochiastic loads?</p>
+      <textarea id="c1_input" class="input-text" rows="3" placeholder="Analyze the omission..."></textarea>
+      <button class="btn" id="c1_btn" onclick="lockCh(1)">Commit Critique</button>
+      <div class="lock-display" id="c1_lock">
+        <div class="reveal-text"><strong>Architectural Assessment:</strong> The gap is between the raw <code>dict</code> parameter and the DB command. It requires a QA class inheritance parameter signature. Under live load, if the AI output dictionary is missing the exactly matched "feedback" key, the python engine crashes aggressively with a <code>KeyError</code> shutting down data indexing mid-session.</div>
+      </div>
+    </div>
+
+    <div class="challenge-box">
+      <div class="chal-header">
+        <div class="chal-title">Challenge 2: The Subtle Robot Arm</div>
+        <div class="chal-tag">Pi Harness</div>
+      </div>
+      <p style="font-size:0.95rem;">An agent proposes deploying global variable tracking across external bash processes inside a script instead of encapsulating them into local instances via <code>class SubprocessEnvironment</code>.</p>
+      <p style="font-size:0.95rem;"><strong>WHAT</strong> breaks simultaneously during asynchronous system operations?</p>
+      <textarea id="c2_input" class="input-text" rows="3" placeholder="Trace the error consequences..."></textarea>
+      <button class="btn" id="c2_btn" onclick="lockCh(2)">Commit Critique</button>
+      <div class="lock-display" id="c2_lock">
+        <div class="reveal-text"><strong>Architectural Assessment:</strong> Execution Context Bleed. Since multiple bash scripts would trigger concurrently during asynchronous looping sweeps, they would overwrite the identical global trace variables simultaneously (a catastrophic Race Condition), wiping out command history completely.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="ctx-modal" id="ctxModal" onclick="this.classList.remove('active')">
+  <div class="ctx-modal-content" onclick="event.stopPropagation()">
+    <button class="close-btn" onclick="document.getElementById('ctxModal').classList.remove('active')"><i class="fa-solid fa-xmark"></i></button>
+    <div class="modal-role" id="m_role">Role</div>
+    <h2 id="m_title">Title</h2>
+    <div id="m_code"></div>
+    <div id="m_purpose" style="margin-top:1.5rem;font-size:0.95rem;color:var(--muted);line-height:1.6;border-top:1px solid var(--border);padding-top:1.5rem;"></div>
+  </div>
+</div>
+
+<script>
+const CTX_DATA = {
+  ctx1: {
+    role: "The deterministic orchestrator", title: "The Chassis (FastAPI)",
+    code: `<pre><code><span class="keyword">class</span> IngressFrictionTrigger(BaseModel):
+    anxiety_vector: <span class="type">float</span>
+
+<span class="type">@router.post</span>("/trigger")
+<span class="keyword">async def</span> ingest(payload: IngressFrictionTrigger):
+    <span class="keyword">return</span> {"status": "ok"}</code></pre>`,
+    purpose: "<strong>Architectural Purpose:</strong> Operates exactly at the gateway perimeter. The Chassis uses Class implementation embedded in route signatures to delegate HTTP body evaluations prior to executing the backend processing loops."
+  },
+  ctx2: {
+    role: "The immutable quality gate", title: "The QA Department",
+    code: `<pre><code><span class="keyword">class</span> SessionValidation(<span class="class">BaseModel</span>):
+    cbcs_alignment: <span class="type">float</span> = Field(..., le=<span class="string">1.0</span>)</code></pre>`,
+    purpose: "<strong>Architectural Purpose:</strong> Checks outputs internally against exact structural rules. Inheriting from <code>BaseModel</code> guarantees the AI output geometry bounds natively instead of manually writing multi-loop evaluations over nested dict outputs."
+  },
+  ctx3: {
+    role: "The pipeline optimization compiler", title: "The Machinist (DSPy)",
+    code: `<pre><code><span class="keyword">class</span> PivotOptimizer(dspy.Module):
+    <span class="keyword">def</span> __init__(self):
+        super().__init__()
+        self.analyze = dspy.ChainOfThought(...)
+    <span class="keyword">def</span> forward(self, txt):
+        <span class="keyword">return</span> self.analyze(txt=txt)</code></pre>`,
+    purpose: "<strong>Architectural Purpose:</strong> The class acts purely to define execution topologies and establish tracker mapping arrays for the optimizer array via the <code>super()</code> instantiation hook. Without the structure, AI prompts cannot be mathematically tuned."
+  },
+  ctx4: {
+    role: "Shell execution container", title: "The Robot Arm",
+    code: `<pre><code><span class="keyword">class</span> IsolatedExecution:
+    <span class="keyword">def</span> __init__(self, script):
+        self.cmd = script
+        self.status = "PENDING"
+    <span class="keyword">def</span> run(self): ...</code></pre>`,
+    purpose: "<strong>Architectural Purpose:</strong> Class instances encapsulate inherently dangerous shell manipulations to ensure no state logic or logs overlap into parallel threaded deployments across asynchronous AI loops."
+  },
+  ctx5: {
+    role: "The graph state serializer", title: "The Memory Engine",
+    code: `<pre><code><span class="keyword">class</span> SessionNode(<span class="class">BaseModel</span>):
+    sid: <span class="type">str</span>
+    <span class="keyword">def</span> format_for_cypher(self):
+        <span class="keyword">return</span> self.model_dump()</code></pre>`,
+    purpose: "<strong>Architectural Purpose:</strong> Serialization gateway wrapper generating guaranteed mathematically valid flattened dictionaries dynamically bridging standard python code objects into native Cypher execution matrices securely."
+  },
+  ctx6: {
+    role: "The dynamic template assembler", title: "The Skill Compiler",
+    code: `<pre><code><span class="keyword">class</span> CompileBehavioral:
+    <span class="keyword">def</span> __init__(self, dna: VoiceDNASignature):
+        self.dna = dna
+    <span class="keyword">def</span> overlay(self, prompt):
+        <span class="keyword">return</span> f"{self.dna.intensity} | {prompt}"</code></pre>`,
+    purpose: "<strong>Architectural Purpose:</strong> Systematic logical construction locks ensuring variable components required for baseline persona prompting never drift, duplicate, or misarrange prior to execution generation."
+  }
+};
+
+let viewedCards = new Set();
+function openCtx(id) {
+  const d = CTX_DATA[id];
+  document.getElementById('m_role').innerHTML = d.role;
+  document.getElementById('m_title').innerHTML = d.title;
+  document.getElementById('m_code').innerHTML = d.code;
+  document.getElementById('m_purpose').innerHTML = d.purpose;
+  document.getElementById('ctxModal').classList.add('active');
+  
+  viewedCards.add(id);
+  if(viewedCards.size >= 6) {
+    document.getElementById('challenges').style.display = 'block';
+    setTimeout(() => document.getElementById('challenges').style.opacity = '1', 50);
+  }
+}
+
+function lockCh(id){
+  const inp = document.getElementById('c'+id+'_input');
+  if(inp.value.length < 5) return;
+  inp.disabled = true;
+  document.getElementById('c'+id+'_btn').disabled = true;
+  document.getElementById('c'+id+'_lock').classList.add('visible');
+}
+</script>
+</body>
+</html>

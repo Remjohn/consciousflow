@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCP Skill Node | Lesson 15: HuggingFace - Application</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0c0a08;
+            --card-color: #151210;
+            --text-main: #e2dcd0;
+            --accent-yellow: #ffcc00;
+            --accent-blue: #3291ff;
+            --accent-green: #00ffaa;
+            --accent-red: #ff3366;
+            --accent-purple: #b05cff;
+            --border-color: #2a2520;
+            --font-main: 'Inter', sans-serif;
+            --font-code: 'Space Mono', monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.5rem;
+            color: var(--accent-yellow);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        h2 { margin-top: 3rem; color: #fff; }
+        h3 { color: var(--accent-blue); font-family: var(--font-code); }
+
+        pre {
+            background-color: #000;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            font-family: var(--font-code);
+            font-size: 0.95rem;
+            color: #56B6C2;
+        }
+        
+        code {
+            font-family: var(--font-code);
+            background-color: #1a1a1a;
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            color: #ff8800;
+        }
+
+        .interrupt-gate {
+            background-color: rgba(255, 204, 0, 0.1);
+            border: 2px solid var(--accent-yellow);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .interrupt-gate h2 { margin-top: 0; color: var(--accent-yellow); }
+
+        .artifact-card {
+            background-color: var(--card-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .artifact-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .artifact-header h3 { margin: 0; }
+        .tier-badge {
+            background-color: rgba(50, 145, 255, 0.2);
+            color: var(--accent-blue);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: var(--font-code);
+            font-size: 0.8rem;
+        }
+
+        .prediction-gate, .gauntlet-card {
+            background-color: #000;
+            border-left: 4px solid var(--accent-purple);
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .gauntlet-card {
+            border-left-color: var(--accent-yellow);
+            border: 1px solid var(--border-color);
+        }
+
+        textarea.predict-input {
+            width: 100%;
+            background-color: #151210;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            font-family: var(--font-code);
+            padding: 1rem;
+            border-radius: 6px;
+            min-height: 80px;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+        }
+
+        button.action-btn {
+            background-color: var(--accent-blue);
+            color: #000;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            font-family: var(--font-code);
+            font-weight: 700;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        button.action-btn:hover { background-color: #5bb0ff; }
+        button.action-btn:disabled { background-color: #333; color: #666; cursor: not-allowed; }
+        
+        button.action-btn.purple { background-color: var(--accent-purple); }
+        button.action-btn.purple:hover { background-color: #c98cff; }
+
+        .revelation {
+            display: none;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+        .revelation.active { display: block; animation: fadeIn 0.5s; }
+
+        .locked-state {
+            color: var(--accent-green);
+            font-family: var(--font-code);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .gauntlet-options { display: flex; flex-direction: column; gap: 0.8rem; margin: 1rem 0; }
+        .gauntlet-option {
+            background-color: #151210;
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .gauntlet-reveal {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: rgba(0, 255, 170, 0.05);
+            border-left: 3px solid var(--accent-green);
+        }
+        .gauntlet-reveal.active { display: block; }
+        .gauntlet-reveal.incorrect { border-left-color: var(--accent-red); background-color: rgba(255, 51, 102, 0.05); }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .main-content { display: none; }
+        .main-content.active { display: block; animation: fadeIn 0.8s; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🟡 APPLICATION / CCP PRODUCTION LAYER: HuggingFace & Transformers</h1>
+
+    <!-- 1. SPACED RETRIEVAL INTERRUPT -->
+    <div class="interrupt-gate" id="interrupt-container">
+        <h2>1. SPACED RETRIEVAL INTERRUPT</h2>
+        <p><strong>Without looking:</strong> What identical HuggingFace method allows the Sovereign Architect to inject Jean Pierre's extreme confrontation archetype or Audrey's hyper-empathic archetype into a frozen 72-billion parameter basemodel without crashing the hardware?</p>
+        <textarea id="interrupt-input" class="predict-input" placeholder="Recall the exact method from Layer 1."></textarea>
+        <button class="action-btn" onclick="unlockContent()">Verify & Unlock Machinery</button>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-top:1rem;">(Do not proceed until you have explicitly registered the exact Python method in your mind. The factory relies on your precision.)</p>
+    </div>
+
+    <div class="main-content" id="main-content">
+        <h2>2. THE CCP ARTIFACT GALLERY</h2>
+        <p>You are now stepping off the catwalk and examining the production machinery. HuggingFace is not just a library here; it is the physical engine block of the CCP execution environment.</p>
+
+        <!-- Artifact 1 -->
+        <div class="artifact-card">
+            <div class="artifact-header">
+                <h3>Artifact 1: FastAPI Lifespan — Engine Initialization</h3>
+                <span class="tier-badge">Sovereign NIM MCDA (Tier P0)</span>
+            </div>
+            <p>When the FastAPI server starts, the massive cognitive engine must be loaded into memory before the first WebSocket connection is accepted.</p>
+            <pre><code>from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+
+orchestrator_engine = {}
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Mounting Sovereign Base Model...")
+    orchestrator_engine["tokenizer"] = AutoTokenizer.from_pretrained("Qwen/Qwen3.5-72B")
+    orchestrator_engine["model"] = AutoModelForCausalLM.from_pretrained(
+        "Qwen/Qwen3.5-72B", torch_dtype=torch.float16, device_map="auto"
+    ).eval()
+    
+    print("Engine Online. 144GB VRAM Reserved.")
+    yield
+    orchestrator_engine.clear()
+    torch.cuda.empty_cache()
+
+app = FastAPI(lifespan=lifespan)</code></pre>
+            <div class="prediction-gate" id="gate-1">
+                <p><strong>Prediction Gate:</strong> If the LLM integration logic removed the <code>.eval()</code> call, what happens to the consistency of Jean Pierre's coaching responses over a 30-minute session?</p>
+                <textarea class="predict-input" placeholder="Predict the physical session consequence..."></textarea>
+                <button class="action-btn purple" onclick="unlockGate(1)">Commit Hypothesis</button>
+                <div class="revelation" id="rev-1">
+                    <strong style="color:var(--accent-green)">REVELATION:</strong> The responses become wildly inconsistent and prone to degradation. Without <code>.eval()</code>, internal dropout layers remain active, randomly zeroing out neural pathways during inference and breaking the deterministic guarantee of the session.
+                    <br><br><strong>Orchestration Dichotomy:</strong> This belongs to <strong>The Chassis</strong>. Without this initialization logic, the factory has no electricity.
+                </div>
+            </div>
+        </div>
+
+        <!-- Artifact 2 -->
+        <div class="artifact-card">
+            <div class="artifact-header">
+                <h3>Artifact 2: Pydantic QA — Generation Contract Enforcement</h3>
+                <span class="tier-badge">OpenProse Contract Vocabulary (Tier P2)</span>
+            </div>
+            <p>Before parameters hit the HuggingFace generate method, they must pass through a strict OpenProse compliance gate.</p>
+            <pre><code>from pydantic import BaseModel, Field, model_validator
+
+class GenerationContract(BaseModel):
+    max_new_tokens: int = Field(ge=50, le=2048)
+    temperature: float = Field(default=0.7, ge=0.0, le=1.2)
+    do_sample: bool = True
+    
+    @model_validator(mode='after')
+    def enforce_deterministic_sampling(self) -> 'GenerationContract':
+        if self.temperature == 0.0 and self.do_sample is True:
+            raise ValueError("Greedy decoding (temp=0.0) requires do_sample=False")
+        return self
+
+def trigger_hf_generation(contract: GenerationContract, input_ids: torch.Tensor):
+    return orchestrator_engine["model"].generate(
+        input_ids=input_ids,
+        max_new_tokens=contract.max_new_tokens,
+        temperature=contract.temperature,
+        do_sample=contract.do_sample
+    )</code></pre>
+            <div class="prediction-gate" id="gate-2">
+                <p><strong>Prediction Gate:</strong> If <code>max_new_tokens</code> was configured by an agent to <code>10000</code>, what explicitly catches it before entering HF?</p>
+                <textarea class="predict-input" placeholder="Identify the exact mechanism..."></textarea>
+                <button class="action-btn purple" onclick="unlockGate(2)">Commit Hypothesis</button>
+                <div class="revelation" id="rev-2">
+                    <strong style="color:var(--accent-green)">REVELATION:</strong> The Pydantic QA department strictly clips this via <code>le=2048</code>. It prevents an agent hallucination from locking the GPU hardware into a catastrophic endless generation loop.
+                    <br><br><strong>Orchestration Dichotomy:</strong> This belongs to <strong>The QA Department</strong>. If removed, HuggingFace faithfully executes garbage parameters.
+                </div>
+            </div>
+        </div>
+
+        <!-- Artifact 3 -->
+        <div class="artifact-card">
+            <div class="artifact-header">
+                <h3>Artifact 3: DSPy Pipeline — Remote HF Instantiation</h3>
+                <span class="tier-badge">DSPy: The End of Prompt Engineering (Tier P1)</span>
+            </div>
+            <p>DSPy doesn't interact directly with PyTorch tensors; it relies on a local HuggingFace inference server wrapped in a DSPy LM class.</p>
+            <pre><code>import dspy
+
+sovereign_lm = dspy.HFClientTGI(
+    model="Qwen/Qwen3.5-72B",
+    port=8080,
+    url="http://localhost",
+    max_tokens=1024
+)
+dspy.settings.configure(lm=sovereign_lm)</code></pre>
+            <div class="prediction-gate" id="gate-3">
+                <p><strong>Prediction Gate:</strong> If the <code>url="http://localhost"</code> were changed to an external OpenAI endpoint, what fundamental CCP architectural law is broken?</p>
+                <textarea class="predict-input" placeholder="State the fundamental law..."></textarea>
+                <button class="action-btn purple" onclick="unlockGate(3)">Commit Hypothesis</button>
+                <div class="revelation" id="rev-3">
+                    <strong style="color:var(--accent-green)">REVELATION:</strong> Dictum 3 of the Orchestration Dichotomy: Sovereignty. Externalizing cognitive execution means you no longer hold the weights. The system becomes an API wrapper subject to latency, censorship, and data exfiltration.
+                    <br><br><strong>Orchestration Dichotomy:</strong> This belongs to <strong>The Machinist</strong>.
+                </div>
+            </div>
+        </div>
+
+        <!-- Artifact 4 -->
+        <div class="artifact-card">
+            <div class="artifact-header">
+                <h3>Artifact 4: Pi Harness — LoRA Weight Swapping</h3>
+                <span class="tier-badge">Pi Agentic Harness (Tier P0)</span>
+            </div>
+            <p>The Agentic harness uses subprocesses to manipulate the file system and download new LoRA DNA without contaminating the main FastAPI process.</p>
+            <pre><code>import subprocess
+from pathlib import Path
+
+def download_voice_dna(dna_id: str) -> Path:
+    target_dir = Path(f"/ccp/safetensors/{dna_id}")
+    
+    result = subprocess.run(
+        ["huggingface-cli", "download", f"ccp-internal/{dna_id}", "--local-dir", str(target_dir)],
+        capture_output=True, text=True, timeout=120
+    )
+    
+    if result.returncode != 0:
+        raise RuntimeError(f"DNA injection failed. Subprocess halted.")
+    return target_dir</code></pre>
+            <div class="prediction-gate" id="gate-4">
+                <p><strong>Prediction Gate:</strong> What exact failure does the <code>timeout=120</code> prevent during a live coaching session?</p>
+                <textarea class="predict-input" placeholder="Mechanistic reasoning for timeouts..."></textarea>
+                <button class="action-btn purple" onclick="unlockGate(4)">Commit Hypothesis</button>
+                <div class="revelation" id="rev-4">
+                    <strong style="color:var(--accent-green)">REVELATION:</strong> It prevents a network hanging connection from completely freezing the Pi orchestration loop. Without it, a dropped packet could cause the coach dialogue to simply stop responding infinitely.
+                    <br><br><strong>Orchestration Dichotomy:</strong> This is <strong>The Robot Arm</strong>.
+                </div>
+            </div>
+        </div>
+
+        <h2>3. DATA FLOW TRACING EXERCISE (STEP-BY-STEP)</h2>
+        <div style="background-color:#1a1a1a; padding:1.5rem; border-left:3px solid #ccc; font-size:0.95rem;">
+            <em>Workflow: The Context Engine requests a Voice DNA Swap (Jean Pierre to Audrey), generates response, outputs text.</em>
+            <ol>
+                <li><strong>The Memory:</strong> Graph limits mandate switch from JP to Audrey.</li>
+                <li><strong>The Chassis:</strong> Triggers <code>invoke_voice_dna("audrey_dna_v5")</code>.</li>
+                <li><strong>The Robot Arm:</strong> Checks/Downloads <code>audrey_dna_v5</code> safetensors via subprocess.</li>
+                <li><strong>The Laser Cutter:</strong> <code>model.load_adapter("audrey_dna_v5")</code>.</li>
+                <li><strong>The Machinist:</strong> DSPy assembles prompt.</li>
+                <li><strong>Tokenizer:</strong> Converts English to IDs <code>[244, 18, 5900...]</code>.</li>
+                <li><strong>QA Dept:</strong> <code>GenerationContract</code> validated.</li>
+                <li><strong>The Laser Cutter:</strong> <code>generate(**tokens)</code> executes.</li>
+                <li><strong>Tokenizer:</strong> Decodes output IDs back to words.</li>
+                <li><strong>The Chassis:</strong> WebSocket streaming response.</li>
+            </ol>
+            <p style="color:var(--accent-yellow); margin-bottom:0;">(If you cannot trace a string of text converting into an integer, shifting through an A100 tensor array constrained by Pydantic, and returning as text, you cannot debug the factory.)</p>
+        </div>
+
+        <h2>4. PRODUCTION EDGE CASES</h2>
+        <ul>
+            <li><strong style="color:var(--accent-red)">The OOM Hardware Catastrophe:</strong> Forgetting <code>device_map="auto"</code> attempts to load 144GB onto an 80GB GPU. Triggers unrecoverable CUDA OOM. Hardware physics dictates a strict restart.</li>
+            <li><strong style="color:var(--accent-red)">Silence from Tokenizer Mismatch:</strong> Loading Gemma model with Qwen tokenizer. Generates ID garbage. Dictates RAW.works sovereignty (strict alignment of models + tokenizers).</li>
+            <li><strong style="color:var(--accent-red)">422 Response from QA:</strong> Demanding <code>temperature=3.5</code>. Pydantic catches it <em>before</em> HF executes, saving GPU compute cycles and triggering a fast retry logic.</li>
+        </ul>
+
+        <!-- GAUNTLET -->
+        <h2>5. APPLICATION GAUNTLET</h2>
+        <p>Test your ability to read the code that drives the factory.</p>
+
+        <!-- Q1 -->
+        <div class="gauntlet-card" id="q-1">
+            <pre><code>class KeywordStoppingCriteria(StoppingCriteria):
+    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
+        for stop_id in self.stop_words_ids:
+            if input_ids[0][-1] == stop_id:
+                return True
+        return False</code></pre>
+            <p><strong>Q1:</strong> What concept is this code using?</p>
+            <div class="gauntlet-options">
+                <label class="gauntlet-option"><input type="radio" name="q1" value="A"> A) It creates a custom HF intervention that halts generation the millisecond a specific token ID is produced.</label>
+                <label class="gauntlet-option"><input type="radio" name="q1" value="B"> B) It validates Pydantic length constraints.</label>
+                <label class="gauntlet-option"><input type="radio" name="q1" value="C"> C) It prevents OOM errors.</label>
+            </div>
+            <button class="action-btn" onclick="checkGauntlet(1, 'A')">Evaluate Output</button>
+            <div class="gauntlet-reveal" id="g-rev-1"></div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="gauntlet-card" id="q-2">
+            <p><strong>Q2:</strong> If line 4 (<code>if input_ids[0][-1] == stop_id:</code>) encounters an IndexError due to empty `input_ids`, what happens?</p>
+            <div class="gauntlet-options">
+                <label class="gauntlet-option"><input type="radio" name="q2" value="A"> A) HuggingFace ignores it and keeps generating.</label>
+                <label class="gauntlet-option"><input type="radio" name="q2" value="B"> B) The entire inference loop crashes. PyTorch exception halts generation.</label>
+                <label class="gauntlet-option"><input type="radio" name="q2" value="C"> C) DSPy automatically retires the prompt.</label>
+            </div>
+            <button class="action-btn" onclick="checkGauntlet(2, 'B')">Evaluate Output</button>
+            <div class="gauntlet-reveal" id="g-rev-2"></div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="gauntlet-card" id="q-3">
+            <pre><code>async def ensure_lora_cache(dna_name: str) -> Path:
+    cache_dir = Path("/ccp/dna_cache") / dna_name
+    if not cache_dir.exists():
+        snapshot_download(repo_id=f"ccpvault/{dna_name}", local_dir=cache_dir)
+    return cache_dir</code></pre>
+            <p><strong>Q3:</strong> Why is this code placed *before* the PeftModel orchestration?</p>
+            <div class="gauntlet-options">
+                <label class="gauntlet-option"><input type="radio" name="q3" value="A"> A) Because HF must compile the weights first.</label>
+                <label class="gauntlet-option"><input type="radio" name="q3" value="B"> B) Because you cannot inject a LoRA matrix into memory if the .safetensors files do not exist on the local disk.</label>
+                <label class="gauntlet-option"><input type="radio" name="q3" value="C"> C) To free up GPU memory.</label>
+            </div>
+            <button class="action-btn" onclick="checkGauntlet(3, 'B')">Evaluate Output</button>
+            <div class="gauntlet-reveal" id="g-rev-3"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function unlockContent() {
+        const input = document.getElementById('interrupt-input').value.toLowerCase();
+        if(input.includes("peftmodel") || input.includes("peft")) {
+            document.getElementById('interrupt-container').style.display = 'none';
+            document.getElementById('main-content').classList.add('active');
+        } else {
+            alert("Incorrect. Think back to the Capability Layer. What method wraps the base engine with a LoRA adapter?");
+        }
+    }
+
+    function unlockGate(id) {
+        const ta = document.querySelector(`#gate-${id} textarea`);
+        if(ta.value.length < 10) return alert("Enter a rigorous hypothesis.");
+        ta.disabled = true;
+        document.querySelector(`#gate-${id} button`).style.display = 'none';
+        
+        const loc = document.createElement('div');
+        loc.className = 'locked-state';
+        loc.innerHTML = '🔒 Hypothesis Locked.';
+        ta.parentNode.insertBefore(loc, ta);
+        
+        document.getElementById(`rev-${id}`).classList.add('active');
+    }
+
+    const answers = {
+        1: { correct: 'A', text: "It intercepts the token stream live during inference, halting generation instantly upon hitting semantic targets." },
+        2: { correct: 'B', text: "PyTorch errors propagate up immediately. An uncaught index error crashes the GPU thread completely." },
+        3: { correct: 'B', text: "Data locality. HuggingFace requires physical `.safetensors` access to stream data into the GPU execution engine." }
+    };
+
+    function checkGauntlet(q, ans) {
+        const sel = document.querySelector(`input[name="q${q}"]:checked`);
+        if(!sel) return alert("Select an option.");
+        
+        document.querySelectorAll(`input[name="q${q}"]`).forEach(i => i.disabled = true);
+        document.querySelector(`#q-${q} button`).style.display = 'none';
+        
+        const rev = document.getElementById(`g-rev-${q}`);
+        if(sel.value === ans) {
+            rev.innerHTML = `<strong>[✓] ALIGNED.</strong><br>${answers[q].text}`;
+            rev.className = 'gauntlet-reveal active';
+        } else {
+            rev.innerHTML = `<strong>[✗] ERROR. Correct was ${ans}.</strong><br>${answers[q].text}`;
+            rev.className = 'gauntlet-reveal incorrect active';
+        }
+    }
+</script>
+
+</body>
+</html>

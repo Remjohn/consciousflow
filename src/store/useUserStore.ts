@@ -7,7 +7,9 @@ import { API_URL } from '../lib/api';
 export interface Metrics {
     production: {
         videos: number;
-        pomodoros: number;
+        pomodoros: number; // Deep Work
+        managementSessions: number;
+        points: number;
         proofPhotoUrl?: string;
     };
     finance: {
@@ -20,10 +22,13 @@ export interface Metrics {
         abs: number;
         biceps: number;
         burpees: number;
+        boxing: number;
+        kegels: number;
+        singing: number;
+        dancing: number;
     };
     lifestyle: {
         sleep: number;
-        meditation: boolean;
         noSocial: boolean;
         noYouTube: boolean;
         // Phone Usage (Priority #1)
@@ -31,8 +36,6 @@ export interface Metrics {
         phonePickups: number;
         // Extended Protocols
         coldShower: boolean;
-        journaling: boolean;
-        reading: boolean;
         kegels: boolean;  // Pelvic floor training
     };
 }
@@ -43,75 +46,7 @@ export interface DailyRecord {
     isWin: boolean; // videos >= 5
 }
 
-export type CandidateStage = 'POOL' | 'GROUP_STAGE' | 'ROUND_OF_16' | 'QUARTER_FINALS' | 'SEMI_FINALS' | 'FINALS' | 'CHAMPION';
-
 export type ScheduleMode = 'CORE_SLEEP' | 'PROTOCOL_START' | 'ALPHA_WORK' | 'RECOVERY' | 'NOURISH_RESET' | 'BRAVO_WORK' | 'FREE_BLOCK' | 'SHUTDOWN';
-
-export interface Candidate {
-    id: number;
-    userId: number;
-    name: string;
-    nickname?: string;
-    dob?: string;
-    photoUrl?: string;
-    stage: CandidateStage;
-
-    // Prescreening
-    age?: number;
-    ageScore: number;
-    isAgeDisqualified: boolean;
-
-    cuteness?: number;
-    prettiness?: number;
-    hotness?: number;
-    cleanliness?: number;
-    beautyScore?: number;
-    beautyLocked: boolean;
-
-    lifePathNumber?: number;
-    birthdateNumber?: number;
-    pinnacleNumber?: number;
-    numerologyScore: number;
-
-    // Metrics
-    valuesAlignment: number;
-    familyStructure: number;
-    communicationStyle: number;
-    disciplineStructure: number;
-    healthHygiene: number;
-    socialReputation: number;
-    teachability: number;
-    socialMediaConduct: number;
-
-    // Flags
-    redFlagCount: number;
-    greenFlagCount: number;
-    redFlagScore: number;
-    greenFlagScore: number;
-
-    // Totals
-    preScreeningScore: number;
-    coreMetricsScore: number;
-    questionsScore: number;
-    totalChampionshipScore: number;
-
-    // Meta
-    parentalApproval: boolean;
-    isArchived: boolean;
-    archiveReason?: string;
-    isDisqualified: boolean;
-    disqualificationReason?: string;
-
-    notes?: string;
-    createdAt?: string;
-
-    // V2 Fields
-    tiktokUrl?: string;
-    instagramUrl?: string;
-    facebookUrl?: string;
-    bonusPoints?: number;
-    penaltyPoints?: number;
-}
 
 interface UserState {
     name: string;
@@ -134,21 +69,11 @@ interface UserState {
         monthTarget: number;
     };
 
-    // CHAMPIONSHIP (Dating)
-    candidates: Candidate[];
-
     // ACTIONS
     fetchFromBackend: () => Promise<void>;
     incrementMetric: (category: keyof Metrics, field: string, amount?: number) => void;
     setMetric: (category: keyof Metrics, field: string, value: number | boolean | string) => void;
     checkDailyReset: () => void; // Checks if day turned over
-
-    // CHAMPIONSHIP ACTIONS
-    fetchCandidates: () => Promise<void>;
-    addCandidate: (candidate: { name: string; nickname?: string; dob?: string; photoUrl?: string; notes?: string; }) => Promise<void>;
-    moveCandidate: (id: number, stage: CandidateStage) => Promise<void>;
-    updateCandidate: (id: number, updates: Partial<Candidate>) => void;
-    removeCandidate: (id: number) => void;
 
     // GETTERS (Analytics)
     getStats: (scope: 'day' | 'week' | 'month', category: keyof Metrics, field: string) => number;
@@ -164,13 +89,13 @@ interface UserState {
 export const getTodayDate = () => new Date().toISOString().split('T')[0];
 
 const INITIAL_METRICS: Metrics = {
-    production: { videos: 0, pomodoros: 0, proofPhotoUrl: '' },
+    production: { videos: 0, pomodoros: 0, managementSessions: 0, points: 0, proofPhotoUrl: '' },
     finance: { revenue: 0, activeClients: 0, total2026: 0 },
-    fitness: { pushups: 0, abs: 0, biceps: 0, burpees: 0 },
+    fitness: { pushups: 0, abs: 0, biceps: 0, burpees: 0, boxing: 0, kegels: 0, singing: 0, dancing: 0 },
     lifestyle: {
-        sleep: 0, meditation: false, noSocial: false, noYouTube: false,
+        sleep: 0, noSocial: false, noYouTube: false,
         phoneHours: 0, phonePickups: 0,
-        coldShower: false, journaling: false, reading: false, kegels: false
+        coldShower: false, kegels: false
     }
 };
 
@@ -183,7 +108,6 @@ export const useUserStore = create<UserState>()(
         history: [],
         currentDate: getTodayDate(),
         today: INITIAL_METRICS,
-        candidates: [],
         goalStatus: { monthVideos: 0, monthTarget: 150 },
         isPunished: false,
 
@@ -265,23 +189,22 @@ export const useUserStore = create<UserState>()(
             const mins = now.getMinutes();
             const totalMins = hours * 60 + mins;
             const { today } = get();
-            const actual = today.production.pomodoros;
+            const actual = today.production.videos; // Tracking against 12 daily packages
 
             let expected = 0;
-            // ... same logic as before ...
-            if (totalMins > 420 && totalMins <= 620) expected = Math.floor((totalMins - 420) / 25);
-            else if (totalMins > 620 && totalMins <= 640) expected = 8;
-            else if (totalMins > 640 && totalMins <= 840) expected = 8 + Math.floor((totalMins - 640) / 25);
-            else if (totalMins > 840 && totalMins <= 900) expected = 16;
-            else if (totalMins > 900 && totalMins <= 1050) expected = 16 + Math.floor((totalMins - 900) / 30);
-            else if (totalMins > 1050 && totalMins <= 1070) expected = 21;
-            else if (totalMins > 1070 && totalMins <= 1170) expected = 21 + Math.floor((totalMins - 1070) / 25);
-            else if (totalMins > 1170) expected = 25;
+            if (totalMins > 420 && totalMins <= 620) expected = Math.floor((totalMins - 420) / (200 / 3)); // Alpha 1: 3 pkgs
+            else if (totalMins > 620 && totalMins <= 640) expected = 3;
+            else if (totalMins > 640 && totalMins <= 840) expected = 3 + Math.floor((totalMins - 640) / (200 / 4)); // Alpha 2: +4 pkgs (7)
+            else if (totalMins > 840 && totalMins <= 900) expected = 7;
+            else if (totalMins > 900 && totalMins <= 1050) expected = 7 + Math.floor((totalMins - 900) / (150 / 3)); // Bravo 1: +3 pkgs (10)
+            else if (totalMins > 1050 && totalMins <= 1070) expected = 10;
+            else if (totalMins > 1070 && totalMins <= 1170) expected = 10 + Math.floor((totalMins - 1070) / (100 / 2)); // Bravo 2: +2 pkgs (12)
+            else if (totalMins > 1170) expected = 12;
 
             const diff = actual - expected;
             let status: 'AHEAD' | 'ON_TRACK' | 'LAGGING' = 'ON_TRACK';
             if (diff >= 1) status = 'AHEAD';
-            if (diff <= -2) status = 'LAGGING';
+            if (diff <= -1) status = 'LAGGING';
 
             return { status, expected, actual, diff };
         },
@@ -310,8 +233,8 @@ export const useUserStore = create<UserState>()(
 
         getHungerState: () => {
             const videos = get().today.production.videos;
-            if (videos < 2) return 'STARVATION';
-            if (videos < 5) return 'SUSTENANCE';
+            if (videos < 6) return 'STARVATION';
+            if (videos < 12) return 'SUSTENANCE';
             return 'FEAST';
         },
 
@@ -340,6 +263,22 @@ export const useUserStore = create<UserState>()(
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ field: 'pomodoros', value: newToday.production.pomodoros })
+                    }).catch(console.error);
+                }
+                else if (category === 'production' && field === 'points') {
+                    newToday.production.points += amount;
+                    fetch(`${API_URL}/api/dashboard/update`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ field: 'points', value: newToday.production.points })
+                    }).catch(console.error);
+                }
+                else if (category === 'production' && field === 'managementSessions') {
+                    newToday.production.managementSessions += amount;
+                    fetch(`${API_URL}/api/dashboard/update`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ field: 'management_sessions', value: newToday.production.managementSessions })
                     }).catch(console.error);
                 }
                 else if (category === 'finance' && field === 'revenue') {
@@ -405,58 +344,6 @@ export const useUserStore = create<UserState>()(
                     today: newDayMetrics
                 });
             }
-        },
-        // --- CHAMPIONSHIP ACTIONS ---
-
-        fetchCandidates: async () => {
-            try {
-                const res = await fetch(`${API_URL}/api/championship/leaderboard`);
-                if (!res.ok) throw new Error('Failed to fetch candidates');
-                const data = await res.json();
-                set({ candidates: data.candidates });
-            } catch (err) {
-                console.error(err);
-            }
-        },
-
-        addCandidate: async (candidate) => {
-            // Now assumes calling with { name, nickname, dob, photoUrl, notes }
-            try {
-                const res = await fetch(`${API_URL}/api/championship/candidate`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(candidate)
-                });
-                if (res.ok) {
-                    get().fetchCandidates(); // Refresh list
-                }
-            } catch (err) { console.error(err); }
-        },
-
-        moveCandidate: async (id, stage) => {
-            try {
-                await fetch(`${API_URL}/api/championship/candidate/${id}/advance`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ targetStage: stage }) // Assuming simple move for now
-                });
-                get().fetchCandidates();
-            } catch (err) { console.error(err); }
-        },
-
-        updateCandidate: (_id, _updates) => {
-            // Placeholder for local optimistic update or specific API call
-            // For full integration, we should use specific setter actions (setAppearance, etc.)
-            // This generic one might be deprecated or mapped to specific endpoints.
-            // For now, let's keep it local-only to avoid breaking UI that relies on valid ID logic?
-            // Actually, logic is backend now.
-            console.warn("Generic updateCandidate called - use specific setters");
-        },
-
-        removeCandidate: async (id) => {
-            // Implement delete/archive endpoint later?
-            // For now, local optimistic removal to keep UI responsive
-            set((state) => ({ candidates: state.candidates.filter(c => c.id !== id) }));
         },
     })
 );

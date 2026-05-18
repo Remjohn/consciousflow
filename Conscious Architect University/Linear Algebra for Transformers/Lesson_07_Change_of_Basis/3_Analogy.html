@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Change of Basis — The Transfer Domain</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0A;--surface:#151515;--surface2:#1E1E1E;--surface3:#2A2A2A;
+  --text:#FAFAFA;--muted:#A0A0A0;--border:#2E2E2E;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;--blue:#4A90D9;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--serif:'Playfair Display',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.7;overflow-x:hidden;}
+.container{max-width:800px;margin:0 auto;padding:4rem 2rem 8rem;}
+
+h1{font-family:var(--serif);font-size:3.2rem;line-height:1.05;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-family:var(--serif);font-size:1.75rem;margin:2.5rem 0 1rem;color:var(--accent);}
+h3{font-family:var(--mono);font-size:0.78rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin:2rem 0 0.75rem;}
+p{margin-bottom:1.25rem;color:var(--muted);font-size:1rem;}
+p strong{color:var(--text);}
+
+.layer-tag{font-family:var(--mono);font-size:0.72rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;}
+
+/* ── Interaction boxes ── */
+.interaction-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2.5rem;margin:2rem 0;}
+.interaction-header{font-family:var(--mono);font-size:0.7rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:.5rem;}
+.question-text{font-size:1.05rem;font-weight:500;margin-bottom:1.75rem;color:#fff;line-height:1.6;}
+
+/* ── Choices ── */
+.choices{display:flex;flex-direction:column;gap:0.875rem;margin-bottom:1.5rem;}
+.choice-btn{text-align:left;padding:1.1rem 1.25rem;background:var(--bg);border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;transition:all 0.2s;font-family:var(--sans);font-size:0.95rem;line-height:1.5;}
+.choice-btn:hover{border-color:var(--text);color:var(--text);}
+.choice-btn.selected-wrong{border-color:var(--red);color:var(--red);background:rgba(231,111,81,0.05);pointer-events:none;}
+.choice-btn.selected-right{border-color:var(--green);color:var(--green);background:rgba(42,157,143,0.05);pointer-events:none;}
+.choice-btn:disabled{pointer-events:none;opacity:0.5;}
+
+/* ── Feedback ── */
+.feedback{display:none;margin-top:1.5rem;padding:1.25rem 1.5rem;border-radius:4px;font-size:0.92rem;line-height:1.65;}
+.feedback.visible{display:block;animation:fadein 0.35s;}
+.feedback.error{background:rgba(231,111,81,0.08);border-left:3px solid var(--red);color:#ffb3a1;}
+.feedback.success{background:rgba(42,157,143,0.08);border-left:3px solid var(--green);color:#a7ece2;}
+.feedback-title{font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.4rem;font-weight:600;}
+
+/* ── Gated content ── */
+.gated-content{display:none;opacity:0;transform:translateY(16px);transition:opacity 0.45s,transform 0.45s;}
+
+/* ── Buttons ── */
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.7rem 1.5rem;font-family:var(--sans);font-weight:600;font-size:0.95rem;border-radius:4px;cursor:pointer;transition:all 0.2s;}
+.btn:hover:not(:disabled){background:#fff;box-shadow:0 4px 14px rgba(255,255,255,0.12);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.btn-outline:hover:not(:disabled){border-color:var(--text);color:var(--text);}
+
+/* ── Stat table ── */
+.stat-table{width:100%;border-collapse:collapse;margin:1.25rem 0;font-size:0.88rem;}
+.stat-table th{font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);padding:0.6rem 0.75rem;text-align:left;border-bottom:1px solid var(--border);}
+.stat-table td{padding:0.65rem 0.75rem;border-bottom:1px solid #1a1a1a;color:var(--muted);font-size:0.88rem;line-height:1.4;}
+.stat-table tr:hover td{background:var(--surface2);}
+.stat-table .basis-label{font-family:var(--mono);color:var(--text);font-weight:500;}
+.stat-table .stat-val{font-family:var(--mono);color:var(--accent);}
+
+/* ── Fidelity table ── */
+.fidelity-table{width:100%;border-collapse:collapse;margin:1.25rem 0;font-size:0.85rem;}
+.fidelity-table th{font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);padding:0.5rem 0.75rem;text-align:left;border-bottom:1px solid var(--border);}
+.fidelity-table td{padding:0.55rem 0.75rem;border-bottom:1px solid #1a1a1a;font-size:0.85rem;font-family:var(--mono);}
+.tick-yes{color:var(--green);}
+.tick-no{color:var(--red);}
+.tick-approx{color:var(--accent);}
+.fidelity-high{color:var(--green);}
+.fidelity-med{color:var(--accent);}
+.fidelity-low{color:var(--red);}
+
+/* ── TYPE A CANVAS ── */
+.canvas-wrap{position:relative;width:100%;max-width:600px;height:260px;background:#060606;border:1px solid var(--border);border-radius:4px;overflow:hidden;margin:0 auto 1.5rem;user-select:none;touch-action:none;}
+.zone-label{position:absolute;top:0;padding:0.75rem;font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em;pointer-events:none;}
+.zone-label-l{left:0;color:var(--red);opacity:0.7;}
+.zone-label-r{right:0;color:var(--green);opacity:0.7;text-align:right;}
+.drag-puck{position:absolute;width:38px;height:38px;background:var(--accent);border-radius:50%;transform:translate(-50%,-50%);cursor:grab;box-shadow:0 0 16px rgba(232,196,106,0.5);display:flex;justify-content:center;align-items:center;font-size:1.1rem;z-index:10;}
+.drag-puck:active{cursor:grabbing;transform:translate(-50%,-50%) scale(1.08);}
+.drag-puck.locked{pointer-events:none;opacity:0.25;}
+
+/* ── TYPE B CANVASES ── */
+.canvas-choice-row{display:flex;gap:0.875rem;margin-bottom:1.25rem;flex-wrap:wrap;}
+.canvas-choice{flex:1;min-width:140px;max-width:200px;background:#060606;border:2px solid var(--border);border-radius:6px;overflow:hidden;cursor:pointer;transition:border-color 0.2s;position:relative;}
+.canvas-choice:hover{border-color:#555;}
+.canvas-choice.correct{border-color:var(--green);}
+.canvas-choice.wrong{border-color:var(--red);opacity:0.45;pointer-events:none;}
+.canvas-choice.locked{pointer-events:none;}
+.c-label{text-align:center;font-family:var(--mono);font-size:0.68rem;color:var(--muted);padding:0.3rem;border-top:1px solid var(--border);pointer-events:none;}
+
+/* ── Gauntlet ── */
+.gauntlet-wrap{margin-top:4rem;border-top:2px solid var(--border);padding-top:3rem;}
+.q-block{background:var(--surface2);padding:1.5rem;border-radius:6px;margin-bottom:1.25rem;border:1px solid var(--border);}
+.q-num{font-family:var(--mono);font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;}
+.q-text{font-size:1rem;margin-bottom:1.25rem;font-weight:500;color:#fff;line-height:1.55;}
+.q-sub{font-family:var(--mono);font-size:0.78rem;color:var(--muted);margin-top:-0.75rem;margin-bottom:1rem;}
+.input-text{background:var(--bg);border:2px solid var(--border);color:#fff;font-family:var(--mono);font-size:0.95rem;padding:0.65rem 1rem;flex:1;min-width:180px;border-radius:4px;}
+.input-text:disabled{opacity:0.4;}
+
+/* ── Callout / divider ── */
+.callout{background:var(--surface2);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;padding:1.1rem 1.5rem;margin:1.5rem 0;}
+.callout p{margin:0;color:var(--text);font-size:0.95rem;}
+.callout .callout-label{font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:0.4rem;}
+hr.divider{border:none;border-top:1px solid var(--border);margin:3rem 0;}
+
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="layer-tag">Lesson 07 · Analogy / Transfer Layer</div>
+  <h1>The Transfer Domain</h1>
+  <p>True understanding is demonstrated exclusively by performance on structurally identical problems with different surface features. There are no transformer vectors here. Recognize the geometry yourself.</p>
+
+
+  <!-- ══════════════════════════════════════════════
+       TRANSFER CHALLENGE GATE 01 — Football scouting
+  ══════════════════════════════════════════════ -->
+  <div class="interaction-box">
+    <div class="interaction-header">Transfer Challenge 01 — Domain Recognition</div>
+    <div class="question-text">
+      Your manager's question: <em>"Should we sign Player X for our high-press system?"</em><br><br>
+      Player X's attributes are described in three scouting bases. Same player. Same ability. Different coordinate systems.
+    </div>
+
+    <table class="stat-table">
+      <thead><tr>
+        <th>Scouting Basis</th>
+        <th>Axis 1</th>
+        <th>Axis 2</th>
+        <th>Axis 3</th>
+        <th>Axis 4</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="basis-label">Physical</td>
+          <td class="stat-val">Speed: 9</td>
+          <td>Strength: 4</td>
+          <td>Accel: 8</td>
+          <td>Stamina: 7</td>
+        </tr>
+        <tr>
+          <td class="basis-label">Technical</td>
+          <td>Ball Ctrl: 6</td>
+          <td>Passing: 5</td>
+          <td>Crossing: 3</td>
+          <td>Dribbling: 8</td>
+        </tr>
+        <tr>
+          <td class="basis-label">Tactical</td>
+          <td class="stat-val">Pressing: 8</td>
+          <td class="stat-val">Positioning: 9</td>
+          <td>Intercepts: 7</td>
+          <td>Decision: 6</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="question-text" style="margin-top:1rem;">
+      Which scouting basis most directly answers the manager's pressing question?
+    </div>
+    <div class="choices" id="transfer-choices">
+      <button class="choice-btn" onclick="checkTransfer(this, 'physical')">Physical Basis — Speed=9, Acceleration=8. Fast player is a good presser.</button>
+      <button class="choice-btn" onclick="checkTransfer(this, 'technical')">Technical Basis — Ball Control, Passing, Dribbling capture overall quality.</button>
+      <button class="choice-btn" onclick="checkTransfer(this, 'tactical')">Tactical Basis — Pressing=8, Positioning=9 directly measure press intelligence.</button>
+    </div>
+    <div class="feedback" id="fb-transfer"></div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════
+       VISUAL SECTION — unlocked by Gate 01
+  ══════════════════════════════════════════════ -->
+  <div class="gated-content" id="visual-section">
+
+    <h2>I. The Six-Domain System</h2>
+    <p>The same mathematical object operates across six domains. The geometry is identical. The surface vocabulary is completely different.</p>
+
+    <div class="callout">
+      <div class="callout-label">The Core Principle</div>
+      <p>A basis is a set of independent measurement axes. The same object has different coordinate representations in different bases. The choice of basis determines how easy or hard your problem is. Changing basis = matrix multiplication. The object doesn't move.</p>
+    </div>
+
+    <h3>Why Basis Choice Matters</h3>
+    <p>The Physical Basis hides the answer to a pressing question behind irrelevant axes. <strong>Speed without pressing intelligence is chaos.</strong> The Tactical Basis makes the answer trivially readable: Pressing=8 and Positioning=9 directly answer the question. Same player. Completely different legibility depending on which basis you read the coordinates in.</p>
+
+    <p>The Tactical Basis is the <strong>right basis for this decision</strong> — not because it's "more accurate," but because its axes align with the question being asked. This is the identical logic that governs why different Transformer attention heads develop different basis directions: each head learns a basis optimized for a specific detection task.</p>
+
+    <hr class="divider">
+
+    <!-- ══════════════════════════════
+         VISUAL GATE 02 — Type A Drag
+    ══════════════════════════════ -->
+    <div class="interaction-box">
+      <div class="interaction-header">Visual Gate 02 — The Audio Basis</div>
+      <div class="question-text">
+        An audio track contains three signals mixed together: <strong>Vocals</strong>, <strong>Bass</strong>, and <strong>Hiss</strong>. In the Time Domain, they occupy the same physical coordinate axes and are completely inseparable. A noise filter vector is prepared to zero out only the Hiss.<br><br>
+        <strong>Drag the audio signal to the basis where the filter can operate safely — where the three sounds are orthogonal.</strong>
+      </div>
+
+      <div class="canvas-wrap" id="type-a-wrap">
+        <div class="zone-label zone-label-l">Time Basis<br>Mixed signal</div>
+        <div class="zone-label zone-label-r">Frequency Basis<br>Separated components</div>
+        <canvas id="type-a-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;"></canvas>
+        <div class="drag-puck" id="audio-puck" style="left:140px;top:130px;">♪</div>
+      </div>
+
+      <div style="text-align:center;">
+        <button class="btn" id="lock-btn-a" onclick="submitTypeA()">Lock Prediction & Simulate</button>
+      </div>
+      <div class="feedback" id="fb-type-a"></div>
+    </div>
+
+    <!-- ══════════════════════════════
+         UNLOCKED: visual-b-section
+    ══════════════════════════════ -->
+    <div class="gated-content" id="visual-b-section">
+
+      <p style="margin-top:2rem;">The audio domain is a perfect basis change: the Fourier Transform is lossless and invertible — <span style="font-family:var(--mono);font-size:0.88rem;color:var(--accent);">IFFT(FFT(signal)) = signal</span> exactly. The "Hiss bar" in frequency space is a single orthogonal axis. Operating on it touches nothing else.</p>
+
+      <hr class="divider">
+      <h2>II. Cross-Domain Fidelity</h2>
+      <p>Not all domain analogies share the same mathematical fidelity. A valid basis change requires linearity, invertibility, and independence. Most real-world conversions break at least one of these.</p>
+
+      <table class="fidelity-table">
+        <thead><tr>
+          <th>Domain</th><th>Linear?</th><th>Invertible?</th><th>Independent?</th><th>Fidelity</th>
+        </tr></thead>
+        <tbody>
+          <tr><td style="color:var(--text);">Mathematics</td><td class="tick-yes">✓ Yes</td><td class="tick-yes">✓ Yes</td><td class="tick-yes">✓ Yes</td><td class="fidelity-high">Perfect</td></tr>
+          <tr><td style="color:var(--text);">Audio (Fourier)</td><td class="tick-yes">✓ Yes</td><td class="tick-yes">✓ Yes</td><td class="tick-yes">✓ Yes</td><td class="fidelity-high">Perfect</td></tr>
+          <tr><td style="color:var(--text);">Transformer Attention</td><td class="tick-yes">✓ Yes</td><td class="tick-no">✗ Projective</td><td class="tick-yes">✓ Yes</td><td class="fidelity-med">High</td></tr>
+          <tr><td style="color:var(--text);">KV-Direct</td><td class="tick-yes">✓ Yes</td><td class="tick-yes">✓ Yes</td><td class="tick-yes">✓ Yes</td><td class="fidelity-high">Perfect</td></tr>
+          <tr><td style="color:var(--text);">Football Scouting</td><td class="tick-approx">~ Linear</td><td class="tick-approx">~ Invertible</td><td class="tick-no">✗ Correlated</td><td class="fidelity-med">Moderate</td></tr>
+          <tr><td style="color:var(--text);">Cooking</td><td class="tick-no">✗ Non-linear</td><td class="tick-no">✗ Many-to-one</td><td class="tick-no">✗ Coupled</td><td class="fidelity-low">Low</td></tr>
+          <tr><td style="color:var(--text);">Psychology (Big Five→MBTI)</td><td class="tick-no">✗ Approximate</td><td class="tick-no">✗ Lossy</td><td class="tick-no">✗ Overlapping</td><td class="fidelity-low">Low</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Common Analogy Failures</h3>
+      <p><strong>Failure 1:</strong> "Changing the measurement changes the thing." Switching from Physical to Tactical rating systems doesn't change the player. Basis change is purely representational. The vector is invariant; only its description changes.</p>
+      <p><strong>Failure 2:</strong> "Every conversion between representations is a basis change." Non-linear conversions (ingredient→flavor), lossy conversions (Big Five→MBTI), and categorical conversions (continuous→discrete) are NOT proper basis changes.</p>
+      <p><strong>Failure 3:</strong> "The standard basis is 'real' and alternatives are 'artificial.'" The standard basis {[1,0],[0,1]} has no mathematical privilege. The eigenvector basis may be more natural for a given transformation than either.</p>
+
+      <!-- ══════════════════════════════
+           VISUAL GATE 03 — Type B
+      ══════════════════════════════ -->
+      <div class="interaction-box">
+        <div class="interaction-header">Visual Gate 03 — Geometric Invariance</div>
+        <div class="question-text">
+          A game character stands at a fixed point in the world. The minimap switches from the Standard View (north-up basis) to the Tactical View (attack-direction-up basis). The coordinate axes rotate.<br><br>
+          Which canvas correctly shows what happens to the character's <em>physical position</em> in the world?
+        </div>
+
+        <div class="canvas-choice-row" id="type-b-choices">
+          <div class="canvas-choice" onclick="checkTypeB(this, 0)">
+            <canvas id="cvs-b-0" width="180" height="130"></canvas>
+            <div class="c-label">State A</div>
+          </div>
+          <div class="canvas-choice" onclick="checkTypeB(this, 1)">
+            <canvas id="cvs-b-1" width="180" height="130"></canvas>
+            <div class="c-label">State B</div>
+          </div>
+          <div class="canvas-choice" onclick="checkTypeB(this, 2)">
+            <canvas id="cvs-b-2" width="180" height="130"></canvas>
+            <div class="c-label">State C</div>
+          </div>
+        </div>
+
+        <div class="feedback" id="fb-type-b"></div>
+      </div>
+
+    </div><!-- /visual-b-section -->
+  </div><!-- /visual-section -->
+
+
+  <!-- ══════════════════════════════════════════════
+       TRANSFER GAUNTLET — unlocked by Gate 03
+  ══════════════════════════════════════════════ -->
+  <div class="gated-content" id="gauntlet-content">
+    <div class="gauntlet-wrap">
+      <h2>Transfer Gauntlet</h2>
+      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:2rem;">5-Domain Structural Recognition Drill. No visual scaffolding. Identify the operating principle.</p>
+      <div id="g-container"></div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+/* ══════════════════════════════════════════════
+   UNLOCK HELPER
+══════════════════════════════════════════════ */
+function unlock(id) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  }));
+}
+
+/* ══════════════════════════════════════════════
+   GATE 01 — Transfer Challenge: Football
+══════════════════════════════════════════════ */
+function checkTransfer(btn, domain) {
+  const choices = document.querySelectorAll('#transfer-choices .choice-btn');
+  choices.forEach(c => c.disabled = true);
+  const fb = document.getElementById('fb-transfer');
+  fb.classList.add('visible');
+
+  if (domain === 'tactical') {
+    btn.classList.add('selected-right');
+    fb.className = 'feedback visible success';
+    fb.innerHTML = `<div class="feedback-title">Correct — Basis Alignment</div>
+      The Tactical Basis directly exposes the axes relevant to the question. Pressing=8, Positioning=9 answer "can they press?" in one lookup. This is the identical mechanism as choosing the right measurement basis in mathematics: you select the coordinate system where your problem's structure becomes directly visible. The Physical Basis makes this problem hard — converting Speed and Stamina to press quality requires finding the hidden "conversion formula" between bases.`;
+    setTimeout(() => unlock('visual-section'), 1600);
+
+  } else if (domain === 'physical') {
+    btn.classList.add('selected-wrong');
+    fb.className = 'feedback visible error';
+    fb.innerHTML = `<div class="feedback-title">Wrong Basis</div>
+      Speed=9 and Stamina=7 are promising — but they cannot answer "will they press intelligently?" A fast player without pressing positioning is chaos. The Physical Basis cannot directly expose the required information. You need a change of basis: a conversion from the physical measurement system to the tactical one. <em>Resetting…</em>`;
+    setTimeout(() => {
+      choices.forEach(c => { c.disabled = false; c.classList.remove('selected-wrong', 'selected-right'); });
+      fb.classList.remove('visible');
+    }, 3200);
+
+  } else {
+    btn.classList.add('selected-wrong');
+    fb.className = 'feedback visible error';
+    fb.innerHTML = `<div class="feedback-title">Wrong Basis</div>
+      The Technical Basis describes passing and dribbling quality — relevant for a technical playmaker, not a high presser. Crossing=3 and Passing=5 would suggest not signing the player. But the question was about pressing, not technical skill. You're reading a description of the wrong quantity entirely. <em>Resetting…</em>`;
+    setTimeout(() => {
+      choices.forEach(c => { c.disabled = false; c.classList.remove('selected-wrong', 'selected-right'); });
+      fb.classList.remove('visible');
+    }, 3200);
+  }
+}
+
+/* ══════════════════════════════════════════════
+   TYPE A — Audio drag canvas
+══════════════════════════════════════════════ */
+const wrap = document.getElementById('type-a-wrap');
+const puck = document.getElementById('audio-puck');
+let isDragging = false;
+let puckX = 140, puckY = 130;
+
+function drawTypeABackground() {
+  const cvs = document.getElementById('type-a-canvas');
+  cvs.width = wrap.offsetWidth; cvs.height = wrap.offsetHeight;
+  const ctx = cvs.getContext('2d');
+  const W = cvs.width, H = cvs.height;
+
+  // Divider
+  ctx.strokeStyle = '#2A2A2A'; ctx.lineWidth = 1; ctx.setLineDash([6,4]);
+  ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.stroke();
+  ctx.setLineDash([]);
+
+  const cx = W/4, freqX = 3*W/4, midY = H/2;
+
+  // ── LEFT: noisy overlapping waveforms ──
+  function sineWave(ctx, offsetY, freq, color, amp) {
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.65;
+    ctx.beginPath();
+    for (let x = 20; x < W/2 - 20; x += 2) {
+      const t = (x - 20) / ((W/2 - 40));
+      const y = offsetY + amp * Math.sin(2 * Math.PI * freq * t + x * 0.05);
+      x === 20 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke(); ctx.globalAlpha = 1;
+  }
+
+  sineWave(ctx, midY - 18, 2.5, '#E8C46A', 22); // Vocals — amber
+  sineWave(ctx, midY, 1.0, '#6A9FE8', 28);       // Bass — blue
+  sineWave(ctx, midY + 18, 5.2, '#E87070', 10);  // Hiss — red/faint
+
+  // Left label
+  ctx.fillStyle = '#444'; ctx.font = '9px IBM Plex Mono'; ctx.textAlign = 'center';
+  ctx.fillText('VOCALS + BASS + HISS', W/4, H - 14);
+  ctx.fillText('— inseparable —', W/4, H - 4);
+
+  // ── RIGHT: clean frequency bars ──
+  const barW = 22, gap = 38;
+  const bars = [
+    { x: freqX - gap, h: 75, color: '#6A9FE8', label: 'Bass\n80Hz' },
+    { x: freqX,       h: 55, color: '#E8C46A', label: 'Vocals\n2kHz' },
+    { x: freqX + gap, h: 30, color: '#E87070', label: 'Hiss\n8kHz' },
+  ];
+  bars.forEach(b => {
+    ctx.fillStyle = b.color + '33'; // fill
+    ctx.fillRect(b.x - barW/2, H - 30 - b.h, barW, b.h);
+    ctx.strokeStyle = b.color; ctx.lineWidth = 1.5;
+    ctx.strokeRect(b.x - barW/2, H - 30 - b.h, barW, b.h);
+    const parts = b.label.split('\n');
+    ctx.fillStyle = b.color + 'AA'; ctx.font = '8px IBM Plex Mono'; ctx.textAlign = 'center';
+    ctx.fillText(parts[0], b.x, H - 18);
+    ctx.fillText(parts[1], b.x, H - 8);
+  });
+}
+
+window.addEventListener('resize', drawTypeABackground);
+setTimeout(drawTypeABackground, 100);
+
+puck.addEventListener('mousedown', () => isDragging = true);
+puck.addEventListener('touchstart', () => isDragging = true, { passive: true });
+document.addEventListener('mousemove', e => {
+  if (!isDragging || puck.classList.contains('locked')) return;
+  const r = wrap.getBoundingClientRect();
+  puckX = Math.max(20, Math.min(e.clientX - r.left, r.width - 20));
+  puckY = Math.max(20, Math.min(e.clientY - r.top, r.height - 20));
+  puck.style.left = puckX + 'px'; puck.style.top = puckY + 'px';
+});
+document.addEventListener('touchmove', e => {
+  if (!isDragging || puck.classList.contains('locked')) return;
+  e.preventDefault();
+  const r = wrap.getBoundingClientRect();
+  puckX = Math.max(20, Math.min(e.touches[0].clientX - r.left, r.width - 20));
+  puckY = Math.max(20, Math.min(e.touches[0].clientY - r.top, r.height - 20));
+  puck.style.left = puckX + 'px'; puck.style.top = puckY + 'px';
+}, { passive: false });
+document.addEventListener('mouseup', () => isDragging = false);
+document.addEventListener('touchend', () => isDragging = false);
+
+function submitTypeA() {
+  const btn = document.getElementById('lock-btn-a');
+  btn.disabled = true;
+  puck.classList.add('locked');
+  const fb = document.getElementById('fb-type-a');
+  fb.classList.add('visible');
+
+  const isRight = puckX > wrap.offsetWidth / 2;
+
+  if (isRight) {
+    fb.className = 'feedback visible success';
+    fb.innerHTML = `<div class="feedback-title">Correct — Basis Selected</div>
+      In the Frequency Basis, Vocals, Bass, and Hiss occupy <em>orthogonal axes</em>. The hiss energy sits entirely at its own frequency band (8kHz+). The filter vector <span style="font-family:var(--mono);font-size:0.88rem;">[0, 0, −1]</span> touches <em>only</em> that axis — nothing else is affected. This is the FFT's value: it converts a tangled time-domain signal into a sparse frequency-domain representation where each component is independently addressable.`;
+    animateHissRemoval();
+    setTimeout(() => unlock('visual-b-section'), 1500);
+
+  } else {
+    fb.className = 'feedback visible error';
+    fb.innerHTML = `<div class="feedback-title">Basis Collision</div>
+      In the Time Domain, all three sounds are superimposed on the same amplitude axis. Any filter applied here changes the entire mixed waveform — vocals and bass are corrupted along with the hiss. To operate on a single component, you must first project into the basis where that component has its own independent axis: the Frequency Basis. <button class="btn btn-outline" style="margin-top:1rem;font-size:0.85rem;" onclick="resetTypeA()">Reset & Try Again</button>`;
+  }
+}
+
+function animateHissRemoval() {
+  const cvs = document.getElementById('type-a-canvas');
+  const ctx = cvs.getContext('2d');
+  const W = cvs.width, H = cvs.height;
+  const freqX = 3*W/4, gap = 38, barW = 22;
+  const hissX = freqX + gap, hissH = 30;
+  let alpha = 1.0;
+  const anim = setInterval(() => {
+    // Redraw hiss bar with decreasing height
+    ctx.clearRect(hissX - barW/2 - 2, H - 30 - hissH - 2, barW + 4, hissH + 20);
+    alpha -= 0.06;
+    if (alpha <= 0) { clearInterval(anim); return; }
+    const h = hissH * alpha;
+    ctx.fillStyle = `rgba(232,112,112,${0.2 * alpha})`;
+    ctx.fillRect(hissX - barW/2, H - 30 - h, barW, h);
+    ctx.strokeStyle = `rgba(232,112,112,${alpha})`;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(hissX - barW/2, H - 30 - h, barW, h);
+  }, 50);
+}
+
+function resetTypeA() {
+  const btn = document.getElementById('lock-btn-a');
+  btn.disabled = false;
+  puck.classList.remove('locked');
+  puckX = 140; puckY = 130;
+  puck.style.left = puckX + 'px'; puck.style.top = puckY + 'px';
+  const fb = document.getElementById('fb-type-a');
+  fb.className = 'feedback';
+  drawTypeABackground();
+}
+
+/* ══════════════════════════════════════════════
+   TYPE B — Geometric invariance canvases
+══════════════════════════════════════════════ */
+function drawTypeBCanvases() {
+  // Canvas dimensions
+  const configs = [
+    { id: 'cvs-b-0', type: 'vector_moves' },
+    { id: 'cvs-b-1', type: 'grid_rotates' },   // CORRECT
+    { id: 'cvs-b-2', type: 'both_scale' },
+  ];
+  configs.forEach(cfg => {
+    const cvs = document.getElementById(cfg.id);
+    if (!cvs) return;
+    const ctx = cvs.getContext('2d');
+    const W = cvs.width, H = cvs.height;
+    const cx = W/2 + 4, cy = H/2 + 8;
+    const len = 48; // axis half-length
+    ctx.clearRect(0,0,W,H);
+
+    function drawAxes(ox, oy, angle, color, dashed) {
+      ctx.save();
+      ctx.strokeStyle = color; ctx.lineWidth = 1.2;
+      if (dashed) ctx.setLineDash([4,4]); else ctx.setLineDash([]);
+      ctx.translate(ox, oy); ctx.rotate(angle);
+      // x-axis
+      ctx.beginPath(); ctx.moveTo(-len,0); ctx.lineTo(len,0); ctx.stroke();
+      // y-axis
+      ctx.beginPath(); ctx.moveTo(0,-len); ctx.lineTo(0,len); ctx.stroke();
+      // arrowheads
+      ctx.setLineDash([]);
+      ctx.fillStyle = color; ctx.globalAlpha = 0.9;
+      ctx.beginPath(); ctx.moveTo(len,0); ctx.lineTo(len-7,-3); ctx.lineTo(len-7,3); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0,-len); ctx.lineTo(-3,-len+7); ctx.lineTo(3,-len+7); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 1; ctx.restore();
+    }
+
+    function drawDot(px, py, color, r) {
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(px, py, r || 5, 0, Math.PI*2); ctx.fill();
+    }
+
+    function drawArrow(x1,y1,x2,y2, color) {
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      ctx.setLineDash([]);
+      const angle = Math.atan2(y2-y1, x2-x1);
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.moveTo(x2,y2); 
+      ctx.lineTo(x2-8*Math.cos(angle-0.4), y2-8*Math.sin(angle-0.4));
+      ctx.lineTo(x2-8*Math.cos(angle+0.4), y2-8*Math.sin(angle+0.4));
+      ctx.closePath(); ctx.fill();
+    }
+
+    if (cfg.type === 'vector_moves') {
+      // Standard axes (fixed)
+      drawAxes(cx, cy, 0, '#444', false);
+      // Old dot position
+      const oldX = cx+28, oldY = cy-32;
+      drawDot(oldX, oldY, '#E8C46A44', 4);
+      // New (wrong) dot position
+      const newX = cx-30, newY = cy-18;
+      drawArrow(oldX, oldY, newX, newY, '#E8C46A88');
+      drawDot(newX, newY, '#E8C46A', 5);
+      // Label
+      ctx.fillStyle = '#E87070'; ctx.font = '9px IBM Plex Mono'; ctx.textAlign = 'center';
+      ctx.fillText('object moved', cx, H-6);
+    }
+
+    if (cfg.type === 'grid_rotates') {
+      // Old axes (faint, dashed)
+      drawAxes(cx, cy, 0, '#333', true);
+      // Dot at SAME position (invariant)
+      const dotX = cx+28, dotY = cy-32;
+      drawDot(dotX, dotY, '#E8C46A', 6);
+      // New rotated axes (bright)
+      drawAxes(cx, cy, -0.6, '#2A9D8F', false);
+      // Rotation indicator arc
+      ctx.strokeStyle = '#2A9D8F55'; ctx.lineWidth = 1; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(cx, cy, 18, -Math.PI/2, -Math.PI/2+0.6, false); ctx.stroke();
+      // Label
+      ctx.fillStyle = '#2A9D8F'; ctx.font = '9px IBM Plex Mono'; ctx.textAlign = 'center';
+      ctx.fillText('grid rotated ✓', cx, H-6);
+    }
+
+    if (cfg.type === 'both_scale') {
+      // Scaled-up axes AND moved dot
+      drawAxes(cx, cy, 0.3, '#555', false);
+      const dotX = cx+22, dotY = cy-40;
+      drawDot(dotX, dotY, '#E8C46A', 5);
+      ctx.strokeStyle = '#555'; ctx.lineWidth = 1; ctx.setLineDash([]);
+      // Extra scale marks
+      ctx.strokeStyle = '#E8C46A44'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(cx, cy, 22, 0, Math.PI*2); ctx.stroke();
+      ctx.fillStyle = '#777'; ctx.font = '9px IBM Plex Mono'; ctx.textAlign = 'center';
+      ctx.fillText('both changed', cx, H-6);
+    }
+  });
+}
+
+function checkTypeB(btn, choice) {
+  const choices = document.querySelectorAll('#type-b-choices .canvas-choice');
+  choices.forEach(c => c.classList.add('locked'));
+  const fb = document.getElementById('fb-type-b');
+  fb.classList.add('visible');
+
+  if (choice === 1) { // Correct: grid rotates
+    btn.classList.add('correct');
+    fb.className = 'feedback visible success';
+    fb.innerHTML = `<div class="feedback-title">Correct — Object Invariance</div>
+      The character's physical location in the world is invariant — it doesn't move. What changed is the <em>coordinate description</em>: the axes of the tactical view rotated, so the same physical point now has different coordinate values. This is the core principle of basis change: the vector (the location, the player, the meaning) stays fixed. The measurement grid (the basis) changes around it. State B shows the dot frozen and the axes rotating.`;
+    setTimeout(() => {
+      unlock('gauntlet-content');
+      renderGauntlet();
+    }, 1800);
+
+  } else {
+    btn.classList.add('wrong');
+    choices.forEach(c => { if (c !== btn) c.classList.remove('locked'); });
+    btn.classList.add('locked');
+
+    const wrong_a = `In State A, the standard grid stays fixed and the character moves to a new position. This is the "object displacement" misconception: it treats a basis change as a physical transformation that moves the object. Basis change is purely representational — the game world doesn't rearrange just because you switched minimap modes. Reset and try again.`;
+    const wrong_c = `In State C, both the grid and the character change together. This represents a combined transformation — not a pure basis change. A pure basis change leaves the described object exactly where it is in the world. Only the measurement axes move. Reset and try again.`;
+
+    fb.className = 'feedback visible error';
+    fb.innerHTML = `<div class="feedback-title">Incorrect</div>${choice === 0 ? wrong_a : wrong_c}`;
+    setTimeout(() => {
+      choices.forEach(c => c.classList.remove('locked', 'wrong', 'correct'));
+      fb.classList.remove('visible');
+    }, 3500);
+  }
+}
+
+window.addEventListener('load', () => {
+  drawTypeABackground();
+  drawTypeBCanvases();
+});
+
+/* ══════════════════════════════════════════════
+   GAUNTLET — 5 structural recognition questions
+══════════════════════════════════════════════ */
+const G_DATA = [
+  {
+    q: "The Fourier Transform converts an audio signal from time-domain to frequency-domain. Is this basis change lossless?",
+    sub: "The IFFT can recover the original signal exactly.",
+    type: "bool",
+    ans: true,
+    exp: "True. The FFT is an orthogonal (unitary) change-of-basis matrix. It preserves all information — the IFFT recovers the original signal exactly. This is why Fourier analysis achieves 'perfect fidelity' in the cross-domain table: it satisfies all three conditions (linear, invertible, independent). The information content is identical in both domains; only its organization changes."
+  },
+  {
+    q: "The Big Five personality framework has 5 continuous axes. MBTI has 4 binary axes. Converting a Big Five profile to an MBTI type preserves all information from the original description.",
+    type: "bool",
+    ans: false,
+    exp: "False. Big Five → MBTI is a lossy, dimension-reducing projection. The 5 continuous dimensions (e.g., Extraversion as a smooth 0–1 scale with subdimensions) collapse into 4 binary classifications (E or I). You cannot recover the original continuous score from the binary type. The 'resolution' is permanently destroyed. This is the same reason non-square attention projections W_Q are non-invertible."
+  },
+  {
+    q: "Finding a vector that increases 'formality' when added to a Transformer's hidden state means you've found one axis of a human-readable basis. How many such independent vectors would you need to construct a complete change-of-basis matrix from the residual stream (d = 2560)?",
+    sub: "Type a number.",
+    type: "text",
+    ans: "2560",
+    exp: "2560. A change-of-basis matrix for a 2560-dimensional space requires exactly 2560 independent basis vectors — one for each dimension. Finding one interpretable direction is the first column. Finding all 2560 would be complete mechanistic interpretability of that layer. At one per day, that's ~7 years per layer."
+  },
+  {
+    q: "A recipe converts ingredients into flavors. Is the ingredient→flavor mapping a valid mathematical basis change (linear and invertible)?",
+    type: "bool",
+    ans: false,
+    exp: "False. Cooking fails at both requirements. It's non-linear (salt + heat interact non-additively). It's many-to-one (different ingredient combinations produce the same flavor profile — you cannot invert it to recover the exact recipe). In the cross-domain table, cooking has the lowest fidelity of all analogies. It is a useful metaphor but breaks at every mathematical boundary condition."
+  },
+  {
+    q: "A French scouting agency rates players on 6 dimensions. Your club uses a different 6-dimensional system. To build the translation matrix between them, you evaluate the same players in both systems. What is the minimum number of players you must evaluate to determine a unique 6×6 translation matrix?",
+    sub: "Hint: think about what it takes to pin down all 36 entries.",
+    type: "text",
+    ans: "6",
+    exp: "6. Each player evaluated in both systems provides one equation per output dimension — that's 6 equations. You need 6 independent equations per row to determine each row of the 6×6 matrix. 6 players × 6-dimensional output = exactly enough constraints to solve for all 36 entries uniquely, provided the 6 player profiles are linearly independent in the source basis."
+  }
+];
+
+function renderGauntlet() {
+  const c = document.getElementById('g-container');
+  let html = '';
+  G_DATA.forEach((item, idx) => {
+    html += `<div class="q-block" id="gg-${idx}">
+      <div class="q-num">Drill 0${idx+1}</div>
+      <div class="q-text">${item.q}</div>
+      ${item.sub ? `<div class="q-sub">${item.sub}</div>` : ''}`;
+    if (item.type === 'bool') {
+      html += `<div style="display:flex;gap:.75rem;">
+        <button class="btn btn-outline" onclick="answerBool(${idx},true,this)">True / Yes</button>
+        <button class="btn btn-outline" onclick="answerBool(${idx},false,this)">False / No</button>
+      </div>`;
+    } else {
+      html += `<div style="display:flex;gap:.75rem;">
+        <input type="text" id="gi-${idx}" class="input-text" placeholder="Answer…">
+        <button class="btn" onclick="answerText(${idx},this)">Lock</button>
+      </div>`;
+    }
+    html += `<div class="feedback" id="gf-${idx}"></div></div>`;
+  });
+  c.innerHTML = html;
+}
+
+function answerBool(idx, val, btn) {
+  document.querySelectorAll(`#gg-${idx} button`).forEach(b => b.disabled = true);
+  const fb = document.getElementById(`gf-${idx}`);
+  fb.classList.add('visible');
+  if (val === G_DATA[idx].ans) {
+    btn.style.background = 'rgba(42,157,143,0.15)'; btn.style.borderColor = 'var(--green)'; btn.style.color = '#a7ece2';
+    fb.className = 'feedback visible success';
+    fb.innerHTML = `<div class="feedback-title">Correct</div>${G_DATA[idx].exp}`;
+  } else {
+    btn.style.background = 'rgba(231,111,81,0.1)'; btn.style.borderColor = 'var(--red)'; btn.style.color = '#ffb3a1';
+    fb.className = 'feedback visible error';
+    fb.innerHTML = `<div class="feedback-title">Incorrect</div>${G_DATA[idx].exp}`;
+  }
+}
+
+function answerText(idx, btn) {
+  const inp = document.getElementById(`gi-${idx}`);
+  const val = inp.value.trim().toLowerCase();
+  if (!val) return;
+  inp.disabled = true; btn.disabled = true;
+  const fb = document.getElementById(`gf-${idx}`);
+  fb.classList.add('visible');
+  const correct = val === G_DATA[idx].ans.toLowerCase();
+  if (correct) {
+    fb.className = 'feedback visible success';
+    fb.innerHTML = `<div class="feedback-title">Correct</div>${G_DATA[idx].exp}`;
+  } else {
+    fb.className = 'feedback visible error';
+    fb.innerHTML = `<div class="feedback-title">Incorrect</div>${G_DATA[idx].exp}`;
+  }
+}
+</script>
+</body>
+</html>

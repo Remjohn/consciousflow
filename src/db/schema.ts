@@ -42,8 +42,14 @@ export const dailyLogs = pgTable('daily_logs', {
     // Production
     videosProduced: integer('videos_produced').default(0),
     videosGoal: integer('videos_goal').default(5),
-    pomodoros: integer('pomodoros').default(0),
+    pomodoros: integer('pomodoros').default(0), // Deep Work Sessions
+    managementSessions: integer('management_sessions').default(0), // Management Sessions
     proofPhotoUrl: text('proof_photo_url'),
+
+    // Finance / Earnings
+    dailyEarnings: decimal('daily_earnings').default('0'),
+    earningsSource: text('earnings_source').default('PACKAGE'),
+    earningsNotes: text('earnings_notes'),
 
     // Fitness
     pushups: integer('pushups').default(0),
@@ -246,6 +252,7 @@ export const investments = pgTable('investments', {
     price: decimal('price').notNull(), // Total price (or computed from sub-items)
     priority: text('priority').default('MEDIUM'), // LOW, MEDIUM, HIGH, CRITICAL
     category: text('category').default('GENERAL'), // TECH, VEHICLE, HEALTH, GROCERY, LIFESTYLE, BUSINESS
+    bucket: text('bucket'),
     imageUrl: text('image_url'),
 
     // Hierarchy (Master/Sub-Item)
@@ -379,7 +386,8 @@ export const deepWorkSessions = pgTable('deep_work_sessions', {
     date: date('date').notNull(),
     startedAt: timestamp('started_at').notNull(),
     endedAt: timestamp('ended_at'),
-    durationMinutes: integer('duration_minutes').default(25),
+    durationMinutes: integer('duration_minutes').default(90),
+    sessionType: text('session_type').default('DEEP_WORK'), // DEEP_WORK, MANAGEMENT
     status: text('status').default('IN_PROGRESS'), // IN_PROGRESS, COMPLETED, ABANDONED
 
     // Task Accountability
@@ -404,4 +412,20 @@ export const deepWorkSessions = pgTable('deep_work_sessions', {
 
     // Timestamps
     createdAt: timestamp('created_at').defaultNow()
+});
+
+// Acquisition Batches (Client Pipeline)
+export const acquisitionBatches = pgTable('acquisition_batches', {
+    id: serial('id').primaryKey(),
+    userId: integer('user_id').references(() => users.id),
+    coachName: text('coach_name').notNull(),
+    stepFound: boolean('step_found').default(false),
+    stepTalkingHead: boolean('step_talking_head').default(false),
+    stepExplainer: boolean('step_explainer').default(false),
+    stepCarousel: boolean('step_carousel').default(false),
+    stepMeme: boolean('step_meme').default(false),
+    stepQuote: boolean('step_quote').default(false),
+    status: text('status').default('IN_PROGRESS'), // IN_PROGRESS, COMPLETED
+    completedAt: timestamp('completed_at'),
+    createdAt: timestamp('created_at').defaultNow(),
 });

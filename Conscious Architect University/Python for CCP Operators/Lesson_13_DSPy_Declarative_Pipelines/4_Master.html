@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 13 - DSPy: Master Capstone</title>
+  <style>
+    :root {
+      --bg: #03080c; --panel: rgba(8, 14, 20, 0.88); --line: rgba(255,255,255,0.12); 
+      --text: #f3f7fb; --muted: #788f9f; --accent: #ff5c73; --accent-2: #56c5ff; 
+      --good: #2ecc71; --gold: #ffd166;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--text);
+      font-family: Consolas, Monaco, "Courier New", monospace; line-height: 1.6;
+      background: #03080c;
+    }
+
+    .capstone-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 100; display: flex; justify-content: center; align-items: center; text-align: center; }
+    .capstone-overlay.hidden { display: none; }
+    .welcome-card { background: #0c141e; border: 1px solid var(--accent); padding: 40px; border-radius: 4px; max-width: 600px; box-shadow: 0 0 40px rgba(255,92,115,0.2); }
+    .welcome-card h1 { font-family: -apple-system, sans-serif; text-transform: uppercase; letter-spacing: 2px; color: var(--accent); margin-bottom: 20px; }
+
+    .timer-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.05); z-index: 50; }
+    .timer-fill { height: 100%; width: 100%; background: var(--accent); transition: width 1s linear, background 1s ease; }
+    
+    .status-panel { position: fixed; top: 20px; right: 20px; border: 1px solid var(--line); padding: 10px 20px; background: rgba(0,0,0,0.8); z-index: 40; font-weight: bold; }
+    .status-panel span#timerDisplay { color: var(--accent); font-size: 1.2rem; }
+
+    .shell { max-width: 900px; margin: 60px auto 120px; padding: 20px; }
+
+    .card {
+      border: 1px solid var(--line); background: #080d14;
+      padding: 24px; margin-bottom: 30px; border-left: 4px solid var(--muted);
+    }
+
+    h2 { font-family: -apple-system, sans-serif; font-size: 1.2rem; color: #fff; margin-top: 0; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 20px; }
+
+    .description-block { background: rgba(255,255,255,0.02); padding: 16px; border: 1px solid rgba(86,197,255,0.2); margin-bottom: 20px; font-family: Georgia, serif; font-size: 1.05rem; }
+
+    textarea, input[type="text"] { width: 100%; background: #020406; color: #addb67; border: 1px solid #334; padding: 16px; font-family: Consolas, monospace; font-size: 0.95rem; outline: none; transition: border-color 0.2s; resize: vertical; }
+    textarea:focus, input:focus { border-color: var(--accent-2); }
+    textarea.tall { min-height: 180px; }
+    
+    .btn { border: 0; cursor: pointer; padding: 14px 24px; font: 700 1rem/1 -apple-system, sans-serif; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s; }
+    .btn-primary { background: var(--accent); color: white; width: 100%; margin-top: 40px; box-shadow: 0 0 20px rgba(255,92,115,0.4); }
+    .btn-primary:hover { background: #ff4055; transform: translateY(-2px); }
+
+    .radio-group { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+    .radio-label { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 10px; border: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); border-radius: 4px; }
+    .radio-label:hover { background: rgba(255,255,255,0.05); }
+    input[type="radio"] { accent-color: var(--accent-2); transform: scale(1.2); margin-right: 8px; }
+
+    .results-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-family: -apple-system, sans-serif; display: none; }
+    .results-overlay.show { display: flex; animation: fadeUp 0.5s ease; }
+    .results-box { max-width: 600px; padding: 40px; border: 1px solid var(--accent-2); background: rgba(12,20,30,0.9); }
+    
+    .code-block { background: #03080c; border: 1px solid #334; padding: 16px; color: #82aaff; margin-bottom: 20px; white-space: pre-wrap; font-size: 0.9rem; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+  <!-- Gateway -->
+  <div class="capstone-overlay" id="introOverlay">
+    <div class="welcome-card">
+      <h1>Terminal Capstone Assessment</h1>
+      <p style="font-family: Georgia; color: #d9e4ec; margin-bottom:30px; font-size: 1.1rem;">You have 12 minutes to physically write constraints from raw English specifications into typed parameters. If the timer expires or you click "Initiate Compile", the architecture locks and your inputs drop to the supervisor grade.</p>
+      <button class="btn btn-primary" style="margin-top:0;" onclick="startCapstone()">Break Glass to Begin</button>
+    </div>
+  </div>
+
+  <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+  <div class="status-panel">T-MINUS: <span id="timerDisplay">12:00</span></div>
+
+  <main class="shell hidden" id="mainContent">
+
+    <!-- Challenge 1 -->
+    <div class="card" style="border-left-color: var(--accent-2);">
+      <h2>Specification 1 — Generative Bounds (DSPy)</h2>
+      <div class="description-block">
+        <strong>English Requirement:</strong> We need to analyze a 20-minute audio transcript. The module must ingest `raw_audio_text` and map it into three outputs: <br><br>
+        1. A boolean flag indicating if anger was detected.<br>
+        2. A maximum 50-word summary of the trigger event.<br>
+        3. A strict categorical tag containing one of these specific words: "high", "medium", or "low".
+      </div>
+      <p style="color: var(--muted); font-size: 0.85rem; margin-bottom:10px;">Write ONLY the exact Python `OutputField` field declarations for the DSPy Signature mapping to the three constraints above.</p>
+      <textarea class="tall" id="q1" placeholder="# Provide the 3 OutputField declarations here..."></textarea>
+    </div>
+
+    <!-- Challenge 2 -->
+    <div class="card" style="border-left-color: var(--accent-2);">
+      <h2>Specification 2 — Rigid Validation (Pydantic)</h2>
+      <div class="description-block">
+        <strong>English Requirement:</strong> The client's bio module accepts a nested object containing `user_id` and the generated `trigger_summary` from the previous signature.<br><br>
+        If the `trigger_summary` is completely empty (""), the system MUST violently reject it before hitting the memory engine.
+      </div>
+      <p style="color: var(--muted); font-size: 0.85rem; margin-bottom:10px;">Write the exact Pydantic `field_validator` function block tracking the `trigger_summary` variable.</p>
+      <textarea class="tall" id="q2" placeholder="# Write the @field_validator function..."></textarea>
+    </div>
+
+    <!-- Challenge 3 -->
+    <div class="card" style="border-left-color: var(--gold);">
+      <h2>Defect Triage A — Subsystem Check</h2>
+      <div class="code-block">
+prediction = dspy.Predict(ParseAudio)(raw_text=transcript)
+if "error" in prediction.outputs():
+    raise RuntimeError("LLM Failure")
+      </div>
+      <p style="font-family: Georgia; margin-bottom: 5px;">Analyze the above snippet executing inside the FastApi routes layer. Identify its defect state.</p>
+      <div class="radio-group">
+        <label class="radio-label"><input type="radio" name="triage1" value="misapplication"> Misapplication: Because accessing attributes uses dot notation (`prediction.error_flag`), not dictionary keys.</label>
+        <label class="radio-label"><input type="radio" name="triage1" value="hallucination"> Hallucination: The LLM natively crashes the system before returning 'error'.</label>
+        <label class="radio-label"><input type="radio" name="triage1" value="correct"> Correct: This is standard valid execution logic.</label>
+      </div>
+    </div>
+
+    <!-- Challenge 4 -->
+    <div class="card" style="border-left-color: var(--gold);">
+      <h2>Defect Triage B — Optimization Bounds</h2>
+      <div class="code-block">
+from dspy.teleprompt import BootstrapFewShot
+# Inside live web request
+optimizer = BootstrapFewShot(metric=lambda x: True, max_bootstrapped_demos=4)
+trained = optimizer.compile(base_module, trainset=live_logs)
+      </div>
+      <p style="font-family: Georgia; margin-bottom: 5px;">Identify the Sovereign architectural defect class.</p>
+      <div class="radio-group">
+        <label class="radio-label"><input type="radio" name="triage2" value="omission"> Omission: Pydantic was not loaded prior to compilation.</label>
+        <label class="radio-label"><input type="radio" name="triage2" value="misapplication"> Misapplication: JIT Prompt Compilation is deeply blocking/offline and maliciously executed inside a live routing request.</label>
+        <label class="radio-label"><input type="radio" name="triage2" value="correct"> Correct: Dynamic compilation is mandatory.</label>
+      </div>
+    </div>
+
+    <!-- Challenge 5 -->
+    <div class="card" style="border-left-color: var(--accent);">
+      <h2>Terminal Feynman Compression</h2>
+      <div class="description-block">
+        Why does the Conscious Coaching Platform physically enforce the separation of the DSPy Compiler from Pydantic Validation, rather than just handling all typing constraints in one monolithic block?
+      </div>
+      <p style="color: var(--muted); font-size: 0.85rem; margin-bottom:10px;">Explain this using the strict architectural separation of extraction vs truth evaluation.</p>
+      <textarea class="tall" id="q5" placeholder="System separation is required because..."></textarea>
+    </div>
+
+    <button class="btn btn-primary" onclick="terminateGate(false)">Initiate Compile</button>
+  </main>
+
+  <div class="results-overlay" id="resultsOverlay">
+    <div class="results-box">
+      <h1 id="resTitle" style="color:var(--good); margin-bottom: 20px;">Architecture Compiled</h1>
+      <p id="resDesc" style="color:#d9e4ec; margin-bottom: 20px;">The supervisor protocol has logged your telemetry. Because Capstone requires human architectural validation, you must copy your exact output and insert it into your active PR or send it to your supervisor node.</p>
+      <div style="background:#020406; border:1px solid #334; padding:16px; font-size:0.85rem; color:#addb67; text-align:left; overflow:hidden;" id="telemetryData"></div>
+      <br><br>
+      <p style="text-transform:uppercase; letter-spacing:2px; font-weight:bold; color:var(--muted);">End of Lesson 13</p>
+    </div>
+  </div>
+
+  <script>
+    let timerInterval;
+    let secondsRemaining = 12 * 60; // 12 minutes
+
+    function startCapstone() {
+      document.getElementById('introOverlay').classList.add('hidden');
+      document.getElementById('mainContent').classList.remove('hidden');
+      
+      timerInterval = setInterval(() => {
+        secondsRemaining--;
+        updateTimerDisplay();
+        
+        if (secondsRemaining <= 0) {
+          terminateGate(true);
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const display = document.getElementById('timerDisplay');
+      const fill = document.getElementById('timerFill');
+      
+      const mins = Math.floor(secondsRemaining / 60).toString().padStart(2, '0');
+      const secs = (secondsRemaining % 60).toString().padStart(2, '0');
+      display.textContent = `${mins}:${secs}`;
+      
+      const pct = (secondsRemaining / (12 * 60)) * 100;
+      fill.style.width = pct + '%';
+      
+      if (pct < 15) {
+        fill.style.background = '#ff5c73';
+        display.style.color = '#ff5c73';
+      }
+    }
+
+    function containsAny(val, arr) { return arr.some(x => val.includes(x)); }
+
+    function terminateGate(timeout) {
+      clearInterval(timerInterval);
+      const q1 = document.getElementById('q1').value;
+      const q2 = document.getElementById('q2').value;
+      
+      const t1 = document.querySelector('input[name="triage1"]:checked');
+      const t2 = document.querySelector('input[name="triage2"]:checked');
+      const t1v = t1 ? t1.value : 'unanswered';
+      const t2v = t2 ? t2.value : 'unanswered';
+
+      const q5 = document.getElementById('q5').value;
+
+      // Basic offline checking logic
+      let scoreMetrics = 0;
+      if (t1v === 'misapplication') scoreMetrics++;
+      if (t2v === 'misapplication') scoreMetrics++;
+
+      const feyVal = q5.toLowerCase();
+      if(containsAny(feyVal, ['extract', 'probability', 'parser'])) scoreMetrics++;
+      if(containsAny(feyVal, ['measure', 'truth', 'validate', 'qa'])) scoreMetrics++;
+
+      const overlay = document.getElementById('resultsOverlay');
+      const resTitle = document.getElementById('resTitle');
+      const telData = document.getElementById('telemetryData');
+      
+      if (timeout) {
+        resTitle.textContent = "TIMEOUT COMPILATION ERROR";
+        resTitle.style.color = "var(--accent)";
+      }
+
+      telData.innerHTML = `
+        <strong>T1 Validation:</strong> ${t1v}<br>
+        <strong>T2 Validation:</strong> ${t2v}<br>
+        <strong>Feynman Check Hits:</strong> ${scoreMetrics}/4 Base Structural Points.<br>
+        <hr style="border-color:#334; margin:10px 0;">
+        Supervisor requires manual audit of Q1 and Q2 outputs to verify exact Python formatting against the OpenProse boundaries.
+      `;
+
+      overlay.classList.add('show');
+    }
+  </script>
+</body>
+</html>

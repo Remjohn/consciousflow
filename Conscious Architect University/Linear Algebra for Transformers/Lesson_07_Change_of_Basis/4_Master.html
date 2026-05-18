@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Change of Basis — Sovereign Capstone Exam</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050505;--surface:#111;--surface2:#1a1a1a;--surface3:#252525;
+  --text:#FAFAFA;--muted:#888;--border:#333;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;--blue:#264653;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--serif:'Playfair Display',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6;overflow-x:hidden;padding-bottom:6rem;}
+.container{max-width:800px;margin:0 auto;padding:4rem 2rem 2rem;}
+
+h1{font-family:var(--serif);font-size:3.2rem;line-height:1.05;margin-bottom:1rem;letter-spacing:-0.02em;text-align:center;}
+.subtitle{text-align:center;color:var(--muted);font-size:1.05rem;margin-bottom:3rem;line-height:1.7;}
+
+/* FLOATING HUD */
+.hud{position:fixed;top:0;left:0;width:100%;background:rgba(5,5,5,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0.9rem 2rem;display:flex;justify-content:space-between;align-items:center;z-index:100;}
+.hud-title{font-family:var(--mono);font-size:0.75rem;text-transform:uppercase;color:var(--accent);letter-spacing:0.12em;font-weight:600;}
+.hud-right{display:flex;align-items:center;gap:2rem;}
+.hud-pts{font-family:var(--mono);font-size:0.85rem;color:var(--muted);}
+.timer{font-family:var(--mono);font-size:1.5rem;font-weight:600;color:var(--green);transition:color 0.3s;}
+.timer.danger{color:var(--red);animation:pulse 1s infinite;}
+@keyframes pulse{0%{opacity:1;}50%{opacity:0.45;}100%{opacity:1;}}
+
+/* QUESTION BLOCKS */
+.q-block{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2rem;margin-bottom:2rem;position:relative;transition:border-color 0.3s;}
+.q-block.correct{border-color:var(--green);background:rgba(42,157,143,0.04);}
+.q-block.wrong{border-color:var(--red);background:rgba(231,111,81,0.04);}
+.q-num{position:absolute;top:-12px;left:24px;background:var(--bg);padding:0 0.5rem;font-family:var(--mono);font-size:0.75rem;color:var(--muted);border:1px solid var(--border);border-radius:4px;letter-spacing:0.05em;}
+
+.q-text{font-size:1.1rem;font-weight:500;margin-bottom:1.5rem;line-height:1.65;}
+.q-text strong{color:var(--accent);}
+
+/* BOOL BUTTONS */
+.bool-group{display:flex;gap:1rem;}
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.7rem 1.4rem;font-family:var(--sans);font-weight:600;font-size:0.95rem;border-radius:4px;cursor:pointer;transition:all 0.18s;}
+.btn:hover:not(:disabled){transform:translateY(-2px);background:#fff;box-shadow:0 4px 14px rgba(255,255,255,0.12);}
+.btn-outline{background:transparent;border:1px solid var(--muted);color:var(--text);}
+.btn-outline:hover:not(:disabled){background:var(--surface3);border-color:#ccc;}
+.btn-selected{background:var(--accent) !important;color:#000 !important;border-color:var(--accent) !important;}
+
+/* TEXT INPUTS */
+.input-group{display:flex;gap:1rem;}
+.input-text{background:var(--bg);border:2px solid var(--border);color:#fff;font-family:var(--mono);font-size:1.05rem;padding:0.7rem 1rem;flex:1;border-radius:4px;transition:border-color 0.2s;}
+.input-text:focus{outline:none;border-color:var(--accent);}
+.input-text::placeholder{color:var(--muted);}
+
+/* FEYNMAN */
+.feynman-prompt{background:var(--surface2);border-left:3px solid var(--accent);padding:1rem 1.2rem;margin-bottom:1rem;border-radius:0 4px 4px 0;font-size:0.9rem;color:#ccc;line-height:1.6;}
+.feynman-label{font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:0.4rem;}
+.textarea-env{width:100%;background:var(--bg);border:2px solid var(--border);color:#d4f0d4;font-family:var(--mono);font-size:0.95rem;padding:1rem;border-radius:4px;resize:vertical;min-height:140px;margin-bottom:1rem;transition:border-color 0.2s;line-height:1.6;}
+.textarea-env:focus{outline:none;border-color:var(--accent);}
+.feynman-keywords{font-family:var(--mono);font-size:0.78rem;color:var(--muted);margin-top:0.5rem;}
+.char-count{font-family:var(--mono);font-size:0.75rem;color:var(--muted);text-align:right;margin-top:0.3rem;}
+
+/* SECTION DIVIDERS */
+.section-break{margin:2.5rem 0 1.5rem;border-bottom:1px solid var(--border);padding-bottom:1rem;}
+.section-label{font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--muted);}
+
+/* SUBMIT */
+.submit-zone{text-align:center;margin-top:3rem;padding:2rem;border:1px dashed var(--border);border-radius:8px;}
+.submit-note{font-size:0.85rem;color:var(--muted);margin-top:0.8rem;}
+.btn-submit{font-size:1.2rem;padding:1rem 3rem;background:var(--accent);color:#000;font-weight:700;border:none;border-radius:4px;cursor:pointer;transition:all 0.2s;}
+.btn-submit:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(232,196,106,0.3);}
+
+/* SCOREBOARD */
+.scoreboard{background:var(--surface);border:2px solid;border-radius:8px;padding:3rem;text-align:center;margin-top:3rem;}
+.score-num{font-family:var(--serif);font-size:6rem;font-weight:700;line-height:1;margin:1.5rem 0;}
+.score-sub{font-size:1.15rem;color:var(--muted);margin-bottom:1.5rem;font-family:var(--mono);}
+.scoreboard.pass{border-color:var(--green);}
+.scoreboard.fail{border-color:var(--red);}
+.status-badge{font-family:var(--mono);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.15em;display:inline-block;padding:0.3rem 0.8rem;border-radius:3px;margin-bottom:1rem;}
+.pass .status-badge{background:rgba(42,157,143,0.15);color:var(--green);border:1px solid var(--green);}
+.fail .status-badge{background:rgba(231,111,81,0.15);color:var(--red);border:1px solid var(--red);}
+
+.breakdown{margin-top:2rem;text-align:left;border-top:1px solid var(--border);padding-top:1.5rem;}
+.breakdown-row{display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid #1e1e1e;font-size:0.9rem;}
+.breakdown-row .pts{font-family:var(--mono);font-weight:600;}
+.pts.earned{color:var(--green);}
+.pts.missed{color:var(--red);}
+
+.final-message{margin-top:1.5rem;font-size:1rem;font-weight:600;line-height:1.7;}
+.feynman-feedback{background:var(--surface2);border-radius:6px;padding:1rem 1.2rem;margin-top:1rem;font-size:0.88rem;color:#ccc;line-height:1.6;text-align:left;}
+.feynman-feedback strong{color:var(--accent);}
+
+/* PROGRESS BAR */
+.progress-bar-wrap{height:2px;background:var(--border);border-radius:1px;margin-bottom:2rem;}
+.progress-bar{height:100%;background:var(--accent);border-radius:1px;transition:width 0.3s;}
+</style>
+</head>
+<body>
+
+<div class="hud">
+  <div class="hud-title">Sovereign Capstone — L07</div>
+  <div class="hud-right">
+    <div class="hud-pts" id="hud-pts">0 / 200 pts</div>
+    <div class="timer" id="timer-display">10:00</div>
+  </div>
+</div>
+
+<div class="container" id="exam-container">
+
+  <h1>Lesson 07 Final Assessment</h1>
+  <div class="subtitle">
+    Change of Basis · Residual Stream · KV-Direct · Thinking Sparks · RLKV<br>
+    <span style="color:var(--accent);">12-Node Generative Framework</span> — Threshold: 160 / 200 pts
+  </div>
+
+  <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+
+  <div id="questions-wrapper"></div>
+
+  <div class="submit-zone">
+    <button class="btn-submit" onclick="submitExam()" id="submit-btn">
+      Terminus: Calculate Score
+    </button>
+    <div class="submit-note">Unanswered questions score zero. Timer auto-submits at 0:00.</div>
+  </div>
+
+</div>
+
+<div class="container" id="score-container" style="display:none;padding-top:7rem;">
+  <div class="scoreboard" id="scoreboard">
+    <div class="status-badge" id="status-badge">Evaluating...</div>
+    <div class="score-num" id="score-display">—</div>
+    <div class="score-sub">/ 200 pts — Architectural Sovereignty Score</div>
+    <div id="final-message" class="final-message"></div>
+    <div class="breakdown" id="breakdown"></div>
+    <div id="feynman-feedback" class="feynman-feedback" style="display:none;"></div>
+  </div>
+</div>
+
+<script>
+// ─── QUESTION BANK ──────────────────────────────────────────────────────────
+const QUESTIONS = [
+
+  // Q1 — Bool — Residual stream identity
+  {
+    id: 1, type: 'bool', val: 15,
+    q: "A Transformer's residual stream is updated at every layer by <strong>replacing</strong> the previous vector with the current layer's output — not by adding to it.",
+    ans: false,
+    wrong_msg: "Misconception: The residual connection ADDS each layer's contribution (h_l = h_{l-1} + Attn + MLP). The stream is never replaced — it is a running accumulation from all layers."
+  },
+
+  // Q2 — Text — KV-Direct compression factor
+  {
+    id: 2, type: 'text', val: 15,
+    q: "The Master document states KV-Direct reduces memory by 95%+, compressing a 500-token context from 68 MB to approximately 2.5 MB. What is the approximate compression ratio — expressed as a whole-number multiplier — between these two values? (Divide 68 by 2.5 and round.)",
+    match: ["27", "27x", "27×", "~27"],
+    val: 15,
+    wrong_msg: "68 ÷ 2.5 ≈ 27. KV-Direct achieves roughly 27× memory reduction because storing the residual stream (~5KB/token) replaces storing K+V for every layer (~136KB/token)."
+  },
+
+  // Q3 — Bool — Invertibility of basis change
+  {
+    id: 3, type: 'bool', val: 15,
+    q: "When the attention weight matrix W_Q projects residual stream vectors from 4096 dimensions down to a 128-dimensional subspace, this basis change is lossless and fully invertible back to 4096 dimensions.",
+    ans: false,
+    wrong_msg: "A dimension-reducing projection is NOT invertible. You cannot recover 4096 dimensions from 128. Basis changes are lossless ONLY when the matrix is square and full-rank. Projection discards the components orthogonal to the subspace."
+  },
+
+  // Q4 — Text — KV-Direct invariant object
+  {
+    id: 4, type: 'text', val: 15,
+    q: "KV-Direct's key insight is that every layer's Key and Value matrices are deterministic functions of one fixed object. Name that object. (One or two words.)",
+    match: ["residual stream", "residual", "h", "stream vector"],
+    wrong_msg: "The invariant object is the residual stream vector (h). Because K_l = W_K^l · h and W_K^l is fixed post-training, storing h means any layer's K or V can be recomputed on demand with a single matrix multiply."
+  },
+
+  // Q5 — Bool — Orthonormal inversion shortcut
+  {
+    id: 5, type: 'bool', val: 15,
+    q: "For an orthonormal basis matrix P, the inverse P⁻¹ equals the transpose P^T — meaning matrix inversion is computationally free.",
+    ans: true,
+    wrong_msg: "This IS true. Orthonormal bases have the luxury P⁻¹ = P^T, making inversion trivial. This is why normalizing basis vectors (making them unit length) is so powerful."
+  },
+
+  // Q6 — Text — Fourier domain name
+  {
+    id: 6, type: 'text', val: 15,
+    q: "The Fourier Transform translates a time-domain audio signal into which domain — making frequency components that were invisible in the time basis immediately legible?",
+    match: ["frequency", "frequency domain", "freq"],
+    wrong_msg: "The Fourier Transform is a basis change from the Time Domain to the Frequency Domain. The same signal, expressed in a different coordinate system, makes harmonic content trivially readable."
+  },
+
+  // Q7 — Bool — Thinking Sparks head count vs dimensionality
+  {
+    id: 7, type: 'bool', val: 15,
+    q: "After GRPO training with a reasoning reward (Thinking Sparks), the model's attention space grows in raw dimensionality — it gains more total attention heads than it had before fine-tuning.",
+    ans: false,
+    wrong_msg: "Dimensionality stays fixed (still 32 heads). What changes is FUNCTIONAL SPECIFICITY: 3–5 existing heads rotate their weight matrices to align with reward-relevant feature directions. The basis expands in meaning, not in size."
+  },
+
+  // Q8 — Text — RLKV selection criterion
+  {
+    id: 8, type: 'text', val: 15,
+    q: "In RLKV's basis-selection protocol, which heads get marked for PROTECTION versus compression? (Describe the criterion in 3–6 words.)",
+    match: ["highest quality degradation", "high degradation", "reasoning critical", "essential", "high delta", "largest delta", "most degradation"],
+    wrong_msg: "Heads where eviction causes the LARGEST quality degradation (Δ_k > threshold) are protected. These are the reasoning-essential basis directions. Heads with small Δ_k are expendable and compressed to 4-bit cache."
+  },
+
+  // Q9 — Bool — Eviction vs residual stream storage quality
+  {
+    id: 9, type: 'bool', val: 15,
+    q: "Attention-score-based KV eviction and KV-Direct both achieve zero quality loss — they simply trade off different amounts of memory.",
+    ans: false,
+    wrong_msg: "Only KV-Direct is lossless. Eviction-based methods (window, attention-score, token merging) make irreversible decisions WITHIN a layer's coordinate system — discarding tokens that may matter later. KV-Direct stores the universal basis and re-derives all views, sacrificing nothing."
+  },
+
+  // Q10 — Text — determinant of linearly dependent basis
+  {
+    id: 10, type: 'text', val: 15,
+    q: "Basis vectors [1,1] and [2,2] are perfectly parallel. Their matrix determinant equals exactly what value? (Integer.)",
+    match: ["0", "zero"],
+    wrong_msg: "Determinant = 0. Parallel basis vectors are linearly dependent — they collapse the 2D plane into a 1D line. The coordinate system loses one full dimension. No inversion is possible from this degenerate basis."
+  },
+
+  // Q11 — Bool — Distillation vs GRPO basis dynamics
+  {
+    id: 11, type: 'bool', val: 15,
+    q: "Compared to SFT/Distillation training, GRPO adds new specialized attention-head directions in a more experimental, exploratory way — temporarily activating and deactivating heads during training before settling on a final basis configuration.",
+    ans: true,
+    wrong_msg: "Correct per the Master layer: SFT/Distillation adds basis directions cumulatively and stably. GRPO explores dynamically — heads emerge and disappear based on reward signal during training before convergence locks the final specialized directions."
+  },
+
+  // Q12 — Feynman — KV-Direct residual stream insight
+  {
+    id: 12, type: 'feynman', val: 35,
+    q: "<strong>FEYNMAN COMPRESSION — 35 pts:</strong> Explain in your own words exactly why KV-Direct stores the residual stream vector instead of caching the Key and Value matrices at every layer — and why this prevents GPU Out-of-Memory crashes during long conversations. Your explanation must demonstrate you understand <em>why</em> the residual stream is sufficient, not just that it is used.",
+    feynman_context: "Grade on 3 structural keywords: (A) INVARIANT/UNIVERSAL — the residual stream encodes the complete original representation. (B) RECOMPUTE/DERIVE — K and V at any layer are a deterministic function (matrix multiply) of the residual stream. (C) COORDINATES/LAYERS — standard caching stores redundant translated views (one per layer) of the same invariant source.",
+  }
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let answers   = new Array(QUESTIONS.length).fill(null);
+let timeLeft  = 600;
+let timerInt;
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+function initExam() {
+  const wrapper = document.getElementById('questions-wrapper');
+  let html = '';
+
+  QUESTIONS.forEach((q, i) => {
+    html += `<div class="q-block" id="qb-${i}">
+      <div class="q-num">Q${q.id} / ${q.val} pts</div>
+      <div class="q-text">${q.q}</div>`;
+
+    if (q.type === 'bool') {
+      html += `<div class="bool-group">
+        <button class="btn btn-outline" id="btn-${i}-true"  onclick="setBool(${i}, true)">True / Yes</button>
+        <button class="btn btn-outline" id="btn-${i}-false" onclick="setBool(${i}, false)">False / No</button>
+      </div>`;
+    }
+    else if (q.type === 'text') {
+      html += `<div class="input-group">
+        <input type="text" id="q-input-${i}" class="input-text" placeholder="Type answer…" oninput="setAnswerText(${i}, this.value)" autocomplete="off">
+      </div>`;
+    }
+    else if (q.type === 'feynman') {
+      html += `
+        <div class="feynman-prompt">
+          <div class="feynman-label">Structural Grading Criteria</div>
+          Your answer must address three structural components: (A) why the residual stream is the <em>universal/invariant</em> basis, (B) how K and V are <em>derived/recomputed</em> from it on demand, (C) why standard caching stores redundant layer-specific <em>coordinate views</em> of the same source.
+        </div>
+        <textarea id="q-input-${i}" class="textarea-env" placeholder="> Type structural explanation… (minimum 30 words)" oninput="setFeynman(${i}, this.value)"></textarea>
+        <div class="char-count" id="char-count-${i}">0 words</div>
+      `;
+    }
+
+    html += `</div>`; // close q-block
+  });
+
+  wrapper.innerHTML = html;
+
+  // Start timer
+  timerInt = setInterval(() => {
+    timeLeft--;
+    const m = Math.floor(timeLeft / 60);
+    const s = timeLeft % 60;
+    const disp = document.getElementById('timer-display');
+    disp.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    if (timeLeft <= 60) disp.classList.add('danger');
+    if (timeLeft <= 0) { clearInterval(timerInt); submitExam(); }
+    updateProgress();
+  }, 1000);
+}
+
+// ─── INPUT HANDLERS ──────────────────────────────────────────────────────────
+function setBool(idx, val) {
+  answers[idx] = val;
+  ['true','false'].forEach(v => {
+    const b = document.getElementById(`btn-${idx}-${v}`);
+    b.classList.toggle('btn-selected', String(val) === v);
+    b.classList.toggle('btn-outline', String(val) !== v);
+  });
+  updateProgress();
+}
+
+function setAnswerText(idx, val) {
+  answers[idx] = val.toLowerCase().trim();
+  updateProgress();
+}
+
+function setFeynman(idx, val) {
+  answers[idx] = val.toLowerCase().trim();
+  const words = val.trim().split(/\s+/).filter(w => w).length;
+  document.getElementById(`char-count-${idx}`).textContent = `${words} word${words !== 1 ? 's' : ''}`;
+  updateProgress();
+}
+
+function updateProgress() {
+  const answered = answers.filter(a => a !== null && a !== '').length;
+  const pct = (answered / QUESTIONS.length) * 100;
+  document.getElementById('progress-bar').style.width = pct + '%';
+  const est = estimateScore();
+  document.getElementById('hud-pts').textContent = `~${est} / 200 pts`;
+}
+
+function estimateScore() {
+  let s = 0;
+  QUESTIONS.forEach((q, i) => {
+    if (answers[i] !== null && answers[i] !== '') s += Math.round(q.val * 0.5);
+  });
+  return s;
+}
+
+// ─── GRADE ────────────────────────────────────────────────────────────────────
+function gradeQuestion(q, rawAnswer) {
+  if (rawAnswer === null || rawAnswer === '') return { correct: false, partial: false };
+
+  if (q.type === 'bool') {
+    return { correct: rawAnswer === q.ans, partial: false };
+  }
+
+  if (q.type === 'text') {
+    const v = rawAnswer; // already lowercased in setAnswerText
+    if (q.ans && v === q.ans) return { correct: true, partial: false };
+    if (q.match && q.match.some(m => v.includes(m.toLowerCase()))) return { correct: true, partial: false };
+    return { correct: false, partial: false };
+  }
+
+  if (q.type === 'feynman') {
+    const v = rawAnswer;
+    const wordCount = v.trim().split(/\s+/).filter(w => w).length;
+    if (wordCount < 20) return { correct: false, partial: false, feynman: { a: false, b: false, c: false } };
+
+    const hasA = /invariant|universal|original|complete|single|one representation|base representation|full representation|source/.test(v);
+    const hasB = /recomput|deriv|calculat|matrix multipl|on.demand|deterministic|regenerat|reconstruct/.test(v);
+    const hasC = /layer|coordinat|view|cache|kv|key.value|redundant|translat|version|copy/.test(v);
+
+    if (hasA && hasB && hasC) return { correct: true, partial: false, feynman: { a: hasA, b: hasB, c: hasC } };
+    if ((hasA && hasB) || (hasA && hasC) || (hasB && hasC)) return { correct: false, partial: true, feynman: { a: hasA, b: hasB, c: hasC } };
+    return { correct: false, partial: false, feynman: { a: hasA, b: hasB, c: hasC } };
+  }
+}
+
+// ─── SUBMIT ───────────────────────────────────────────────────────────────────
+function submitExam() {
+  clearInterval(timerInt);
+  document.getElementById('exam-container').style.display = 'none';
+  document.getElementById('score-container').style.display = 'block';
+
+  let totalScore = 0;
+  let breakdownHTML = '';
+  let feynmanResult = null;
+
+  QUESTIONS.forEach((q, i) => {
+    const result = gradeQuestion(q, answers[i]);
+    let earned = 0;
+
+    if (q.type === 'feynman') {
+      if (result.correct)       { earned = q.val; }
+      else if (result.partial)  { earned = q.val - 10; } // 2/3 keywords
+      else                      { earned = 0; }
+      feynmanResult = result;
+    } else {
+      earned = result.correct ? q.val : 0;
+    }
+
+    totalScore += earned;
+
+    const label = q.type === 'feynman' ? 'Q12 — Feynman Compression' : `Q${q.id} — ${q.type === 'bool' ? 'True/False' : 'Short Answer'}`;
+    const ptsClass = earned > 0 ? 'earned' : 'missed';
+    breakdownHTML += `<div class="breakdown-row"><span>${label}</span><span class="pts ${ptsClass}">${earned > 0 ? '+' : ''}${earned} / ${q.val}</span></div>`;
+  });
+
+  // Render score
+  const sb  = document.getElementById('scoreboard');
+  const sbd = document.getElementById('score-display');
+  const msg = document.getElementById('final-message');
+  const bdg = document.getElementById('status-badge');
+
+  sbd.textContent = totalScore;
+  document.getElementById('breakdown').innerHTML = breakdownHTML;
+
+  if (totalScore >= 160) {
+    sb.classList.add('pass');
+    bdg.textContent = 'Certification Granted';
+    msg.style.color = 'var(--green)';
+    msg.textContent = 'You have demonstrated mastery of Change of Basis, Residual Stream Architecture, and the KV-Direct / RLKV / Thinking Sparks integration. Proceed to Lesson 08: Eigen-Everything.';
+  } else {
+    sb.classList.add('fail');
+    bdg.textContent = 'Certification Failed';
+    msg.style.color = 'var(--red)';
+    const gap = 160 - totalScore;
+    msg.textContent = `Threshold: 160 pts. You are ${gap} point${gap !== 1 ? 's' : ''} short. Review the sections where basis invariance, KV-Direct losslessness, and RLKV head selection failed. Do not advance to Lesson 08.`;
+  }
+
+  // Feynman feedback
+  if (feynmanResult) {
+    const ff = document.getElementById('feynman-feedback');
+    ff.style.display = 'block';
+    const { a, b, c } = feynmanResult.feynman || { a: false, b: false, c: false };
+    ff.innerHTML = `
+      <strong>Feynman Structural Analysis:</strong><br><br>
+      ${a ? '✅' : '❌'} <strong>(A) Invariant/Universal:</strong> The residual stream is the complete, singular representation — the original from which all translations derive.<br>
+      ${b ? '✅' : '❌'} <strong>(B) Recompute/Derive:</strong> K and V at any layer are deterministically computed via K_l = W_K^l · h. W_K^l is fixed post-training, so the result is bit-identical.<br>
+      ${c ? '✅' : '❌'} <strong>(C) Coordinates/Layers:</strong> Standard KV caching stores 24+ translated versions of the same invariant source — one per layer. KV-Direct stores the original once and re-translates on demand.
+    `;
+  }
+}
+
+window.onload = initExam;
+</script>
+</body>
+</html>

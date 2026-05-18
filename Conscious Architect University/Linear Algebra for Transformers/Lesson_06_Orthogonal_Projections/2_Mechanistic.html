@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orthogonal Projections — Mechanistic Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{--bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;--border:#27272a;--border-light:#3f3f46;--text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;--amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);--teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);--rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);--emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);--violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);}
+*{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:.85em;}
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1;min-width:280px;}
+.visual-col{flex:1.2;min-width:320px;}
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+.insight.teal{border-color:var(--teal);background:var(--teal-glow);}.insight.teal strong{color:var(--teal);}
+.insight.rose{border-color:var(--rose);background:var(--rose-glow);}.insight.rose strong{color:var(--rose);}
+.insight.violet{border-color:var(--violet);background:var(--violet-glow);}.insight.violet strong{color:var(--violet);}
+.insight.emerald{border-color:var(--emerald);background:var(--emerald-glow);}.insight.emerald strong{color:var(--emerald);}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text-muted);color:var(--text);}
+.btn-outline.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow);}
+.btn-sm{padding:.4rem .8rem;font-size:.78rem;}
+.quiz-option{display:block;width:100%;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:.88rem;color:var(--text-muted);transition:all .25s;text-align:left;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;}
+.quiz-option:hover{border-color:var(--border-light);color:var(--text);}
+.quiz-option.correct{border-color:var(--emerald);color:var(--emerald);background:var(--emerald-glow);}
+.quiz-option.wrong{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+.quiz-option.disabled{pointer-events:none;opacity:.6;}
+.quiz-explanation{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+.quiz-explanation.show{max-height:350px;}
+
+.step-card{padding:.75rem 1rem;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);cursor:pointer;transition:all .2s;margin-bottom:.5rem;}
+.step-card:hover{border-color:var(--border-light);}
+.step-card.active{border-color:var(--emerald);background:var(--emerald-glow);}
+
+.scroll-hint{animation:bounce 2s ease infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+@media(max-width:768px){.section{padding:5rem 1rem 3rem;}.flex-layout{flex-direction:column!important;}.canvas-wrap{min-height:280px!important;}.nav-links{gap:.5rem;}.nav-link{font-size:.7rem;}}
+</style>
+</head>
+<body>
+<nav class="nav-bar"><div class="nav-inner">
+  <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">PROJECTIONS</span>
+  <div class="nav-links">
+    <a href="#attention" class="nav-link active" data-section="attention">Attention</a>
+    <a href="#papers" class="nav-link" data-section="papers">Papers</a>
+    <a href="#worked" class="nav-link" data-section="worked">Worked Example</a>
+    <a href="#edges" class="nav-link" data-section="edges">Edge Cases</a>
+    <a href="#checkpoint" class="nav-link" data-section="checkpoint">Checkpoint</a>
+  </div>
+</div></nav>
+
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 06 — MECHANISTIC LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Orthogonal Projections<br><span style="color:var(--text-muted);font-weight:300;">Attention IS Projection</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      W_Q, W_K, W_V are learned projection operators. CASAL detects hallucination via projection magnitude. KV Cache steering injects synthetic reasoning geometry.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: Attention as Projection -->
+<section id="attention" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — ATTENTION = LEARNED SUBSPACE PROJECTION</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Q/K/V as Projection Operators</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          Each attention head learns <strong style="color:var(--text);">three different 64D subspaces</strong> to project the 768D embedding onto. Then it computes dot products between the projected vectors.
+        </p>
+        <div class="card" style="padding:1rem;margin-bottom:.5rem;border-left:3px solid var(--amber);">
+          <h4 style="color:var(--amber);font-size:.85rem;margin-bottom:.25rem;">W_Q → "Search" Subspace</h4>
+          <p style="font-size:.82rem;color:var(--text-muted);">Projects onto what this token is looking for. 768D → 64D. 704 dimensions annihilated.</p>
+        </div>
+        <div class="card" style="padding:1rem;margin-bottom:.5rem;border-left:3px solid var(--teal);">
+          <h4 style="color:var(--teal);font-size:.85rem;margin-bottom:.25rem;">W_K → "Identity" Subspace</h4>
+          <p style="font-size:.82rem;color:var(--text-muted);">Projects onto what this token offers to be found. Same dimensionality compression.</p>
+        </div>
+        <div class="card" style="padding:1rem;margin-bottom:.5rem;border-left:3px solid var(--violet);">
+          <h4 style="color:var(--violet);font-size:.85rem;margin-bottom:.25rem;">W_V → "Extraction" Subspace</h4>
+          <p style="font-size:.82rem;color:var(--text-muted);">Projects onto the content this token contributes to blended outputs.</p>
+        </div>
+        <div class="insight teal">
+          <strong>The dot product Q·Kᵀ</strong> computes alignment between vectors that have already been projected. The head ignores 704 dimensions of noise — isolating the 64 dimensions that matter.
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:420px;">
+          <canvas id="attnCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: Papers -->
+<section id="papers" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--rose);margin-bottom:.5rem;">02 — PAPERS #27, #36, #28</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Projection in Production</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1rem;margin-bottom:1.5rem;">
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--amber);">
+        <div style="font-size:.72rem;font-weight:600;color:var(--amber);letter-spacing:.05em;margin-bottom:.25rem;">PAPER #27: CASAL</div>
+        <h4 style="margin-bottom:.5rem;">Hallucination Detection</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;margin-bottom:.5rem;">
+          Find the hallucination direction: d_hall = mean(h_hallucinated) − mean(h_grounded). At generation time, project h_t onto d_hall.
+        </p>
+        <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:6px;padding:.6rem;font-family:'JetBrains Mono';font-size:.78rem;color:var(--amber);line-height:1.6;">
+          Risk = h_t · d_hall / ‖d_hall‖²<br>
+          <span style="color:var(--text-dim);">Long shadow → high hallucination risk</span>
+        </div>
+        <p style="font-size:.82rem;color:var(--text-dim);margin-top:.5rem;">Amortization trick: pre-compute a single projection matrix P_hall from the context window.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--teal);">
+        <div style="font-size:.72rem;font-weight:600;color:var(--teal);letter-spacing:.05em;margin-bottom:.25rem;">PAPER #36: SV-RAG</div>
+        <h4 style="margin-bottom:.5rem;">Dual Projection Retrieval</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;margin-bottom:.5rem;">
+          Two orthogonal LoRA projection matrices split the hidden state into retrieval and generation subspaces.
+        </p>
+        <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:6px;padding:.6rem;font-family:'JetBrains Mono';font-size:.78rem;line-height:1.6;">
+          <span style="color:var(--teal);">P_ret</span>: "What is this?" → Neo4j search<br>
+          <span style="color:var(--violet);">P_gen</span>: "How to express?" → Decoding<br>
+          <span style="color:var(--text-dim);">P_ret ⊥ P_gen (strictly orthogonal)</span>
+        </div>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--violet);">
+        <div style="font-size:.72rem;font-weight:600;color:var(--violet);letter-spacing:.05em;margin-bottom:.25rem;">PAPER #28: KV CACHE STEERING</div>
+        <h4 style="margin-bottom:.5rem;">Synthetic Reasoning Injection</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;margin-bottom:.5rem;">
+          Pre-compute K_synthetic and V_synthetic from a massive model. Inject into the SLM's KV cache. The SLM's Q projections hit the synthetic beacons — forced to project onto advanced reasoning geometry.
+        </p>
+        <div style="font-family:'JetBrains Mono';font-size:.78rem;color:var(--violet);margin-top:.25rem;">
+          3B model → 1T-class reasoning via geometry
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: Worked Example -->
+<section id="worked" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">03 — TOXICITY SUBTRACTION</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Step-by-Step Intervention</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+          Surgically remove toxicity from a hidden state at Layer 8. Click each step to trace the arithmetic.
+        </p>
+        <div class="step-card active" data-step="1">
+          <span style="font-size:.72rem;font-weight:600;color:var(--amber);letter-spacing:.05em;">STEP 1 — DOT PRODUCT</span>
+          <p style="font-size:.85rem;margin-top:.15rem;">h·T = (5)(−2) + (6)(4) + (−1)(3) = <strong style="color:var(--amber);">11</strong></p>
+        </div>
+        <div class="step-card" data-step="2">
+          <span style="font-size:.72rem;font-weight:600;color:var(--teal);letter-spacing:.05em;">STEP 2 — NORMALIZE</span>
+          <p style="font-size:.85rem;margin-top:.15rem;">‖T‖² = 4+16+9 = 29. Scalar = 11/29 ≈ <strong style="color:var(--teal);">0.38</strong></p>
+        </div>
+        <div class="step-card" data-step="3">
+          <span style="font-size:.72rem;font-weight:600;color:var(--rose);letter-spacing:.05em;">STEP 3 — TOXIC COMPONENT</span>
+          <p style="font-size:.85rem;margin-top:.15rem;">proj = 0.38 × (−2,4,3) = <strong style="color:var(--rose);">(−0.76, 1.52, 1.14)</strong></p>
+        </div>
+        <div class="step-card" data-step="4">
+          <span style="font-size:.72rem;font-weight:600;color:var(--emerald);letter-spacing:.05em;">STEP 4 — SUBTRACT</span>
+          <p style="font-size:.85rem;margin-top:.15rem;">h_clean = h − proj = <strong style="color:var(--emerald);">(5.76, 4.48, −2.14)</strong></p>
+        </div>
+        <div class="step-card" data-step="5">
+          <span style="font-size:.72rem;font-weight:600;color:var(--violet);letter-spacing:.05em;">VERIFY — ORTHOGONALITY</span>
+          <p style="font-size:.85rem;margin-top:.15rem;">h_clean · T = −11.52+17.92−6.42 = <strong style="color:var(--violet);">≈0 ✓</strong></p>
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:400px;">
+          <canvas id="workedCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 4: Edge Cases & Invariants -->
+<section id="edges" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:.5rem;">04 — INVARIANTS & EDGE CASES</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Core Laws</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;">
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--amber);">
+        <h4 style="color:var(--amber);margin-bottom:.5rem;">Idempotency: P² = P</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">Project the shadow again → nothing changes. Once flattened against the wall, re-flattening is a no-op.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--teal);">
+        <h4 style="color:var(--teal);margin-bottom:.5rem;">Residual Orthogonality</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">A⊥ · B = 0. Guaranteed zero overlap between residual and target direction. No signal leaks.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--emerald);">
+        <h4 style="color:var(--emerald);margin-bottom:.5rem;">Pythagorean Conservation</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">‖A‖² = ‖proj‖² + ‖residual‖². Energy is perfectly conserved across the split.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--rose);">
+        <h4 style="color:var(--rose);margin-bottom:.5rem;">Non-Linear Manifolds</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">If "Sarcasm" curves through 768D space, linear projection captures only the first-order tangent. Works well for most concepts, breaks on hyper-entangled semantics.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 5: Checkpoint -->
+<section id="checkpoint" class="section">
+  <div class="section-inner" style="max-width:720px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">05 — CHECKPOINT</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Mechanistic Verification</h2>
+    <div id="quizContainer" style="display:flex;flex-direction:column;gap:1.5rem;"></div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);">
+  Interactive Visual Learning — Lesson 06: Orthogonal Projections Mechanistic Layer
+</footer>
+
+<script>
+const DPR=window.devicePixelRatio||1;
+
+(function(){const c=document.getElementById('heroCanvas');let W,H,ctx;
+function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+resize();window.addEventListener('resize',resize);let t=0;
+function draw(){ctx.clearRect(0,0,W,H);const cx=W/2,cy=H/2;
+  for(let i=0;i<5;i++){const a=t*0.004+i*Math.PI*2/5;const r=100+i*30;
+    const px=cx+Math.cos(a)*r*0.4,py=cy+Math.sin(a)*r*0.4;
+    // Drop line
+    const projX=px,projY=cy;
+    ctx.strokeStyle='rgba(20,184,166,0.05)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(projX,projY);ctx.stroke();ctx.setLineDash([]);
+    ctx.beginPath();ctx.arc(px,py,2,0,Math.PI*2);ctx.fillStyle='rgba(245,158,11,0.1)';ctx.fill();
+    ctx.beginPath();ctx.arc(projX,projY,2,0,Math.PI*2);ctx.fillStyle='rgba(16,185,129,0.1)';ctx.fill();}
+  t++;requestAnimationFrame(draw);}draw();})();
+
+/* Attention Canvas */
+(function(){
+  const canvas=document.getElementById('attnCanvas');
+  function draw(){
+    const p=canvas.parentElement,r=p.getBoundingClientRect();
+    canvas.width=r.width*DPR;canvas.height=r.height*DPR;canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';
+    const ctx=canvas.getContext('2d');ctx.scale(DPR,DPR);
+    const w=r.width,h=r.height;ctx.clearRect(0,0,w,h);
+
+    // 768D → 64D projection visualization
+    const cx=w/2,padT=40;
+    // Input circle (768D)
+    const bigR=Math.min(w*0.25,80);
+    ctx.beginPath();ctx.arc(cx,padT+bigR,bigR,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.03)';ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.12)';ctx.lineWidth=2;ctx.stroke();
+    ctx.font='700 12px Space Grotesk';ctx.fillStyle='#fafafa';ctx.textAlign='center';
+    ctx.fillText('768D Embedding',cx,padT+bigR+5);
+    ctx.font='10px DM Sans';ctx.fillStyle='#52525b';ctx.fillText('Token: "overwhelmed"',cx,padT+bigR+20);
+
+    // Three projection arrows
+    const targets=[
+      {label:'W_Q',sub:'Search 64D',color:'#f59e0b',x:cx-w*0.25},
+      {label:'W_K',sub:'Identity 64D',color:'#14b8a6',x:cx},
+      {label:'W_V',sub:'Extract 64D',color:'#8b5cf6',x:cx+w*0.25}
+    ];
+    const smallR=Math.min(w*0.1,35);
+    const targetY=padT+bigR*2+100;
+
+    targets.forEach(t=>{
+      // Arrow
+      ctx.strokeStyle=t.color+'66';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(cx,padT+bigR*2);ctx.lineTo(t.x,targetY-smallR);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(t.x-4,targetY-smallR-6);ctx.lineTo(t.x,targetY-smallR);ctx.lineTo(t.x+4,targetY-smallR-6);ctx.fillStyle=t.color+'66';ctx.fill();
+      // Small circle
+      ctx.beginPath();ctx.arc(t.x,targetY,smallR,0,Math.PI*2);
+      ctx.fillStyle=t.color+'15';ctx.fill();ctx.strokeStyle=t.color;ctx.lineWidth=1.5;ctx.stroke();
+      ctx.font='700 10px Space Grotesk';ctx.fillStyle=t.color;ctx.textAlign='center';
+      ctx.fillText(t.label,t.x,targetY+4);
+      ctx.font='9px DM Sans';ctx.fillStyle='#52525b';ctx.fillText(t.sub,t.x,targetY+smallR+14);
+    });
+
+    // Null space annotation
+    ctx.font='10px DM Sans';ctx.fillStyle='#f43f5e88';ctx.textAlign='center';
+    ctx.fillText('704 dims → null space (per head)',cx,targetY+smallR+35);
+
+    // Dot product stage
+    const dotY=targetY+smallR+65;
+    ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(targets[0].x,targetY+smallR);ctx.lineTo(cx-30,dotY);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(targets[1].x,targetY+smallR);ctx.lineTo(cx+30,dotY);ctx.stroke();
+    ctx.fillStyle='rgba(245,158,11,0.08)';
+    ctx.beginPath();ctx.roundRect(cx-50,dotY-8,100,24,6);ctx.fill();
+    ctx.strokeStyle='#f59e0b44';ctx.strokeRect(cx-50,dotY-8,100,24);
+    ctx.font='600 10px Space Grotesk';ctx.fillStyle='#f59e0b';ctx.textAlign='center';
+    ctx.fillText('Q · Kᵀ = Scores',cx,dotY+8);
+  }
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Worked Example Canvas */
+(function(){
+  const canvas=document.getElementById('workedCanvas');
+  let step=1;
+  const h=[5,6,-1],T=[-2,4,3];
+  const dot=h[0]*T[0]+h[1]*T[1]+h[2]*T[2]; // 11
+  const Tnorm=T[0]**2+T[1]**2+T[2]**2; // 29
+  const scalar=dot/Tnorm; // ~0.379
+  const proj=T.map(t=>scalar*t);
+  const clean=h.map((v,i)=>v-proj[i]);
+
+  function draw(){
+    const p=canvas.parentElement,r=p.getBoundingClientRect();
+    canvas.width=r.width*DPR;canvas.height=r.height*DPR;canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';
+    const ctx=canvas.getContext('2d');ctx.scale(DPR,DPR);
+    const w=r.width,hh=r.height;ctx.clearRect(0,0,w,hh);
+    const cx=w*0.4,cy=hh*0.55,sc=Math.min(w,hh)/16;
+
+    // Use only x,y for 2D viz (project 3D to first 2 components)
+    const hx=h[0],hy=h[1],Tx=T[0],Ty=T[1];
+    const px=proj[0],py=proj[1],cx2=clean[0],cy2=clean[1];
+
+    // Grid
+    ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=1;
+    for(let i=-8;i<=8;i++){ctx.beginPath();ctx.moveTo(cx+i*sc,0);ctx.lineTo(cx+i*sc,hh);ctx.stroke();ctx.beginPath();ctx.moveTo(0,cy+i*sc);ctx.lineTo(w,cy+i*sc);ctx.stroke();}
+
+    // T direction line
+    const TLen=Math.sqrt(Tx**2+Ty**2);
+    if(TLen>0){const tux=Tx/TLen,tuy=Ty/TLen;
+      ctx.strokeStyle='rgba(244,63,94,0.1)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+      ctx.beginPath();ctx.moveTo(cx-tux*200,cy+tuy*200);ctx.lineTo(cx+tux*200,cy-tuy*200);ctx.stroke();ctx.setLineDash([]);}
+
+    // T vector (rose)
+    ctx.strokeStyle='#f43f5e88';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Tx*sc,cy-Ty*sc);ctx.stroke();
+    ctx.font='9px Space Grotesk';ctx.fillStyle='#f43f5e';ctx.textAlign='left';
+    ctx.fillText('T (toxicity)',cx+Tx*sc+6,cy-Ty*sc);
+
+    // h vector (amber)
+    ctx.save();ctx.shadowColor='#f59e0b';ctx.shadowBlur=4;
+    ctx.strokeStyle='#f59e0b';ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+hx*sc,cy-hy*sc);ctx.stroke();ctx.restore();
+    ctx.beginPath();ctx.arc(cx+hx*sc,cy-hy*sc,5,0,Math.PI*2);ctx.fillStyle='#f59e0b';ctx.fill();
+    ctx.font='600 10px Space Grotesk';ctx.fillStyle='#f59e0b';ctx.textAlign='left';
+    ctx.fillText('h = (5,6,−1)',cx+hx*sc+8,cy-hy*sc);
+
+    if(step>=3){
+      // Projection (rose, toxic component)
+      ctx.strokeStyle='#f43f5e';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+px*sc,cy-py*sc);ctx.stroke();
+      ctx.beginPath();ctx.arc(cx+px*sc,cy-py*sc,4,0,Math.PI*2);ctx.fillStyle='#f43f5e';ctx.fill();
+      ctx.font='9px Space Grotesk';ctx.fillStyle='#f43f5e';
+      ctx.fillText('toxic proj',cx+px*sc+6,cy-py*sc+14);
+      // Perpendicular drop
+      ctx.strokeStyle='#52525b';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+      ctx.beginPath();ctx.moveTo(cx+hx*sc,cy-hy*sc);ctx.lineTo(cx+px*sc,cy-py*sc);ctx.stroke();ctx.setLineDash([]);
+    }
+    if(step>=4){
+      // Clean vector (emerald)
+      ctx.save();ctx.shadowColor='#10b981';ctx.shadowBlur=6;
+      ctx.strokeStyle='#10b981';ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+cx2*sc,cy-cy2*sc);ctx.stroke();ctx.restore();
+      ctx.beginPath();ctx.arc(cx+cx2*sc,cy-cy2*sc,5,0,Math.PI*2);ctx.fillStyle='#10b981';ctx.fill();
+      ctx.font='600 10px Space Grotesk';ctx.fillStyle='#10b981';
+      ctx.fillText('h_clean',cx+cx2*sc+8,cy-cy2*sc);
+    }
+    if(step>=5){
+      ctx.font='700 11px Space Grotesk';ctx.fillStyle='#8b5cf6';ctx.textAlign='left';
+      ctx.fillText('h_clean · T ≈ 0 ✓ Orthogonal!',14,24);
+    }
+
+    // Step label
+    ctx.font='10px DM Sans';ctx.fillStyle='#52525b';ctx.textAlign='right';
+    ctx.fillText(`Step ${step}/5`,w-14,hh-14);
+  }
+
+  document.querySelectorAll('.step-card').forEach(card=>{
+    card.addEventListener('click',()=>{
+      document.querySelectorAll('.step-card').forEach(c=>c.classList.remove('active'));
+      card.classList.add('active');
+      step=parseInt(card.dataset.step);draw();
+    });
+  });
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Quiz */
+(function(){
+  const questions=[
+    {q:"W_Q projects 768D → 64D. Each head learns different projection subspaces. What ensures complementary coverage across heads?",
+     opts:["Manual configuration of each head's subspace","Different heads learn different null spaces during training — features one head destroys, another preserves. Multi-head attention provides complementary 'views' of the embedding.","All heads project onto the same subspace for redundancy","The softmax normalization ensures coverage"],
+     correct:1,explanation:"Each head's W_Q learns its own 64D subspace. Features in one head's null space (its blind spot) are in another head's column space (its focus). The 12 heads collectively span much more of the 768D space than any single head."},
+    {q:"CASAL computes Risk = h_t · d_hall / ‖d_hall‖². What does a large positive Risk score mean?",
+     opts:["The model is generating accurate content","The hidden state has a large projection shadow onto the hallucination direction — it is veering deeply into fabricated territory","The model is processing a long sentence","The attention weights are evenly distributed"],
+     correct:1,explanation:"The Risk score is the scalar coefficient of the projection formula. A large positive value means h_t has strong alignment with the hallucination direction — the shadow on the 'hallucination wall' is long. CASAL uses this to dynamically steer generation back toward grounded content."},
+    {q:"SV-RAG keeps P_ret and P_gen strictly orthogonal. Why is this mathematically important?",
+     opts:["Orthogonal projections are faster to compute","Information allocated to retrieval has zero leakage into generation, and vice versa. The two tasks operate in mathematically independent subspaces with guaranteed zero cross-contamination.","It reduces the total number of parameters","Orthogonal matrices are easier to train"],
+     correct:1,explanation:"Orthogonal subspaces have zero dot product — by definition, no information in the retrieval space can influence the generation projection, and vice versa. This guarantees clean separation of 'finding data' from 'writing words', preventing context explosion."},
+    {q:"In the toxicity subtraction worked example, h_clean · T ≈ 0. What does this prove?",
+     opts:["The clean vector is smaller than the original","The intervention successfully zeroed out ALL toxicity — the clean vector has mathematically zero alignment with the toxicity direction. It is perfectly orthogonal.","The model needs retraining","The toxicity was already zero"],
+     correct:1,explanation:"dot(h_clean, T) = 0 proves perfect orthogonality. The residual has zero projection onto the toxicity direction — every trace of toxicity has been surgically removed while preserving maximum semantic content (least-squares optimal)."}
+  ];
+  const container=document.getElementById('quizContainer');
+  questions.forEach((q,qi)=>{
+    const card=document.createElement('div');card.className='card';card.style.padding='1.25rem';
+    let optsHTML='';q.opts.forEach((o,oi)=>{optsHTML+=`<button class="quiz-option" data-q="${qi}" data-o="${oi}">${o}</button>`;});
+    card.innerHTML=`<p style="font-size:.82rem;font-weight:600;color:var(--text-dim);margin-bottom:.75rem;">Question ${qi+1}</p>
+      <p style="font-size:.92rem;line-height:1.6;margin-bottom:1rem;">${q.q}</p>
+      <div id="qO${qi}">${optsHTML}</div>
+      <div class="quiz-explanation" id="qE${qi}" style="margin-top:.75rem;"><div class="insight">${q.explanation}</div></div>`;
+    container.appendChild(card);
+  });
+  container.addEventListener('click',(e)=>{
+    const btn=e.target.closest('.quiz-option');if(!btn)return;
+    const qi=+btn.dataset.q,oi=+btn.dataset.o;
+    const opts=document.querySelectorAll(`#qO${qi} .quiz-option`);
+    if(opts[0].classList.contains('disabled'))return;
+    opts.forEach((o,i)=>{o.classList.add('disabled');
+      if(i===questions[qi].correct)o.classList.add('correct');
+      else if(i===oi&&oi!==questions[qi].correct)o.classList.add('wrong');});
+    document.getElementById(`qE${qi}`).classList.add('show');
+  });
+})();
+
+(function(){const links=document.querySelectorAll('.nav-link');const ids=['attention','papers','worked','edges','checkpoint'];window.addEventListener('scroll',()=>{const y=window.scrollY+100;let active=ids[0];ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));});})();
+</script>
+</body>
+</html>

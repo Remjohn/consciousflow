@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 06 - Application Layer</title>
+  <style>
+    :root {
+      --bg: #08111a;
+      --panel: rgba(12, 20, 30, 0.9);
+      --line: rgba(255,255,255,0.08);
+      --text: #f3f7fb;
+      --muted: #9ab0c2;
+      --accent: #ff7a18;
+      --accent-2: #56c5ff;
+      --good: #2ecc71;
+      --bad: #ff5c73;
+      --gold: #ffd166;
+      --violet: #8f7cff;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(86,197,255,0.18), transparent 22%),
+        radial-gradient(circle at 82% 14%, rgba(255,122,24,0.16), transparent 24%),
+        linear-gradient(180deg, #071018 0%, #08111a 48%, #09131c 100%);
+    }
+
+    .progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: rgba(255,255,255,0.05);
+      z-index: 50;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #ff7a18, #ffd166, #56c5ff);
+      transition: width 0.35s ease;
+    }
+
+    .shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 42px 18px 80px;
+    }
+
+    .stage {
+      display: none;
+      animation: fadeUp 0.4s ease;
+    }
+
+    .stage.active { display: block; }
+
+    .card, .hero {
+      border-radius: 26px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015)),
+        linear-gradient(135deg, rgba(143,124,255,0.08), transparent 40%);
+      box-shadow: 0 26px 56px rgba(0,0,0,0.24);
+      overflow: hidden;
+      padding: 24px;
+    }
+
+    .hero { padding: 28px; }
+    .card { margin-top: 18px; }
+
+    .eyebrow {
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 12px;
+    }
+
+    .section-count {
+      color: #89a1b2;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font: 700 0.75rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 10px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 14px;
+      line-height: 1.08;
+      font-weight: 500;
+    }
+
+    h1 { font-size: clamp(2.3rem, 4.5vw, 4.2rem); }
+    h2 { font-size: clamp(1.5rem, 2.8vw, 2.2rem); }
+    h3 { font-size: 1.08rem; }
+    p { margin: 0 0 14px; }
+
+    .divider {
+      height: 1px;
+      margin: 24px 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .mini-card, .equation, .table-card, .visual-wrap {
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .mini-card, .equation, .table-card { padding: 16px; }
+    .mini-title {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.78rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 8px;
+    }
+
+    .mono {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.95rem;
+    }
+
+    .visual-wrap {
+      padding: 12px;
+      background: rgba(5, 14, 22, 0.7);
+    }
+    
+    .code-block {
+        font-family: Consolas, Monaco, "Courier New", monospace;
+        font-size: 0.9rem;
+        padding: 24px;
+        border-radius: 12px;
+        background: #060d13;
+        border: 1px solid var(--line);
+        overflow-x: auto;
+        color: #d9e4ec;
+        line-height: 1.5;
+    }
+    
+    .code-highlight {
+        color: #56c5ff;
+    }
+    .code-string {
+        color: #ffd166;
+    }
+    .code-comment {
+        color: #89a1b2;
+    }
+    .code-type {
+        color: #8f7cff;
+    }
+
+    .field-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 14px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(255,122,24,0.55);
+      box-shadow: 0 0 0 4px rgba(255,122,24,0.12);
+    }
+
+    .choices {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .choice {
+      width: 100%;
+      text-align: left;
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      color: #e7eef5;
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      transition: border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .choice.selected {
+      border-color: rgba(255,122,24,0.78);
+      background: rgba(255,122,24,0.08);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      padding: 14px 18px;
+      border-radius: 999px;
+      font: 700 0.94rem/1 Arial, Helvetica, sans-serif;
+      transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: linear-gradient(90deg, #ff7a18, #ff994d);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .feedback {
+      display: none;
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .feedback.show { display: block; }
+    .feedback.good { border-color: rgba(46,204,113,0.38); }
+    .feedback.bad { border-color: rgba(255,92,115,0.38); }
+
+    .locked {
+      margin-top: 12px;
+      color: #ffd7a6;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif;
+    }
+
+    .gauntlet-grid {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .q-card {
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .q-card label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif;
+    }
+
+    .final-box {
+      margin-top: 18px;
+      padding: 22px;
+      border-radius: 20px;
+      border: 1px solid rgba(86,197,255,0.28);
+      background: linear-gradient(180deg, rgba(86,197,255,0.08), rgba(255,255,255,0.02));
+    }
+
+    .hidden { display: none; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 820px) {
+      .grid-2,
+      .field-grid { grid-template-columns: 1fr; }
+      .shell { padding: 30px 14px 60px; }
+      .hero, .card { padding: 18px; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true">
+    <div id="progressFill" class="progress-fill"></div>
+  </div>
+
+  <main class="shell">
+    <section id="stage-0" class="stage active">
+      <div class="hero">
+        <p class="eyebrow">Lesson 06 - Application Layer</p>
+        <h1>Code is infrastructure mapping.</h1>
+        <div class="divider"></div>
+        <p>Layer 1 stripped the syntax and showed the architecture. Layer 2 applies that architecture to bare-metal production code inside the Conscious Coaching Platform.</p>
+        <div class="grid-2">
+          <div class="mini-card">
+            <p class="mini-title">What This Layer Does</p>
+            <p>You will track Lists, Comprehensions, and Generators operating physically inside Pydantic Models, DSPy pipelines, and FastAPI streams. This is blueprint reading.</p>
+          </div>
+          <div class="mini-card">
+            <p class="mini-title">Strategic Integration</p>
+            <p>Every problem ties back to the Orchestration Dichotomy: determining exactly when we must strictly batch-bound logic (Pydantic QA), and when we must endlessly stream it (FastAPI Chassis).</p>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="goToStage(1)">Enter the code lab</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SPACED RETRIEVAL INTERRUPT -->
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="eyebrow">Spaced Retrieval Interrupt</p>
+        <h2>No notes: what guarantees an OOM crash in a real-time audio pipeline?</h2>
+        <p>Answer in one short phrase. This is the opening gate from Layer 1.</p>
+        <input id="interruptInput" type="text" placeholder="Short answer">
+        <div class="actions">
+          <button class="btn btn-primary" onclick="submitInterrupt()">Lock answer</button>
+        </div>
+        <div id="interrupt-feedback" class="feedback"></div>
+        <div id="interrupt-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(2)">Unlock application layer</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Application 1: Pydantic Lists -->
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="section-count">Application Gate 1</p>
+        <h2>The QA Department: Pydantic Lists</h2>
+        <p>Pydantic is the rigid quality control layer. When DSPy produces a coaching script, Pydantic must guarantee exactly bounded structure before persisting it to the Neo4j Memory Engine.</p>
+        <div class="code-block">
+<span class="code-highlight">from</span> pydantic <span class="code-highlight">import</span> BaseModel, Field<br>
+<span class="code-keyword">from</span> typing <span class="code-keyword">import</span> List<br>
+<br>
+<span class="code-highlight">class</span> CoachingScript(BaseModel):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;session_id: <span class="code-type">str</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;trigger_keywords: <span class="code-type">list[str]</span> = Field(..., max_length=15)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;confidence_score: <span class="code-type">float</span><br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">@field_validator</span>(<span class="code-string">"trigger_keywords"</span>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">def</span> reject_empty_string(cls, keywords: <span class="code-type">list[str]</span>) -> <span class="code-type">list[str]</span>:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-comment"># Wait. What happens if this returned a Generator instead of a List?</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">return</span> [k <span class="code-highlight">for</span> k <span class="code-highlight">in</span> keywords <span class="code-highlight">if</span> k.strip()]
+        </div>
+        <p style="margin-top: 14px;">Why does the QA department absolutely forbid Generators on line 9 and strictly mandate a List return type?</p>
+        <div class="choices" data-group="gate1">
+          <button class="choice" data-value="A" onclick="selectChoice('gate1','A',this)">Because Pydantic is too old to support modern Python generator yields.</button>
+          <button class="choice" data-value="B" onclick="selectChoice('gate1','B',this)">Because Validators require strict len() boundaries to execute length-checks and database schema commitments.</button>
+          <button class="choice" data-value="C" onclick="selectChoice('gate1','C',this)">Because generators cannot contain string variables.</button>
+        </div>
+        <div id="gate1-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions">
+          <button id="gate1-submit" class="btn btn-primary" onclick="submitChoice('gate1','B',gate1Feedback, () => {})">Lock prediction</button>
+        </div>
+        <div id="gate1-feedback" class="feedback"></div>
+        <div id="gate1-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(3)">Proceed to DSPy Comprehensions</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Application 2: DSPy Comprehensions -->
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="section-count">Application Gate 2</p>
+        <h2>The Machinist: Comprehension Speed</h2>
+        <p>DSPy compiles massive LLM context windows. It needs to extract relevant insights from historic transcripts extremely fast without accumulating raw loop blocks.</p>
+        <div class="code-block">
+<span class="code-highlight">class</span> PrepareContext(dspy.Module):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">def</span> forward(self, raw_transcripts: <span class="code-type">list[dict]</span>):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-comment"># Extract only the 'text' where 'importance' > 0.8</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;filtered_text = [<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;chunk[<span class="code-string">"text"</span>]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">for</span> chunk <span class="code-highlight">in</span> raw_transcripts<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">if</span> chunk.get(<span class="code-string">"importance"</span>, 0.0) > 0.8<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">return</span> dspy.Prediction(context=filtered_text)
+        </div>
+        <p style="margin-top: 14px;">What are the architectural benefits of using this comprehension on lines 4-8 instead of writing an explicit `for` loop `append()` block?</p>
+        <div class="field-grid">
+           <div class="field" style="grid-column: span 2;">
+            <label for="gate2why">State the benefit of comprehensions over standard loops.</label>
+            <input id="gate2why" type="text" placeholder="Short answer">
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="submitGate2()">Lock extraction</button>
+        </div>
+        <div id="gate2-feedback" class="feedback"></div>
+        <div id="gate2-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(4)">Proceed to FastAPI Generators</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Application 3: FastAPI Generators -->
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="section-count">Application Gate 3</p>
+        <h2>The Chassis: WebRTC Generators</h2>
+        <p>The Pi execution harness hooks into the FastAPI websocket to stream TTS (Text-To-Speech) audio back to the user continuously.</p>
+        <div class="code-block">
+<span class="code-highlight">@app.get</span>(<span class="code-string">"/stream_audio/{session_id}"</span>)<br>
+<span class="code-highlight">async def</span> get_audio(session_id: <span class="code-type">str</span>):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-comment"># We pull blocks from the underlying AI audio generator</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">async def</span> audio_generator():<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">async for</span> audio_chunk <span class="code-highlight">in</span> pi_tts_engine.consume():<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">yield</span> audio_chunk<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">return</span> StreamingResponse(audio_generator(), media_type=<span class="code-string">"audio/webm"</span>)
+        </div>
+        <p style="margin-top: 14px;">If we removed the `yield` on line 6 and appended `audio_chunk` into a local `audio_list = []` to return it outright, what physically happens to the client talking to the AI?</p>
+        <div class="choices" data-group="gate3">
+          <button class="choice" data-value="A" onclick="selectChoice('gate3','A',this)">The client hears slightly distorted audio owing to buffer alignment issues.</button>
+          <button class="choice" data-value="B" onclick="selectChoice('gate3','B',this)">The client suffers massive conversational latency; they hear nothing until the *entire* generated response completely finishes rendering.</button>
+          <button class="choice" data-value="C" onclick="selectChoice('gate3','C',this)">The audio simply plays back in reverse due to stack memory ordering.</button>
+        </div>
+        <div id="gate3-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions">
+          <button id="gate3-submit" class="btn btn-primary" onclick="submitChoice('gate3','B',gate3Feedback, () => {})">Lock prediction</button>
+        </div>
+        <div id="gate3-feedback" class="feedback"></div>
+        <div id="gate3-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(5)">Proceed to Mastery Gate</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mastery Gate -->
+    <section id="stage-5" class="stage">
+      <div class="card">
+        <p class="eyebrow">Mastery Gate</p>
+        <h2>Map the Subsystems</h2>
+        <p>In the Conscious Coaching Platform, map the correct python architectural approach (List vs Generator) to the intended subsystem and explain why.</p>
+        <textarea id="masteryText" placeholder="- FastAPI WebSocket streaming uses ... because ...
+- Pydantic BaseModel validation uses ... because ..."></textarea>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="submitMastery()">Lock response</button>
+        </div>
+        <div id="mastery-feedback" class="feedback"></div>
+        <div id="mastery-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(6)">Enter the application gauntlet</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gauntlet -->
+    <section id="stage-6" class="stage">
+      <div class="card">
+        <p class="eyebrow">Application Gauntlet</p>
+        <h2>Seven architecture checks</h2>
+        <div class="gauntlet-grid">
+          <div class="q-card">
+            <label for="g1">1. What artifact forces strict List validation with bounded length?</label>
+            <input id="g1" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g2">2. What operator isolates and filters a dictionary inside a DSPy block quickly?</label>
+            <input id="g2" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g3">3. What FastAPI object wraps a Generator to output live data?</label>
+            <input id="g3" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g4">4. Can Pydantic evaluate `max_length` on a Generator?</label>
+            <input id="g4" type="text" placeholder="Yes/No">
+          </div>
+          <div class="q-card">
+            <label for="g5">5. What keyword defines the function inside `StreamingResponse`?</label>
+            <input id="g5" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g6">6. In DSPy, does a list comprehension create an infinite stream or a bounded block?</label>
+            <input id="g6" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g7">7. What is the fundamental orchestrational difference between Pydantic and FastAPI streaming?</label>
+            <input id="g7" type="text" placeholder="Short answer">
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="gradeGauntlet()">Submit gauntlet</button>
+        </div>
+        <div id="gauntlet-feedback" class="feedback"></div>
+        <div id="final-box" class="final-box hidden">
+          <p class="eyebrow" style="margin-bottom:10px;">Layer 2 Complete</p>
+          <p id="final-text"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const totalStages = 7;
+    const selections = {};
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach((stage) => stage.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = 'feedback show ' + type;
+      box.innerHTML = '<h3>' + title + '</h3><p>' + body + '</p>';
+    }
+
+    function containsAny(value, options) {
+      return options.some((option) => value.includes(option));
+    }
+
+    function selectChoice(groupId, value, element) {
+      if (document.querySelector('[data-group="' + groupId + '"]').dataset.locked === 'true') return;
+      selections[groupId] = value;
+      document.querySelectorAll('[data-group="' + groupId + '"] .choice').forEach((button) => button.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function submitChoice(groupId, correct, feedbackPack, revealFn) {
+      const selected = selections[groupId];
+      if (!selected) {
+        showFeedback(groupId + '-feedback', 'bad', 'Prediction required', 'Commit before the reveal. The application layer still utilizes lock-to-reveal mechanisms.');
+        return;
+      }
+      document.querySelector('[data-group="' + groupId + '"]').dataset.locked = 'true';
+      document.getElementById(groupId + '-submit').disabled = true;
+      document.getElementById(groupId + '-lock').classList.remove('hidden');
+      revealFn();
+      const isCorrect = selected === correct;
+      const payload = isCorrect ? feedbackPack.good : feedbackPack.bad;
+      showFeedback(groupId + '-feedback', isCorrect ? 'good' : 'bad', payload.title, payload.body);
+      document.getElementById(groupId + '-next').classList.remove('hidden');
+    }
+
+    function submitInterrupt() {
+      const value = document.getElementById('interruptInput').value.trim().toLowerCase();
+      const ok = containsAny(value, ['list', 'buffer', 'array', 'batch', 'append']);
+      document.getElementById('interruptInput').disabled = true;
+      if (ok) {
+        showFeedback('interrupt-feedback', 'good', 'Interrupt passed', 'Correct. Parsing an infinite stream into a bounded List/buffer guarantees physical memory saturation and instant detonation.');
+        document.getElementById('interrupt-next').classList.remove('hidden');
+      } else {
+        showFeedback('interrupt-feedback', 'bad', 'Interrupt failed', 'The failure cause is attempting to batch streaming data into a bounded `List`. Lists must know their complete structure, waiting for an infinite stream creates a memory spike.');
+        document.getElementById('interruptInput').disabled = false;
+      }
+    }
+
+    const gate1Feedback = {
+      good: {
+        title: 'Correct: Evaluation parameters.',
+        body: 'Pydantic is a checkpoint boundary. It cannot validate `max_length=15` unless it can measure the bounds of the returned sequence with `len()`. A generator hides its length, making schema control inherently impossible.'
+      },
+      bad: {
+        title: 'Misconception exposed: Understanding validation math.',
+        body: 'Pydantic relies on measuring physical bounds to guarantee data integrity before Neo4j ingests it. Generators do not evaluate length. A list provides a strict boundary.'
+      }
+    };
+
+    function submitGate2() {
+      const why = document.getElementById('gate2why').value.trim().toLowerCase();
+      if (!why) {
+        showFeedback('gate2-feedback', 'bad', 'Computation required', 'Commit the architectural benefits of the comprehension.');
+        return;
+      }
+      document.getElementById('gate2why').disabled = true;
+      const whyOk = containsAny(why, ['speed', 'c-level', 'memory', 'concise', 'optimized']);
+      if (whyOk) {
+        showFeedback('gate2-feedback', 'good', 'Gate passed', 'Correct. Comprehensions execute locally inside C-level optimizations. They are drastically faster and reduce multi-line syntax overhead when filtering enormous JSON pipelines inside DSPy.');
+        document.getElementById('gate2-next').classList.remove('hidden');
+      } else {
+        showFeedback('gate2-feedback', 'bad', 'Gate failed', 'The major benefit is execution speed by calling lower-level optimizations and remaining concise in data transformations.');
+        document.getElementById('gate2why').disabled = false;
+      }
+    }
+
+    const gate3Feedback = {
+      good: {
+        title: 'Correct: Catastrophic Latency.',
+        body: 'If you buffer into a list, the FastAPI router will wait until all 3 hours of speech finish synthesizing before sending a single byte. The `yield` command suspends execution, shoots the byte out to the client, and returns for the next one—maintaining sub-300ms Conversational Latency.'
+      },
+      bad: {
+        title: 'Misconception exposed: Pipeline Physics.',
+        body: 'Appending to a list blocks the return loop. The client perceives this as dead air and massive loading latency. Real-time interfaces strictly depend on `yield` generators.'
+      }
+    };
+
+    function submitMastery() {
+      const value = document.getElementById('masteryText').value.trim().toLowerCase();
+      const checks = [
+        containsAny(value, ['generator', 'yield']),
+        containsAny(value, ['list', 'bound', 'batch', 'array']),
+        containsAny(value, ['latency', 'stream', 'memory', 'validation', 'len'])
+      ];
+      const hits = checks.filter(Boolean).length;
+      document.getElementById('masteryText').disabled = true;
+      if (hits >= 3) {
+        showFeedback('mastery-feedback', 'good', 'Gate passed', 'You successfully mapped the orchestration structures: Generators feed the live Chassis WebSockets due to infinite suspension semantics, while strict Lists feed Pydantic QA boundaries requiring rigid schema validation.');
+        document.getElementById('mastery-next').classList.remove('hidden');
+      } else {
+        showFeedback('mastery-feedback', 'bad', 'Gate failed', 'The application mapping failed. You must explicitly link FastAPI to Generators (latency/streaming) and Pydantic to Lists (rigid boundaries/validation).');
+        document.getElementById('masteryText').disabled = false;
+      }
+    }
+
+    function gradeGauntlet() {
+      const answerBank = {
+        g1: ['pydantic', 'basemodel', 'field'],
+        g2: ['comprehension', 'list comprehension'],
+        g3: ['streamingresponse'],
+        g4: ['no', 'false'],
+        g5: ['yield'],
+        g6: ['bound', 'list', 'block', 'bounded block'],
+        g7: ['batch vs stream', 'bounded vs infinite', 'list vs generator']
+      };
+      let score = 0;
+      Object.entries(answerBank).forEach(([id, keywords]) => {
+        const value = document.getElementById(id).value.trim().toLowerCase();
+        if (value && containsAny(value, keywords)) score += 1;
+      });
+      if (score >= 5) {
+        showFeedback('gauntlet-feedback', 'good', 'Gauntlet cleared: ' + score + '/7', 'The application mapping is stable. You know precisely when to deploy rigid boundaries and when to stream.');
+        document.getElementById('final-box').classList.remove('hidden');
+        document.getElementById('final-text').textContent = 'You have moved beyond syntax rules. You now evaluate Python sequence tools based on how they integrate with systemic frameworks like Pydantic, DSPy, and FastAPI. Let\'s move to cross-context analysis.';
+      } else {
+        showFeedback('gauntlet-feedback', 'bad', 'Gauntlet failed: ' + score + '/7', 'You need to lock in the artifact roles: Pydantic = bounds (lists), StreamingResponse = infinite streams (generators).');
+        document.getElementById('final-box').classList.add('hidden');
+      }
+    }
+  </script>
+</body>
+</html>

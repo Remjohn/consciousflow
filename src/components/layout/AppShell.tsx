@@ -42,20 +42,19 @@ export const AppShell = () => {
                 </div>
             </header>
 
-            {/* Main Content */}
-            <main className="flex-1 overflow-y-auto pb-24 pt-16 scrollbar-hide">
-                <div className="animate-in fade-in duration-500">
+            {/* Main Content - Single scroll owner */}
+            <main className="flex-1 overflow-y-auto pt-16 pb-24 scrollbar-hide">
+                <div className="animate-in fade-in duration-500 w-full max-w-5xl mx-auto">
                     <Outlet />
                 </div>
             </main>
 
             {/* Bottom Navigation */}
-            <nav className="fixed bottom-0 w-full h-20 bg-void/90 backdrop-blur-xl border-t border-steel/50 grid grid-cols-5 items-center gap-1 z-50 px-2 pb-2">
+            <nav className="fixed bottom-0 w-full h-20 bg-void/90 backdrop-blur-xl border-t border-steel/50 grid grid-cols-4 items-center gap-1 z-50 px-2 pb-2">
                 <NavButton to="/dashboard" label="COMMAND" />
-                <NavButton to="/journal" label="DEBRIEF" />
-                <NavButton to="/challenge" label="MISSION" />
-                <NavButton to="/investments" label="INVEST" />
-                <NavButton to="/dating" label="CHAMPION" />
+                <NavButton to="/stats" label="STATS" />
+                <NavButton to="/finance" label="FINANCE" />
+                <NavButton to="/challenge" label="CHALLENGE" />
             </nav>
         </div>
     );

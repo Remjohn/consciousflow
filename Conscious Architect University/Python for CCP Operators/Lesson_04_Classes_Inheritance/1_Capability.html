@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classes & Inheritance — Capability Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{
+  --bg:#09090b;--surface:#131316;--surface2:#1a1a1f;--surface3:#27272a;
+  --text:#fafafa;--muted:#a1a1aa;--border:#27272a;
+  --accent:#3b82f6;--accent-glow:rgba(59, 130, 246, 0.12);
+  --red:#f43f5e;--red-glow:rgba(244, 63, 94, 0.12);
+  --green:#10b981;--green-glow:rgba(16, 185, 129, 0.12);
+  --amber:#f59e0b;--amber-glow:rgba(245, 158, 11, 0.12);
+  --mono:'JetBrains Mono',monospace;--sans:'DM Sans',sans-serif;--grotesk:'Space Grotesk',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.65;overflow-x:hidden;}
+.container{max-width:800px;margin:0 auto;padding:4rem 2rem 10rem;}
+
+h1{font-family:var(--grotesk);font-size:clamp(2.5rem,6vw,3.8rem);line-height:1.0;margin-bottom:1.5rem;letter-spacing:-0.03em;}
+h2{font-family:var(--grotesk);font-size:1.8rem;margin-bottom:1rem;color:var(--text);font-weight:700;}
+h3{font-family:var(--grotesk);font-size:1.3rem;margin-bottom:1rem;color:var(--accent);font-weight:600;}
+p{margin-bottom:1.4rem;color:var(--muted);font-size:1.05rem;line-height:1.7;}
+strong{color:var(--text);}
+code{font-family:var(--mono);font-size:0.85em;background:var(--surface2);padding:0.2em 0.4em;border-radius:4px;color:var(--amber);}
+
+pre{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:1.2rem;overflow-x:auto;margin-bottom:1.5rem;}
+pre code{background:transparent;padding:0;color:var(--text);font-size:0.9rem;}
+.keyword{color:#c678dd;} .string{color:#98c379;} .class{color:#e5c07b;} .param{color:#d19a66;} .type{color:#56b6c2;} .comment{color:#5c6370;font-style:italic;}
+
+/* FAILURE ANCHOR */
+.failure-anchor{background:var(--red-glow);border:1px solid rgba(244,63,94,0.25);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:1.5rem 1.75rem;margin-bottom:2.5rem;}
+.fa-label{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--red);margin-bottom:0.6rem;font-weight:600;}
+.fa-text{color:#fda4af;font-size:0.95rem;line-height:1.65;}
+
+.insight{border-left:3px solid var(--accent);padding:1.2rem 1.5rem;background:var(--accent-glow);border-radius:0 8px 8px 0;font-size:0.95rem;line-height:1.6;color:var(--muted);margin-bottom:2rem;}
+.insight strong{color:var(--accent);}
+
+/* INTERACTION BOX */
+.interaction-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2.25rem;margin:2rem 0;position:relative;overflow:hidden;}
+.interaction-box::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--accent);}
+.interaction-header{font-family:var(--mono);font-size:0.7rem;color:var(--accent);text-transform:uppercase;margin-bottom:1.25rem;letter-spacing:0.12em;padding-bottom:0.6rem;border-bottom:1px solid var(--border);font-weight:600;}
+.question-text{font-size:1.05rem;font-weight:500;margin-bottom:1.75rem;color:#fff;line-height:1.6;}
+
+.input-group{display:flex;gap:1rem;align-items:center;margin-bottom:0.5rem;}
+.input-text{background:var(--bg);border:1px solid var(--border);color:#fff;font-family:var(--mono);font-size:0.95rem;padding:0.7rem 1rem;flex:1;border-radius:4px;transition:border-color 0.2s;}
+.input-text:focus{outline:none;border-color:var(--accent);}
+.input-text:disabled{opacity:0.45;cursor:not-allowed;}
+
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.7rem 1.4rem;font-family:var(--grotesk);font-weight:600;font-size:0.95rem;border-radius:4px;cursor:pointer;transition:all 0.18s;}
+.btn:hover:not(:disabled){transform:translateY(-1px);background:#e4e4e7;}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);}
+.btn-outline:hover:not(:disabled){border-color:var(--text);background:var(--surface2);}
+
+/* PREDICTION LOCK DISPLAY */
+.lock-display{display:none;margin-top:1.5rem;padding:1.25rem 1.5rem;background:var(--surface2);border-radius:6px;border:1px dashed var(--border);}
+.lock-display.visible{display:block;}
+.lock-header{font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem;}
+.lock-comparison{display:flex;gap:2rem;}
+.lock-col{flex:1;}
+.lock-val{font-family:var(--mono);font-size:0.95rem;margin-top:0.3rem;}
+.lock-val.pred{color:var(--accent);}
+.lock-val.actual{color:var(--green);}
+.lock-val.wrong{color:var(--red);}
+
+.reveal-text{margin-top:1rem;font-size:0.95rem;color:var(--muted);line-height:1.6;border-top:1px solid var(--border);padding-top:1rem;}
+.reveal-text strong{color:var(--text);}
+
+/* GAUNTLET */
+.gauntlet-wrap{margin-top:4rem;border-top:2px solid var(--border);padding-top:3rem;}
+.gauntlet-intro{font-size:0.95rem;color:var(--muted);margin-bottom:2rem;padding:1.2rem 1.5rem;background:var(--surface2);border-radius:6px;border-left:3px solid var(--accent);}
+.q-block{background:var(--surface);padding:1.75rem;border-radius:8px;margin-bottom:1.5rem;border:1px solid var(--border);}
+.q-num{font-family:var(--mono);font-size:0.7rem;color:var(--accent);text-transform:uppercase;margin-bottom:0.75rem;letter-spacing:0.1em;}
+.q-code{font-family:var(--mono);font-size:0.85rem;background:var(--surface2);padding:1rem;border-radius:6px;color:var(--text);border:1px solid var(--border);margin-bottom:1.25rem;white-space:pre-wrap;}
+.q-text{font-size:1.05rem;margin-bottom:1.25rem;font-weight:500;color:#fff;line-height:1.55;}
+
+.choices{display:flex;flex-direction:column;gap:0.75rem;margin-bottom:0.5rem;}
+.choice-btn{text-align:left;padding:1rem 1.25rem;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;transition:all 0.2s;font-size:0.95rem;font-weight:400;font-family:var(--sans);line-height:1.5;}
+.choice-btn:hover:not(:disabled){border-color:var(--accent);background:var(--accent-glow);}
+.choice-btn:disabled{cursor:not-allowed;}
+.choice-btn.selected-wrong{border-color:var(--red);color:var(--red);background:var(--red-glow);}
+.choice-btn.selected-right{border-color:var(--green);color:var(--green);background:var(--green-glow);}
+
+.feedback{display:none;margin-top:1.25rem;padding:1.25rem;border-radius:6px;font-size:0.95rem;line-height:1.6;}
+.feedback.visible{display:block;animation:fadein 0.3s;}
+.feedback.error{background:var(--red-glow);border-left:3px solid var(--red);color:#fda4af;}
+.feedback.success{background:var(--green-glow);border-left:3px solid var(--green);color:#6ee7b7;}
+.feedback-title{font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;margin-bottom:0.5rem;font-weight:600;letter-spacing:0.1em;}
+
+/* GATED CONTENT */
+.gated-content{opacity:0;pointer-events:none;transform:translateY(16px);transition:all 0.5s ease;display:none;}
+.gated-content.unlocked{opacity:1;pointer-events:auto;transform:translateY(0);display:block;}
+.divider{border:none;border-top:1px solid var(--surface3);margin:3rem 0;}
+
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+/* FACTORY CANVAS */
+.canvas-wrap{width:100%;height:300px;background:#0d0d10;border:1px solid var(--border);border-radius:8px;position:relative;overflow:hidden;margin-bottom:2rem;}
+.canvas-label{position:absolute;top:15px;left:15px;font-family:var(--mono);font-size:0.7rem;color:var(--accent);letter-spacing:0.1em;text-transform:uppercase;z-index:10;}
+
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div style="font-family:var(--mono);font-size:0.75rem;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.15em;">Lesson 04 · Layer 1 — Capability</div>
+  <h1>Classes & Inheritance</h1>
+  <p style="font-size:1.15rem;margin-bottom:2.5rem;color:var(--text);">The Factory Floor Blueprint: Forcing Non-Deterministic AI into Deterministic Structures.</p>
+
+  <div class="failure-anchor">
+    <div class="fa-label">The CCP Failure Scenario: Dictionary Corruption</div>
+    <div class="fa-text">
+      The JIT Skill Compiler was handed a simple requirement: generate a script, score confidence, and count triggers. The coder agent used a generic dictionary: <code>{"cbcs_score": 0.91}</code>. Days later, an LLM rotation drifted and returned <code>{"cbcs_score": "high"}</code>. The dictionary silently accepted the string. The data flowed into Neo4j. The trend analysis queried the string expecting a float. The graph computation crashed entirely, corrupting the client's session state.<br><br>
+      The keys were present. The data looked plausible. But there was no <strong>Machine Blueprint</strong> to enforce the types. The platform was running on honor system data, and LLMs have no honor.
+    </div>
+  </div>
+
+  <h2>Concept as Force Multiplier</h2>
+  <p>A <strong>class</strong> in Python is not a data container. It is a <strong>Machine Blueprint</strong> — a precise, reusable schematic that describes:</p>
+  <ul style="color:var(--muted);margin-bottom:1.5rem;padding-left:1.5rem;">
+    <li style="margin-bottom:0.5rem;"><strong style="color:var(--text);">Attributes</strong> (What it has, and what exact types they must be)</li>
+    <li style="margin-bottom:0.5rem;"><strong style="color:var(--text);">Methods</strong> (What it can do, its validators, its serializers)</li>
+    <li style="margin-bottom:0.5rem;"><strong style="color:var(--text);">Inheritance</strong> (What it borrows from its parent, guaranteeing baseline capabilities)</li>
+  </ul>
+  
+  <p>To a sovereign Architect operating the CCP, the class is the unit of <strong>architectural repeatable behavior</strong>. Every instance is a physical object produced exactly to that specification.</p>
+  
+  <div class="insight">
+    <strong>The Factory Floor Metaphor:</strong> Standard code defines raw logic. A class defines the master CAD drawing. <strong>Inheritance</strong> allows you to stamp "EXTENDS: QA_MACHINE_V3" on a new blueprint, instantly adopting every precision tolerance and safety protocol from the parent without reinventing the machine. You inherit from <code>Pydantic BaseModel</code> (QA inspection) and <code>dspy.Module</code> (Assembly flow).
+  </div>
+
+  <!-- FACTORY ANIMATION -->
+  <div class="canvas-wrap">
+    <div class="canvas-label">Machine Component Inheritance Trace</div>
+    <canvas id="factoryCanvas" style="width:100%;height:100%;display:block;"></canvas>
+  </div>
+
+  <hr class="divider">
+
+  <h2>The Minimal Code Reading</h2>
+  <p>Read the following blueprints. You are the Foreman reviewing specs before manufacture. Predict the physical outcome before reading the logic reveal.</p>
+
+  <!-- READING 1 -->
+  <div class="interaction-box">
+    <div class="interaction-header">Reading 1: The Blueprint & Constructor</div>
+<pre><code><span class="keyword">class</span> <span class="class">Coach</span>:
+    <span class="keyword">def</span> <span class="type">__init__</span>(<span class="param">self</span>, <span class="param">name</span>: <span class="type">str</span>, <span class="param">specialty</span>: <span class="type">str</span>):
+        <span class="param">self</span>.name = name
+        <span class="param">self</span>.specialty = specialty
+
+    <span class="keyword">def</span> <span class="type">introduce</span>(<span class="param">self</span>) -> <span class="type">str</span>:
+        <span class="keyword">return</span> <span class="string">f"I am {self.name}, specialized in {self.specialty}."</span>
+
+coach = Coach(<span class="string">"Jean Pierre"</span>, <span class="string">"leadership"</span>)</code></pre>
+    
+    <div class="question-text">If you run `coach.introduce()`, what exact string is returned?</div>
+    <div class="input-group">
+      <input type="text" id="r1_input" class="input-text" placeholder="Type predicted output exactly...">
+      <button class="btn" id="r1_btn" onclick="checkR1()">Lock Prediction</button>
+    </div>
+    
+    <div class="lock-display" id="r1_lock">
+      <div class="lock-header">Prediction Committed</div>
+      <div class="lock-comparison">
+        <div class="lock-col">
+          <div style="font-size:0.75rem;color:var(--muted);">YOUR VALUE</div>
+          <div class="lock-val pred" id="r1_your"></div>
+        </div>
+        <div class="lock-col">
+          <div style="font-size:0.75rem;color:var(--muted);">COMPILER OUTPUT</div>
+          <div class="lock-val actual">"I am Jean Pierre, specialized in leadership."</div>
+        </div>
+      </div>
+      <div class="reveal-text">
+        <strong>The Reveal:</strong> The <code>__init__</code> method acts as the construction contract. When <code>Coach("Jean Pierre", "leadership")</code> is executed, the blueprint demands those two materials. They are permanently fixed to the <code>self</code> instance. <code>introduce()</code> draws directly from that specific instance state. Without providing those variables at creation, the factory throws a <code>TypeError</code> instantly, halting production.
+      </div>
+    </div>
+  </div>
+
+  <div class="gated-content" id="gate2">
+    <!-- READING 2 -->
+    <div class="interaction-box">
+      <div class="interaction-header">Reading 2: Inheritance & <code>super()</code></div>
+<pre><code><span class="keyword">class</span> <span class="class">PremiumCoach</span>(<span class="class">Coach</span>):
+    <span class="keyword">def</span> <span class="type">__init__</span>(<span class="param">self</span>, <span class="param">name</span>: <span class="type">str</span>, <span class="param">specialty</span>: <span class="type">str</span>, <span class="param">tier</span>: <span class="type">str</span>):
+        <span class="type">super</span>().__init__(name, specialty)
+        <span class="param">self</span>.tier = tier
+
+pc = PremiumCoach(<span class="string">"Audrey"</span>, <span class="string">"resilience"</span>, <span class="string">"Platinum"</span>)</code></pre>
+      
+      <div class="question-text"><code>PremiumCoach</code> adds <code>tier</code> but does not define <code>introduce()</code>. What happens if you call <code>pc.introduce()</code>?</div>
+      <div class="choices" id="r2_choices">
+        <button class="choice-btn" onclick="checkR2(this, false)">A. It throws an AttributeError because introduce() is missing from the child.</button>
+        <button class="choice-btn" onclick="checkR2(this, true)">B. It succeeds and returns "I am Audrey, specialized in resilience."</button>
+        <button class="choice-btn" onclick="checkR2(this, false)">C. It returns "I am Audrey, specialized in resilience. Tier Platinum."</button>
+      </div>
+      
+      <div class="lock-display" id="r2_lock">
+        <div class="reveal-text">
+          <strong>The Reveal:</strong> It succeeds. <code>PremiumCoach</code> inherited the <code>introduce()</code> method entirely intact from <code>Coach</code>. The child does not need to rewrite the capability, it merely assumes it. The <code>super().__init__()</code> ensures the parent's base materials (name, specialty) are processed through the parent's established construction line, before bolting on the new <code>tier</code> attribute on top. This is the definition of extending capability.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="gated-content" id="gate3">
+    <!-- READING 3 -->
+    <div class="interaction-box">
+      <div class="interaction-header">Reading 3: Pydantic Inheritance — The QA Engine</div>
+<pre><code><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field
+<span class="keyword">from</span> typing <span class="keyword">import</span> Optional
+
+<span class="keyword">class</span> <span class="class">CoachingOutput</span>(<span class="class">BaseModel</span>):
+    coaching_script: <span class="type">str</span>
+    cbcs_score: <span class="type">float</span> = Field(..., ge=<span class="string">0.0</span>, le=<span class="string">1.0</span>)
+    trigger_count: <span class="type">int</span> = Field(..., ge=<span class="string">1</span>)
+    coach_notes: Optional[<span class="type">str</span>] = <span class="class">None</span></code></pre>
+      
+      <div class="question-text">This class doesn't define an <code>__init__</code> constructor or a <code>.validate()</code> testing function. Where does the mathematical logic guaranteeing the float limits come from?</div>
+      <div class="input-group">
+        <input type="text" id="r3_input" class="input-text" placeholder="Explain the source of the validation engine...">
+        <button class="btn" id="r3_btn" onclick="checkR3()">Lock Answer</button>
+      </div>
+      
+      <div class="lock-display" id="r3_lock">
+        <div class="lock-header">Architectural Reality</div>
+        <div class="reveal-text">
+          <strong>The Reveal:</strong> From the parent: <code>BaseModel</code>. By declaring <code>class CoachingOutput(BaseModel)</code>, your blueprint completely inherits Pydantic's master C-optimized inspection framework. When you create <code>CoachingOutput(cbcs_score=0.9)</code>, the parent intercepts execution, parses the data, applies type coercion, runs the <code>&ge;0.0 / &le;1.0</code> boundary checks, and crashes the compiler via <code>ValidationError</code> if it fails. You did not write the logic; you inherited the machinery.
+        </div>
+        <button class="btn" style="margin-top:1.5rem;" onclick="document.getElementById('gauntlet-section').classList.add('unlocked')">Enter The Capability Gauntlet</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="gated-content" id="gauntlet-section">
+    <div class="gauntlet-wrap">
+      <h2>Capability Gauntlet</h2>
+      <div class="gauntlet-intro">
+        You are the Foreman reviewing 7 blueprints generated by an autonomous agent. Approve the structure by predicting the exact outcome of the machine before hitting production.
+      </div>
+      <div id="q-container"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Canvas Factory Animation
+(function(){
+  const canvas = document.getElementById('factoryCanvas');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  
+  let w = rect.width;
+  let h = rect.height;
+  let t = 0;
+
+  function draw(){
+    ctx.clearRect(0,0,w,h);
+    
+    // Parent Block (BaseModel)
+    ctx.strokeStyle = "rgba(59, 130, 246, 0.4)";
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 2;
+    ctx.strokeRect(w/2 - 150, 40, 300, 60);
+    ctx.font = "600 12px 'Space Grotesk'";
+    ctx.fillStyle = "#3b82f6";
+    ctx.textAlign = "center";
+    ctx.fillText("BaseModel (QA Inspection Engine)", w/2, 75);
+
+    // Child Block (Active)
+    ctx.strokeStyle = "#10b981";
+    ctx.setLineDash([]);
+    ctx.strokeRect(w/2 - 100, 160, 200, 60);
+    ctx.fillStyle = "#10b981";
+    ctx.fillText("CoachingOutput Schema", w/2, 195);
+    
+    // Inheritance Flow
+    ctx.beginPath();
+    ctx.moveTo(w/2, 100);
+    ctx.lineTo(w/2, 160);
+    ctx.setLineDash([]);
+    ctx.strokeStyle = "rgba(59, 130, 246, 0.8)";
+    ctx.stroke();
+
+    // Data Pulses
+    let pos = (t * 1.5) % 60;
+    ctx.beginPath();
+    ctx.arc(w/2, 100 + pos, 4, 0, Math.PI*2);
+    ctx.fillStyle = "#fff";
+    ctx.fill();
+
+    // Input Data Node
+    let inPos = (t * 2) % 150;
+    ctx.beginPath();
+    ctx.moveTo(w/2 - 250 + inPos, 190);
+    ctx.lineTo(w/2 - 220 + inPos, 190);
+    ctx.strokeStyle = "rgba(244, 63, 94, 0.8)"; 
+    if(w/2 - 220 + inPos > w/2 - 100) ctx.strokeStyle = "#10b981"; // turns valid on entry
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    t++;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// Reading Interactions
+function checkR1(){
+  const inp = document.getElementById('r1_input');
+  if(!inp.value) return;
+  document.getElementById('r1_your').textContent = `"${inp.value}"`;
+  inp.disabled = true;
+  document.getElementById('r1_btn').disabled = true;
+  document.getElementById('r1_lock').classList.add('visible');
+  if(inp.value.includes("Jean Pierre") && inp.value.includes("leadership")){
+      document.getElementById('r1_your').classList.add('actual');
+      document.getElementById('r1_your').classList.remove('pred');
+  } else {
+      document.getElementById('r1_your').classList.add('wrong');
+      document.getElementById('r1_your').classList.remove('pred');
+  }
+  setTimeout(()=>document.getElementById('gate2').classList.add('unlocked'), 1500);
+}
+
+function checkR2(btn, isCorrect){
+  const btns = document.getElementById('r2_choices').querySelectorAll('button');
+  btns.forEach(b => b.disabled = true);
+  if(isCorrect){
+    btn.classList.add('selected-right');
+  } else {
+    btn.classList.add('selected-wrong');
+  }
+  document.getElementById('r2_lock').classList.add('visible');
+  setTimeout(()=>document.getElementById('gate3').classList.add('unlocked'), 2000);
+}
+
+function checkR3(){
+  const inp = document.getElementById('r3_input');
+  if(inp.value.length < 3) return;
+  inp.disabled = true;
+  document.getElementById('r3_btn').disabled = true;
+  document.getElementById('r3_lock').classList.add('visible');
+}
+
+// Gauntlet Data
+const G_DATA = [
+  {num:1, code:`class SessionState(BaseModel):
+    session_id: str
+    is_active: bool = True
+
+state = SessionState(session_id="S-101")`, 
+   q:`What does state.is_active evaluate to?`,
+   opts:[`None, because it wasn't passed.`, `True.`, `An error occurs missing positional argument.`], 
+   ans:1,
+   exp:`True. The class blueprint declares a default value. When the instance is created without it, the inherited BaseModel machinery automatically maps the default into the new object.`},
+  
+  {num:2, code:`class TriggerProfile(BaseModel):
+    weight: float
+
+profile = TriggerProfile(weight="high")`, 
+   q:`What happens when this executes?`,
+   opts:[`It sets weight to "high", ignoring type mismatch.`, `It sets weight to 0.0 as a safe fallback.`, `Pydantic aggressively intercepts "high", fails float coercion, and raises a ValidationError.`], 
+   ans:2,
+   exp:`ValidationError. The blueprint acts as a hard boundary. Inherited validation logic blocks any malformed type that cannot be mathematically coerced, protecting the rest of the application.`},
+
+  {num:3, code:`class ScriptGenerator(dspy.Module):
+    def __init__(self):
+        super().__init__()
+        self.predict = dspy.Predict("context -> script")`, 
+   q:`What does super().__init__() accomplish here?`,
+   opts:[`It initializes the parent dspy.Module machinery (teleprompter registries, sub-module tracking).`, `It starts the LLM generation process immediately.`, `Nothing, it is optional syntactic sugar in Python.`], 
+   ans:0,
+   exp:`It explicitly invokes the parent constructor. Without it, the module works poorly—the DSPy optimizer remains permanently blind to your <code>self.predict</code> node because tracking arrays never initiated.`},
+
+  {num:4, code:`class CoachingSession(BaseModel):
+    session_length: int
+
+class PremiumSession(CoachingSession):
+    vip_priority: bool = False`, 
+   q:`Does PremiumSession require an explicit BaseModel inheritance to validate fields?`,
+   opts:[`Yes, validation only tracks back one layer.`, `No. Inheritance is transitive. Since CoachingSession inherits BaseModel, PremiumSession has the validation machinery natively.`], 
+   ans:1,
+   exp:`Correct. The mathematical validation mechanism spans the entire inheritance chain vertically. PremiumSession intrinsically validates both session_length and vip_priority.`},
+
+  {num:5, code:`class Config(BaseModel):
+    force_value: float
+
+a = Config(force_value=1.5)
+b = Config(force_value=1.5)`, 
+   q:`Is a == b true?`,
+   opts:[`No, they are separate objects in memory.`, `Yes, BaseModel overrides the equality operation to compare internal parameter sets instead of memory identity.`], 
+   ans:1,
+   exp:`Yes. Standard Python evaluates instance memory allocations (which are different). But inheritance from BaseModel automatically grants the overridden <code>__eq__</code> method that structurally compares field parameters.`},
+
+  {num:6, code:`class ActiveCoach(CoachBase):
+    session_count: int = 0
+
+coach = ActiveCoach(...)`, 
+   q:`If CoachBase holds a "name" string, what does coach.model_dump() output?`,
+   opts:[`Only {'session_count': 0}`, `Only {'name': '...'}`, `Both parent and child structural parameters serialized into a single dictionary.`], 
+   ans:2,
+   exp:`model_dump() is inherited from BaseModel. It sweeps the entire hierarchy and serializes every layer concurrently.`},
+
+  {num:7, code:`class AgentLogic(dspy.Module):
+    def __init__(self):
+        self.processor = dspy.ChainOfThought("in -> out")`, 
+   q:`What catastrophic silent defect exists here?`,
+   opts:[`ChainOfThought expects uppercase letters.`, `super().__init__() is missing, rendering the DSPy optimizer blind to "processor".`, `dspy.Module cannot hold variables.`], 
+   ans:1,
+   exp:`Execution continues cleanly, but compilation/optimization fails invisibly. The parent module was skipped during construction.`}
+];
+
+function renderGauntlet(){
+  const target = document.getElementById('q-container');
+  let html = '';
+  G_DATA.forEach((g, idx) => {
+    html += `
+      <div class="q-block" id="gq-${idx}">
+        <div class="q-num">Exercise ${g.num} of 7</div>
+        <div class="q-code">${g.code}</div>
+        <div class="q-text">${g.q}</div>
+        <div class="choices" id="gc-${idx}">`;
+    g.opts.forEach((opt, oIdx) => {
+      html += `<button class="choice-btn" onclick="answerG(${idx}, ${oIdx})">${opt}</button>`;
+    });
+    html += `</div>
+        <div class="feedback" id="gfb-${idx}">
+          <div class="feedback-title">Evaluation</div>
+          ${g.exp}
+        </div>
+      </div>
+    `;
+  });
+  target.innerHTML = html;
+}
+
+function answerG(qIdx, oIdx) {
+  const block = document.getElementById(`gc-${qIdx}`);
+  const btns = block.querySelectorAll('button');
+  btns.forEach(b => b.disabled = true);
+  
+  const isCorrect = (oIdx === G_DATA[qIdx].ans);
+  if(isCorrect){
+    btns[oIdx].classList.add('selected-right');
+    const fb = document.getElementById(`gfb-${qIdx}`);
+    fb.classList.add('visible', 'success');
+  } else {
+    btns[oIdx].classList.add('selected-wrong');
+    btns[G_DATA[qIdx].ans].style.borderColor = "var(--green)";
+    btns[G_DATA[qIdx].ans].style.color = "var(--green)";
+    const fb = document.getElementById(`gfb-${qIdx}`);
+    fb.classList.add('visible', 'error');
+  }
+}
+
+renderGauntlet();
+</script>
+</body>
+</html>

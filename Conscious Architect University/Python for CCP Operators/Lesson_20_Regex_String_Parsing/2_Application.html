@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regex & String Parsing — Application Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--amber);background:rgba(245,158,11,0.08);padding:.1em .4em;border-radius:4px;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-amber{background:var(--amber);color:#000;}
+.btn-amber:hover{background:#fbbf24;transform:translateY(-1px);}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text-muted);color:var(--text);}
+.btn-outline.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow);}
+
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+.insight.teal{border-color:var(--teal);background:var(--teal-glow);}
+.insight.teal strong{color:var(--teal);}
+.insight.rose{border-color:var(--rose);background:var(--rose-glow);}
+.insight.rose strong{color:var(--rose);}
+.insight.violet{border-color:var(--violet);background:var(--violet-glow);}
+.insight.violet strong{color:var(--violet);}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1;min-width:280px;}
+.visual-col{flex:1.2;min-width:320px;}
+
+.formula-block{background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--text-muted);line-height:1.8;overflow-x:auto;margin-bottom:1rem;}
+.formula-block .hl{color:var(--amber);font-weight:600;}
+.formula-block .tl{color:var(--teal);}
+
+.quiz-option{display:block;width:100%;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:.88rem;color:var(--text-muted);transition:all .25s;text-align:left;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;}
+.quiz-option:hover{border-color:var(--border-light);color:var(--text);}
+.quiz-option.correct{border-color:var(--emerald);color:var(--emerald);background:var(--emerald-glow);}
+.quiz-option.wrong{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+.quiz-option.disabled{pointer-events:none;opacity:.6;}
+.quiz-explanation{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+.quiz-explanation.show{max-height:300px;}
+
+.step-indicator{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--amber-glow);border:1px solid var(--amber);color:var(--amber);font-family:'Space Grotesk';font-weight:700;font-size:.78rem;margin-right:.5rem;}
+
+.pulse-node { animation: pulse 2s infinite; }
+@keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+.scroll-hint{animation:bounce 2s ease infinite;}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column!important;}
+  .canvas-wrap{min-height:280px!important;}
+  .nav-links{gap:.5rem;}.nav-link{font-size:.7rem;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">REGEX & STRING PARSING</span>
+    <div class="nav-links">
+      <a href="#interrupt" class="nav-link active" data-section="interrupt">Interrupt</a>
+      <a href="#compiler" class="nav-link" data-section="compiler">Skill Compiler</a>
+      <a href="#pydantic" class="nav-link" data-section="pydantic">Pydantic Guard</a>
+      <a href="#robot" class="nav-link" data-section="robot">Robot Arm Extraction</a>
+      <a href="#checkpoint" class="nav-link" data-section="checkpoint">Checkpoint</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 20 — APPLICATION LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Blueprint Reading<br><span style="color:var(--text-muted);font-weight:300;">Extract & Validate</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      How CCP deploys Regex across 4 production artifacts to enforce topological boundaries on AI generations, sanitize graph logic, and securely trigger mechanical payloads.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: Spaced Interrupt -->
+<section id="interrupt" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — SPACED RETRIEVAL INTERRUPT</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">The OODA Stateless Loop</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          Before mastering string payload extraction, we must recall the environment in which extraction happens. 
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          In Lesson 19, we proved that the CCP's Agentic execution loop is <strong>stateless</strong>. It runs purely on the OODA (Observe, Orient, Decide, Act) loop. We inject the <code>MAX_TURNS</code> constraint to prevent hallucination looping during extraction phases. 
+        </p>
+        <div class="card" style="padding:1.5rem;border-left:3px solid var(--teal);">
+          <h4 style="color:var(--teal);margin-bottom:1rem;">Memory Recall</h4>
+          <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem;">
+            If the `MAX_TURNS` parameter is hit before the Regex extraction matches the required payload, what is the safest architectural fallback action?
+          </p>
+          <div style="display:flex;flex-direction:column;gap:.5rem;" id="interruptQuiz">
+            <button class="quiz-option" data-correct="false">Extend MAX_TURNS dynamically to +5 turns</button>
+            <button class="quiz-option" data-correct="true">Halt execution and throw a deterministic Extraction Timeout error</button>
+            <button class="quiz-option" data-correct="false">Bypass Regex and use naive string parsing</button>
+          </div>
+          <div id="interruptFbk" style="display:none;margin-top:1rem;font-size:.85rem;color:var(--emerald);">
+            <strong style="display:block;margin-bottom:.25rem;">CORRECT</strong>
+            We never extend the loop dynamically or corrupt validation. The loop terminates cleanly via Error Handling, maintaining sovereign execution boundaries.
+          </div>
+        </div>
+      </div>
+      <div class="visual-col">
+         <div class="insight">
+            Extraction inherently fails over time if the model refuses to output structured syntax. Bounding execution prevents infinite compute waste when Regex continuously fails to match.
+         </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: Skill Compiler -->
+<section id="compiler" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">02 — PRODUCTION ARTIFACT 1</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">JIT Skill Compiler (Trigger Validation)</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          When an Agent uses the `<run_skill>` capability, it must specify the skill name EXACTLY. If the skill is `skill_math_v2`, anything else is invalid. The compiler validates the request via Regex.
+        </p>
+        <div class="formula-block">
+          <span class="tl">pattern</span> = <span style="color:#98c379;">r"^&lt;run_skill&gt;([a-zA-Z0-9_]+)&lt;/run_skill&gt;"</span><br>
+          match = re.search(pattern, llm_response)<br>
+          <span style="color:#c678dd;">if</span> match:<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;skill_name = match.group(1)
+        </div>
+        <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1rem;font-size:.9rem;">
+          <li><code style="color:var(--amber);">^</code> Anchors the match. It MUST be the very first thing.</li>
+          <li><code style="color:var(--amber);">[a-zA-Z0-9_]+</code> Restricts the skill name to alphanumeric characters and underscores ONLY. (No spaces, no quotes, no conversational filler).</li>
+          <li><code style="color:var(--teal);">match.group(1)</code> Physically extracts the interior string, immediately divorcing the data from the XML tags.</li>
+        </ul>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:300px;">
+          <canvas id="xmlCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: Pydantic Validation -->
+<section id="pydantic" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:.5rem;">03 — PRODUCTION ARTIFACT 2</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Pydantic & Neo4j Sanitization</h2>
+    <div class="flex-layout">
+      <div class="visual-col">
+        <div class="card" style="padding:1.5rem;height:100%;background:var(--bg-card);border:1px solid var(--border);">
+          <div style="font-family:'JetBrains Mono';font-size:.85rem;color:var(--text-muted);line-height:1.6;">
+            <span style="color:#c678dd;">class</span> NodeIdentifier(BaseModel):<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;hex_id: <span style="color:#e5c07b;">str</span> = Field(..., <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pattern=<span style="color:#98c379;">r"^[0-9a-fA-F]{8}$"</span>)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;neo4j_label: <span style="color:#e5c07b;">str</span> = Field(...,<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pattern=<span style="color:#98c379;">r"^[A-Z][a-zA-Z0-9]+$"</span>)
+          </div>
+          <hr style="border-color:var(--border-light);margin:1.5rem 0;">
+          <h4 style="color:var(--text);margin-bottom:.5rem;">Interactive Validator</h4>
+          <input type="text" id="hexInput" class="input-field" placeholder="Enter an 8-char HEX ID (e.g. 1a2B3c4D)">
+          <div id="hexFbk" style="font-family:'JetBrains Mono';font-size:.8rem;color:var(--text-dim);min-height:20px;"></div>
+        </div>
+      </div>
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          In Lesson 11, we built Pydantic data contracts. Here, Regex is injected <em>directly</em> into the Pydantic <code>Field()</code> constraint.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          If Neo4j attempts to execute an injection payload masquerading as a node label, the Pydantic Regex hook blocks the execution before the GraphQL resolver even boots up.
+        </p>
+        <div class="insight violet">
+          <strong>Validation Isolation:</strong> We decouple the extraction logic from the validation logic. Extraction uses regex to find payloads buried in noise. Validation uses regex to assert strict formatting over an already isolated field.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 4: Robot Arm Pipeline -->
+<section id="robot" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--rose);margin-bottom:.5rem;">04 — PRODUCTION ARTIFACT 3</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">The Robot Arm Bash Extractor</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          The Pi Agent writes its commands inside <code>&lt;bash&gt;</code> blocks. The extraction engine uses a non-greedy regex to perfectly isolate the code for execution.
+        </p>
+        <div class="formula-block">
+          <span class="tl">engine_regex</span> = <span style="color:#98c379;">r"&lt;bash&gt;(.*?)&lt;/bash&gt;"</span><br>
+          <span style="color:#e06c75;"># FAILS BECAUSE DOT DOES NOT SPAN NEWLINES</span><br><br>
+          <span class="tl">safe_regex</span> = <span style="color:#98c379;">r"&lt;bash&gt;(.*?)&lt;/bash&gt;"</span>, <span style="color:#e5c07b;">re.DOTALL</span>
+        </div>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          <strong>The Trailing Noise Problem:</strong> Bash scripts span multiple lines. The standard <code>.</code> character matches any character <em>except a newline</em>. If you omit the <code>re.DOTALL</code> parameter, the Python matcher fails instantly on multi-line scripts. This is the #1 point of failure in Agentic Harnesses.
+        </p>
+        <div class="insight rose">
+          Without <code>re.DOTALL</code>, the agent's code is silent, unparsed, and never executed. The pipeline hangs waiting on terminal output that will never occur.
+        </div>
+      </div>
+      <div class="visual-col">
+         <div class="card" style="padding:1.5rem;text-align:center;">
+           <span style="display:block;font-size:.75rem;color:var(--text-dim);margin-bottom:.5rem;">SIMULATED LLM RESPONSE</span>
+           <div style="background:#0d0d10;border-radius:6px;border:1px solid var(--border);padding:1rem;color:var(--text-dim);font-family:'JetBrains Mono';font-size:.8rem;text-align:left;white-space:pre-wrap;">Sure, here is the script:
+
+&lt;bash&gt;
+cd src/
+npm run dev
+&lt;/bash&gt;
+
+I hope this helps!</div>
+           <button class="btn btn-outline" id="toggleDotallBtn" style="margin-top:1.5rem;">Regex Missing re.DOTALL</button>
+           <div id="dotallFbk" style="margin-top:.75rem;font-weight:700;color:var(--rose);">extraction failed (None)</div>
+         </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 5: Checkpoint -->
+<section id="checkpoint" class="section">
+  <div class="section-inner" style="max-width:720px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">05 — CHECKPOINT</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Application Gauntlet</h2>
+    <div id="quizContainer" style="display:flex;flex-direction:column;gap:1.5rem;"></div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem 4rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);">
+   Interactive Visual Learning — Lesson 20: Regex & String Parsing (Application)
+</footer>
+
+<script>
+const DPR=window.devicePixelRatio||1;
+function setupCanvas(c){const p=c.parentElement,r=p.getBoundingClientRect();c.width=r.width*DPR;c.height=r.height*DPR;c.style.width=r.width+'px';c.style.height=r.height+'px';const ctx=c.getContext('2d');ctx.scale(DPR,DPR);return{ctx,w:r.width,h:r.height};}
+
+/* Hero Background (Regex Data Stream) */
+(function(){
+  const c=document.getElementById('heroCanvas');let W,H,ctx;
+  function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+  resize();window.addEventListener('resize',resize);
+  let lines = [];
+  function populate(){
+     lines = [];
+     for(let i=0; i<15; i++) {
+        lines.push({y: Math.random()*H, x: -100 - Math.random()*200, speed: Math.random()*2+1, 
+                    str: "<edit>"+Math.random().toString(36).substring(7)+"</edit>", t:0});
+     }
+  }
+  populate();
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.font='12px JetBrains Mono';
+    lines.forEach(l=>{
+      l.x += l.speed;
+      if(l.x > W) l.x = -150 - Math.random()*100;
+      
+      const inZone = l.x > W*0.4 && l.x < W*0.6;
+      ctx.fillStyle = inZone ? 'rgba(16,185,129,0.8)' : 'rgba(255,255,255,0.05)';
+      ctx.fillText(l.str, l.x, l.y);
+      if(inZone) {
+         ctx.strokeStyle='rgba(16,185,129,0.2)';
+         ctx.strokeRect(l.x-2, l.y-12, ctx.measureText(l.str).width+4, 16);
+      }
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* Section 1: Interrupt */
+document.querySelectorAll('#interruptQuiz .quiz-option').forEach(btn => {
+  btn.addEventListener('click', (e)=>{
+    document.querySelectorAll('#interruptQuiz .quiz-option').forEach(b => b.classList.add('disabled'));
+    const isCorr = e.target.getAttribute('data-correct') === 'true';
+    if(isCorr) e.target.classList.add('correct'); else e.target.classList.add('wrong');
+    document.getElementById('interruptFbk').style.display = 'block';
+  });
+});
+
+/* Section 2: JIT Compiler Canvas */
+(function(){
+  const canvas=document.getElementById('xmlCanvas');
+  function draw(){
+    const{ctx,w,h}=setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+    
+    // Animate a laser matching over valid vs invalid string
+    const t = Date.now()*0.001;
+    const str1 = "<run_skill>generate_docs</run_skill>";
+    const str2 = "I will use <run_skill>generate_docs</run_skill>"; // Invalid due to anchor ^
+    
+    ctx.font='14px JetBrains Mono';
+    ctx.fillStyle='var(--text)';
+    ctx.fillText(str1, 20, 60);
+    ctx.fillText(str2, 20, 160);
+    
+    // Progress
+    const pct = (t%3)/3; // 0 to 1 loop
+    const px1 = 20 + pct*ctx.measureText(str1).width;
+    const px2 = 20 + pct*ctx.measureText(str2).width;
+    
+    ctx.fillStyle='var(--emerald)';
+    ctx.fillRect(px1-2, 60-14, 4, 16);
+    
+    ctx.fillStyle='var(--rose)';
+    ctx.fillRect(px2-2, 160-14, 4, 16);
+    
+    // Status text
+    if(pct > 0.9) {
+       ctx.font='600 12px Space Grotesk';
+       ctx.fillStyle='var(--emerald)';
+       ctx.fillText("MATCH GROUP 1: generate_docs", 20, 90);
+       
+       ctx.fillStyle='var(--rose)';
+       ctx.fillText("REJECTED (FAILED ^ Line Anchor)", 20, 190);
+    }
+  }
+  setInterval(draw, 1000/60);
+})();
+
+/* Section 3: Hex Pydantic Validator */
+document.getElementById('hexInput').addEventListener('input', (e)=>{
+   const val = e.target.value;
+   const fbk = document.getElementById('hexFbk');
+   if(val.length === 0){ fbk.innerText=''; return; }
+   const match = val.match(/^[0-9a-fA-F]{8}$/);
+   if(match){
+      e.target.style.borderColor = 'var(--emerald)';
+      fbk.style.color = 'var(--emerald)';
+      fbk.innerText = "PASSED: Valid 8-Char Hex Entity";
+   } else {
+      e.target.style.borderColor = 'var(--rose)';
+      fbk.style.color = 'var(--rose)';
+      fbk.innerText = "FAILED: Must be precisely 8 Hexadecimal characters [0-9, A-F]. No spaces.";
+   }
+});
+
+/* Section 4: DOTALL Toggle */
+document.getElementById('toggleDotallBtn').addEventListener('click', (e)=>{
+   const isDotall = e.target.innerText.includes("Active");
+   const fbk = document.getElementById('dotallFbk');
+   if(!isDotall) {
+      e.target.innerText = "Regex WITH re.DOTALL Active";
+      e.target.classList.replace('btn-outline','btn-amber');
+      fbk.innerText = "match group 1: \\ncd src/\\nnpm run dev\\n";
+      fbk.style.color = "var(--emerald)";
+   } else {
+      e.target.innerText = "Regex Missing re.DOTALL";
+      e.target.classList.replace('btn-amber','btn-outline');
+      fbk.innerText = "extraction failed (None)";
+      fbk.style.color = "var(--rose)";
+   }
+});
+
+/* Application Gauntlet */
+(function(){
+  const questions=[
+    {q:"In a JIT Skill compilation sequence, why do we use `match.group(1)` rather than `match.group(0)` to retrieve the payload?",
+     opts:["`group(0)` returns the entire matched string including XML tags; `group(1)` isolates just the interior captured payload.","`group(0)` doesn't exist in Python.","`group(1)` skips the first character for safety.","They do the exact same thing."],
+     correct:0,explanation:"Regex implicitly creates Group 0 as 'The full match'. Anything specifically wrapped in parentheses `(.*?)` is extracted as Group 1, structurally isolating the inner data payload away from the shell syntax."},
+    {q:"What is the functional difference between `re.match(pattern, string)` and `re.search(pattern, string)`?",
+     opts:["They are identical.","`match` implicitly anchors to the START of the string. `search` will find the pattern anywhere in the volume.","`search` forces lowercase verification. `match` is case-sensitive.","`match` returns a boolean, `search` returns a string."],
+     correct:1,explanation:"`re.match` behaves as if it has a `^` built in — it only verifies if the string *starts* with the pattern. For Agent logic, `re.search` is critically necessary to locate tags embedded deeply in conversational outputs."},
+    {q:"Why do we use the `?` character in the non-greedy payload capture `.*?`?",
+     opts:["It makes the payload completely optional.","It forces the regex to stop searching immediately at the *first* closing tag, rather than swallowing the entire document until the *last* closing tag.","It allows special characters (like ?).","It speeds up GPU compilation."],
+     correct:1,explanation:"Without `?`, `.*` is 'greedy'. If an AI returns two `<bash>` blocks, `.*` will swallow everything from the start of block 1 to the end of block 2 (including the dialogue between them). `.*?` stops perfectly at the nearest close token."},
+    {q:"If a Neo4j query variable is validated against `^[A-Za-z_][A-Za-z0-9_]*$`, which of these node labels achieves validation?",
+     opts:["3rd_Order_Entity","system-node","User_Profile_22","User Profile"],
+     correct:2,explanation:"The pattern demands it starts with a letter or underscore `[A-Za-z_]`, followed only by letters, numbers, or underscores. '3rd_Order' breaks the first rule. 'system-node' has a hyphen. 'User Profile' has a space. Only `User_Profile_22` enforces pristine schema limits."},
+    {q:"If `MAX_TURNS` hits 0 in the Stateless Engine, and Regex has still failed to match `<extraction>`, what occurs architecturally?",
+     opts:["The Node executes an empty state.","The system forcefully splits the string using native Python matching to salvage the run.","The execution chain raises an Exception and halts the sequence cleanly.","The pipeline restarts the interaction loop recursively."],
+     correct:2,explanation:"CCP does not tolerate probabilistic parsing or infinite loops. Hitting max turns throws a deterministic Halt error. Predictable systemic breakage is infinitely safer than executing corrupted hallucinations."},
+    {q:"When Pydantic validates an LLM-supplied dictionary, how does its internal Regex integration differ from standard Python string assertion?",
+     opts:["It automatically mutates the source text to match the regex.","It runs asynchronously in parallel.","If the constraint fails, Pydantic throws a structured `ValidationError` blocking instantiation completely.","It uses C++ strings instead of UTF-8."],
+     correct:2,explanation:"The power of Pydantic + Regex is that the object is literally impossible to create if the data is structurally invalid. It guarantees downstream layers ALWAYS receive flawlessly mapped strings."},
+    {q:"Which of the following regex flags is MANDATORY when parsing LLM code blocks?",
+     opts:["re.IGNORECASE","re.DOTALL","re.MULTILINE","re.VERBOSE"],
+     correct:1,explanation:"Without `re.DOTALL`, the `.` token will stop matching the moment it hits a `\\n` linebreak. Since LLM code spans lines, the capture fails and execution logic collapses instantly."}
+  ];
+  const container=document.getElementById('quizContainer');
+  questions.forEach((q,qi)=>{
+    const card=document.createElement('div');card.className='card';card.style.padding='1.25rem';
+    let optsHTML='';q.opts.forEach((o,oi)=>{optsHTML+=`<button class="quiz-option" data-q="${qi}" data-o="${oi}">${o}</button>`;});
+    card.innerHTML=`<p style="font-size:.82rem;font-weight:600;color:var(--text-dim);margin-bottom:.75rem;">Question ${qi+1}</p>
+      <p style="font-size:.92rem;line-height:1.6;margin-bottom:1rem;">${q.q}</p>
+      <div id="qO${qi}">${optsHTML}</div>
+      <div class="quiz-explanation" id="qE${qi}" style="margin-top:.75rem;"><div class="insight">${q.explanation}</div></div>`;
+    container.appendChild(card);
+  });
+  container.addEventListener('click',(e)=>{
+    const btn=e.target.closest('.quiz-option');if(!btn)return;
+    const qi=+btn.dataset.q,oi=+btn.dataset.o;
+    const opts=document.querySelectorAll(`#qO${qi} .quiz-option`);
+    if(opts[0].classList.contains('disabled'))return;
+    opts.forEach((o,i)=>{o.classList.add('disabled');
+      if(i===questions[qi].correct)o.classList.add('correct');
+      else if(i===oi&&oi!==questions[qi].correct)o.classList.add('wrong');});
+    document.getElementById(`qE${qi}`).classList.add('show');
+  });
+})();
+</script>
+</body>
+</html>

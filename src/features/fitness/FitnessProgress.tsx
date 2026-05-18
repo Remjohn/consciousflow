@@ -80,7 +80,7 @@ export const FitnessProgress = () => {
     const metricsWithPhotos = metrics.filter(m => m.photoFront || m.photoSide || m.photoBack);
 
     return (
-        <div className="h-full flex flex-col p-4 gap-4 overflow-y-auto max-w-4xl mx-auto pb-24 scrollbar-hide">
+        <div className="flex flex-col p-4 gap-4">
             {/* Header */}
             <div className="flex justify-between items-center">
                 <h1 className="font-display font-black text-2xl text-gold uppercase tracking-wider">

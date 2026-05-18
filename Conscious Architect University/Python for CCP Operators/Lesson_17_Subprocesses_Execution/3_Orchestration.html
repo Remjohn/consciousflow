@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 17 — Orchestration Layer: Subprocesses</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0A;--surface:#151515;--surface2:#1e1e1e;--surface3:#2A2A2A;
+  --text:#FAFAFA;--muted:#A0A0A0;--border:#2e2e2e;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;
+  --violet:#8b5cf6;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--serif:'Playfair Display',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.65;overflow-x:hidden;}
+.container{max-width:800px;margin:0 auto;padding:4rem 2rem 10rem;}
+
+h1{font-family:var(--serif);font-size:clamp(2.5rem,6vw,3.8rem);line-height:1.0;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-family:var(--serif);font-size:1.9rem;margin-bottom:1rem;color:var(--accent);}
+h3{font-family:var(--sans);font-size:1.3rem;margin-top:2rem;margin-bottom:0.5rem;font-weight:600;}
+p{margin-bottom:1.4rem;color:var(--muted);font-size:1rem;line-height:1.7;}
+strong{color:var(--text);}
+ul, ol { margin-bottom: 1.4rem; padding-left: 1.5rem; color: var(--muted); }
+li { margin-bottom: 0.5rem; }
+
+.divider{border:none;border-top:1px solid var(--border);margin:3rem 0;}
+
+/* INTERACTION BOX */
+.interaction-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2.25rem;margin:1.5rem 0;}
+.interaction-header{font-family:var(--mono);font-size:0.7rem;color:var(--accent);text-transform:uppercase;margin-bottom:1.25rem;letter-spacing:0.12em;padding-bottom:0.6rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.question-text{font-size:1.05rem;font-weight:500;margin-bottom:1.75rem;color:#fff;line-height:1.6;}
+
+.code-block{background:#0e0e0e;border:1px solid var(--border);border-radius:6px;padding:1rem;margin-top:1rem;margin-bottom:1.5rem;font-family:var(--mono);font-size:0.85rem;color:#d4d4d4;overflow-x:auto;}
+.code-keyword{color:#c586c0;}
+.code-function{color:#dcdcaa;}
+.code-string{color:#ce9178;}
+.code-comment{color:#6a9955;}
+code{font-family:var(--mono);font-size:0.85em;color:var(--accent);background:var(--surface2);padding:0.1rem 0.3rem;border-radius:3px;}
+
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.7rem 1.4rem;font-family:var(--sans);font-weight:600;font-size:0.95rem;border-radius:4px;cursor:pointer;transition:all 0.18s;}
+.btn:hover:not(:disabled){background:#fff;transform:translateY(-1px);}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+
+.choices{display:flex;flex-direction:column;gap:0.85rem;margin-bottom:0.5rem;}
+.choice-btn{text-align:left;padding:1rem 1.2rem;background:var(--bg);border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;transition:all 0.18s;font-size:0.92rem;font-weight:400;font-family:var(--sans);line-height:1.5;}
+.choice-btn:hover{border-color:var(--text);color:var(--text);}
+.choice-btn.selected-wrong{border-color:var(--red);color:var(--red);background:rgba(231,111,81,0.05);}
+.choice-btn.selected-right{border-color:var(--green);color:var(--green);background:rgba(42,157,143,0.05);}
+
+.input-group { display: flex; gap: 0.75rem; margin-top: 1rem; }
+.input-text { background: var(--bg); border: 2px solid var(--border); color: #fff; font-family: var(--mono); font-size: 0.95rem; padding: 0.7rem 1rem; flex: 1; border-radius: 4px; transition: border-color 0.2s; }
+.input-text:focus { outline: none; border-color: var(--accent); }
+.input-text:disabled { opacity: 0.45; cursor: not-allowed; }
+textarea.input-text { resize: vertical; min-height: 120px; width: 100%; }
+
+/* FEEDBACK */
+.feedback{display:none;margin-top:1.5rem;padding:1.25rem 1.5rem;border-radius:4px;font-size:0.9rem;line-height:1.65;}
+.feedback.visible{display:block;animation:fadein 0.35s;}
+.feedback.error{background:rgba(231,111,81,0.08);border-left:3px solid var(--red);color:#ffb3a1;}
+.feedback.success{background:rgba(42,157,143,0.08);border-left:3px solid var(--green);color:#a7ece2;}
+.feedback-title{font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;margin-bottom:0.5rem;font-weight:600;letter-spacing:0.1em;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+/* SUBSYSTEM MAP */
+.subsystem-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 3rem; }
+.subsystem-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.subsystem-header { padding: 1rem 1.5rem; background: var(--surface2); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.subsystem-icon { font-size: 1.5rem; }
+.subsystem-title { font-family: var(--mono); font-weight: 600; color: var(--accent); letter-spacing: 0.05em; font-size: 0.9rem; text-transform: uppercase; }
+.subsystem-body { padding: 1.5rem; }
+.subsystem-role { font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; border-left: 2px solid var(--border); padding-left: 0.8rem; }
+.arch-tag { display: inline-block; padding: 0.15rem 0.5rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 4px; font-family: var(--mono); font-size: 0.65rem; color: var(--text); margin-right: 0.5rem; margin-bottom: 0.5rem; }
+
+/* GAUNTLET */
+.gauntlet-wrap{margin-top:4rem;border-top:2px solid var(--border);padding-top:3rem;}
+.gauntlet-intro{font-size:0.88rem;color:var(--muted);margin-bottom:2rem;padding:1rem 1.25rem;background:var(--surface2);border-radius:4px;border-left:2px solid var(--border);}
+.q-block{background:var(--surface2);padding:1.4rem 1.5rem;border-radius:6px;margin-bottom:1.25rem;border:1px solid var(--border);}
+.q-num{font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.4rem;letter-spacing:0.1em;}
+.q-text{font-size:1rem;margin-bottom:1.25rem;font-weight:500;color:#fff;line-height:1.55;}
+
+.task-box { border: 1px dashed var(--accent); background: rgba(232, 196, 106, 0.03); padding: 1.5rem; border-radius: 8px; margin: 2rem 0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div style="font-family:var(--mono);font-size:0.7rem;color:var(--violet);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.15em;">Python for CCP Operators · Lesson 17 · Orchestration Layer</div>
+  <h1>Subprocess Across the Map</h1>
+
+  <h2>Core Concept Recap</h2>
+  <p>The Python <code>subprocess</code> module provides the strict architectural primitive necessary for spawning system-level executables, managing their interaction vectors, and explicitly retrieving their operational state back into the Python memory domain. It acts as the <strong>mechanical boundary between programmatic reasoning tokens and absolute physical execution</strong>. Through enforcing controlled input arguments, strict time-to-live restrictions, and exact evidence streams via stdout/stderr piping, <code>subprocess</code> guarantees that Python maintains absolute deterministic sovereignty over the underlying OS shell architecture.</p>
+
+  <hr class="divider">
+
+  <h2>The Case Study System</h2>
+  <p>This is the principle of Subprocess integration across the 6 major nodes of the Conscious Coaching Platform (CCP). Notice how the underlying logic remains violently identical: <strong>Python controls the environment; the environment does not control Python.</strong></p>
+
+  <div class="subsystem-grid">
+    
+    <!-- CHASSIS -->
+    <div class="subsystem-card">
+      <div class="subsystem-header">
+        <div class="subsystem-icon">🏗️</div>
+        <div class="subsystem-title">The Chassis · FastAPI Route Context</div>
+      </div>
+      <div class="subsystem-body">
+        <div class="subsystem-role"><strong>Role:</strong> The main HTTP orchestrator translating physical web requests into internal execution state shifts.</div>
+        <div class="code-block" style="margin-top:0;">
+@app.post(<span class="code-string">"/system/ping-node"</span>)
+<span class="code-keyword">async</span> <span class="code-keyword">def</span> <span class="code-function">ping_agent_node</span>(node_ip: <span class="code-keyword">str</span>):
+    <span class="code-keyword">try</span>:
+        res = subprocess.run([<span class="code-string">"ping"</span>, <span class="code-string">"-c"</span>, <span class="code-string">"4"</span>, node_ip], capture_output=<span class="code-keyword">True</span>, text=<span class="code-keyword">True</span>, timeout=<span class="code-string">5.0</span>)
+        <span class="code-keyword">if</span> res.returncode != 0:
+            <span class="code-keyword">raise</span> HTTPException(status_code=503)
+        <span class="code-keyword">return</span> {<span class="code-string">"status"</span>: <span class="code-string">"Active"</span>, <span class="code-string">"metrics"</span>: res.stdout}
+    <span class="code-keyword">except</span> subprocess.TimeoutExpired:
+        <span class="code-keyword">raise</span> HTTPException(status_code=504)
+        </div>
+        <span class="arch-tag">Determinisitic Wrapper</span> <span class="arch-tag">Async Logic Unblocked</span>
+        <p style="font-size:0.9rem;margin-top:0.5rem;color:var(--text);"><strong>Principle:</strong> Enforces a hard execution boundary on a physical network operation, ensuring the web orchestrator loop is never indefinitely suspended by a bad route timeout.</p>
+      </div>
+    </div>
+
+    <!-- QA DEPT -->
+    <div class="subsystem-card">
+      <div class="subsystem-header">
+        <div class="subsystem-icon">📋</div>
+        <div class="subsystem-title">The QA Dept · Pydantic Context</div>
+      </div>
+      <div class="subsystem-body">
+        <div class="subsystem-role"><strong>Role:</strong> The immutable structural validation gate guarding process payloads.</div>
+        <div class="code-block" style="margin-top:0;">
+@model_validator(mode=<span class="code-string">'after'</span>)
+<span class="code-keyword">def</span> <span class="code-function">verify_ffmpeg_availability</span>(self):
+    <span class="code-keyword">try</span>:
+        subprocess.run([<span class="code-string">"ffmpeg"</span>, <span class="code-string">"-version"</span>], capture_output=<span class="code-keyword">True</span>, check=<span class="code-keyword">True</span>)
+        <span class="code-keyword">return</span> self
+    <span class="code-keyword">except</span> (subprocess.CalledProcessError, FileNotFoundError):
+        <span class="code-keyword">raise</span> ValueError(<span class="code-string">"SYSTEM HALT: FFmpeg binary not linked."</span>)
+        </div>
+        <span class="arch-tag">Dependency Check</span> <span class="arch-tag">Pre-Flight Validation</span>
+        <p style="font-size:0.9rem;margin-top:0.5rem;color:var(--text);"><strong>Principle:</strong> Utilizes a non-destructive subprocess invocation solely to establish execution-layer reality before permitting complex data ingestion logic to allocate resources.</p>
+      </div>
+    </div>
+
+    <!-- MACHINIST -->
+    <div class="subsystem-card">
+      <div class="subsystem-header">
+        <div class="subsystem-icon">⚙️</div>
+        <div class="subsystem-title">The Machinist · DSPy Pipeline Context</div>
+      </div>
+      <div class="subsystem-body">
+        <div class="subsystem-role"><strong>Role:</strong> The declarative compiler managing multi-hop programmatic intelligence logic.</div>
+        <div class="code-block" style="margin-top:0;">
+<span class="code-keyword">def</span> <span class="code-function">forward</span>(self, task: <span class="code-keyword">str</span>):
+    pred = self.generate_command(task=task)
+    res = subprocess.run(pred.command_string.split(<span class="code-string">" "</span>), capture_output=<span class="code-keyword">True</span>, text=<span class="code-keyword">True</span>)
+    <span class="code-keyword">if</span> res.returncode == 0:
+        <span class="code-keyword">return</span> dspy.Prediction(status=<span class="code-string">"Verified"</span>, output=res.stdout)
+    <span class="code-keyword">else</span>:
+        <span class="code-keyword">return</span> dspy.Prediction(status=<span class="code-string">"Failed"</span>, error=res.stderr)
+        </div>
+        <span class="arch-tag">Reality-Grounding</span> <span class="arch-tag">Iterative Hypothesis</span>
+        <p style="font-size:0.9rem;margin-top:0.5rem;color:var(--text);"><strong>Principle:</strong> Acts as the physical feedback boundary required for compiler optimization vectors to distinguish functional shell success from syntactical guesswork (LLM hallucination).</p>
+      </div>
+    </div>
+    
+    <!-- ROBOT ARM -->
+    <div class="subsystem-card">
+      <div class="subsystem-header">
+        <div class="subsystem-icon">🤖</div>
+        <div class="subsystem-title">The Robot Arm · Pi Harness Context</div>
+      </div>
+      <div class="subsystem-body">
+        <div class="subsystem-role"><strong>Role:</strong> The direct execution wrapper enabling the sovereign agent to take real actions.</div>
+        <p style="font-size:0.9rem;color:var(--text);"><strong>Principle:</strong> Translates structured JSON arrays into kernel system calls with hard timeouts, completely isolating the OS from pure string execution injection attacks.</p>
+      </div>
+    </div>
+
+    <!-- MEMORY ENGINE -->
+    <div class="subsystem-card">
+      <div class="subsystem-header">
+        <div class="subsystem-icon">🧠</div>
+        <div class="subsystem-title">The Memory Engine · Neo4j Context</div>
+      </div>
+      <div class="subsystem-body">
+        <div class="subsystem-role"><strong>Role:</strong> The persistent knowledge graph that stores semantic relationships.</div>
+        <div class="code-block" style="margin-top:0;">
+<span class="code-keyword">try</span>:
+    proc = subprocess.run(neo_command, check=<span class="code-keyword">True</span>, capture_output=<span class="code-keyword">True</span>)
+    <span class="code-keyword">return</span> <span class="code-keyword">True</span>
+<span class="code-keyword">except</span> subprocess.CalledProcessError <span class="code-keyword">as</span> e:
+    log_memory_corruption(e.stderr)
+    <span class="code-keyword">return</span> <span class="code-keyword">False</span>
+        </div>
+        <p style="font-size:0.9rem;margin-top:0.5rem;color:var(--text);"><strong>Principle:</strong> Enforces the OS boundary integration for physical data security state changes outside of Python logic. Bypasses APIs for massive disk operations safely.</p>
+      </div>
+    </div>
+
+    <!-- SKILL COMPILER -->
+    <div class="subsystem-card">
+      <div class="subsystem-header">
+        <div class="subsystem-icon">🎯</div>
+        <div class="subsystem-title">The Skill Compiler · Voice DNA Context</div>
+      </div>
+      <div class="subsystem-body">
+        <div class="subsystem-role"><strong>Role:</strong> The Just-In-Time translation application managing physical asset generation matrices.</div>
+        <div class="code-block" style="margin-top:0;">
+proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+out, err = proc.communicate(timeout=<span class="code-string">45.0</span>)
+<span class="code-keyword">if</span> proc.returncode != 0:
+    <span class="code-keyword">raise</span> CompilationError(<span class="code-string">f"Engine failed: {err.decode('utf-8')}"</span>)
+        </div>
+        <p style="font-size:0.9rem;margin-top:0.5rem;color:var(--text);"><strong>Principle:</strong> Utilizes <code>Popen</code> and <code>communicate(timeout=...)</code> to synchronously bind high-resource execution nodes securely when pulling massive byte streams directly into memory.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <hr class="divider">
+
+  <h2>Scenario-Based Reasoning</h2>
+  <div class="interaction-box">
+    <div class="interaction-header">Prediction Gate: Constraint Cascades</div>
+    <div class="question-text">Every Pydantic layer enforces robust constraint array bounds matching subprocess binaries perfectly, but the `shell=True` parameter is globally enabled across all execution environments. What happens?</div>
+    <div class="choices">
+      <button class="choice-btn" onclick="checkGate(1, this, false)">A. The system runs cleanly because Pydantic intercepts specific bad commands beforehand.</button>
+      <button class="choice-btn" onclick="checkGate(1, this, true)">B. Total sandbox failure. shell=True overrides array-item boundary evaluations exposing the logic layer to OS modification.</button>
+      <button class="choice-btn" onclick="checkGate(1, this, false)">C. Python exceptions will trace automatically catching any shell execution syntax issues.</button>
+    </div>
+    <div class="feedback" id="fb1"></div>
+  </div>
+
+  <div class="gated-content" id="cross-context">
+    <h2>Cross-Context Comparison</h2>
+    <ul style="font-size:0.95rem;">
+      <li><strong>Why strict in QA (Pydantic), flexible in Machinist (DSPy)?</strong><br>Pydantic treats subprocess as binary reality (it exists or doesn't). DSPy uses it as an iterative hypothesis tester, expecting failures (returncode!=0) natively as part of its compilation modification loop.</li>
+      <li><strong>Why Pi Harness mandates capture, Memory Engine relies on check=True?</strong><br>The Harness feeds exact text (stdout/stderr) back into an LLM meant for reading strings. Neo4j simply requires explicit guarantees of binary memory success and leverages check=True to violently throw exceptions on faults without concerning itself with text extraction.</li>
+      <li><strong>Why FastAPI is fast, Skill Compiler is blocking?</strong><br>FastAPI uses short ping commands to avoid event-loop blocking. Skill Compilation invokes heavy payloads requesting exact binary byte retrieval natively inside synchronous limits.</li>
+    </ul>
+
+    <!-- GAUNTLET -->
+    <div class="gauntlet-wrap">
+      <h2>Critical Thinking Gauntlet</h2>
+      <div class="gauntlet-intro">Determine the conceptual defect or exact output from the raw implementation source. Type the keyword or short phrase that locks your answer.</div>
+      <div id="q-container"></div>
+    </div>
+
+  </div>
+
+  <div class="gated-content" id="build-task">
+    <hr class="divider">
+    <h2>Build-Your-Own Case Study Task</h2>
+    <div class="task-box">
+      <strong style="color:var(--accent);">The Target:</strong> You must architect subprocess integration logic for a completely new CCP Subsystem: <strong>The Telemetry Streamer</strong> (a logging aggregator pulling OS-level CPU metrics dynamically and feeding them to Pipecat for visualization).
+      <br><br>
+      <strong>Identify the design requirement:</strong> Since real-time telemetric aggregation demands persistence, not sudden blocking logic, what subprocess execution method must be used?
+      <div class="input-group" style="margin-top:1rem;">
+        <input type="text" id="task-input" class="input-text" placeholder="subprocess.???">
+        <button class="btn" onclick="checkTask(this)">Lock Architecture</button>
+      </div>
+      <div class="feedback" id="fb-task"></div>
+    </div>
+
+    <h2>Common Misunderstandings</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:2rem;">
+      <div class="interaction-box" style="margin-top:0;padding:1.5rem;">
+        <div style="color:var(--red);font-family:var(--mono);font-size:0.75rem;margin-bottom:0.5rem;">The shell=True Trap</div>
+        <p style="font-size:0.9rem;margin-bottom:0;">Believing `shell=True` simply makes complex strings work. It abandons specific list-based parsing validation natively processed by python, executing literal string payloads blindly.</p>
+      </div>
+      <div class="interaction-box" style="margin-top:0;padding:1.5rem;">
+        <div style="color:var(--red);font-family:var(--mono);font-size:0.75rem;margin-bottom:0.5rem;">The Output Disconnect</div>
+        <p style="font-size:0.9rem;margin-bottom:0;">Assuming OS outputs route backward into Python objects implicitly. They stream directly to the terminal unless `capture_output=True` or `PIPE` forces extraction.</p>
+      </div>
+      <div class="interaction-box" style="margin-top:0;padding:1.5rem;">
+        <div style="color:var(--red);font-family:var(--mono);font-size:0.75rem;margin-bottom:0.5rem;">Return Status Mapping</div>
+        <p style="font-size:0.9rem;margin-bottom:0;">Believing `if res.returncode == True:` equates to success. Unix codes map 0 to absolute success. Any positive integer evaluates logically True in Python meaning FAILED.</p>
+      </div>
+    </div>
+
+    <h2>Compression Layer</h2>
+    <p>Across all 6 major subsystems, the concept serves identical logical operations: Python execution primitives physically wrapping environmental interactions securely to guarantee deterministic outputs immune to token-induced hallucinations.</p>
+    <p><strong>Across the entire Sovereign ecosystem, `subprocess` dictates that Python exclusively controls precisely when, exactly how, and definitively for how long any physical executable is allowed to manipulate server resources within the architecture footprint.</strong></p>
+  </div>
+
+</div>
+
+<script>
+// ── PREDICTION GATES ──────────────────────────────────────────────────────
+function checkGate(level, btn, correct) {
+  const qb = btn.parentElement;
+  qb.querySelectorAll('.choice-btn').forEach(c => c.style.pointerEvents = 'none');
+  const fb = document.getElementById(`fb${level}`);
+  fb.classList.add('visible');
+
+  if (correct) {
+    btn.classList.add('selected-right');
+    fb.classList.add('success');
+    if (level === 1) fb.innerHTML = `<div class="feedback-title">Correct Analysis</div>Total sandbox failure. While Pydantic intercepts known payloads, shell=True completely overrides strict array boundaries by executing literal sequences via bash locally unpredictably.`;
+    
+    setTimeout(() => {
+      document.getElementById('cross-context').classList.add('unlocked');
+      renderGauntlet();
+    }, 1000);
+  } else {
+    btn.classList.add('selected-wrong');
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title">Incorrect Mapping</div>Review the architectural constraints on shell injection vulnerabilities.`;
+    setTimeout(() => {
+      qb.querySelectorAll('.choice-btn').forEach(c => {
+        c.style.pointerEvents = 'auto';
+        c.classList.remove('selected-wrong');
+      });
+      fb.classList.remove('visible', 'error');
+      fb.innerHTML = '';
+    }, 3000);
+  }
+}
+
+// ── TASK GATE ─────────────────────────────────────────────────────────
+function checkTask(btn) {
+  const input = document.getElementById('task-input');
+  const val = input.value.toLowerCase().trim();
+  if (!val) return;
+  input.disabled = true;
+  btn.disabled = true;
+  
+  const fb = document.getElementById('fb-task');
+  fb.classList.add('visible');
+  
+  if (val.includes('popen')) {
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">Correct Architecture</div>subprocess.Popen() must be utilized. Utilizing run() would stop the primary operational loop entirely waiting for process death, violating real-time streaming constraints permanently.`;
+  } else {
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title">Fatal Orchestration</div>Incorrect. run() will block the framework. You need the primitive that detaches execution and streams iteratively.`;
+  }
+}
+
+// ── GAUNTLET ─────────────────────────────────────────────────────────────
+const G_DATA = [
+  { q: "<code>res = subprocess.run('cat /var/log/syslog | grep err', shell=True)\nreturn res.stdout</code><br>Predict the exact output returned by this code snippet.",
+    ans: "none", match: ["empty", "null"], exp: "None. It attempts to stream entirely uncaptured so stdout evaluates to None. The logs spill onto the host terminal screen." },
+  { q: "<code>try:\n  subprocess.run(['python', '-c', script_str], timeout=15)\nexcept:""</code><br>Does this snippet successfully enforce deterministic isolation against the input script? (Yes/No)",
+    ans: "no", exp: "NO. Passing unvalidated arbitrary code strings directly into '-c' bypasses sandbox limits, enabling OS-level destruction bounded merely by a timer." },
+  { q: "<code>process = subprocess.Popen(['rustc', '--version'])\noutput = process.stdout.read()</code><br>Identify the defect preventing structural stability here.",
+    ans: "pipe", match: ["none", "stdout="], exp: "Missing stdout=subprocess.PIPE. process.stdout evaluates to None unless PIPED explicitly, throwing an exception upon calling .read()." },
+  { q: "<code>res = subprocess.run(['ls'], check=True)</code><br>Is this pattern safe for the Pi Agentic Harness to capture and read outputs? (Yes/No)",
+    ans: "no", match: ["exception"], exp: "NO. Setting check=True bypasses output interception by raising an unhandled CalledProcessError. LLMs cannot analyze stack traces thrown arbitrarily; they need process.stderr mapped cleanly." },
+];
+
+function renderGauntlet() {
+  const container = document.getElementById('q-container');
+  let html = '';
+  G_DATA.forEach((item, idx) => {
+    html += `
+    <div class="q-block" id="gq-${idx}">
+      <div class="q-num">Drill 0${idx+1}</div>
+      <div class="q-text" style="font-size:0.9rem;">${item.q.replace(/\n/g, "<br>")}</div>
+      <div class="input-group">
+        <input type="text" id="gInput-${idx}" class="input-text" placeholder="Type answer and lock…">
+        <button class="btn" onclick="answerGText(${idx}, this)">Lock</button>
+      </div>
+      <div class="feedback" id="gfb-${idx}"></div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function answerGText(idx, btn) {
+  const input = document.getElementById(`gInput-${idx}`);
+  const val = input.value.toLowerCase().trim();
+  if (!val) return;
+  input.disabled = true;
+  btn.disabled = true;
+  const fb = document.getElementById(`gfb-${idx}`);
+  fb.classList.add('visible');
+
+  let correct = false;
+  if (val.includes(G_DATA[idx].ans)) correct = true;
+  if (G_DATA[idx].match) G_DATA[idx].match.forEach(m => { if(val.includes(m)) correct = true; });
+
+  if (correct) {
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">Correct</div>${G_DATA[idx].exp}`;
+    checkGauntletComplete();
+  } else {
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title" style="color:var(--red);">Misconception Identified</div>${G_DATA[idx].exp}`;
+    checkGauntletComplete();
+  }
+}
+
+let answered = 0;
+function checkGauntletComplete() {
+  answered++;
+  if (answered === G_DATA.length) {
+    setTimeout(()=>{
+      document.getElementById('build-task').classList.add('unlocked');
+    }, 800);
+  }
+}
+</script>
+</body>
+</html>

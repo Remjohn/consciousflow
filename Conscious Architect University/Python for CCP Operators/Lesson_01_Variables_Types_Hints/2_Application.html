@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 01 - Application Layer</title>
+  <style>
+    :root {
+      --bg: #08111a;
+      --panel: rgba(12, 20, 30, 0.88);
+      --line: rgba(255,255,255,0.08);
+      --text: #f3f7fb;
+      --muted: #9ab0c2;
+      --accent: #ff7a18;
+      --good: #2ecc71;
+      --bad: #ff5c73;
+      --gold: #ffd166;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--text);
+      font-family: Georgia, "Times New Roman", serif; line-height: 1.6;
+      background: radial-gradient(circle at 15% 10%, rgba(86,197,255,0.18), transparent 22%),
+                  linear-gradient(180deg, #071018 0%, #08111a 48%, #09131c 100%);
+    }
+    .progress { position: fixed; top: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.05); z-index: 50; }
+    .progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, #ff7a18, #ffd166); transition: width 0.35s ease; }
+    .shell { max-width: 1120px; margin: 0 auto; padding: 42px 18px 80px; }
+    .stage { display: none; animation: fadeUp 0.45s ease; }
+    .stage.active { display: block; }
+    .card, .hero {
+      border-radius: 26px; border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
+      box-shadow: 0 26px 56px rgba(0,0,0,0.24); padding: 28px; margin-top: 18px;
+    }
+    .eyebrow { color: var(--gold); text-transform: uppercase; letter-spacing: 0.15em; font: 700 0.74rem/1.2 Arial; margin-bottom: 12px; }
+    .section-count { color: #89a1b2; text-transform: uppercase; letter-spacing: 0.1em; font: 700 0.75rem/1.2 Arial; margin-bottom: 10px; }
+    h1, h2, h3 { margin: 0 0 14px; line-height: 1.08; font-weight: 500; }
+    h1 { font-size: clamp(2.2rem, 4vw, 4rem); }
+    h2 { font-size: clamp(1.4rem, 2.5vw, 2.2rem); }
+    .divider { height: 1px; margin: 24px 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent); }
+    .code-block { background: #071018; padding: 16px; border-radius: 12px; font-family: Consolas, monospace; font-size: 0.9rem; color: #56c5ff; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 16px; white-space: pre-wrap; }
+    .grid-2 { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    input[type="text"] { width: 100%; padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.03); color: var(--text); font: 400 1rem/1.45 Arial; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+    .btn { border: 0; cursor: pointer; padding: 14px 18px; border-radius: 999px; font: 700 0.94rem/1 Arial; transition: transform 0.18s ease; }
+    .btn-primary { background: linear-gradient(90deg, #ff7a18, #ff994d); color: white; }
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.15); }
+    .feedback { display: none; margin-top: 18px; padding: 18px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255,255,255,0.04); }
+    .feedback.show { display: block; }
+    .feedback.good { border-color: rgba(46,204,113,0.38); }
+    .feedback.bad { border-color: rgba(255,92,115,0.38); }
+    .choices { display: grid; gap: 12px; margin-top: 16px; }
+    .choice { text-align: left; padding: 16px 18px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); color: #e7eef5; font: 400 1rem/1.45 Arial; cursor: pointer; }
+    .choice.selected { border-color: rgba(255,122,24,0.78); background: rgba(255,122,24,0.08); }
+    .locked { margin-top: 12px; color: #ffd7a6; text-transform: uppercase; font: 700 0.76rem/1.2 Arial; }
+    .hidden { display: none; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true"><div id="progressFill" class="progress-fill"></div></div>
+  <main class="shell">
+    
+    <!-- Stage 0: Hero -->
+    <section id="stage-0" class="stage active">
+      <div class="hero">
+        <p class="eyebrow">Lesson 01 - Application Layer</p>
+        <h1>Moving from concept to production.</h1>
+        <div class="divider"></div>
+        <p>In Layer 1, you learned how Type Hints restrict non-deterministic outcomes. Here in Layer 2, we map that explicitly onto CCP production code. You will see how Pydantic, DSPy, and FastAPI leverage these primitive types to orchestrate sovereign pipelines.</p>
+        <div class="actions"><button class="btn btn-primary" onclick="goToStage(1)">Initiate Sequence</button></div>
+      </div>
+    </section>
+
+    <!-- Stage 1: Spaced Retrieval Interrupt -->
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="section-count">Spaced Retrieval Interrupt</p>
+        <h2>Without looking back:</h2>
+        <p>What Python type would you strictly use to represent a coaching session's emotional distortion array? (e.g. ['catastrophizing', 'personalization'])</p>
+        <input id="interruptInput" type="text" placeholder="Your answer (e.g., int, str, ...)">
+        <div class="actions"><button class="btn btn-primary" onclick="submitInterrupt()">Lock answer</button></div>
+        <div id="interrupt-feedback" class="feedback"></div>
+        <div id="interrupt-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(2)">Unlock production layer</button></div>
+      </div>
+    </section>
+
+    <!-- Stage 2: Fast API -->
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="section-count">Production Review 1</p>
+        <h2>The Chassis Ingress (FastAPI)</h2>
+        <p>This FastAPI route acts as the incoming border for telemetry data payload. Track the Type Hints.</p>
+        <div class="grid-2">
+          <div class="code-block">@app.post("/v1/telemetry")<br>async def sync_data(<br>    api_key: str,<br>    latency_ms: int,<br>    is_active: bool<br>) -> bool:<br>    engine.sync(latency_ms)<br>    return True</div>
+          <div>
+            <p>If the iOS client accidentally sends latency_ms as <span class="mono">"450ms"</span> instead of <span class="mono">450</span>, what happens?</p>
+            <div class="choices" data-group="a1">
+              <button class="choice" data-value="A" onclick="selectChoice('a1','A',this)">The route runs logic on "450ms" and breaks inside the engine.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('a1','B',this)">FastAPI intercepts the mismatch instantly and returns a 422 Error.</button>
+            </div>
+            <div id="a1-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions"><button id="a1-submit" class="btn btn-primary" onclick="submitChoice('a1','B',a1Feedback)">Lock prediction</button></div>
+            <div id="a1-feedback" class="feedback"></div>
+            <div id="a1-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(3)">Next artifact</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stage 3: Pydantic -->
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="section-count">Production Review 2</p>
+        <h2>The QA Department Schema (Pydantic)</h2>
+        <p>Pydantic reads Type Hints natively to create strict security boundaries for JSON objects.</p>
+        <div class="grid-2">
+          <div class="code-block">from pydantic import BaseModel<br><br>class TriggerAction(BaseModel):<br>    trigger_name: str<br>    severity: float<br>    completed: bool = False</div>
+          <div>
+            <p>What ensures the <span class="mono">severity</span> mathematically cannot be interpreted as a string by the AI?</p>
+            <div class="choices" data-group="a2">
+              <button class="choice" data-value="A" onclick="selectChoice('a2','A',this)">The word "severity".</button>
+              <button class="choice" data-value="B" onclick="selectChoice('a2','B',this)">The explicit : float declaration.</button>
+            </div>
+            <div id="a2-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions"><button id="a2-submit" class="btn btn-primary" onclick="submitChoice('a2','B',a2Feedback)">Lock prediction</button></div>
+            <div id="a2-feedback" class="feedback"></div>
+            <div id="a2-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(4)">Next artifact</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stage 4: DSPy -->
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="section-count">Production Review 3</p>
+        <h2>The Optimization Machinist (DSPy)</h2>
+        <p>DSPy utilizes your Python Type Hints to prompt the underlying LLM accurately during optimization.</p>
+        <div class="grid-2">
+          <div class="code-block">class PredictStruggle(dspy.Signature):<br>    transcript: str = dspy.InputField()<br>    pause_duration: int = dspy.InputField()<br>    struggle_probability: float = dspy.OutputField()</div>
+          <div>
+            <p>If we omit <span class="mono">: float</span> from <span class="mono">struggle_probability</span>, what is the default LLM output risk?</p>
+            <div class="choices" data-group="a3">
+              <button class="choice" data-value="A" onclick="selectChoice('a3','A',this)">It might generate a string like "Highly Probable" instead of 0.82.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('a3','B',this)">DSPy will crash on execution immediately.</button>
+            </div>
+            <div id="a3-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions"><button id="a3-submit" class="btn btn-primary" onclick="submitChoice('a3','A',a3Feedback)">Lock prediction</button></div>
+            <div id="a3-feedback" class="feedback"></div>
+            <div id="a3-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(5)">Application Gauntlet</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-5" class="stage">
+      <div class="card">
+        <p class="eyebrow">Layer Complete</p>
+        <h2>You've verified the production pipelines.</h2>
+        <p>Across the boundaries of FastAPI ingress, Pydantic data modeling, and DSPy statistical prediction, the exact same primitive types (int, float, bool, list) remain the fundamental physical constants that ensure operational stability.</p>
+        <div class="actions"><button class="btn btn-secondary" disabled>Proceed to Orchestration (Layer 3)</button></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const totalStages = 6;
+    const selections = {};
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = 'feedback show ' + type;
+      box.innerHTML = '<h3>' + title + '</h3><p>' + body + '</p>';
+    }
+
+    function selectChoice(groupId, value, element) {
+      if (document.querySelector(`[data-group="${groupId}"]`).dataset.locked === 'true') return;
+      selections[groupId] = value;
+      document.querySelectorAll(`[data-group="${groupId}"] .choice`).forEach(b => b.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function submitChoice(groupId, correct, feedbackPack) {
+      const selected = selections[groupId];
+      if (!selected) {
+        showFeedback(groupId + '-feedback', 'bad', 'Prediction required', 'Commit an answer.');
+        return;
+      }
+      document.querySelector(`[data-group="${groupId}"]`).dataset.locked = 'true';
+      document.getElementById(groupId + '-submit').disabled = true;
+      document.getElementById(groupId + '-lock').classList.remove('hidden');
+      
+      const isCorrect = selected === correct;
+      const payload = isCorrect ? feedbackPack.good : feedbackPack.bad;
+      showFeedback(groupId + '-feedback', isCorrect ? 'good' : 'bad', payload.title, payload.body);
+      document.getElementById(groupId + '-next').classList.remove('hidden');
+    }
+
+    function submitInterrupt() {
+      const val = document.getElementById('interruptInput').value.trim().toLowerCase();
+      document.getElementById('interruptInput').disabled = true;
+      if (val.includes('list') || val.includes('array')) {
+        showFeedback('interrupt-feedback', 'good', 'Interrupt cleared.', 'Correct. An array of values must be mapped to list or list[str].');
+        document.getElementById('interrupt-next').classList.remove('hidden');
+      } else {
+        showFeedback('interrupt-feedback', 'bad', 'Incorrect.', 'An array corresponds to the list type. Keep this top of mind.');
+        document.getElementById('interruptInput').disabled = false;
+      }
+    }
+
+    const a1Feedback = {
+      good: { title: 'Correct: The boundary defends the logic.', body: 'FastAPI uses the `int` hint to automatically throw a strict 422 JSON validation error. Malformed payloads never reach your internal python runtime.' },
+      bad: { title: 'Misconception.', body: 'FastAPI uses type hints to construct active API boundaries. It parses the type hint and blocks the route before running any internal logic.' }
+    };
+
+    const a2Feedback = {
+      good: { title: 'Correct: Explicit is sovereign.', body: 'Pydantic dynamically builds its internal Rust validators based on the Python Type Hint. The word "severity" means nothing; `: float` means everything.' },
+      bad: { title: 'Misconception.', body: 'Agents cannot infer rules from variable names like "severity". The explicit type hint `: float` is the load-bearing constraint.' }
+    };
+
+    const a3Feedback = {
+      good: { title: 'Correct: Types enforce model behavior.', body: 'DSPy translates the `: float` suffix logically into prompt generation constraints. Without it, the model thinks "highly probable" is an acceptable answer instead of 0.82, breaking downstream algorithms.' },
+      bad: { title: 'Misconception.', body: 'DSPy will run fine without explicit types, defaulting to strings. This allows the LLM to emit unstructured text instead of a strict floating-point decimal.' }
+    };
+  </script>
+</body>
+</html>

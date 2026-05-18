@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decorators & Validators — Application</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050505;--surface:#111;--surface2:#1a1a1a;--surface3:#252525;
+  --text:#FAFAFA;--muted:#888;--border:#333;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;--blue:#457B9D;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.7;overflow-x:hidden;}
+.container{max-width:800px;margin:0 auto;padding:4rem 2rem 8rem;}
+
+h1{font-weight:700;font-size:2.4rem;line-height:1.1;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-weight:700;font-size:1.5rem;margin:3rem 0 1rem;letter-spacing:-0.01em;color:#fff;}
+p{margin-bottom:1.3rem;color:var(--muted);font-size:1rem;}
+strong{color:#fff;}
+.lesson-tag{font-family:var(--mono);font-size:0.72rem;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.12em;display:block;}
+
+/* INTERACTION BOX */
+.ibox{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2.25rem;margin:2rem 0;}
+.ibox-hdr{font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.4rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border);}
+.ibox-hdr.interrupt{color:var(--red);}
+.ibox-hdr.gate{color:var(--accent);}
+.q-text{font-size:1.08rem;font-weight:500;margin-bottom:1.75rem;color:#fff;line-height:1.65;}
+
+.q-code{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:1.2rem;font-family:var(--mono);font-size:0.85rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6;overflow-x:auto;}
+.hl{color:var(--accent);}
+.keyword{color:var(--blue);}
+.string{color:var(--green);}
+
+/* BUTTONS */
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.65rem 1.3rem;font-family:var(--sans);font-weight:600;font-size:0.92rem;border-radius:4px;cursor:pointer;transition:all 0.18s;}
+.btn:hover:not(:disabled){transform:translateY(-2px);background:#fff;}
+.btn:disabled{opacity:0.45;cursor:not-allowed;transform:none !important;}
+
+/* INPUT */
+.inp-wrap{display:flex;gap:0.9rem;margin-bottom:0;}
+.inp{background:var(--bg);border:2px solid var(--border);color:#fff;font-family:var(--mono);font-size:1rem;padding:0.65rem 0.9rem;flex:1;border-radius:4px;transition:border-color 0.2s;text-align:center;}
+.inp:focus{outline:none;border-color:var(--accent);}
+.inp:disabled{opacity:0.45;}
+
+/* FEEDBACK */
+.fb{display:none;margin-top:1.6rem;padding:1.3rem 1.5rem;border-radius:5px;font-size:0.93rem;line-height:1.65;}
+.fb.show{display:block;animation:fi 0.35s ease;}
+.fb.err{background:rgba(231,111,81,0.08);border-left:3px solid var(--red);color:#ffb9a6;}
+.fb.ok{background:rgba(42,157,143,0.08);border-left:3px solid var(--green);color:#a5ebe1;}
+.fbt{font-family:var(--mono);font-size:0.67rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;font-weight:700;}
+@keyframes fi{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+
+/* GATED */
+.gated{opacity:0;pointer-events:none;transform:translateY(18px);transition:all 0.45s ease;display:none;}
+.gated.unlocked{opacity:1;pointer-events:auto;transform:translateY(0);display:block;}
+
+/* DATA TRACE UI */
+.trace-board{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:1.5rem;margin:1.5rem 0;display:flex;flex-direction:column;gap:0.75rem;}
+.trace-node{display:flex;align-items:center;padding:0.8rem 1.2rem;background:var(--bg);border:1px solid var(--border);border-radius:4px;opacity:0.4;transition:all 0.3s;}
+.trace-node.active{opacity:1;border-color:var(--accent);box-shadow:inset 2px 0 0 var(--accent);}
+.trace-node.crashed{opacity:1;border-color:var(--red);background:rgba(231,111,81,0.05);box-shadow:inset 2px 0 0 var(--red);}
+.trace-cmd{font-family:var(--mono);font-size:0.8rem;color:var(--muted);width:50px;}
+.trace-desc{font-size:0.9rem;font-weight:500;}
+.trace-line{width:2px;height:12px;background:var(--border);margin-left:1.5rem;}
+
+.sdiv{border-top:1px solid var(--border);margin:3.5rem 0 3rem;padding-top:0;}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <span class="lesson-tag">Lesson 05 · Layer 2 — Application Blueprint</span>
+  <h1>Tracing the Boundary</h1>
+
+  <!-- SPACED RETRIEVAL INTERRUPT -->
+  <div class="ibox" id="interrupt-box">
+    <div class="ibox-hdr interrupt">⚡ Spaced Retrieval Interrupt — Layer 1 Recall</div>
+    <div class="q-text">
+      No preamble. No context. From Layer 1:<br><br>
+      A decorator does not execute inside the target function's logic. It operates as an architectural <strong>B_ _ _ _ _ _ _</strong> (8 letters) that stops structural breaches before the payload ever reaches the workstation. What is the word?
+    </div>
+    <div class="inp-wrap">
+      <input type="text" id="int-inp" class="inp" placeholder="Caps or lowercase..." autocomplete="off">
+      <button class="btn" id="int-btn" onclick="checkInterrupt()">Lock</button>
+    </div>
+    <div class="fb" id="fb-int"></div>
+  </div>
+
+  <div class="gated" id="s1">
+    <h2>Pydantic Tracing</h2>
+    <p>We are in the <strong>QA Department</strong> of the CCP. You deploy a <code>@field_validator</code> to ensure the LLM's generated session score is always between 0 and 100.</p>
+    
+    <div class="q-code">
+<span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, field_validator
+
+<span class="keyword">class</span> SessionEvaluation(BaseModel):
+    coach_score: int
+    summary: str
+
+    <span class="hl">@field_validator</span>('coach_score')
+    <span class="keyword">def</span> check_score(cls, v):
+        <span class="keyword">if</span> v < 0 <span class="keyword">or</span> v > 100:
+            <span class="keyword">raise</span> ValueError("Score must be between 0 and 100")
+        <span class="keyword">return</span> v
+
+<span class="muted"># The Machinist injects an LLM response:</span>
+<span class="muted">payload_str = '{"coach_score": -10, "summary": "Bad session."}'</span>
+session = SessionEvaluation.model_validate_json(payload_str)
+print("Evaluation Complete.")
+    </div>
+
+    <!-- TRACE GATE -->
+    <div class="ibox" id="gate-trace">
+      <div class="ibox-hdr gate">Data Trace Gate — Where does it halt?</div>
+      <div class="q-text">
+        The payload generated by the LLM contains <code>"coach_score": -10</code>.<br>
+        Track the execution line by line. Select the exact node where the Python compiler crashes and halts the execution, preventing the system from ever printing "Evaluation Complete."
+      </div>
+      
+      <div class="trace-board" id="t-board">
+        <div class="trace-node" data-id="1" onclick="selectTrace(this)">
+          <div class="trace-cmd">01</div>
+          <div class="trace-desc"><code>SessionEvaluation</code> class is parsed into memory.</div>
+        </div>
+        <div class="trace-line"></div>
+        <div class="trace-node" data-id="2" onclick="selectTrace(this)">
+          <div class="trace-cmd">02</div>
+          <div class="trace-desc"><code>model_validate_json</code> receives the raw string payload.</div>
+        </div>
+        <div class="trace-line"></div>
+        <div class="trace-node" data-id="3" onclick="selectTrace(this)">
+          <div class="trace-cmd">03</div>
+          <div class="trace-desc">Pydantic attempts to assign -10 to <code>coach_score</code>.</div>
+        </div>
+        <div class="trace-line"></div>
+        <div class="trace-node" data-id="4" onclick="selectTrace(this)">
+          <div class="trace-cmd">04</div>
+          <div class="trace-desc"><code>@field_validator</code> intercepts the value.</div>
+        </div>
+        <div class="trace-line"></div>
+        <div class="trace-node" data-id="5" onclick="selectTrace(this)">
+          <div class="trace-cmd">05</div>
+          <div class="trace-desc"><code>print("Evaluation Complete.")</code> executes.</div>
+        </div>
+      </div>
+      
+      <button class="btn" id="trace-btn" style="width:100%" onclick="submitTrace()" disabled>Lock Current Trace State</button>
+      <div class="fb" id="fb-trace"></div>
+    </div>
+  </div>
+
+  <!-- SECTION 2 — FASTAPI -->
+  <div class="gated" id="s2">
+    <div class="sdiv"></div>
+    <h2>The Chassis — FastAPI Routing Laws</h2>
+    <p>FastAPI uses decorators to route HTTP traffic. But more importantly, we stack our custom CCP decorators <strong>above</strong> the route decorator to intercept unauthorized access before FastAPI even builds the request object.</p>
+
+    <div class="q-code">
+<span class="hl">@require_role("SUPER_ADMIN")</span>
+<span class="hl">@app.delete("/system/cache/flush")</span>
+<span class="keyword">async def</span> flush_redis_cache(user = Depends(get_current_user)):
+    redis_client.flushall()
+    <span class="keyword">return</span> {"msg": "Catastrophic flush complete."}
+    </div>
+
+    <!-- ORDER OF OPERATIONS GATE -->
+    <div class="ibox" id="gate-order">
+      <div class="ibox-hdr gate">Prediction Gate — Order of Operations</div>
+      <div class="q-text">
+        In Python, decorators execute from exactly the position they are stacked, wrapping the function from the <strong>bottom up</strong>. <br><br>
+        If a normal user (not SUPER_ADMIN) makes a DELETE request to <code>/system/cache/flush</code>, which happens first? Does FastAPI try to build the <code>/system/cache/flush</code> route payload, or does the authentication block it?
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;" id="order-btns">
+        <button class="btn btn-outline" style="background:var(--bg);border:1px solid var(--border);color:var(--text);text-align:left;" onclick="answerOrder(this, false, 'bottom')">A. FastAPI routes the request first (bottom-up: <code>@app.delete</code> fires before <code>@require_role</code>).</button>
+        <button class="btn btn-outline" style="background:var(--bg);border:1px solid var(--border);color:var(--text);text-align:left;" onclick="answerOrder(this, true, 'correct')">B. Authentication blocks it first (top-down evaluation: <code>@require_role</code> wraps the route entirely).</button>
+      </div>
+      <div class="fb" id="fb-order"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// --- UTILITY ---
+function showFB(id, type, html) {
+  const fb = document.getElementById(id);
+  fb.className = `fb ${type} show`;
+  fb.innerHTML = html;
+}
+function fbt(t) { return `<div class="fbt">${t}</div>`; }
+function unlock(id) {
+  setTimeout(() => {
+    const el = document.getElementById(id);
+    el.style.display = 'block';
+    requestAnimationFrame(() => el.classList.add('unlocked'));
+    setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  }, 650);
+}
+
+// --- INTERRUPT ---
+function checkInterrupt() {
+  const val = document.getElementById('int-inp').value.trim().toLowerCase();
+  if (!val) return;
+  document.getElementById('int-inp').disabled = true;
+  document.getElementById('int-btn').disabled = true;
+
+  if (val === 'boundary' || val === 'bulkhead') {
+    showFB('fb-int', 'ok', fbt('Memory Retained') + `Correct. The decorator acts as a strict structural boundary/bulkhead.`);
+    unlock('s1');
+  } else {
+    showFB('fb-int', 'err', fbt('Recall Failure') + `You answered: ${val}. The word was BOUNDARY (or BULKHEAD). A decorator is an architectural boundary that stops errors from reaching the core execution logic. Resetting...`);
+    setTimeout(() => {
+      document.getElementById('int-inp').disabled = false;
+      document.getElementById('int-inp').value = '';
+      document.getElementById('int-btn').disabled = false;
+      document.getElementById('fb-int').className = 'fb';
+    }, 3500);
+  }
+}
+
+// --- TRACE MECHANIC ---
+let selectedNode = null;
+function selectTrace(el) {
+  document.querySelectorAll('.trace-node').forEach(n => {
+    n.classList.remove('active');
+    n.classList.remove('crashed');
+  });
+  el.classList.add('active');
+  selectedNode = el.getAttribute('data-id');
+  document.getElementById('trace-btn').disabled = false;
+}
+
+function submitTrace() {
+  if (!selectedNode) return;
+  document.querySelectorAll('.trace-node').forEach(n => n.style.pointerEvents = 'none');
+  document.getElementById('trace-btn').disabled = true;
+  
+  if (selectedNode === '4') {
+    document.querySelector('[data-id="4"]').classList.add('crashed');
+    showFB('fb-trace', 'ok', fbt('Trace Precision Confirmed') + `Correct. The structural boundary intercepts the mutation right as it attempts to apply to the object. <code>raise ValueError()</code> is executed, the process is thrown back to the caller, and node 05 never runs. This is sovereign containment.`);
+    unlock('s2');
+  } else {
+    document.querySelector(`[data-id="${selectedNode}"]`).classList.add('crashed');
+    showFB('fb-trace', 'err', fbt('Trace Breach') + `Incorrect node selected. The parsing strings occur at 02, assignment mapped at 03, but the execution strictly halts when the <em>decorator rules</em> are evaluated at Node 04 exactly. Retrying in 3 seconds...`);
+    setTimeout(() => {
+      document.querySelectorAll('.trace-node').forEach(n => {
+        n.style.pointerEvents = 'auto';
+        n.classList.remove('active', 'crashed');
+      });
+      selectedNode = null;
+      document.getElementById('fb-trace').className = 'fb';
+    }, 4000);
+  }
+}
+
+function answerOrder(btn, isCorrect, reason) {
+  document.getElementById('order-btns').querySelectorAll('button').forEach(b => b.style.pointerEvents = 'none');
+  if (isCorrect) {
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+    btn.style.background = 'rgba(42,157,143,0.05)';
+    showFB('fb-order', 'ok', fbt('Correct') + `Decorators wrap from the bottom up, meaning the topmost decorator becomes the outermost shell. When external traffic hits the endpoint, it hits the OUTERMOST shell first. Therefore, <code>@require_role</code> entirely prevents FastAPI from evaluating the route layer beneath it. Architecture protected.`);
+  } else {
+    btn.style.borderColor = 'var(--red)';
+    btn.style.color = 'var(--red)';
+    btn.style.background = 'rgba(231,111,81,0.05)';
+    showFB('fb-order', 'err', fbt('Misconception') + `They WRAP bottom-up, which means the top one is the outermost layer. Think of nesting dolls. Because the Auth decorator was applied last (is at the top), it evaluates FIRST when a request tries to enter from the outside. Try again in 3 seconds...`);
+    setTimeout(() => {
+      document.getElementById('order-btns').querySelectorAll('button').forEach(b => {
+        b.style.pointerEvents = 'auto';
+        b.style.borderColor = 'var(--border)';
+        b.style.color = 'var(--text)';
+        b.style.background = 'var(--bg)';
+      });
+      document.getElementById('fb-order').className = 'fb';
+    }, 4000);
+  }
+}
+</script>
+</body>
+</html>

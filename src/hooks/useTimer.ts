@@ -42,6 +42,13 @@ export function useTimer({
     const [isRunning, setIsRunning] = useState(false);
     const [remainingMs, setRemainingMs] = useState(durationMs);
 
+    // Sync remaining time if duration changes while idle
+    useEffect(() => {
+        if (!isRunning && !pausedAt) {
+            setRemainingMs(durationMs);
+        }
+    }, [durationMs, isRunning, pausedAt]);
+
     // Refs for cleanup
     const workerRef = useRef<Worker | null>(null);
     const rafRef = useRef<number | null>(null);

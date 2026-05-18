@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 02: Dictionaries & JSON — Orchestration Layer</title>
+    <style>
+        :root {
+            --bg-base: #0f111a;
+            --bg-panel: #1a1d27;
+            --bg-accent: #262a3b;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-primary: #3b82f6;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --border-dim: #334155;
+            --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 { font-weight: 600; color: #ffffff; }
+        h1 { margin-bottom: 2rem; font-size: 2.2rem; border-bottom: 1px solid var(--border-dim); padding-bottom: 0.5rem; }
+        p { margin-bottom: 1.2rem; }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-dim);
+            border-radius: 8px;
+            min-height: 500px;
+        }
+
+        .sidebar {
+            background-color: #0d0f17;
+            border-right: 1px solid var(--border-dim);
+            padding: 1rem 0;
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tab:hover { background-color: var(--bg-accent); color: var(--text-main); }
+        .tab.active {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--accent-primary);
+            border-left-color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        .content-area {
+            padding: 2rem;
+            display: none;
+        }
+        .content-area.active { display: block; animation: fadeIn 0.3s; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; } to { opacity: 1; }
+        }
+
+        .code-block {
+            background-color: #0d0f17;
+            border: 1px solid var(--border-dim);
+            border-radius: 6px;
+            padding: 1.2rem;
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background-color: var(--bg-accent);
+            border: 1px solid var(--border-dim);
+            padding: 1.5rem;
+            border-radius: 6px;
+        }
+
+        .card h4 { color: var(--accent-primary); margin-bottom: 0.5rem; }
+        .card.danger h4 { color: var(--accent-danger); }
+
+        textarea {
+            width: 100%;
+            background-color: #0d0f17;
+            border: 1px solid var(--border-dim);
+            color: var(--text-main);
+            padding: 1rem;
+            font-family: var(--font-mono);
+            border-radius: 4px;
+            height: 150px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Lesson 02: Dictionaries & JSON — Orchestration Layer</h1>
+    <p>You will now see the Dictionary and JSON paradigm operate across all six major subsystems of the Conscious Coaching Platform. The underlying necessity remains identical: <strong>imposing strict, labeled structure onto chaotic data flows.</strong></p>
+
+    <div class="dashboard">
+        <div class="sidebar">
+            <div class="tab active" onclick="switchTab(1)">🏗️ The Chassis</div>
+            <div class="tab" onclick="switchTab(2)">📋 The QA Dept</div>
+            <div class="tab" onclick="switchTab(3)">⚙️ The Machinist</div>
+            <div class="tab" onclick="switchTab(4)">🤖 The Robot Arm</div>
+            <div class="tab" onclick="switchTab(5)">🧠 Memory Engine</div>
+            <div class="tab" onclick="switchTab(6)">🎯 Skill Compiler</div>
+        </div>
+
+        <div class="main-panel">
+            <!-- Tab 1 -->
+            <div class="content-area active" id="tab-1">
+                <h2 style="margin-top:0">The Chassis: FastAPI Context</h2>
+                <div class="code-block">
+@app.post("/api/v1/trigger")
+async def receive_webhook(request: Request):
+    payload: dict = await request.json()
+    client_uuid = payload.get("metadata", {}).get("client_id")
+                </div>
+                <div class="analysis-grid">
+                    <div class="card">
+                        <h4>When It Works</h4>
+                        The payload is mapped into a nested dictionary, and <code>.get()</code> navigates it flawlessly. Network strings safely become memory structures.
+                    </div>
+                    <div class="card danger">
+                        <h4>When It Breaks</h4>
+                        If the payload is malformed XML instead of JSON, <code>request.json()</code> raises an exception, severing the WebSocket.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2 -->
+            <div class="content-area" id="tab-2">
+                <h2 style="margin-top:0">The QA Department: Pydantic Context</h2>
+                <div class="code-block">
+class ContextPremise(BaseModel):
+    nodes: dict[str, float] = Field(
+        ..., description="Maps node names to weights 0.0-1.0"
+    )
+                </div>
+                <div class="analysis-grid">
+                    <div class="card">
+                        <h4>When It Works</h4>
+                        It certifies that nested sub-dictionaries map strictly to float values, ensuring math operations downstream will never crash.
+                    </div>
+                    <div class="card danger">
+                        <h4>When It Breaks</h4>
+                        If an agent outputs <code>{"vulnerability": "high"}</code>, Pydantic prevents it from being added to the instance, ensuring state determinism.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Similar tabs for 3, 4, 5, 6 omitted for brevity but representable via interaction -->
+            <div class="content-area" id="tab-3"><h2 style="margin-top:0">The Machinist: DSPy Context</h2><p>Designs the programmatic OutputField mold the LLM must generate JSON into.</p></div>
+            <div class="content-area" id="tab-4"><h2 style="margin-top:0">The Robot Arm: Pi Harness Context</h2><p>Forces bash subprocesses to output `--format=json` to parse messy terminal state.</p></div>
+            <div class="content-area" id="tab-5"><h2 style="margin-top:0">Memory Engine: Neo4j Context</h2><p>Runs `json.dumps()` on deep dictionaries to store psychological state as a single flat graph property string.</p></div>
+            <div class="content-area" id="tab-6"><h2 style="margin-top:0">Skill Compiler: JIT Context</h2><p>Merges nested dictionaries using python spread operators `**base_dna, **modifiers` to construct live configuration states.</p></div>
+
+        </div>
+    </div>
+
+    <h2>2. BUILD-YOUR-OWN CASE STUDY</h2>
+    <div style="background-color: var(--bg-panel); padding: 2rem; border-radius: 8px;">
+        <p>Identify how the JSON/Dictionary paradigm must operate inside the <strong>Audio Transcript Subsystem</strong> (e.g. Whisper API converting voice to text).</p>
+        <textarea placeholder="Write the dictionary structure expected from the Whisper API response..."></textarea>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Guidance: What happens if the API changes key naming schemas during a version update?</p>
+    </div>
+
+    <script>
+        function switchTab(id) {
+            document.querySelectorAll('.tab').forEach((t, index) => {
+                if(index + 1 === id) t.classList.add('active');
+                else t.classList.remove('active');
+            });
+
+            document.querySelectorAll('.content-area').forEach((c, index) => {
+                if(index + 1 === id) c.classList.add('active');
+                else c.classList.remove('active');
+            });
+        }
+    </script>
+</body>
+</html>

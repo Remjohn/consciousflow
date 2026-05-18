@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 09 - Capability Layer</title>
+  <style>
+    :root {
+      --bg: #08111a;
+      --panel: rgba(12, 20, 30, 0.88);
+      --panel-2: rgba(21, 31, 43, 0.92);
+      --line: rgba(255,255,255,0.08);
+      --text: #f3f7fb;
+      --muted: #9ab0c2;
+      --accent: #ff7a18;
+      --accent-2: #56c5ff;
+      --good: #2ecc71;
+      --bad: #ff5c73;
+      --gold: #ffd166;
+      --violet: #8f7cff;
+      --gray: #2d3748;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(86,197,255,0.18), transparent 22%),
+        radial-gradient(circle at 82% 14%, rgba(255,122,24,0.16), transparent 24%),
+        linear-gradient(180deg, #071018 0%, #08111a 48%, #09131c 100%);
+    }
+
+    .progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: rgba(255,255,255,0.05);
+      z-index: 50;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #ff7a18, #ffd166, #56c5ff);
+      transition: width 0.35s ease;
+    }
+
+    .shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 42px 18px 80px;
+    }
+
+    .stage {
+      display: none;
+      animation: fadeUp 0.45s ease;
+    }
+
+    .stage.active { display: block; }
+
+    .hero, .card {
+      border-radius: 26px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015)),
+        linear-gradient(135deg, rgba(143,124,255,0.08), transparent 40%);
+      box-shadow: 0 26px 56px rgba(0,0,0,0.24);
+      overflow: hidden;
+    }
+
+    .hero { padding: 28px; }
+    .card { padding: 22px; margin-top: 18px; }
+
+    .eyebrow {
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 12px;
+    }
+
+    .section-count {
+      color: #89a1b2;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font: 700 0.75rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 10px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 14px;
+      line-height: 1.08;
+      font-weight: 500;
+    }
+
+    h1 { font-size: clamp(2.5rem, 5vw, 4rem); }
+    h2 { font-size: clamp(1.55rem, 2.8vw, 2.35rem); }
+    h3 { font-size: 1.08rem; }
+    p { margin: 0 0 14px; }
+
+    .lede {
+      max-width: 54rem;
+      font-size: 1.12rem;
+      color: #d9e4ec;
+    }
+
+    .divider {
+      height: 1px;
+      margin: 24px 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    }
+
+    .hero-grid,
+    .grid-2 {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .mini-card {
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      padding: 16px;
+    }
+
+    .mini-title {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.78rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 8px;
+    }
+
+    .mono {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.95rem;
+      background: rgba(255,255,255,0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    
+    pre.mono-block {
+      background: rgba(10, 15, 20, 0.9);
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 0.9rem;
+      color: #e2e8f0;
+      margin-bottom: 16px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      padding: 14px 18px;
+      border-radius: 999px;
+      font: 700 0.94rem/1 Arial, Helvetica, sans-serif;
+      transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: linear-gradient(90deg, #ff7a18, #ff994d);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .visual-wrap {
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(5, 14, 22, 0.7);
+      padding: 12px;
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 600px;
+      display: block;
+      margin: 0 auto;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(5,14,22,0.98), rgba(11,22,33,0.96));
+    }
+
+    .choices {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .choice {
+      width: 100%;
+      text-align: left;
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      color: #e7eef5;
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      transition: border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .choice.selected {
+      border-color: rgba(255,122,24,0.78);
+      background: rgba(255,122,24,0.08);
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(255,122,24,0.55);
+      box-shadow: 0 0 0 4px rgba(255,122,24,0.12);
+    }
+
+    .locked {
+      margin-top: 12px;
+      color: #ffd7a6;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif;
+    }
+
+    .feedback {
+      display: none;
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .feedback.show { display: block; }
+    .feedback.good { border-color: rgba(46,204,113,0.38); }
+    .feedback.bad { border-color: rgba(255,92,115,0.38); }
+
+    .gauntlet-grid {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .q-card {
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .q-card label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif;
+    }
+
+    .final-box {
+      margin-top: 18px;
+      padding: 22px;
+      border-radius: 20px;
+      border: 1px solid rgba(86,197,255,0.28);
+      background: linear-gradient(180deg, rgba(86,197,255,0.08), rgba(255,255,255,0.02));
+    }
+
+    .hidden { display: none; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 820px) {
+      .hero-grid,
+      .grid-2 { grid-template-columns: 1fr; }
+      .shell { padding: 30px 14px 60px; }
+      .hero, .card { padding: 18px; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true">
+    <div id="progressFill" class="progress-fill"></div>
+  </div>
+
+  <main class="shell">
+    <section id="stage-0" class="stage active">
+      <div class="hero">
+        <p class="eyebrow">Lesson 09 - Capability Layer</p>
+        <h1>An Exception is the Emergency Stop Button.</h1>
+        <div class="divider"></div>
+        <p class="lede">Without error handling, a single hallucinated JSON string or network lag permanently kills the OODA loop. It turns your deterministic factory into a fragile house of cards.</p>
+        <div class="hero-grid">
+          <div class="mini-card">
+            <p class="mini-title">The Chassis Failure</p>
+            <p>If the Qwen-3.5 72B reasoning model forgets a closing bracket <span class="mono">}</span> in its JSON output, <span class="mono">json.loads()</span> triggers a fatal crash. The session ends instantly for the client.</p>
+          </div>
+          <div class="mini-card">
+            <p class="mini-title">The Strategic Fix</p>
+            <p>Exceptions allow you to decouple the "happy path" from the "failure path". It builds an impenetrable quarantine wall to divert defects into a <strong>Routing Chute</strong> instead of stopping the assembly line.</p>
+          </div>
+        </div>
+        <div class="visual-wrap" style="margin-top:18px;">
+          <canvas id="heroCanvas" width="980" height="300"></canvas>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="goToStage(1)">Enter the Factory Floor</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 1: BASIC TRY EXCEPT -->
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="section-count">Scenario 1 of 3: The Defect</p>
+        <h2>The Basic Try/Except Block</h2>
+        <p>A corrupted payload is entering the deterministic orchestrator. Look at the code below.</p>
+        
+        <pre class="mono-block">
+import json
+
+raw_response = '{"trigger": "humor"' # Notice: Missing closing bracket }
+
+try:
+    state = json.loads(raw_response)
+    print("State loaded successfully.")
+except json.JSONDecodeError:
+    state = {"trigger": "fallback"}
+    print("Defect caught. Fallback deployed.")
+
+print(state["trigger"])
+        </pre>
+
+        <div class="grid-2">
+          <div>
+            <h3>Prediction Gate</h3>
+            <p>If we compile and run this script right now, exactly what will be printed to the terminal console?</p>
+            
+            <div class="choices" data-group="s1">
+              <button class="choice" data-value="A" onclick="selectChoice('s1','A',this)">Fatal Crash: json.JSONDecodeError at line 6.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('s1','B',this)">"State loaded successfully." then "humor"</button>
+              <button class="choice" data-value="C" onclick="selectChoice('s1','C',this)">"Defect caught. Fallback deployed." then "fallback"</button>
+              <button class="choice" data-value="D" onclick="selectChoice('s1','D',this)">Nothing prints. The thread hangs invisibly.</button>
+            </div>
+            
+            <div id="s1-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions">
+              <button id="s1-submit" class="btn btn-primary" onclick="submitChoice('s1','C',s1Feedback, () => drawScenarioOne(true))">Lock prediction</button>
+            </div>
+            <div id="s1-feedback" class="feedback"></div>
+            <div id="s1-next" class="actions hidden">
+              <button class="btn btn-secondary" onclick="goToStage(2)">Next scenario</button>
+            </div>
+          </div>
+          <div class="visual-wrap">
+            <canvas id="s1Canvas" width="520" height="340"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 2: RAISE AND FINALLY -->
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="section-count">Scenario 2 of 3: The Explicit Alarm</p>
+        <h2>Intentional Triggers & The Factory Janitor</h2>
+        <p>We are manually raising an alarm when an invariant fails, and providing cleanup logic.</p>
+
+        <pre class="mono-block">
+def validate_cbcs(score):
+    try:
+        if score > 1.0:
+            raise ValueError("Score too high")
+        return True
+    except ValueError as e:
+        print(f"Validation failed: {e}")
+        return False
+    finally:
+        print("Inspection completed.")
+
+validate_cbcs(1.5)
+        </pre>
+
+        <div class="grid-2">
+          <div>
+            <h3>Prediction Gate</h3>
+            <p>Will the <span class="mono">finally</span> block execute if the <span class="mono">except</span> block already hits a <span class="mono">return</span> statement?</p>
+            
+            <div class="choices" data-group="s2">
+              <button class="choice" data-value="A" onclick="selectChoice('s2','A',this)">No. The return statement ejects execution before finally occurs.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('s2','B',this)">Yes. It prints "Validation failed" then "Inspection completed."</button>
+              <button class="choice" data-value="C" onclick="selectChoice('s2','C',this)">Only "Inspection completed." prints. The exception is swallowed.</button>
+              <button class="choice" data-value="D" onclick="selectChoice('s2','D',this)">The program crashes at "raise ValueError" instantly.</button>
+            </div>
+            
+            <div id="s2-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions">
+              <button id="s2-submit" class="btn btn-primary" onclick="submitChoice('s2','B',s2Feedback, () => drawScenarioTwo(true))">Lock prediction</button>
+            </div>
+            <div id="s2-feedback" class="feedback"></div>
+            <div id="s2-next" class="actions hidden">
+              <button class="btn btn-secondary" onclick="goToStage(3)">Next scenario</button>
+            </div>
+          </div>
+          <div class="visual-wrap">
+            <canvas id="s2Canvas" width="520" height="340"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 3: THE OODA ZOMBIE -->
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="section-count">Scenario 3 of 3: Overbroad Catching</p>
+        <h2>The Zombie OODA Loop</h2>
+        <p>If exceptions are emergency chutes, what happens if we put a safety net over the entire factory floor blindly?</p>
+        
+        <pre class="mono-block">
+state = "online"
+try:
+    trigger_count = int("abc")  # Triggers ValueError
+except Exception:
+    state = "parent_error_caught"
+except ValueError:
+    state = "value_error_caught"
+
+print(state)
+        </pre>
+
+        <div class="grid-2">
+          <div>
+            <h3>Prediction Gate</h3>
+            <p>With Python evaluating from top to bottom, what does the state equal at the end?</p>
+            
+            <div class="choices" data-group="s3">
+              <button class="choice" data-value="A" onclick="selectChoice('s3','A',this)">"value_error_caught" — Python finds the most specific match.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('s3','B',this)">"parent_error_caught" — the parent `Exception` intercepts everything first.</button>
+              <button class="choice" data-value="C" onclick="selectChoice('s3','C',this)">"online" — the parser ignores it.</button>
+              <button class="choice" data-value="D" onclick="selectChoice('s3','D',this)">The compiler throws a SyntaxError for bad exception order.</button>
+            </div>
+            
+            <div id="s3-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions">
+              <button id="s3-submit" class="btn btn-primary" onclick="submitChoice('s3','B',s3Feedback, () => drawScenarioThree(true))">Lock prediction</button>
+            </div>
+            <div id="s3-feedback" class="feedback"></div>
+            <div id="s3-next" class="actions hidden">
+              <button class="btn btn-secondary" onclick="goToStage(4)">Continue to mastery gate</button>
+            </div>
+          </div>
+          <div class="visual-wrap">
+            <canvas id="s3Canvas" width="520" height="340"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 4: MASTERY GATE -->
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="eyebrow">Mastery Gate</p>
+        <h2>Compress the capability in your own words</h2>
+        <p>Explain the architectural purpose of Exception Handling in the CCP. Your explanation must mention removing dependencies from the <strong>OODA loop</strong>, decoupling the <strong>paths</strong> (happy vs failure), and using the <strong>routing chute</strong> concept.</p>
+        <textarea id="masteryText" placeholder="Exception handling protects the deterministic orchestrator by..."></textarea>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="submitMastery()">Lock response</button>
+        </div>
+        <div id="mastery-feedback" class="feedback"></div>
+        <div id="mastery-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(5)">Enter the 7-question gauntlet</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 5: GAUNTLET -->
+    <section id="stage-5" class="stage">
+      <div class="card">
+        <p class="eyebrow">Exposure Gauntlet</p>
+        <h2>Seven fast Code Checks</h2>
+        <p>Predict the raw technical outcome in these edge-case scenarios.</p>
+        <div class="gauntlet-grid">
+          <div class="q-card">
+            <label for="g1">1. If code inside `try` raises ValueError, and the block has `except ValueError`, what prints if the except has `print("Caught")`?</label>
+            <input id="g1" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g2">2. If a `try` block raises RuntimeError but you only `except ValueError`, what happens to the script?</label>
+            <input id="g2" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g3">3. When a `finally` block has a print, but the `try` returns a dict first, what prints out first?</label>
+            <input id="g3" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g4">4. Why is `except Exception: pass` dangerous in a database query loop?</label>
+            <input id="g4" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g5">5. What happens when a `while True` loop hits a `continue` inside an `except` block?</label>
+            <input id="g5" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g6">6. If you use a `finally` block but NO `except` block, and a KeyError hits, does the app crash?</label>
+            <input id="g6" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g7">7. What keyword performs Error Chaining (raising a new error while keeping the original stack trace)?</label>
+            <input id="g7" type="text" placeholder="Short answer ("____ e")">
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="gradeGauntlet()">Submit gauntlet</button>
+        </div>
+        <div id="gauntlet-feedback" class="feedback"></div>
+        <div id="final-box" class="final-box hidden">
+          <p class="eyebrow" style="margin-bottom:10px;">Layer 1 Complete</p>
+          <p id="final-text"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const totalStages = 6;
+    const selections = {};
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach((stage) => stage.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Lazy init specific canvases upon entering stage
+      if(index === 0) drawHero();
+      if(index === 1) drawScenarioOne(false);
+      if(index === 2) drawScenarioTwo(false);
+      if(index === 3) drawScenarioThree(false);
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = 'feedback show ' + type;
+      box.innerHTML = '<h3>' + title + '</h3><p>' + body + '</p>';
+    }
+
+    function selectChoice(groupId, value, element) {
+      if (document.querySelector('[data-group="' + groupId + '"]').dataset.locked === 'true') return;
+      selections[groupId] = value;
+      document.querySelectorAll('[data-group="' + groupId + '"] .choice').forEach((button) => button.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function submitChoice(groupId, correct, feedbackPack, revealFn) {
+      const selected = selections[groupId];
+      if (!selected) {
+        showFeedback(groupId + '-feedback', 'bad', 'Prediction required', 'Commit to a specific answer.');
+        return;
+      }
+      document.querySelector('[data-group="' + groupId + '"]').dataset.locked = 'true';
+      document.getElementById(groupId + '-submit').disabled = true;
+      document.getElementById(groupId + '-lock').classList.remove('hidden');
+      revealFn();
+      const isCorrect = selected === correct;
+      const payload = isCorrect ? feedbackPack.good : feedbackPack.bad;
+      showFeedback(groupId + '-feedback', isCorrect ? 'good' : 'bad', payload.title, payload.body);
+      document.getElementById(groupId + '-next').classList.remove('hidden');
+    }
+
+    const s1Feedback = {
+      good: {
+        title: 'Correct: Path decoupled and rescued.',
+        body: 'The broken JSON triggered a `JSONDecodeError`. Because the `except` block immediately caught it, execution jumped safely to the fallback block. The system survives and prints the fallback trigger.'
+      },
+      bad: {
+        title: 'Misconception exposed.',
+        body: 'You expected the program to crash or behave unpredictably. An exception block intercepts the specific error and manually reroutes execution away from the fatal trap.'
+      }
+    };
+
+    const s2Feedback = {
+      good: {
+        title: 'Correct: The Finally Block is Absolute.',
+        body: 'Even though the `except` block contains a `return` statement, Python interrupts the exit to ensure the `finally` block resolves. It is the factory janitor, guaranteeing cleanup occurs.'
+      },
+      bad: {
+        title: 'Misconception exposed.',
+        body: 'You assumed `return` breaks the flow permanently. The `finally` keyword overrides early exits and exceptions alike to guarantee resource cleanup.'
+      }
+    };
+
+    const s3Feedback = {
+      good: {
+        title: 'Correct: Broadest catching obscures precision.',
+        body: 'Because `Exception` is the parent of `ValueError`, it caught the error first. The specific `ValueError` block was entirely ignored. This creates confusing zombie states where you do not know WHAT failed.'
+      },
+      bad: {
+        title: 'Misconception exposed: Exception hierarchy matters.',
+        body: 'Python catches errors top-to-bottom. If you put a broad `Exception` catch at the top, it swallows everything. Specific exceptions must go first.'
+      }
+    };
+
+    function containsAny(value, options) {
+      return options.some((option) => value.includes(option));
+    }
+
+    function submitMastery() {
+      const value = document.getElementById('masteryText').value.trim().toLowerCase();
+      const checks = [
+        containsAny(value, ['ooda loop', 'ooda']),
+        containsAny(value, ['path', 'paths', 'decouple', 'happy flow']),
+        containsAny(value, ['routing chute', 'chute', 'routing', 'divert', 'defects'])
+      ];
+      const hits = checks.filter(Boolean).length;
+      document.getElementById('masteryText').disabled = true;
+      if (hits >= 3) {
+        showFeedback('mastery-feedback', 'good', 'Gate passed', 'You grasped the topology. Exceptions protect the OODA loop by decoupling ideal paths from the failure routing chute.');
+        document.getElementById('mastery-next').classList.remove('hidden');
+      } else {
+        showFeedback('mastery-feedback', 'bad', 'Gate failed', 'The explanation is missing structural terms. Ensure you mention OODA loop, decoupled paths, and the routing chute.');
+        document.getElementById('masteryText').disabled = false;
+      }
+    }
+
+    function gradeGauntlet() {
+      const answers = {
+        g1: ['caught'],
+        g2: ['crash', 'dies', 'throws', 'halts', 'fails'],
+        g3: ['finally', 'cleanup', 'print'],
+        g4: ['swallows', 'hides', 'silent', 'zombie', 'ignore'],
+        g5: ['retries', 'loop', 'next iteration', 'continues'],
+        g6: ['yes', 'crash'],
+        g7: ['from']
+      };
+      let score = 0;
+      Object.entries(answers).forEach(([id, keywords]) => {
+        const value = document.getElementById(id).value.trim().toLowerCase();
+        if (value && containsAny(value, keywords)) score += 1;
+      });
+
+      if (score >= 6) {
+        showFeedback('gauntlet-feedback', 'good', 'Gauntlet cleared: ' + score + '/7', 'You have demonstrated precise capability over structural failure routes.');
+        document.getElementById('final-box').classList.remove('hidden');
+        document.getElementById('final-text').innerHTML = 'Without Error Handling, the Chassis is fragile glass. You have learned how to install industrial routing chutes that take stochastic anomalies into localized quarantines. Next layer: applying this inside Pydantic and DSPy pipelines.';
+      } else {
+        showFeedback('gauntlet-feedback', 'bad', 'Gauntlet failed: ' + score + '/7', 'Review the consequences section. Ensure you know exactly what causes a zombie loop versus an unhandled crash.');
+        document.getElementById('final-box').classList.add('hidden');
+      }
+    }
+
+    // Drawing Context Helpers (Using basic primitive representations)
+    function drawGrid(ctx, width, height, step) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < width; x += step) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+      }
+      for (let y = 0; y < height; y += step) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+      }
+    }
+
+    // Stage 0 Canvas: The Factory Assembly Line
+    function drawHero() {
+      const canvas = document.getElementById('heroCanvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0,0, canvas.width, canvas.height);
+      drawGrid(ctx, canvas.width, canvas.height, 30);
+      
+      // Main Chassis Pipeline
+      ctx.fillStyle = '#2d3748';
+      ctx.fillRect(50, 120, 800, 40);
+      ctx.strokeStyle = '#56c5ff';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(50, 120, 800, 40);
+      
+      // Good packet
+      ctx.fillStyle = '#2ecc71';
+      ctx.beginPath(); ctx.arc(150, 140, 12, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(350, 140, 12, 0, Math.PI*2); ctx.fill();
+
+      // Routing chute
+      ctx.fillStyle = '#2d3748';
+      ctx.fillRect(500, 160, 60, 100);
+      ctx.strokeStyle = '#ff7a18';
+      ctx.strokeRect(500, 160, 60, 100);
+
+      // Bad packet (Diverted)
+      ctx.fillStyle = '#ff5c73';
+      ctx.beginPath(); ctx.arc(530, 220, 12, 0, Math.PI*2); ctx.fill();
+
+      // Text Overlays
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.font = '14px Arial';
+      ctx.fillText("Valid JSON Payload (Happy Path)", 100, 100);
+      ctx.fillText("try block execution", 470, 100);
+      ctx.fillText("except Routing Chute", 580, 200);
+      
+      ctx.fillStyle = 'rgba(255,92,115,0.8)';
+      ctx.fillText("Malformed LLM Output", 350, 240);
+    }
+
+    // Stage 1 Canvas: Basic Catch
+    function drawScenarioOne(reveal) {
+      const canvas = document.getElementById('s1Canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0,0, canvas.width, canvas.height);
+      drawGrid(ctx, canvas.width, canvas.height, 40);
+
+      ctx.fillStyle = '#2d3748';
+      ctx.fillRect(80, 50, 200, 100);
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.font = '16px monospace';
+      ctx.fillText("json.loads()", 130, 105);
+
+      if(reveal) {
+        // Line pointing to exception block
+        ctx.strokeStyle = '#ff7a18';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(180, 150);
+        ctx.lineTo(180, 250);
+        ctx.lineTo(350, 250);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255,122,24,0.1)';
+        ctx.fillRect(350, 200, 140, 100);
+        ctx.strokeStyle = '#ff7a18';
+        ctx.strokeRect(350, 200, 140, 100);
+        ctx.fillStyle = '#fff';
+        ctx.fillText("except block", 370, 245);
+        ctx.fillText("(Fallback)", 380, 265);
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillText("Lock prediction to trace payload...", 90, 250);
+      }
+    }
+
+    // Stage 2 Canvas: Finally Execution
+    function drawScenarioTwo(reveal) {
+      const canvas = document.getElementById('s2Canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0,0, canvas.width, canvas.height);
+      drawGrid(ctx, canvas.width, canvas.height, 40);
+      
+      // Try block
+      ctx.fillStyle = "rgba(46,204,113,0.1)"; 
+      ctx.fillRect(60, 40, 150, 80);
+      ctx.strokeStyle = "rgba(46,204,113,0.8)";
+      ctx.strokeRect(60, 40, 150, 80);
+      ctx.fillStyle = '#fff'; ctx.font = '14px monospace'; ctx.fillText("try (raise)", 90, 85);
+
+      // except Block
+      ctx.fillStyle = "rgba(255,92,115,0.1)"; 
+      ctx.fillRect(60, 150, 150, 80);
+      ctx.strokeStyle = "rgba(255,92,115,0.8)";
+      ctx.strokeRect(60, 150, 150, 80);
+      ctx.fillStyle = '#fff'; ctx.font = '14px monospace'; ctx.fillText("except (return)", 80, 195);
+
+      // finally block
+      ctx.fillStyle = "rgba(86,197,255,0.1)"; 
+      ctx.fillRect(320, 95, 150, 80);
+      ctx.strokeStyle = "#56c5ff";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(320, 95, 150, 80);
+      ctx.fillStyle = '#fff'; ctx.font = '14px monospace'; ctx.fillText("finally", 365, 140);
+
+      if(reveal) {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        // From try to except
+        ctx.beginPath(); ctx.moveTo(135, 120); ctx.lineTo(135, 150); ctx.stroke();
+        // From except to finally
+        ctx.beginPath(); ctx.moveTo(210, 190); ctx.lineTo(260, 190); ctx.lineTo(260, 135); ctx.lineTo(320, 135); ctx.stroke();
+        
+        ctx.fillStyle = '#56c5ff';
+        ctx.fillText("Yields to Janitor", 200, 125);
+      }
+    }
+
+    // Stage 3 Canvas: Parent Shield
+    function drawScenarioThree(reveal) {
+      const canvas = document.getElementById('s3Canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0,0, canvas.width, canvas.height);
+      drawGrid(ctx, canvas.width, canvas.height, 40);
+
+      // Value Error Box
+      ctx.fillStyle = '#ff5c73';
+      ctx.fillRect(80, 40, 120, 40);
+      ctx.fillStyle = '#fff'; ctx.font = '14px monospace'; ctx.fillText("ValueError", 100, 65);
+
+      if(reveal) {
+        // Exception Block (Broad shield)
+        ctx.fillStyle = 'rgba(86,197,255,0.3)';
+        ctx.fillRect(50, 120, 300, 60);
+        ctx.strokeStyle = '#56c5ff'; ctx.lineWidth=2; ctx.strokeRect(50, 120, 300, 60);
+        ctx.fillStyle = '#fff'; ctx.fillText("except Exception:", 60, 145);
+        ctx.fillText("Intercepts everything. State corrupted.", 60, 165);
+
+        // Specific Block (Ignored)
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
+        ctx.fillRect(50, 200, 300, 60);
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.strokeRect(50, 200, 300, 60);
+        ctx.fillStyle = '#777'; ctx.fillText("except ValueError: (Never Reached)", 60, 235);
+        
+        // Arrow
+        ctx.strokeStyle = '#ff5c73'; ctx.beginPath(); ctx.moveTo(140, 80); ctx.lineTo(140, 120); ctx.stroke();
+        // X mark
+        ctx.strokeStyle = '#ff7a18'; ctx.beginPath(); ctx.moveTo(130, 225); ctx.lineTo(150, 245); ctx.moveTo(150, 225); ctx.lineTo(130, 245); ctx.stroke();
+      } else {
+        ctx.fillStyle = '#9ab0c2';
+        ctx.fillText("Which net catches the error?", 150, 200);
+      }
+    }
+
+    // Initialize Hero
+    setTimeout(drawHero, 150);
+  </script>
+</body>
+</html>

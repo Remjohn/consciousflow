@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 09 - Orchestration Layer</title>
+  <style>
+    :root {
+      --bg: #08111a;
+      --panel: rgba(12, 20, 30, 0.88);
+      --line: rgba(255,255,255,0.08);
+      --text: #f3f7fb;
+      --muted: #9ab0c2;
+      --accent: #ff7a18;
+      --accent-2: #56c5ff;
+      --good: #2ecc71;
+      --bad: #ff5c73;
+      --gold: #ffd166;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(86,197,255,0.18), transparent 22%),
+        radial-gradient(circle at 82% 14%, rgba(255,122,24,0.16), transparent 24%),
+        linear-gradient(180deg, #071018 0%, #08111a 48%, #09131c 100%);
+    }
+
+    .progress {
+      position: fixed;
+      top: 0; left: 0; right: 0; height: 4px;
+      background: rgba(255,255,255,0.05); z-index: 50;
+    }
+    .progress-fill {
+      height: 100%; width: 0;
+      background: linear-gradient(90deg, #ff7a18, #ffd166, #56c5ff);
+      transition: width 0.35s ease;
+    }
+
+    .shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 42px 18px 80px;
+    }
+
+    .stage { display: none; animation: fadeUp 0.45s ease; }
+    .stage.active { display: block; }
+
+    .hero, .card {
+      border-radius: 26px; border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015)),
+                  linear-gradient(135deg, rgba(143,124,255,0.08), transparent 40%);
+      box-shadow: 0 26px 56px rgba(0,0,0,0.24); padding: 28px;
+    }
+    .card { padding: 22px; margin-top: 18px; }
+
+    .eyebrow {
+      color: var(--gold); text-transform: uppercase;
+      letter-spacing: 0.2em; font: 700 0.74rem/1.2 Arial, sans-serif;
+      margin-bottom: 12px;
+    }
+    .section-count {
+      color: #89a1b2; text-transform: uppercase;
+      letter-spacing: 0.12em; font: 700 0.75rem/1.2 Arial, sans-serif;
+      margin-bottom: 10px;
+    }
+
+    h1, h2, h3 { margin: 0 0 14px; line-height: 1.08; font-weight: 500; }
+    h1 { font-size: clamp(2.5rem, 5vw, 4rem); }
+    h2 { font-size: clamp(1.55rem, 2.8vw, 2.35rem); }
+    h3 { font-size: 1.08rem; }
+    p { margin: 0 0 14px; }
+    
+    .lede { max-width: 54rem; font-size: 1.12rem; color: #d9e4ec; }
+    .divider {
+      height: 1px; margin: 24px 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    }
+
+    .grid-2 { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    
+    .mono {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.95rem; background: rgba(255,255,255,0.1);
+      padding: 2px 6px; border-radius: 4px;
+    }
+    pre.mono-block {
+      background: rgba(10, 15, 20, 0.9); padding: 16px;
+      border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+      overflow-x: auto; font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 0.9rem; color: #e2e8f0; margin-bottom: 16px;
+    }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+    .btn {
+      border: 0; cursor: pointer; padding: 14px 18px;
+      border-radius: 999px; font: 700 0.94rem/1 Arial, sans-serif;
+      transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .btn-primary { background: linear-gradient(90deg, #ff7a18, #ff994d); color: white; }
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.15); }
+
+    .choices { display: grid; gap: 12px; margin-top: 16px; }
+    .choice {
+      width: 100%; text-align: left; padding: 16px 18px;
+      border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02); color: #e7eef5;
+      font: 400 1rem/1.45 Arial, sans-serif; cursor: pointer;
+      transition: border-color 0.18s, background 0.18s;
+    }
+    .choice.selected { border-color: rgba(255,122,24,0.78); background: rgba(255,122,24,0.08); }
+    .choice.good-ans { border-color: var(--good); background: rgba(46,204,113,0.08); }
+    .choice.bad-ans { border-color: var(--bad); background: rgba(255,92,115,0.08); opacity: 0.6; }
+
+    input, textarea {
+      width: 100%; padding: 14px 16px; border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.03);
+      color: var(--text); font: 400 1rem/1.45 Arial, sans-serif; outline: none;
+    }
+    textarea { min-height: 130px; resize: vertical; }
+    input:focus, textarea:focus { border-color: rgba(255,122,24,0.55); box-shadow: 0 0 0 4px rgba(255,122,24,0.12); }
+
+    .feedback {
+      display: none; margin-top: 18px; padding: 18px;
+      border-radius: 18px; border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+    }
+    .feedback.show { display: block; }
+    .feedback.good { border-color: rgba(46,204,113,0.38); }
+    .feedback.bad { border-color: rgba(255,92,115,0.38); }
+
+    /* Tour specific styling */
+    .tour-nav {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .tour-btn {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text); padding: 10px 16px; border-radius: 8px;
+      cursor: pointer; font-family: Arial, sans-serif; font-size: 0.9rem;
+      transition: 0.2s;
+    }
+    .tour-btn:hover { background: rgba(255,255,255,0.1); }
+    .tour-btn.active {
+      background: rgba(86,197,255,0.2);
+      border-color: #56c5ff;
+    }
+    .tour-pane { display: none; animation: fadeUp 0.3s; }
+    .tour-pane.active { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress"><div id="progressFill" class="progress-fill"></div></div>
+
+  <main class="shell">
+    
+    <!-- STAGE 0: HERO -->
+    <section id="stage-0" class="stage active">
+      <div class="hero">
+        <p class="eyebrow">Layer 3 — Orchestration</p>
+        <h1>Multi-Context Routing Protocol</h1>
+        <div class="divider"></div>
+        <p class="lede">The Python syntax (`try/except/finally`) remains identical; yet its geopolitical role inside each CCP layer shifts drastically to preserve sovereign determinism.</p>
+        <p>You will now observe this single, universal capability traversing 6 load-bearing components of the Conscious Coaching Platform.</p>
+        <div class="actions"><button class="btn btn-primary" onclick="goToStage(1)">Enter the System Tour</button></div>
+      </div>
+    </section>
+
+    <!-- STAGE 1: THE TOUR -->
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="section-count">Explore: The 6 Geopolitical Roles</p>
+        <h2>The Factory Tour</h2>
+        <p>Select a subsystem. Observe how the <strong>Routing Chute</strong> defends the Orchestration Dichotomy differently at each coordinate.</p>
+        
+        <div class="tour-nav">
+          <button class="tour-btn active" onclick="switchTour(this, 't1')">1. FastAPI Chassis</button>
+          <button class="tour-btn" onclick="switchTour(this, 't2')">2. Pydantic QA</button>
+          <button class="tour-btn" onclick="switchTour(this, 't3')">3. DSPy Machinist</button>
+          <button class="tour-btn" onclick="switchTour(this, 't4')">4. Pi Robot Arm</button>
+          <button class="tour-btn" onclick="switchTour(this, 't5')">5. Neo4j Memory</button>
+          <button class="tour-btn" onclick="switchTour(this, 't6')">6. Skill Compiler</button>
+        </div>
+
+        <div id="t1" class="tour-pane active">
+          <h3>The Deterministic Public Border Wall</h3>
+          <pre class="mono-block">
+except Exception as e:
+    logging.critical(f"Chassis Panic", exc_info=True)
+    raise HTTPException(status_code=500, detail="Internal collapse")
+          </pre>
+          <p><strong>Structural Principle:</strong> Protects external consumers from internal structural volatility. Translates unpredictable tracebacks into graceful HTTP boundaries.</p>
+        </div>
+        <div id="t2" class="tour-pane">
+          <h3>The Immutable Quality Gate</h3>
+          <pre class="mono-block">
+if not (0.0 <= v <= 1.0):
+    raise ValueError(f"Confidence Weight {v} violates bounds.")
+          </pre>
+          <p><strong>Structural Principle:</strong> Rejects bad materials *before* they enter the pipeline. Prevents mathematically broken objects from being instantiated in memory.</p>
+        </div>
+        <div id="t3" class="tour-pane">
+          <h3>The Backtracking Trigger for Reflexive AI</h3>
+          <pre class="mono-block">
+except DSPySuggestionError as e:
+    raise e # Re-raises to force the teleprompter to backtrack
+          </pre>
+          <p><strong>Structural Principle:</strong> Actively coerces self-healing corrections from stochastic systems. Generates the explicit dialogue mapping the LLM's mistake.</p>
+        </div>
+        <div id="t4" class="tour-pane">
+          <h3>The Mortality Enforcer</h3>
+          <pre class="mono-block">
+except subprocess.TimeoutExpired:
+    return "Operation SIGKILLED. Infinite loop averted."
+          </pre>
+          <p><strong>Structural Principle:</strong> Ensures deterministic temporal bounding for non-deterministic agents. A hung script will never hold the main Python thread hostage.</p>
+        </div>
+        <div id="t5" class="tour-pane">
+          <h3>The Transaction Rollback Boundary</h3>
+          <pre class="mono-block">
+except ClientError as e:
+    raise CoherenceFault("Attempting to connect nonexistent nodes") from e
+          </pre>
+          <p><strong>Structural Principle:</strong> Asserts atomic integrity of memory. Either the whole graph link connects perfectly, or none of it writes to disk.</p>
+        </div>
+        <div id="t6" class="tour-pane">
+          <h3>The Strict Dimension Gateway</h3>
+          <pre class="mono-block">
+if len(raw_vectors) != 76:
+    raise ValueError("Voice DNA mismatched tensor length.")
+          </pre>
+          <p><strong>Structural Principle:</strong> Fails loudly and immediately. Prevents a 75-length array from traveling to a neural net anticipating 76 dimensions, where the error is impossible to trace.</p>
+        </div>
+
+        <div class="actions" style="margin-top: 30px;"><button class="btn btn-primary" onclick="goToStage(2)">Proceed to Reflection</button></div>
+      </div>
+    </section>
+
+    <!-- STAGE 2: COMPARISON -->
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="section-count">Synthesis</p>
+        <h2>Cross-Context Reflection</h2>
+        <p>The role of exceptions morphs depending on the proximity to the Stochastic boundary (LLM):</p>
+        <ul>
+          <li><strong>Boundary Form:</strong> FastAPI is the outermost boundary, so its error handling must be forgiving and opaque (HTTP 500). The JIT compiler is the deepest engine, so it must be rigid and transparent (<code>CompilationError</code>).</li>
+          <li><strong>Defensive Stance:</strong> The Pi Harness uses exceptions to <strong>defend the system from death</strong> (timeout loops). Neo4j uses exceptions to <strong>defend the data from corruption</strong> (transaction rollbacks).</li>
+          <li><strong>Contract Stance:</strong> Pydantic treats an exception as a <strong>Terminal Breach of Contract</strong>. DSPy treats an exception as an <strong>Instructional Dialogue</strong> for the retry loop.</li>
+        </ul>
+        <div class="actions"><button class="btn btn-primary" onclick="goToStage(3)">Enter the Logic Puzzles</button></div>
+      </div>
+    </section>
+
+    <!-- STAGE 3: LOGIC PUZZLES -->
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="eyebrow">Critical Thinking Challenges</p>
+        <h2>Identify the Systemic Defects</h2>
+        <p>Identify the structural and architectural faults within these live code blocks. Commit your diagnosis.</p>
+
+        <div id="puzzle-1-area">
+          <h3>1. The Audio Ingestion</h3>
+          <pre class="mono-block">
+def ingest_audio(audio_stream):
+    try:
+        buffer = allocate_tensor(audio_stream)
+        db.save_recording(buffer)
+    except Exception:
+        print("Audio failed.")
+          </pre>
+          <div class="choices" data-group="p1">
+            <button class="choice" onclick="handlePuzzle('p1', false, this)">A) It fails to log to standard out properly.</button>
+            <button class="choice" onclick="handlePuzzle('p1', true, this)">B) The Hidden Rot: Broad exception absorbs all memory/disk errors and mutes them to a simple print. No escalation.</button>
+            <button class="choice" onclick="handlePuzzle('p1', false, this)">C) The function needs a return statement inside the try block.</button>
+          </div>
+        </div>
+
+        <div id="puzzle-2-area" style="display:none; margin-top:30px;">
+          <h3>2. The Chassis Endpoint</h3>
+          <pre class="mono-block">
+@app.get("/session/{uid}")
+def get_session(uid: str):
+    data = fetch_neo4j(uid)
+    if not data:
+        raise Exception("Session missing")
+    return data
+          </pre>
+          <div class="choices" data-group="p2">
+            <button class="choice" onclick="handlePuzzle('p2', false, this)">A) The fetch_neo4j function needs to be wrapped in a class.</button>
+            <button class="choice" onclick="handlePuzzle('p2', true, this)">B) Leaking the boundary. Raising a raw Exception in FastAPI bypasses HTTP status codes, throwing a 500 server crash instead of a 404 Not Found.</button>
+            <button class="choice" onclick="handlePuzzle('p2', false, this)">C) The conditional statement should be checking for None explicitly.</button>
+          </div>
+        </div>
+
+        <div id="puzzle-3-area" style="display:none; margin-top:30px;">
+          <h3>3. The DSPy Interception</h3>
+          <pre class="mono-block">
+def build_prompt(context):
+    try:
+        extracted = dspy.Predict(ExtractInfo)(context=context)
+    except ValueError as e:
+        return "Fallback string"
+          </pre>
+          <div class="choices" data-group="p3">
+            <button class="choice" onclick="handlePuzzle('p3', false, this)">A) You cannot return a string from a prediction block.</button>
+            <button class="choice" onclick="handlePuzzle('p3', false, this)">B) ValueError is entirely the wrong exception structure for AI generation.</button>
+            <button class="choice" onclick="handlePuzzle('p3', true, this)">C) Sabotaged Machinist. Short-circuiting a fallback string prematurely cuts off DSPy's internal LLM retry logic loop.</button>
+          </div>
+        </div>
+        
+        <div id="puzzles-done" class="actions hidden" style="margin-top:20px;">
+          <button class="btn btn-primary" onclick="goToStage(4)">Advance to Builder Capstone</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 4: BUILDER -->
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="eyebrow">Execution</p>
+        <h2>Build-Your-Own Case Study Task</h2>
+        <p>Choose a Conscious Coaching Platform component we <strong>did not explicitly cover</strong> (e.g., Pipecat WebSocket Audio, or Redis Pub/Sub Event Broker).</p>
+        <p>Write an analysis applying the architectural theory to your chosen subsystem. Include its Role, the Architectural Defense it provides, and the consequences of omitting it.</p>
+        <textarea id="builderText" placeholder="Subsystem: ...&#10;Role: ...&#10;Defense provided: ...&#10;Consequences of failure: ..."></textarea>
+        <div class="actions"><button class="btn btn-primary" onclick="finishBuilder()">Log Architecture</button></div>
+        
+        <div id="builder-feedback" class="feedback"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const totalStages = 5;
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function switchTour(btn, paneId) {
+      document.querySelectorAll('.tour-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.tour-pane').forEach(p => p.classList.remove('active'));
+      document.getElementById(paneId).classList.add('active');
+    }
+
+    let puzzleScore = 0;
+    function handlePuzzle(groupId, isCorrect, btnElem) {
+      // Prevent multiple clicks on same group
+      if (btnElem.parentElement.dataset.locked) return;
+      btnElem.parentElement.dataset.locked = true;
+
+      const siblings = btnElem.parentElement.querySelectorAll('.choice');
+      siblings.forEach(s => {
+        if(s === btnElem) {
+          s.classList.add(isCorrect ? 'good-ans' : 'bad-ans');
+        } else {
+             s.classList.add('bad-ans'); // Dim others
+        }
+      });
+      
+      if(isCorrect) puzzleScore++;
+
+      if(groupId === 'p1') {
+        document.getElementById('puzzle-2-area').style.display = 'block';
+      } else if (groupId === 'p2') {
+        document.getElementById('puzzle-3-area').style.display = 'block';
+      } else if (groupId === 'p3') {
+        document.getElementById('puzzles-done').classList.remove('hidden');
+      }
+    }
+
+    function finishBuilder() {
+      const val = document.getElementById('builderText').value;
+      if (val.length < 50) {
+        document.getElementById('builder-feedback').className = 'feedback show bad';
+        document.getElementById('builder-feedback').innerHTML = "<p>Your analysis must be more comprehensive. Fill out the Role, Defense, and Consequence.</p>";
+      } else {
+        document.getElementById('builder-feedback').className = 'feedback show good';
+        document.getElementById('builder-feedback').innerHTML = "<h3>Capstone Completed</h3><p>You have systematically traced how a single mechanical syntax (the exception) alters its strategic objective based entirely on mathematical context. Move forward to the Terminal Capstone layer.</p>";
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 12 - Master Layer</title>
+  <style>
+    :root {
+      --bg: #09090b;
+      --panel: #111114;
+      --line: rgba(255,255,255,0.08);
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --accent: #f97316;
+      --good: #22c55e;
+      --bad: #ef4444;
+      --warn: #f59e0b;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #0b0b0e 0%, #09090b 100%);
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+    }
+
+    .hud {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 20;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(9, 9, 11, 0.92);
+      font: 700 0.86rem/1 Arial, Helvetica, sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #f8fafc;
+    }
+
+    .shell {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 34px 18px 90px;
+    }
+
+    .hero,
+    .card,
+    .result {
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+    }
+
+    .hero,
+    .card,
+    .result {
+      padding: 24px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 12px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 14px;
+      line-height: 1.08;
+      font-weight: 500;
+    }
+
+    h1 { font-size: clamp(2.2rem, 4vw, 3.8rem); }
+    h2 { font-size: clamp(1.4rem, 2.7vw, 2rem); }
+    h3 { font-size: 1.08rem; }
+    p { margin: 0 0 14px; }
+
+    .divider {
+      height: 1px;
+      margin: 22px 0;
+      background: linear-gradient(90deg, transparent, rgba(249,115,22,0.3), transparent);
+    }
+
+    .mono {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.95rem;
+    }
+
+    .meta {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 18px;
+    }
+
+    .meta div {
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .meta span {
+      display: block;
+      color: var(--muted);
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .card {
+      margin-top: 18px;
+    }
+
+    .qnum {
+      color: #fdba74;
+      font: 700 0.78rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .points {
+      color: var(--muted);
+      font: 700 0.8rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .choices {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .choice {
+      width: 100%;
+      text-align: left;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      transition: border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .choice.selected {
+      border-color: rgba(249,115,22,0.7);
+      background: rgba(249,115,22,0.08);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 170px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(249,115,22,0.55);
+      box-shadow: 0 0 0 4px rgba(249,115,22,0.12);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      padding: 14px 18px;
+      border-radius: 999px;
+      font: 700 0.94rem/1 Arial, Helvetica, sans-serif;
+      transition: transform 0.18s ease, opacity 0.18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .result {
+      margin-top: 22px;
+      display: none;
+    }
+
+    .result.show { display: block; }
+
+    .score {
+      font: 700 1.2rem/1.3 Arial, Helvetica, sans-serif;
+      margin-bottom: 14px;
+    }
+
+    .pass { color: var(--good); }
+    .fail { color: var(--bad); }
+    .warn { color: var(--warn); }
+
+    .breakdown {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .breakdown div {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .footnote {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.96rem;
+    }
+
+    @media (max-width: 720px) {
+      .hud {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        justify-content: space-between;
+      }
+      .meta { grid-template-columns: 1fr; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+      .shell { padding: 74px 14px 60px; }
+      .hero, .card, .result { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <span>Master Exam</span>
+    <span id="timer">10:00</span>
+  </div>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Lesson 12 - Master / Integration Layer</p>
+      <h1>Twelve lessons. One timed assessment.</h1>
+      <div class="divider"></div>
+      <p>This is the terminal evaluation. No diagrams. No hints. No visual scaffolds. You have ten minutes to demonstrate that the GRPO capstone is a composition of the full curriculum, not a memorized slogan.</p>
+      <div class="meta">
+        <div><span>Questions</span>12 total</div>
+        <div><span>Time</span>10 minutes</div>
+        <div><span>Passing Score</span>160 / 200</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="startExam()">Start exam</button>
+      </div>
+    </section>
+
+    <form id="examForm" class="hidden" onsubmit="return false;">
+      <section class="card">
+        <div class="qnum">Question 1</div>
+        <div class="points">10 points</div>
+        <h2>Gradient ascent or gradient descent?</h2>
+        <p>When the objective is reward <span class="mono">J(theta)</span>, which update rule is correct?</p>
+        <div class="choices" data-question="q1">
+          <button type="button" class="choice" data-value="A" onclick="pickChoice('q1','A',this)">theta_new = theta_old - eta grad J(theta)</button>
+          <button type="button" class="choice" data-value="B" onclick="pickChoice('q1','B',this)">theta_new = theta_old + eta grad J(theta)</button>
+          <button type="button" class="choice" data-value="C" onclick="pickChoice('q1','C',this)">theta_new = theta_old / grad J(theta)</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 2</div>
+        <div class="points">10 points</div>
+        <h2>Advantage computation</h2>
+        <p>Scores are <span class="mono">[7, 3, 9, 5]</span>. Which response receives the strongest positive advantage?</p>
+        <div class="choices" data-question="q2">
+          <button type="button" class="choice" data-value="A" onclick="pickChoice('q2','A',this)">Response 1</button>
+          <button type="button" class="choice" data-value="B" onclick="pickChoice('q2','B',this)">Response 2</button>
+          <button type="button" class="choice" data-value="C" onclick="pickChoice('q2','C',this)">Response 3</button>
+          <button type="button" class="choice" data-value="D" onclick="pickChoice('q2','D',this)">Response 4</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 3</div>
+        <div class="points">10 points</div>
+        <h2>Ratio meaning</h2>
+        <p>If <span class="mono">w = pi_new / pi_old = 1.5</span>, what does that mean?</p>
+        <input id="q3" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 4</div>
+        <div class="points">10 points</div>
+        <h2>Clipping purpose</h2>
+        <p>What failure mode is clipping primarily designed to prevent?</p>
+        <div class="choices" data-question="q4">
+          <button type="button" class="choice" data-value="A" onclick="pickChoice('q4','A',this)">Reward models from assigning scores</button>
+          <button type="button" class="choice" data-value="B" onclick="pickChoice('q4','B',this)">Oversized policy jumps that destabilize training</button>
+          <button type="button" class="choice" data-value="C" onclick="pickChoice('q4','C',this)">The need for sampling multiple outputs</button>
+          <button type="button" class="choice" data-value="D" onclick="pickChoice('q4','D',this)">All negative advantages</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 5</div>
+        <div class="points">10 points</div>
+        <h2>Baseline design</h2>
+        <p>What lets GRPO remove the value network used in PPO?</p>
+        <input id="q5" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 6</div>
+        <div class="points">10 points</div>
+        <h2>Course composition</h2>
+        <p>Which prior lesson maps most directly to the advantage term <span class="mono">(r - mu) / sigma</span>?</p>
+        <div class="choices" data-question="q6">
+          <button type="button" class="choice" data-value="A" onclick="pickChoice('q6','A',this)">Lesson 3: Linear combinations</button>
+          <button type="button" class="choice" data-value="B" onclick="pickChoice('q6','B',this)">Lesson 10: Normalization / Clustering</button>
+          <button type="button" class="choice" data-value="C" onclick="pickChoice('q6','C',this)">Lesson 7: Change of basis</button>
+          <button type="button" class="choice" data-value="D" onclick="pickChoice('q6','D',this)">Lesson 8: Eigenvalues</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 7</div>
+        <div class="points">10 points</div>
+        <h2>LoRA mapping</h2>
+        <p>What mathematical idea from the course explains why LoRA constrains updates to <span class="mono">Delta W = BA</span>?</p>
+        <input id="q7" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 8</div>
+        <div class="points">10 points</div>
+        <h2>Alignment objective</h2>
+        <p>GRPO's KL term is described as reverse KL. In practice, what tendency does that create?</p>
+        <div class="choices" data-question="q8">
+          <button type="button" class="choice" data-value="A" onclick="pickChoice('q8','A',this)">Mode-seeking, more focused outputs</button>
+          <button type="button" class="choice" data-value="B" onclick="pickChoice('q8','B',this)">Perfectly uniform output distributions</button>
+          <button type="button" class="choice" data-value="C" onclick="pickChoice('q8','C',this)">Guaranteed maximal diversity</button>
+          <button type="button" class="choice" data-value="D" onclick="pickChoice('q8','D',this)">No effect on policy behavior</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 9</div>
+        <div class="points">15 points</div>
+        <h2>Reward design</h2>
+        <p>Why is a single-objective reward function dangerous in production training?</p>
+        <input id="q9" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 10</div>
+        <div class="points">15 points</div>
+        <h2>Algorithm spectrum</h2>
+        <p>With group size <span class="mono">G = 2</span>, what simpler method does GRPO collapse toward, and why does that matter?</p>
+        <textarea id="q10" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 11</div>
+        <div class="points">15 points</div>
+        <h2>Architectural emergence</h2>
+        <p>What did the "Thinking Sparks" result change about our understanding of RL training?</p>
+        <textarea id="q11" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 12</div>
+        <div class="points">35 points</div>
+        <h2>Feynman Compression</h2>
+        <p>Explain, in your own words, how the GRPO equation composes the course into a single training loop that turns a generic model into a specialized system. Minimum length: 220 characters.</p>
+        <p class="footnote">To receive full credit, your explanation must include all three structural elements: relative comparison within a group, bounded policy updating, and gradient-driven model change.</p>
+        <textarea id="q12" placeholder="Write the mechanism, not a slogan."></textarea>
+      </section>
+
+      <div class="actions">
+        <button class="btn btn-primary" type="button" onclick="submitExam(false)">Submit exam</button>
+        <button class="btn btn-secondary" type="button" onclick="scrollToTop()">Back to top</button>
+      </div>
+    </form>
+
+    <section id="result" class="result">
+      <div class="eyebrow">Result</div>
+      <div id="scoreLine" class="score"></div>
+      <p id="resultSummary"></p>
+      <div id="breakdown" class="breakdown"></div>
+      <p id="timeoutNote" class="footnote"></p>
+    </section>
+  </main>
+
+  <script>
+    const answers = {};
+    let examStarted = false;
+    let examSubmitted = false;
+    let secondsRemaining = 600;
+    let timerHandle = null;
+
+    function pickChoice(question, value, element) {
+      if (examSubmitted) return;
+      answers[question] = value;
+      document.querySelectorAll('[data-question="' + question + '"] .choice').forEach((btn) => btn.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function startExam() {
+      if (examStarted) return;
+      examStarted = true;
+      document.getElementById('examForm').classList.remove('hidden');
+      window.scrollTo({ top: document.getElementById('examForm').offsetTop - 20, behavior: 'smooth' });
+      timerHandle = setInterval(tick, 1000);
+    }
+
+    function tick() {
+      if (examSubmitted) return;
+      secondsRemaining -= 1;
+      if (secondsRemaining <= 0) {
+        secondsRemaining = 0;
+        updateTimer();
+        submitExam(true);
+        return;
+      }
+      updateTimer();
+    }
+
+    function updateTimer() {
+      const mins = String(Math.floor(secondsRemaining / 60)).padStart(2, '0');
+      const secs = String(secondsRemaining % 60).padStart(2, '0');
+      document.getElementById('timer').textContent = mins + ':' + secs;
+    }
+
+    function textValue(id) {
+      return (document.getElementById(id)?.value || '').trim().toLowerCase();
+    }
+
+    function containsAny(value, options) {
+      return options.some((option) => value.includes(option));
+    }
+
+    function gradeShortText(value, keywords) {
+      if (!value) return 0;
+      return containsAny(value, keywords) ? 1 : 0;
+    }
+
+    function gradeRichText(value, keywordGroups) {
+      if (!value) return 0;
+      let hits = 0;
+      keywordGroups.forEach((group) => {
+        if (containsAny(value, group)) hits += 1;
+      });
+      return hits;
+    }
+
+    function submitExam(fromTimeout) {
+      if (examSubmitted) return;
+      examSubmitted = true;
+      clearInterval(timerHandle);
+
+      document.querySelectorAll('input, textarea, button.choice').forEach((el) => el.disabled = true);
+
+      let total = 0;
+      const breakdown = [];
+
+      const q1 = answers.q1 === 'B' ? 10 : 0;
+      total += q1;
+      breakdown.push(['Q1', q1, 'Gradient ascent on reward']);
+
+      const q2 = answers.q2 === 'C' ? 10 : 0;
+      total += q2;
+      breakdown.push(['Q2', q2, 'Response 3 had the strongest positive advantage']);
+
+      const q3hits = gradeShortText(textValue('q3'), ['50%', 'more likely', 'higher probability', 'shifted toward']);
+      const q3 = q3hits ? 10 : 0;
+      total += q3;
+      breakdown.push(['Q3', q3, 'Importance ratio meaning']);
+
+      const q4 = answers.q4 === 'B' ? 10 : 0;
+      total += q4;
+      breakdown.push(['Q4', q4, 'Clipping protects stability']);
+
+      const q5hits = gradeRichText(textValue('q5'), [['group mean', 'sample mean', 'baseline from the group'], ['no value network', 'replace the value network']]);
+      const q5 = q5hits >= 2 ? 10 : q5hits * 5;
+      total += q5;
+      breakdown.push(['Q5', q5, 'Group-relative baseline']);
+
+      const q6 = answers.q6 === 'B' ? 10 : 0;
+      total += q6;
+      breakdown.push(['Q6', q6, 'Lesson 10 mapping']);
+
+      const q7hits = gradeRichText(textValue('q7'), [['projection', 'subspace'], ['low-rank', 'rank-r']]);
+      const q7 = q7hits >= 2 ? 10 : q7hits * 5;
+      total += q7;
+      breakdown.push(['Q7', q7, 'LoRA as projection into low-rank subspace']);
+
+      const q8 = answers.q8 === 'A' ? 10 : 0;
+      total += q8;
+      breakdown.push(['Q8', q8, 'Reverse KL is mode-seeking']);
+
+      const q9hits = gradeRichText(textValue('q9'), [['degenerate', 'degeneracy', 'reward hacking', 'game the metric'], ['single metric', 'single-objective'], ['sacrifice', 'lose other qualities', 'tone-deaf', 'unbalanced']]);
+      const q9 = Math.min(15, q9hits * 5);
+      total += q9;
+      breakdown.push(['Q9', q9, 'Single-objective reward risk']);
+
+      const q10hits = gradeRichText(textValue('q10'), [['dpo', 'direct preference optimization'], ['pairwise', 'two responses', 'preference'], ['less compute', 'minimal compute', 'cheaper']]);
+      const q10 = Math.min(15, q10hits * 5);
+      total += q10;
+      breakdown.push(['Q10', q10, 'G=2 equivalence']);
+
+      const q11hits = gradeRichText(textValue('q11'), [['attention heads', 'specialized heads', 'circuits'], ['emerge', 'rewire', 'architectural'], ['reward function', 'gradient sculpted', 'internal architecture']]);
+      const q11 = Math.min(15, q11hits * 5);
+      total += q11;
+      breakdown.push(['Q11', q11, 'Thinking Sparks implication']);
+
+      const q12Value = textValue('q12');
+      let q12 = 0;
+      let missing = [];
+      if (q12Value.length < 220) {
+        q12 = 0;
+        missing = ['minimum length not met'];
+      } else {
+        const hasGroup = containsAny(q12Value, ['group', 'relative', 'above average', 'below average', 'advantage']);
+        const hasClip = containsAny(q12Value, ['clip', 'bounded', 'trust region', 'limit the change']);
+        const hasGradient = containsAny(q12Value, ['gradient', 'update', 'ascent', 'change the model', 'parameter']);
+        const count = [hasGroup, hasClip, hasGradient].filter(Boolean).length;
+        if (count === 3) q12 = 35;
+        if (count === 2) q12 = 22;
+        if (count < 2) q12 = 0;
+        if (!hasGroup) missing.push('relative group comparison');
+        if (!hasClip) missing.push('bounded policy updating');
+        if (!hasGradient) missing.push('gradient-driven model change');
+      }
+      total += q12;
+      breakdown.push(['Q12', q12, missing.length ? 'Missing: ' + missing.join(', ') : 'All three structural elements present']);
+
+      const pass = total >= 160;
+      const scoreLine = document.getElementById('scoreLine');
+      scoreLine.textContent = total + ' / 200';
+      scoreLine.className = 'score ' + (pass ? 'pass' : 'fail');
+
+      document.getElementById('resultSummary').textContent =
+        pass
+          ? 'Passing threshold reached. The mechanism held under compression: you demonstrated the course as a composed training system, not a collection of disconnected terms.'
+          : 'Passing threshold not reached. The weak spots are structural, not cosmetic. The score indicates that some of the load-bearing pieces of the capstone are still unstable under pressure.';
+
+      const breakdownNode = document.getElementById('breakdown');
+      breakdownNode.innerHTML = '';
+      breakdown.forEach(([label, score, note]) => {
+        const row = document.createElement('div');
+        row.innerHTML = '<strong>' + label + ': ' + score + ' points</strong><br>' + note;
+        breakdownNode.appendChild(row);
+      });
+
+      document.getElementById('timeoutNote').textContent = fromTimeout
+        ? 'Exam auto-submitted at time expiration.'
+        : 'Exam submitted before time expiration.';
+
+      document.getElementById('result').classList.add('show');
+      document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    updateTimer();
+  </script>
+</body>
+</html>

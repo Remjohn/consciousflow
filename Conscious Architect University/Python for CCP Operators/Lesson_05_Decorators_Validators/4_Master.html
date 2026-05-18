@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decorators & Validators — Master Assessment</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#020202;--surface:#0a0a0a;--surface2:#111;
+  --text:#E0E0E0;--muted:#666;--border:#222;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6;overflow-x:hidden;}
+.container{max-width:720px;margin:0 auto;padding:4rem 2rem 10rem;}
+
+h1{font-family:var(--mono);font-size:1.4rem;font-weight:600;margin-bottom:0.5rem;letter-spacing:-0.02em;text-transform:uppercase;}
+h2{font-size:1.1rem;font-weight:500;margin:2rem 0 1rem;color:var(--accent);}
+p{margin-bottom:1.5rem;color:var(--muted);font-size:0.95rem;}
+
+.hud{position:fixed;top:0;left:0;width:100%;background:rgba(2,2,2,0.95);border-bottom:1px solid var(--border);padding:0.75rem 2rem;display:flex;justify-content:space-between;align-items:center;z-index:100;font-family:var(--mono);font-size:0.8rem;}
+.hud-title{color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;}
+.hud-timer{color:var(--accent);font-weight:600;}
+.hud-timer.danger{color:var(--red);animation:pulse 1s infinite;}
+@keyframes pulse{0%{opacity:1;}50%{opacity:0.5;}100%{opacity:1;}}
+
+/* EXAM GRID */
+.q-block{background:var(--surface);border:1px solid var(--border);padding:2rem;margin-bottom:1.5rem;border-radius:4px;}
+.q-num{font-family:var(--mono);font-size:0.65rem;color:var(--accent);text-transform:uppercase;margin-bottom:1rem;letter-spacing:0.1em;}
+.q-text{font-size:1rem;color:#ccc;margin-bottom:1.5rem;}
+.q-code{background:var(--bg);border:1px solid var(--border);padding:1rem;font-family:var(--mono);font-size:0.85rem;color:var(--muted);margin-bottom:1.5rem;overflow-x:auto;}
+
+.choices{display:flex;flex-direction:column;gap:0.75rem;margin-bottom:1rem;}
+.choice-label{display:flex;align-items:flex-start;gap:1rem;padding:1rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:all 0.15s;}
+.choice-label:hover{background:var(--surface2);border-color:#444;}
+.choice-input{margin-top:0.25rem;}
+.choice-text{font-size:0.9rem;color:#bbb;}
+
+.inp-text, .inp-area{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:0.9rem;padding:0.85rem;border-radius:4px;transition:border-color 0.2s;}
+.inp-text:focus, .inp-area:focus{outline:none;border-color:var(--accent);}
+.inp-area{min-height:100px;resize:vertical;}
+
+.btn-submit{display:block;width:100%;background:var(--text);color:var(--bg);border:none;padding:1rem;font-family:var(--mono);font-weight:600;font-size:0.9rem;text-transform:uppercase;letter-spacing:0.1em;border-radius:4px;margin-top:3rem;cursor:pointer;transition:all 0.2s;}
+.btn-submit:hover{background:var(--accent);}
+.btn-submit:disabled{opacity:0.5;cursor:not-allowed;pointer-events:none;}
+
+/* RESULTS */
+.results-pane{display:none;margin-top:2rem;padding:2rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+.score-display{font-family:var(--mono);font-size:3rem;font-weight:600;margin-bottom:1rem;text-align:center;}
+.score-display.pass{color:var(--green);}
+.score-display.fail{color:var(--red);}
+.fb-row{display:flex;justify-content:space-between;padding:0.75rem 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:0.8rem;}
+.fb-row.err{color:var(--red);}
+.fb-row.ok{color:var(--green);}
+
+</style>
+</head>
+<body>
+
+<div class="hud">
+  <div class="hud-title">Terminal Capstone — Validation Contracts</div>
+  <div class="hud-timer" id="timer">12:00</div>
+</div>
+
+<div class="container" id="exam-container">
+  <h1>Lesson 05 Assessment</h1>
+  <p>12 minutes. 160 points required to pass. Structural and analytical defects heavily penalized. No visualizations. Proceed.</p>
+
+  <!-- Q1 -->
+  <div class="q-block">
+    <div class="q-num">Question 01 — Structural Order (25 pts)</div>
+    <div class="q-text">
+      An Architect layers three decorators over a <code>launch_rocket()</code> function. From top to bottom (visually in the code block stack): <code>@verify_clearance</code>, <code>@log_launch</code>, <code>@timeout(3)</code>.<br><br>
+      When the <code>launch_rocket()</code> function is invoked by an external trigger, which decorator's internal logic executes <strong>first</strong>?
+    </div>
+    <div class="choices">
+      <label class="choice-label"><input type="radio" name="q1" value="a" class="choice-input"><span class="choice-text"><code>@timeout(3)</code> executes first because it is physically closest to the function def.</span></label>
+      <label class="choice-label"><input type="radio" name="q1" value="b" class="choice-input"><span class="choice-text"><code>@verify_clearance</code> executes first because it forms the outermost wrapper shell.</span></label>
+      <label class="choice-label"><input type="radio" name="q1" value="c" class="choice-input"><span class="choice-text">They execute simultaneously in parallel to reduce processing latency.</span></label>
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="q-block">
+    <div class="q-num">Question 02 — Data Containment (25 pts)</div>
+    <div class="q-text">
+      The QA department receives this JSON payload from an LLM generator: <code>{"user_id": "495A", "action": "delete"}</code>. The exact Pydantic schema expects <code>user_id</code> to be an integer.<br><br>
+      Which sovereign protocol must the Pydantic validator execute?
+    </div>
+    <div class="choices">
+      <label class="choice-label"><input type="radio" name="q2" value="a" class="choice-input"><span class="choice-text">Automatically convert "495A" to a safe default like `0` to prevent halting.</span></label>
+      <label class="choice-label"><input type="radio" name="q2" value="b" class="choice-input"><span class="choice-text">Strip the "A" and cast "495" to an integer so processing can continue with corrupted data.</span></label>
+      <label class="choice-label"><input type="radio" name="q2" value="c" class="choice-input"><span class="choice-text">Raise a ValidationError immediately, halting execution to trigger an automated upstream retry loop.</span></label>
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="q-block">
+    <div class="q-num">Question 03 — Syntactic Recognition (25 pts)</div>
+    <div class="q-text">
+      You need to apply a validator to the <code>safety_score</code> attribute in a Pydantic V2 BaseModel. Type the exact Pydantic decorator syntax you must use above the verification function.
+    </div>
+    <input type="text" id="q3-inp" class="inp-text" placeholder="e.g. @decorator_name('field')">
+  </div>
+
+  <!-- Q4 -->
+  <div class="q-block">
+    <div class="q-num">Question 04 — The Null Defect (25 pts)</div>
+    <div class="q-text">
+      A Pydantic constraint contains this logic:
+    </div>
+    <div class="q-code">
+@field_validator('threat_level')
+def check_threat(cls, v):
+    if v == "HIGH":
+        logger.warning("Threat level is High!")
+    </div>
+    <div class="q-text">
+      What catastrophic architectural omission exists in this validator that will cause a crash downstream even if the object successfully instantiates?
+    </div>
+    <div class="choices">
+      <label class="choice-label"><input type="radio" name="q4" value="a" class="choice-input"><span class="choice-text">It forgot to raise a ValueError during the True condition.</span></label>
+      <label class="choice-label"><input type="radio" name="q4" value="b" class="choice-input"><span class="choice-text">It failed to <code>return v</code>, meaning the field becomes <code>None</code> and crashes the database.</span></label>
+      <label class="choice-label"><input type="radio" name="q4" value="c" class="choice-input"><span class="choice-text">It did not convert the string "HIGH" into a boolean.</span></label>
+    </div>
+  </div>
+
+  <!-- Q5 Feynman Compression -->
+  <div class="q-block" style="border-color:var(--accent);">
+    <div class="q-num" style="color:var(--accent);">Question 05 — Feynman Compression (100 pts)</div>
+    <div class="q-text">
+      In exactly one sentence, describe what a Pydantic Validation decorator actually is functionally doing to the generative LLM pipeline.
+    </div>
+    <textarea id="q5-inp" class="inp-area" placeholder="Write exactly one sentence..."></textarea>
+    <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-top:0.5rem;text-align:right;">Target: [STRUCTURAL BOUNDARY / REJECT / HALT / PHYSICS]</div>
+  </div>
+
+  <button class="btn-submit" id="submitBtn" onclick="gradeExam()">Lock & Evaluate</button>
+</div>
+
+<div class="container" id="results-container" style="display:none;padding-top:2rem;">
+  <div class="results-pane" id="rpane" style="display:block;">
+    <div class="score-display" id="fscore">0/200</div>
+    <div style="text-align:center;font-family:var(--mono);color:var(--muted);margin-bottom:2rem;letter-spacing:0.1em;text-transform:uppercase;" id="fstatus">STATUS</div>
+    <div id="fb-list"></div>
+  </div>
+</div>
+
+<script>
+// --- TIMER ---
+let timeRemaining = 720; 
+let timerInterval;
+const tDisplay = document.getElementById('timer');
+
+function updateTimer() {
+  const m = Math.floor(timeRemaining / 60);
+  const s = timeRemaining % 60;
+  tDisplay.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+  if (timeRemaining <= 60) tDisplay.classList.add('danger');
+  if (timeRemaining <= 0) {
+    clearInterval(timerInterval);
+    gradeExam();
+  }
+  timeRemaining--;
+}
+timerInterval = setInterval(updateTimer, 1000);
+
+// --- GRADING ---
+function getRadio(name) {
+  const els = document.getElementsByName(name);
+  for(let i=0; i<els.length; i++) {
+    if(els[i].checked) return els[i].value;
+  }
+  return null;
+}
+
+function gradeExam() {
+  clearInterval(timerInterval);
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('exam-container').style.display = 'none';
+  document.getElementById('results-container').style.display = 'block';
+
+  let score = 0;
+  let log = '';
+
+  const q1 = getRadio('q1');
+  const q2 = getRadio('q2');
+  const q3 = document.getElementById('q3-inp').value.trim();
+  const q4 = getRadio('q4');
+  const q5 = document.getElementById('q5-inp').value.trim().toLowerCase();
+
+  // Q1 Check (25)
+  if (q1 === 'b') { score += 25; log += `<div class="fb-row ok"><span>Q1. Shell Order Evaluation</span><span>+25</span></div>`; }
+  else { log += `<div class="fb-row err"><span>Q1. Shell Defect (Target: Outer shell evaluates first)</span><span>0</span></div>`; }
+
+  // Q2 Check (25)
+  if (q2 === 'c') { score += 25; log += `<div class="fb-row ok"><span>Q2. Containment Protocol</span><span>+25</span></div>`; }
+  else { log += `<div class="fb-row err"><span>Q2. Containment Defect (Never cast or mutate to hide errors)</span><span>0</span></div>`; }
+
+  // Q3 Check (25)
+  const q3clean = q3.replace(/\s/g, '').replace(/"/g, "'");
+  if (q3clean === "@field_validator('safety_score')") {
+    score += 25; log += `<div class="fb-row ok"><span>Q3. Syntax Precise</span><span>+25</span></div>`;
+  } else {
+    log += `<div class="fb-row err"><span>Q3. Syntax Defect (Target: @field_validator('safety_score'))</span><span>0</span></div>`;
+  }
+
+  // Q4 Check (25)
+  if (q4 === 'b') { score += 25; log += `<div class="fb-row ok"><span>Q4. Null Defect Identified</span><span>+25</span></div>`; }
+  else { log += `<div class="fb-row err"><span>Q4. Trace Error (Failed to return v forces NoneType)</span><span>0</span></div>`; }
+
+  // Q5 Check (100)
+  let q5score = 0;
+  if(q5.includes('bound') || q5.includes('barrier') || q5.includes('shell')) q5score += 40;
+  if(q5.includes('reject') || q5.includes('halt') || q5.includes('error')) q5score += 40;
+  if(q5.includes('physics') || q5.includes('law') || q5.includes('structur')) q5score += 20;
+
+  score += q5score;
+  const q5cls = q5score >= 80 ? 'ok' : 'err';
+  log += `<div class="fb-row ${q5cls}"><span>Q5. Concept Compression</span><span>+${q5score}</span></div>`;
+
+  // Render Display
+  const sd = document.getElementById('fscore');
+  const st = document.getElementById('fstatus');
+  sd.textContent = `${score}/200`;
+  
+  if (score >= 160) {
+    sd.classList.add('pass');
+    st.textContent = "VALIDATION GRANTED. LAYER CLEAR.";
+  } else {
+    sd.classList.add('fail');
+    st.textContent = "CRITICAL DEFECT DETECTED. RETRY.";
+  }
+  
+  document.getElementById('fb-list').innerHTML = log;
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>

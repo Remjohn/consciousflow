@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Change of Basis — Cognitive Exposure</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0A;--surface:#151515;--surface2:#1e1e1e;--surface3:#2A2A2A;
+  --text:#FAFAFA;--muted:#A0A0A0;--border:#2e2e2e;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--serif:'Playfair Display',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.65;overflow-x:hidden;}
+.container{max-width:780px;margin:0 auto;padding:4rem 2rem 10rem;}
+
+h1{font-family:var(--serif);font-size:clamp(2.5rem,6vw,3.8rem);line-height:1.0;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-family:var(--serif);font-size:1.9rem;margin-bottom:1rem;color:var(--accent);}
+p{margin-bottom:1.4rem;color:var(--muted);font-size:1rem;line-height:1.7;}
+strong{color:var(--text);}
+
+/* FAILURE ANCHOR */
+.failure-anchor{background:rgba(231,111,81,0.06);border:1px solid rgba(231,111,81,0.25);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:1.5rem 1.75rem;margin-bottom:2.5rem;}
+.fa-label{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--red);margin-bottom:0.6rem;}
+.fa-text{color:#ffb3a1;font-size:0.92rem;line-height:1.65;}
+
+/* SCOUT CARDS */
+.scout-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:1.5rem 0 2rem;}
+.scout-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.1rem;}
+.scout-title{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem;}
+.scout-row{display:flex;justify-content:space-between;font-size:0.82rem;padding:0.22rem 0;border-bottom:1px solid var(--border);}
+.scout-row:last-child{border-bottom:none;}
+.scout-dim{color:var(--muted);}
+.scout-val{font-family:var(--mono);color:var(--text);font-weight:500;}
+.scout-note{margin-top:0.65rem;font-family:var(--mono);font-size:0.68rem;color:var(--accent);}
+
+/* INTERACTION BOX */
+.interaction-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2.25rem;margin:2rem 0;}
+.interaction-header{font-family:var(--mono);font-size:0.7rem;color:var(--accent);text-transform:uppercase;margin-bottom:1.25rem;letter-spacing:0.12em;padding-bottom:0.6rem;border-bottom:1px solid var(--border);}
+.question-text{font-size:1.05rem;font-weight:500;margin-bottom:1.75rem;color:#fff;line-height:1.6;}
+
+.input-group{display:flex;gap:1rem;align-items:center;margin-bottom:0.5rem;}
+.input-field{background:var(--bg);border:2px solid var(--border);color:#fff;font-family:var(--mono);font-size:1.4rem;padding:0.7rem 1rem;width:110px;border-radius:4px;text-align:center;transition:border-color 0.2s;}
+.input-field:focus{outline:none;border-color:var(--accent);}
+.input-field:disabled{opacity:0.45;cursor:not-allowed;}
+.input-text{background:var(--bg);border:2px solid var(--border);color:#fff;font-family:var(--mono);font-size:0.95rem;padding:0.7rem 1rem;flex:1;border-radius:4px;transition:border-color 0.2s;}
+.input-text:focus{outline:none;border-color:var(--accent);}
+.input-text:disabled{opacity:0.45;cursor:not-allowed;}
+
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.7rem 1.4rem;font-family:var(--sans);font-weight:600;font-size:0.95rem;border-radius:4px;cursor:pointer;transition:all 0.18s;}
+.btn:hover:not(:disabled){background:#fff;transform:translateY(-1px);}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);padding:0.65rem 1.25rem;}
+.btn-outline:hover:not(:disabled){border-color:var(--text);background:var(--surface2);}
+
+.choices{display:flex;flex-direction:column;gap:0.85rem;margin-bottom:0.5rem;}
+.choice-btn{text-align:left;padding:1rem 1.2rem;background:var(--bg);border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;transition:all 0.18s;font-size:0.92rem;font-weight:400;font-family:var(--sans);line-height:1.5;}
+.choice-btn:hover{border-color:var(--text);color:var(--text);}
+.choice-btn.selected-wrong{border-color:var(--red);color:var(--red);background:rgba(231,111,81,0.05);}
+.choice-btn.selected-right{border-color:var(--green);color:var(--green);background:rgba(42,157,143,0.05);}
+
+/* FEEDBACK */
+.feedback{display:none;margin-top:1.5rem;padding:1.25rem 1.5rem;border-radius:4px;font-size:0.9rem;line-height:1.65;}
+.feedback.visible{display:block;animation:fadein 0.35s;}
+.feedback.error{background:rgba(231,111,81,0.08);border-left:3px solid var(--red);color:#ffb3a1;}
+.feedback.success{background:rgba(42,157,143,0.08);border-left:3px solid var(--green);color:#a7ece2;}
+.feedback.neutral{background:rgba(232,196,106,0.08);border-left:3px solid var(--accent);color:#f3dfaa;}
+.feedback-title{font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;margin-bottom:0.5rem;font-weight:600;letter-spacing:0.1em;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+/* PREDICTION LOCK DISPLAY */
+.lock-display{display:none;margin-top:1rem;padding:0.9rem 1.1rem;background:var(--surface2);border-radius:4px;font-family:var(--mono);font-size:0.82rem;color:var(--muted);}
+.lock-display.visible{display:flex;gap:1.5rem;align-items:center;}
+.lock-item{display:flex;flex-direction:column;gap:0.15rem;}
+.lock-label{font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;}
+.lock-val{font-size:1.1rem;font-weight:500;}
+.lock-val.predicted{color:var(--accent);}
+.lock-val.actual{color:var(--green);}
+.lock-val.wrong{color:var(--red);}
+
+/* GATED CONTENT */
+.gated-content{opacity:0;pointer-events:none;transform:translateY(16px);transition:all 0.45s ease;display:none;}
+.gated-content.unlocked{opacity:1;pointer-events:auto;transform:translateY(0);display:block;}
+
+/* GAUNTLET */
+.gauntlet-wrap{margin-top:4rem;border-top:2px solid var(--border);padding-top:3rem;}
+.gauntlet-intro{font-size:0.88rem;color:var(--muted);margin-bottom:2rem;padding:1rem 1.25rem;background:var(--surface2);border-radius:4px;border-left:2px solid var(--border);}
+.q-block{background:var(--surface2);padding:1.4rem 1.5rem;border-radius:6px;margin-bottom:1.25rem;border:1px solid var(--border);}
+.q-num{font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.4rem;letter-spacing:0.1em;}
+.q-text{font-size:1rem;margin-bottom:1.25rem;font-weight:500;color:#fff;line-height:1.55;}
+.q-misconception{font-family:var(--mono);font-size:0.65rem;color:rgba(232,196,106,0.45);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.08em;}
+
+/* SECTION DIVIDER */
+.divider{border:none;border-top:1px solid var(--border);margin:3rem 0;}
+
+/* MISCONCEPTION CALLOUT (inside gauntlet error feedback) */
+.mc-tag{display:inline-block;font-family:var(--mono);font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(231,111,81,0.15);color:var(--red);padding:0.15rem 0.45rem;border-radius:2px;margin-bottom:0.4rem;}
+
+@media(max-width:600px){
+  .scout-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- LAYER TAG -->
+  <div style="font-family:var(--mono);font-size:0.7rem;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.15em;">Lesson 07 · Layer 1 — Cognitive Exposure</div>
+  <h1>The Coordinate Illusion</h1>
+
+  <!-- REAL FAILURE ANCHOR -->
+  <div class="failure-anchor">
+    <div class="fa-label">Real Failure Case — The Basis Collision</div>
+    <div class="fa-text">In 2023, a production coaching AI began generating identically-structured formal responses to every user — regardless of their emotional state. A crying client got the same phrasing as an excited one. Diagnosis: the "Formality" steering vector had been applied at α = 2.0, and the "Empathy" dimension was not orthogonal to it — so Formality overwrote Empathy at every step. The team had treated two basis vectors as independent when they were not. The model was measuring the same thing twice under different names. The fix required a complete change of basis — discovering the independent axes that actually spanned the coaching behavior space. That is what this lesson teaches.</div>
+  </div>
+
+  <!-- HOOK: THE FOOTBALL SCOUT -->
+  <p>Before we touch a single matrix, we need to understand the fundamental illusion at the heart of all coordinate systems. The illusion is this: <strong>coordinates are not the thing they describe.</strong></p>
+
+  <p>You are a football scout. You watch the same 23-year-old midfielder play three matches. You write three scouting reports — each using a different measurement system:</p>
+
+  <div class="scout-grid">
+    <div class="scout-card">
+      <div class="scout-title">Report 1 — Physical</div>
+      <div class="scout-row"><span class="scout-dim">Speed</span><span class="scout-val">8/10</span></div>
+      <div class="scout-row"><span class="scout-dim">Strength</span><span class="scout-val">6/10</span></div>
+      <div class="scout-row"><span class="scout-dim">Endurance</span><span class="scout-val">9/10</span></div>
+      <div class="scout-note">Basis: Physical axes</div>
+    </div>
+    <div class="scout-card">
+      <div class="scout-title">Report 2 — Positional</div>
+      <div class="scout-row"><span class="scout-dim">Offensive</span><span class="scout-val">7/10</span></div>
+      <div class="scout-row"><span class="scout-dim">Defensive</span><span class="scout-val">5/10</span></div>
+      <div class="scout-row"><span class="scout-dim">Transitional</span><span class="scout-val">8/10</span></div>
+      <div class="scout-note">Basis: Positional axes</div>
+    </div>
+    <div class="scout-card">
+      <div class="scout-title">Report 3 — Intelligence</div>
+      <div class="scout-row"><span class="scout-dim">Decision-making</span><span class="scout-val">9/10</span></div>
+      <div class="scout-row"><span class="scout-dim">Spatial awareness</span><span class="scout-val">8/10</span></div>
+      <div class="scout-row"><span class="scout-dim">Anticipation</span><span class="scout-val">7/10</span></div>
+      <div class="scout-note">Basis: Intelligence axes</div>
+    </div>
+  </div>
+
+  <p>Three reports. Three entirely different sets of numbers. <strong>Same player.</strong> The player didn't change between reports. The <em>measurement system</em> changed. Each measurement system is a <strong>basis</strong> — a set of independent axes that define how you describe something. Switching between them is <strong>change of basis</strong>. And this is the operation that governs everything from Fourier Transforms to KV-Direct's 27× compression advantage.</p>
+
+  <!-- PREDICTION GATE 01 — THE MAGNITUDE TRAP -->
+  <div class="interaction-box" id="trap1">
+    <div class="interaction-header">Prediction Gate 01 — The Magnitude Trap</div>
+    <div class="question-text">
+      The CCP applies two orthogonal steering vectors simultaneously:<br>
+      <strong>Formality</strong> = <code style="color:var(--accent);">[3, 0]</code> &nbsp;&nbsp; <strong>Empathy</strong> = <code style="color:var(--accent);">[0, 4]</code><br><br>
+      If dimensions mixed like liquids — linearly combining their magnitudes — the result would have magnitude <strong>7</strong>.<br><br>
+      What is the <em>actual mathematical magnitude</em> of the combined vector?
+    </div>
+    <div class="input-group">
+      <input type="number" id="pred1" class="input-field" placeholder="?">
+      <button class="btn" id="btn1" onclick="submitTrap1()">Lock Prediction</button>
+    </div>
+    <div class="lock-display" id="lock1"></div>
+    <div class="feedback" id="fb1"></div>
+  </div>
+
+  <!-- GATE 2: MASTERY GATE — unlocks after trap 1 -->
+  <div class="gated-content" id="gate2-content">
+
+    <p>The key insight from that trap: <strong>orthogonal dimensions do not mix linearly — they mix by Pythagoras.</strong> But there's a deeper principle underneath this. Now test whether you've understood it.</p>
+
+    <div class="interaction-box">
+      <div class="interaction-header">Mastery Gate — Object vs. Ruler</div>
+      <div class="question-text">A star has a fixed physical position in space. It currently sits at coordinate <strong>[2, 2]</strong> in our measurement grid. We now apply a matrix that rotates the measurement grid itself 45 degrees. The grid lines physically move beneath the star. What happens to the star?</div>
+
+      <div class="choices">
+        <button class="choice-btn" onclick="checkGate2(this, false)">A. The star physically moves to a new location in space.</button>
+        <button class="choice-btn" onclick="checkGate2(this, false)">B. The star moves closer to the origin as the grid rotates.</button>
+        <button class="choice-btn" onclick="checkGate2(this, true)">C. The star does not move. Only its coordinate description changes.</button>
+      </div>
+      <div class="feedback" id="fb2"></div>
+    </div>
+
+  </div>
+
+  <!-- FINAL: GAUNTLET — unlocks after gate 2 -->
+  <div class="gated-content" id="final-content">
+
+    <hr class="divider">
+
+    <div class="gauntlet-wrap">
+      <h2>Exposure Gauntlet</h2>
+      <div class="gauntlet-intro">
+        7 questions. Each targets a specific misconception that learners bring to change of basis. Predict, lock, and confront your prior assumptions. The feedback names the exact misconception each error reveals.
+      </div>
+      <div id="q-container"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// ── TRAP 1: MAGNITUDE ─────────────────────────────────────────────────────
+function submitTrap1() {
+  const raw = document.getElementById('pred1').value;
+  if (raw === '') return;
+  const v = parseFloat(raw);
+  const btn = document.getElementById('btn1');
+  btn.disabled = true;
+  document.getElementById('pred1').disabled = true;
+
+  const lock = document.getElementById('lock1');
+  const fb = document.getElementById('fb1');
+  lock.classList.add('visible');
+  fb.classList.add('visible');
+
+  const actual = 5;
+  const isCorrect = v === actual;
+
+  lock.innerHTML = `
+    <div class="lock-item"><span class="lock-label">Your prediction</span><span class="lock-val ${isCorrect ? 'actual' : 'wrong'}">${v}</span></div>
+    <div class="lock-item"><span class="lock-label">Actual magnitude</span><span class="lock-val actual">${actual}</span></div>
+    <div class="lock-item"><span class="lock-label">Formula</span><span class="lock-val" style="color:var(--muted);font-size:0.85rem;">√(3² + 4²) = √25 = 5</span></div>
+  `;
+
+  if (v === 7) {
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title">Misconception Trapped — Linear Mixing</div>You predicted 7, which is the result if magnitudes added linearly like water in cups. They don't. Orthogonal dimensions are governed by the Pythagorean theorem, not arithmetic addition. The dimensions are <em>independent</em> — combining them does not simply sum their lengths. This is not a rounding issue. The answer is categorically different from 7.`;
+  } else if (isCorrect) {
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">Correct — Pythagorean Independence</div>You avoided the linear mixing trap. Orthogonal dimensions cannot combine their magnitudes directly. Pythagoras is the law that governs independent axes.`;
+  } else {
+    fb.classList.add('neutral');
+    fb.innerHTML = `<div class="feedback-title">Incorrect Calculation — Check Formula</div>You predicted ${v}. The actual answer is 5, using: √(3² + 4²) = √(9 + 16) = √25 = 5. The principle: orthogonal vector magnitudes combine by Pythagorean theorem, not arithmetic sum.`;
+  }
+
+  setTimeout(() => document.getElementById('gate2-content').classList.add('unlocked'), isCorrect ? 1400 : 2800);
+}
+
+// ── GATE 2: OBJECT VS RULER ───────────────────────────────────────────────
+function checkGate2(btn, correct) {
+  document.querySelectorAll('#gate2-content .choice-btn').forEach(c => c.style.pointerEvents = 'none');
+  const fb = document.getElementById('fb2');
+  fb.classList.add('visible');
+
+  if (correct) {
+    btn.classList.add('selected-right');
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">Correct — Object vs. Ruler</div>The star is the vector. The coordinate grid is the <em>basis</em> — the ruler you use to measure the vector's position. Rotating the ruler changes the numbers you use to describe the star, but the star itself is invariant. This is the foundational principle: a vector exists independently of the coordinate system used to describe it.`;
+    setTimeout(() => {
+      document.getElementById('final-content').classList.add('unlocked');
+      renderGauntlet();
+    }, 1400);
+  } else {
+    btn.classList.add('selected-wrong');
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title">Misconception — Basis Change Moves the Object</div>Changing the coordinate grid does NOT physically translate objects. The star is a physical reality. Its coordinates are just a description using the current measurement system. When you switch measurement systems, the description changes — not the reality. Resetting in 3 seconds…`;
+    setTimeout(() => {
+      document.querySelectorAll('#gate2-content .choice-btn').forEach(c => {
+        c.style.pointerEvents = 'auto';
+        c.classList.remove('selected-wrong');
+      });
+      fb.classList.remove('visible', 'error');
+      fb.innerHTML = '';
+    }, 3000);
+  }
+}
+
+// ── GAUNTLET DATA ─────────────────────────────────────────────────────────
+// Each question targets one of the 5 named misconceptions from the chapter
+const G_DATA = [
+  {
+    num: '01',
+    target: 'Misconception 1 — Changing basis changes the vector',
+    q: 'A Transformer re-expresses the embedding vector for the word "bank" in a new, layer-specific basis at Layer 12. The word\'s actual semantic identity — its position in concept space — has now been altered by this transformation.',
+    type: 'bool',
+    ans: false,
+    exp: 'False. Misconception 1 trapped. The semantic identity of "bank" is the vector — a fixed geometric object. The layer-specific basis is the measurement system used to describe it. Changing the measurement system changes the numbers, not the meaning. The vector\'s position in concept space is invariant across all valid basis changes.'
+  },
+  {
+    num: '02',
+    target: 'Misconception 2 — There is one correct basis',
+    q: 'The standard basis {[1, 0], [0, 1]} is mathematically more "correct" or "natural" than the football scout\'s Intelligence basis {Decision-making, Spatial awareness, Anticipation}.',
+    type: 'bool',
+    ans: false,
+    exp: 'False. Misconception 2 trapped. No valid basis has mathematical privilege over another. The standard basis is convenient for human computation but is not more "real." The correct basis is whichever makes your specific question easiest to answer. For "Will this player read the game?", the Intelligence basis is more natural than [1, 0].'
+  },
+  {
+    num: '03',
+    target: 'Misconception 3 — Embeddings are human-readable',
+    q: 'The 768 dimension values in a Transformer embedding for the word "courage" directly correspond to human-interpretable concepts such as "bravery," "persistence," and "confidence."',
+    type: 'bool',
+    ans: false,
+    exp: 'False. Misconception 3 trapped. Embeddings are in the model\'s learned basis — not a human-designed basis. Each dimension encodes a mixture of learned features that the model discovered during training. Dimension 47 might encode "formality + technical register + sentence position" simultaneously — no single human label covers it. Interpretability research is precisely the problem of finding the rotation matrix that converts from the model\'s basis to a human-readable one.'
+  },
+  {
+    num: '04',
+    target: 'Misconception 4 — More basis vectors means more information',
+    q: 'In 2D space, if you define three basis vectors instead of two, you gain access to more of the 2D plane than you could reach with only two.',
+    type: 'bool',
+    ans: false,
+    exp: 'False. Misconception 4 trapped. In n-dimensional space, you need exactly n independent basis vectors. A third vector in 2D space is always expressible as a linear combination of the first two — it adds no new directions you couldn\'t already reach. Adding more creates redundancy, not additional capacity. The basis must be exactly the right size: n vectors for n-dimensional space.'
+  },
+  {
+    num: '05',
+    target: 'Misconception 5 — K and V caches store independent information',
+    q: 'The Key matrix (K) and Value matrix (V) stored in a Transformer\'s KV cache at each layer contain mathematically independent information that cannot be derived from anything else stored in the network.',
+    type: 'bool',
+    ans: false,
+    exp: 'False. Misconception 5 trapped. K and V at every layer are deterministic linear transformations of the residual stream vector: K = W_K · h and V = W_V · h. Because W_K and W_V are fixed after training, K and V contain zero independent information beyond what h already encodes. Storing K and V for all 24 layers is storing 24 derived translations of the same original. KV-Direct exploits this: store only h, recompute K and V on demand. 27× memory reduction. Zero information loss.'
+  },
+  {
+    num: '06',
+    target: 'Pythagorean independence — Reinforcement',
+    q: 'The steering vector [5, 0] applied simultaneously with [0, 12] produces a combined vector of what magnitude?',
+    type: 'text',
+    ans: '13',
+    exp: '13. Since the two vectors are orthogonal (perpendicular axes), the combined magnitude follows the Pythagorean theorem: √(5² + 12²) = √(25 + 144) = √169 = 13. The magnitudes cannot be added directly (5 + 12 = 17 would be the linear-mixing error). This is a 5–12–13 Pythagorean triple.'
+  },
+  {
+    num: '07',
+    target: 'Basis validity — Linear independence requirement',
+    q: 'You define a 2D measurement system using two basis vectors: b1 = [1, 1] and b2 = [2, 2]. Are these two vectors a valid basis for measuring 2D space? Answer Yes or No.',
+    type: 'text',
+    match: 'no',
+    exp: 'No. b2 = 2 × b1 — b2 is a scalar multiple of b1. They point in exactly the same direction. Two parallel vectors collapse your measurement system into a 1D line: you can only describe points along that single direction, not the entire 2D plane. A valid basis requires linear independence: no vector in the set can be expressed as a combination of the others.'
+  }
+];
+
+function renderGauntlet() {
+  const container = document.getElementById('q-container');
+  let html = '';
+  G_DATA.forEach((item, idx) => {
+    html += `
+    <div class="q-block" id="gq-${idx}">
+      <div class="q-num">Drill ${item.num}</div>
+      <div class="q-misconception">Targets: ${item.target}</div>
+      <div class="q-text">${item.q}</div>
+    `;
+    if (item.type === 'bool') {
+      html += `
+        <div style="display:flex;gap:0.85rem;">
+          <button class="btn btn-outline" onclick="answerG(${idx}, true, this)">True</button>
+          <button class="btn btn-outline" onclick="answerG(${idx}, false, this)">False</button>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="input-group" style="margin-bottom:0;">
+          <input type="text" id="gInput-${idx}" class="input-text" placeholder="Type answer and lock…">
+          <button class="btn" onclick="answerGText(${idx}, this)">Lock</button>
+        </div>
+      `;
+    }
+    html += `<div class="feedback" id="gfb-${idx}"></div></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function answerG(idx, val, btn) {
+  const block = document.getElementById(`gq-${idx}`);
+  block.querySelectorAll('button').forEach(b => b.style.pointerEvents = 'none');
+  const fb = document.getElementById(`gfb-${idx}`);
+  fb.classList.add('visible');
+
+  if (val === G_DATA[idx].ans) {
+    btn.style.background = 'rgba(42,157,143,0.2)';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">Correct</div>${G_DATA[idx].exp}`;
+  } else {
+    btn.style.background = 'rgba(231,111,81,0.12)';
+    btn.style.borderColor = 'var(--red)';
+    btn.style.color = 'var(--red)';
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="mc-tag">Misconception Identified</div><br>${G_DATA[idx].exp}`;
+  }
+}
+
+function answerGText(idx, btn) {
+  const input = document.getElementById(`gInput-${idx}`);
+  const val = input.value.toLowerCase().trim();
+  if (!val) return;
+  input.disabled = true;
+  btn.disabled = true;
+  const fb = document.getElementById(`gfb-${idx}`);
+  fb.classList.add('visible');
+
+  let correct = false;
+  if (G_DATA[idx].ans) correct = (val === G_DATA[idx].ans.toLowerCase());
+  if (G_DATA[idx].match) correct = val.includes(G_DATA[idx].match);
+
+  if (correct) {
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">Correct</div>${G_DATA[idx].exp}`;
+  } else {
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="mc-tag">Misconception Identified</div><br>${G_DATA[idx].exp}`;
+  }
+}
+</script>
+</body>
+</html>

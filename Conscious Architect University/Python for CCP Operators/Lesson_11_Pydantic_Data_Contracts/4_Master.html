@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pydantic Data Contracts — Terminal Capstone</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050505;--surface:#111;--surface2:#1a1a1a;--surface3:#252525;
+  --text:#f0f0f0;--muted:#888;--border:#333;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;--blue:#56B6C2;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--serif:'Playfair Display',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6;overflow-x:hidden;}
+
+/* HUD TIMER */
+.hud-bar{position:fixed;top:0;left:0;right:0;background:rgba(5,5,5,0.9);border-bottom:1px solid var(--border);padding:0.75rem 2rem;display:flex;justify-content:space-between;align-items:center;z-index:100;backdrop-filter:blur(8px);}
+.hud-title{font-family:var(--mono);font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;}
+.hud-timer{font-family:var(--mono);font-size:1.25rem;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:0.75rem;}
+.hud-timer.warning{color:var(--red);animation:pulse 1s infinite;}
+@keyframes pulse{0%{opacity:1;}50%{opacity:0.5;}100%{opacity:1;}}
+
+.container{max-width:860px;margin:5rem auto 0;padding:2rem 2rem 10rem;}
+h1{font-family:var(--serif);font-size:clamp(2rem,5vw,3rem);line-height:1.1;margin-bottom:0.5rem;}
+.subtitle{font-family:var(--mono);font-size:0.85rem;color:var(--muted);margin-bottom:3rem;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px dashed var(--border);padding-bottom:1.5rem;}
+h2{font-family:var(--sans);font-size:1.4rem;font-weight:600;margin:3rem 0 1.5rem;color:#fff;display:flex;align-items:center;gap:0.75rem;}
+h2::before{content:'';display:block;width:12px;height:12px;background:var(--accent);border-radius:2px;}
+h3{font-size:1.1rem;margin-bottom:1rem;color:var(--accent);font-family:var(--sans);}
+
+p{margin-bottom:1.25rem;color:var(--muted);}
+code.inline{font-family:var(--mono);background:var(--surface2);color:var(--blue);padding:0.15rem 0.35rem;border-radius:3px;font-size:0.85em;}
+pre{background:var(--surface2);padding:1.25rem;border-radius:6px;border:1px solid var(--border);overflow-x:auto;margin-bottom:1.5rem;font-family:var(--mono);font-size:0.85rem;color:#ddd;line-height:1.5;}
+ul{margin-bottom:1.5rem;padding-left:1.5rem;color:var(--muted);}
+li{margin-bottom:0.5rem;}
+
+.exam-block{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2rem;margin-bottom:2rem;position:relative;}
+.pts-badge{position:absolute;top:1rem;right:1rem;font-family:var(--mono);font-size:0.7rem;background:var(--surface3);color:var(--muted);padding:0.3rem 0.6rem;border-radius:4px;letter-spacing:0.05em;}
+
+/* INPUTS */
+.input-area{width:100%;background:var(--bg);border:1px solid var(--border);color:#fff;font-family:var(--mono);font-size:0.88rem;padding:1rem;border-radius:4px;min-height:120px;resize:vertical;margin-bottom:1rem;transition:border-color 0.2s;line-height:1.5;}
+.input-area:focus{outline:none;border-color:var(--accent);}
+.input-area.disabled{opacity:0.6;pointer-events:none;}
+
+.radio-group{display:flex;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem;}
+.radio-label{display:flex;align-items:center;gap:0.5rem;background:var(--bg);border:1px solid var(--border);padding:0.75rem 1rem;border-radius:4px;cursor:pointer;font-size:0.9rem;transition:all 0.2s;}
+.radio-label:hover{background:var(--surface2);}
+.radio-label input{display:none;}
+.radio-label:has(input:checked){border-color:var(--accent);background:rgba(232,196,106,0.1);color:var(--accent);}
+
+/* SUBMIT */
+.submit-btn{background:var(--accent);color:#000;border:none;padding:1rem 2rem;font-family:var(--sans);font-weight:700;font-size:1.1rem;border-radius:4px;cursor:pointer;width:100%;transition:all 0.2s;text-transform:uppercase;letter-spacing:0.1em;}
+.submit-btn:hover{background:#fff;}
+.submit-btn:disabled{opacity:0.5;cursor:not-allowed;}
+
+/* RESULTS */
+.results-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;opacity:0;pointer-events:none;transition:opacity 0.4s;}
+.results-overlay.visible{opacity:1;pointer-events:auto;}
+.results-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3rem;max-width:500px;text-align:center;width:100%;transform:translateY(20px);transition:transform 0.4s;}
+.results-overlay.visible .results-card{transform:translateY(0);}
+.score-circle{width:120px;height:120px;border-radius:50%;border:4px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:2.5rem;color:#fff;margin:0 auto 1.5rem;box-shadow:0 0 30px rgba(232,196,106,0.15);}
+.score-circle.pass{border-color:var(--green);color:var(--green);box-shadow:0 0 30px rgba(42,157,143,0.15);}
+.score-circle.fail{border-color:var(--red);color:var(--red);box-shadow:0 0 30px rgba(231,111,81,0.15);}
+.results-title{font-family:var(--serif);font-size:2rem;margin-bottom:1rem;}
+.results-desc{color:var(--muted);font-size:1rem;margin-bottom:2rem;line-height:1.6;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:#fff;padding:0.75rem 1.5rem;border-radius:4px;cursor:pointer;font-family:var(--sans);font-weight:500;}
+
+/* REPORT */
+.report-block{text-align:left;background:var(--bg);border-radius:6px;padding:1.5rem;border:1px solid var(--border);margin-bottom:1.5rem;max-height:300px;overflow-y:auto;}
+.report-row{display:flex;justify-content:space-between;margin-bottom:0.5rem;font-size:0.9rem;border-bottom:1px dashed var(--border);padding-bottom:0.5rem;}
+.report-row:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+
+</style>
+</head>
+<body>
+
+<div class="hud-bar">
+  <div class="hud-title">Architectural Certification // Level 3</div>
+  <div class="hud-timer" id="timer">12:00</div>
+</div>
+
+<div class="container" id="exam-container">
+  <h1>Terminal Capstone</h1>
+  <div class="subtitle">Lesson 11: Pydantic Data Contracts &bull; 200 Points &bull; 160 Required to Pass</div>
+  <p style="font-family:var(--mono);font-size:0.85rem;color:var(--red);">*Do not rely on reference documentation. Evaluate architectural execution rapidly under pressure. You command the agents; you must catch their structural defects.*</p>
+
+  <!-- SECTION 1 -->
+  <h2>Section 1: Contract Specification</h2>
+  
+  <div class="exam-block">
+    <div class="pts-badge">20 PTS</div>
+    <h3>1.1: The Pi Harness Security Context</h3>
+    <p>Produce the explicit Python Pydantic <code class="inline">BaseModel</code> matching this specification: The CCP requires a data structure restricting Pi Harness Terminal execution. It must include: the exact terminal <code class="inline">target_command</code> (str), a <code class="inline">security_clearance_level</code> (float between 0.0 and 1.0 strictly), a <code class="inline">bash_argument_array</code> (list of strings exactly mapped to size 1, no bigger, no smaller), and an optional <code class="inline">fallback_string</code> tracking mapping to None.</p>
+    <textarea class="input-area" id="q1-1" placeholder="class TerminalExecutionGuard(BaseModel):&#10;    ..."></textarea>
+  </div>
+
+  <div class="exam-block">
+    <div class="pts-badge">20 PTS</div>
+    <h3>1.2: Neo4j Context Premise Return</h3>
+    <p>The CCP extracts history caching structures straight out of Neo4j. The element natively contains: the <code class="inline">session_uuid</code> (str), an embedded <code class="inline">anxiety_trigger_used</code> (bool), and an <code class="inline">impact_velocity</code> (int strictly matching equal/greater than -10, and max upper bound equal to 10).</p>
+    <textarea class="input-area" id="q1-2" placeholder="class Neo4jHistoryExtract(BaseModel):&#10;    ..."></textarea>
+  </div>
+
+  <div class="exam-block">
+    <div class="pts-badge">20 PTS</div>
+    <h3>1.3: DSPy Compilation Payload Parsing</h3>
+    <p>A DSPy output payload must securely encapsulate a <code class="inline">logic_rationale_text</code> (string precisely beneath 80 characters maximally), coupled specifically with an <code class="inline">alignment_classification</code> mapping strictly to three categories: "secure", "insecure", or "neutral". Write the BaseModel.</p>
+    <textarea class="input-area" id="q1-3" placeholder="class VoiceDNAParse(BaseModel):&#10;    ..."></textarea>
+  </div>
+
+  <!-- SECTION 2 -->
+  <h2>Section 2: Defect Triage</h2>
+  <p>Your agent generated the following logic structures spanning 10-20 line bursts. Classify the behavior rapidly.</p>
+
+  <div class="exam-block">
+    <div class="pts-badge">15 PTS</div>
+    <h3>2.1: The Custom Check</h3>
+    <pre><code><span class="hljs-keyword">class</span> <span class="hljs-class">UrgencyEvaluation</span>(BaseModel):
+    urgency_level: <span class="hljs-builtin">int</span>
+    escalated_flag: <span class="hljs-builtin">bool</span>
+
+    <span class="hljs-keyword">def</span> <span class="hljs-builtin">check_escalation</span>(self):
+        <span class="hljs-keyword">if</span> self.urgency_level > <span class="hljs-number">5</span> <span class="hljs-keyword">and not</span> self.escalated_flag:
+            <span class="hljs-keyword">raise</span> ValueError(<span class="hljs-string">"High urgency requires flag"</span>)</code></pre>
+    <div class="radio-group">
+      <label class="radio-label"><input type="radio" name="q2-1" value="correct"> ✅ Correct</label>
+      <label class="radio-label"><input type="radio" name="q2-1" value="omission"> 🔴 Omission (Missing Decorator)</label>
+      <label class="radio-label"><input type="radio" name="q2-1" value="hallucination"> 🟡 Hallucination</label>
+      <label class="radio-label"><input type="radio" name="q2-1" value="misapplication"> 🔵 Misapplication</label>
+    </div>
+  </div>
+
+  <div class="exam-block">
+    <div class="pts-badge">15 PTS</div>
+    <h3>2.2: The Loosely Bound Integer</h3>
+    <pre><code><span class="hljs-keyword">class</span> <span class="hljs-class">ConversationalTurnConfig</span>(BaseModel):
+    client_ident: <span class="hljs-builtin">str</span>
+    turn_count: <span class="hljs-builtin">int</span> = Field(ge=<span class="hljs-number">1</span>)
+    
+<span class="hljs-keyword">def</span> <span class="hljs-builtin">log_interaction</span>(packet: ConversationalTurnConfig):
+    <span class="hljs-keyword">if</span> packet.turn_count == <span class="hljs-number">0</span>:
+        <span class="hljs-keyword">return</span> <span class="hljs-string">"Resetting context"</span></code></pre>
+    <div class="radio-group">
+      <label class="radio-label"><input type="radio" name="q2-2" value="correct"> ✅ Correct</label>
+      <label class="radio-label"><input type="radio" name="q2-2" value="omission"> 🔴 Omission</label>
+      <label class="radio-label"><input type="radio" name="q2-2" value="hallucination"> 🟡 Hallucination</label>
+      <label class="radio-label"><input type="radio" name="q2-2" value="misapplication"> 🔵 Misapplication (Dead Routing Code)</label>
+    </div>
+  </div>
+
+  <div class="exam-block">
+    <div class="pts-badge">15 PTS</div>
+    <h3>2.3: DSPy Routing Trap</h3>
+    <pre><code><span class="hljs-keyword">class</span> <span class="hljs-class">ExecuteDynamicSkill</span>(dspy.Module):
+    <span class="hljs-keyword">def</span> <span class="hljs-builtin">__init__</span>(self):
+        self.prog = dspy.Predict(<span class="hljs-string">"client_state -> DynamicSkillResponse"</span>)</code></pre>
+    <div class="radio-group">
+      <label class="radio-label"><input type="radio" name="q2-3" value="correct"> ✅ Correct</label>
+      <label class="radio-label"><input type="radio" name="q2-3" value="omission"> 🔴 Omission</label>
+      <label class="radio-label"><input type="radio" name="q2-3" value="hallucination"> 🟡 Hallucination (DSPy Struct Syntax)</label>
+      <label class="radio-label"><input type="radio" name="q2-3" value="misapplication"> 🔵 Misapplication</label>
+    </div>
+  </div>
+
+  <div class="exam-block">
+    <div class="pts-badge">15 PTS</div>
+    <h3>2.4: The Clean Perimeter</h3>
+    <pre><code><span class="hljs-keyword">class</span> <span class="hljs-class">PingContext</span>(BaseModel):
+    ping_node: <span class="hljs-builtin">str</span>
+    timeout_threshold: <span class="hljs-builtin">int</span> | <span class="hljs-builtin">None</span> = <span class="hljs-builtin">None</span>
+
+<span class="hljs-decorator">@app.post</span>(<span class="hljs-string">"/system/ping"</span>)
+<span class="hljs-keyword">async def</span> <span class="hljs-builtin">execute_ping</span>(context: PingContext): ...</code></pre>
+    <div class="radio-group">
+      <label class="radio-label"><input type="radio" name="q2-4" value="correct"> ✅ Correct</label>
+      <label class="radio-label"><input type="radio" name="q2-4" value="omission"> 🔴 Omission</label>
+      <label class="radio-label"><input type="radio" name="q2-4" value="hallucination"> 🟡 Hallucination</label>
+      <label class="radio-label"><input type="radio" name="q2-4" value="misapplication"> 🔵 Misapplication</label>
+    </div>
+  </div>
+
+  <!-- SECTION 3 -->
+  <h2>Section 3: Architectural Reasoning</h2>
+  
+  <div class="exam-block">
+    <div class="pts-badge">20 PTS</div>
+    <h3>3.1: The QA Boundary Decision</h3>
+    <p>Why does the CCP execute intense <code class="inline">@field_validator</code> mechanisms natively directly onto DSPy pipeline output models, instead of trusting the Qwen-3.5 Agent to explicitly align accurately against a complex system prompt requesting specific integer boundaries inherently?</p>
+    <textarea class="input-area" id="q3-1" placeholder="Reasoning..."></textarea>
+  </div>
+
+  <div class="exam-block">
+    <div class="pts-badge">20 PTS</div>
+    <h3>3.2: FastAPI Redundancy</h3>
+    <p>Why does FastAPI actively employ Pydantic structures natively to filter external REST API client structures prior to execution, instead of simply running generic JSON dict checking directly inside the FastAPI internal routing logic controller block manually?</p>
+    <textarea class="input-area" id="q3-2" placeholder="Reasoning..."></textarea>
+  </div>
+
+  <!-- SECTION 4 -->
+  <h2>Section 4: Feynman Compression</h2>
+
+  <div class="exam-block">
+    <div class="pts-badge">40 PTS</div>
+    <h3>Feynman Synthesis</h3>
+    <p>Explain in your own words why leveraging <strong>Pydantic Data Contracts</strong> completely bounds sovereign execution control securely across all CCP software domains without succumbing to external API brittleness. Minimum 3 sentences. You must accurately integrate: <strong>[JIT Skill Compiler]</strong>, <strong>[Hallucinated Defaults]</strong>, and <strong>[The QA Department]</strong>.</p>
+    <textarea class="input-area" id="q4-1" style="min-height:180px;" placeholder="Output..."></textarea>
+  </div>
+
+  <button class="submit-btn" id="submitBtn" onclick="gradeExam()">Lock & Evaluate Capstone</button>
+
+</div>
+
+<!-- RESULTS OVERLAY -->
+<div class="results-overlay" id="resultsOverlay">
+  <div class="results-card">
+    <div class="score-circle" id="scoreCircle">0</div>
+    <div class="results-title" id="resultsTitle">Processing...</div>
+    <div class="results-desc" id="resultsDesc">Evaluating structural analysis vectors.</div>
+    
+    <div class="report-block" id="reportBlock"></div>
+
+    <button class="btn-outline" onclick="location.reload()">Acknowledge & Reboot</button>
+  </div>
+</div>
+
+<script>
+// TIMER LOGIC
+let timeLeft = 12 * 60; // 12 mins
+const timerEl = document.getElementById('timer');
+const timerInterval = setInterval(() => {
+  if(timeLeft <= 0) {
+    clearInterval(timerInterval);
+    gradeExam();
+    return;
+  }
+  timeLeft--;
+  let m = Math.floor(timeLeft / 60);
+  let s = timeLeft % 60;
+  timerEl.innerText = `${m}:${s < 10 ? '0':''}${s}`;
+  if(timeLeft <= 60) timerEl.classList.add('warning');
+}, 1000);
+
+// GRADING LOGIC
+function gradeExam() {
+  clearInterval(timerInterval);
+  document.getElementById('submitBtn').disabled = true;
+  document.querySelectorAll('.input-area, input').forEach(el => el.classList.add('disabled'));
+  
+  let score = 0;
+  let breakdown = [];
+
+  // Q1.1 (20)
+  const q1_1 = document.getElementById('q1-1').value.toLowerCase();
+  let s1_1 = 0;
+  if(q1_1.includes('target_command')) s1_1 += 5;
+  if(q1_1.includes('le=1.0') && q1_1.includes('ge=0.0') && q1_1.includes('float')) s1_1 += 5;
+  if(q1_1.includes('list[str]') && q1_1.includes('min_length=1') && q1_1.includes('max_length=1')) s1_1 += 5;
+  if(q1_1.includes('| none = none') || q1_1.includes('optional[str] = none')) s1_1 += 5;
+  score += s1_1;
+  breakdown.push({n: '1.1 Pi Context', s: s1_1, m: 20});
+
+  // Q1.2 (20)
+  const q1_2 = document.getElementById('q1-2').value.toLowerCase();
+  let s1_2 = 0;
+  if(q1_2.includes('session_uuid: str')) s1_2 += 5;
+  if(q1_2.includes('anxiety_trigger_used: bool')) s1_2 += 5;
+  if(q1_2.includes('int') && q1_2.includes('ge=-10') && q1_2.includes('le=10')) s1_2 += 10;
+  score += s1_2;
+  breakdown.push({n: '1.2 Neo4j Extract', s: s1_2, m: 20});
+
+  // Q1.3 (20)
+  const q1_3 = document.getElementById('q1-3').value.toLowerCase();
+  let s1_3 = 0;
+  if(q1_3.includes('max_length=80')) s1_3 += 10;
+  if(q1_3.includes('literal') && q1_3.includes('secure') && q1_3.includes('neutral')) s1_3 += 10;
+  score += s1_3;
+  breakdown.push({n: '1.3 DSPy Parse', s: s1_3, m: 20});
+
+  // Q2.1 - Q2.4 (15 each = 60)
+  const getRad = (nm) => { let e = document.querySelector(`input[name="${nm}"]:checked`); return e ? e.value : ''; }
+  
+  let s2_1 = getRad('q2-1') === 'omission' ? 15 : 0; score += s2_1;
+  breakdown.push({n: '2.1 Defect Triage', s: s2_1, m: 15});
+  
+  let s2_2 = getRad('q2-2') === 'misapplication' ? 15 : 0; score += s2_2;
+  breakdown.push({n: '2.2 Defect Triage', s: s2_2, m: 15});
+  
+  let s2_3 = getRad('q2-3') === 'hallucination' ? 15 : 0; score += s2_3;
+  breakdown.push({n: '2.3 Defect Triage', s: s2_3, m: 15});
+  
+  let s2_4 = getRad('q2-4') === 'correct' ? 15 : 0; score += s2_4;
+  breakdown.push({n: '2.4 Defect Triage', s: s2_4, m: 15});
+
+  // Q3.1 (20)
+  const q3_1 = document.getElementById('q3-1').value.toLowerCase();
+  let s3_1 = 0;
+  if(q3_1.length > 20) s3_1 += 10;
+  if(q3_1.match(/hallucinat|crash|string|math|fail|unpredictable|protect|fragile|laser cutter/)) s3_1 += 10;
+  score += s3_1;
+  breakdown.push({n: '3.1 Boundary Logic', s: s3_1, m: 20});
+
+  // Q3.2 (20)
+  const q3_2 = document.getElementById('q3-2').value.toLowerCase();
+  let s3_2 = 0;
+  if(q3_2.length > 20) s3_2 += 10;
+  if(q3_2.match(/duplicate|422|perimeter|clean|verbose|trace exception/)) s3_2 += 10;
+  score += s3_2;
+  breakdown.push({n: '3.2 FastAPI Bound', s: s3_2, m: 20});
+
+  // Q4.1 (40)
+  const q4_1 = document.getElementById('q4-1').value.toLowerCase();
+  let s4_1 = 0;
+  if(q4_1.length > 100) s4_1 += 10;
+  if(q4_1.includes('jit skill compiler')) s4_1 += 10;
+  if(q4_1.includes('hallucinated')) s4_1 += 10;
+  if(q4_1.includes('qa department')) s4_1 += 10;
+  score += s4_1;
+  breakdown.push({n: '4.0 Feynman', s: s4_1, m: 40});
+
+  showResults(score, breakdown);
+}
+
+function showResults(score, breakdown) {
+  const overlay = document.getElementById('resultsOverlay');
+  const circle = document.getElementById('scoreCircle');
+  const title = document.getElementById('resultsTitle');
+  const desc = document.getElementById('resultsDesc');
+  const block = document.getElementById('reportBlock');
+
+  overlay.classList.add('visible');
+  
+  // count up animation
+  let curr = 0;
+  let inter = setInterval(() => {
+    curr += 4;
+    if(curr >= score) {
+      curr = score;
+      clearInterval(inter);
+      finalizeUI();
+    }
+    circle.innerText = curr;
+  }, 15);
+
+  function finalizeUI() {
+    if(score >= 160) {
+      circle.classList.add('pass');
+      title.innerText = "Architect Certified";
+      desc.innerText = "You have demonstrated sufficient architectural sovereignty over structural data contracts.";
+    } else {
+      circle.classList.add('fail');
+      title.innerText = "Execution Revoked";
+      desc.innerText = "Structural defects detected. Your pipeline has been temporarily suspended pending retraining.";
+    }
+
+    block.innerHTML = breakdown.map(b => `<div class="report-row"><span>${b.n}</span> <span style="color:${b.s===b.m?'var(--green)':'var(--red)'}">${b.s}/${b.m}</span></div>`).join('');
+  }
+}
+</script>
+</body>
+</html>

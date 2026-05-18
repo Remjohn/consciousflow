@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 03 - Functions & Signatures: Master Layer</title>
+  <style>
+    :root {
+      --bg: #04080c;
+      --panel: rgba(12, 20, 30, 0.95);
+      --line: rgba(255,255,255,0.08);
+      --text: #f3f7fb;
+      --muted: #89a1b2;
+      --accent: #ff5c73;  /* Reddish accent for pressure */
+      --good: #2ecc71;
+      --bad: #ff5c73;
+      --gold: #ffd166;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Consolas, Monaco, monospace;
+      line-height: 1.6;
+      background: var(--bg);
+      background-image: 
+        linear-gradient(rgba(255,92,115,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,92,115,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    /* HUD Bar */
+    .hud {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 60px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--accent);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 40px;
+      z-index: 100;
+      box-shadow: 0 0 30px rgba(255,92,115,0.1);
+    }
+
+    .hud-title { font-weight: bold; color: var(--gold); letter-spacing: 2px; text-transform: uppercase;}
+    .hud-timer { font-size: 24px; color: var(--accent); font-weight: bold; }
+    
+    .hud-timer.warning { animation: pulse 1s infinite alternate; }
+    @keyframes pulse {
+      from { text-shadow: 0 0 5px var(--accent); }
+      to { text-shadow: 0 0 20px var(--accent), 0 0 30px #ff0000; }
+    }
+
+    .shell {
+      max-width: 900px;
+      margin: 100px auto 100px;
+      padding: 0 20px;
+    }
+
+    .card {
+      background: rgba(10, 16, 24, 0.9);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-left: 4px solid var(--muted);
+      border-radius: 8px;
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+
+    .card.active-phase {
+      border-left-color: var(--accent);
+      box-shadow: -10px 0 30px rgba(255,92,115,0.05);
+    }
+
+    h2 {
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 0 0 10px 0;
+      color: #fff;
+    }
+
+    p { font-family: Arial, sans-serif; margin-bottom: 20px; color: #b0c4d1;}
+
+    .code-input-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      color: var(--gold);
+      margin-bottom: 8px;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    textarea, input[type="text"] {
+      width: 100%;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #56c5ff;
+      padding: 15px;
+      font-family: Consolas, monospace;
+      font-size: 15px;
+      border-radius: 4px;
+      resize: vertical;
+    }
+
+    textarea:focus, input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    pre {
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 4px;
+      color: #e7eef5;
+      overflow-x: auto;
+    }
+    .err-line { color: #ff5c73; }
+
+    .choices { display: flex; flex-direction: column; gap: 10px; }
+    .choice-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text);
+      padding: 15px;
+      text-align: left;
+      font-family: Arial, sans-serif;
+      font-size: 15px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: 0.2s;
+    }
+    .choice-btn:hover { background: rgba(255,255,255,0.1); }
+    .choice-btn.selected { background: rgba(255,92,115,0.2); border-color: var(--accent); }
+
+    .btn-submit {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      cursor: pointer;
+      width: 100%;
+      border-radius: 4px;
+      margin-top: 20px;
+      transition: 0.3s;
+    }
+    .btn-submit:hover {
+      background: #ff3b55;
+      box-shadow: 0 0 20px rgba(255,92,115,0.4);
+    }
+
+    .btn-submit:disabled {
+      background: #333;
+      color: #666;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    #results-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(4,8,12,0.95);
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+    #results-overlay.active { opacity: 1; pointer-events: all; }
+
+    .score-circle {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: 4px solid #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 60px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+    .pass { border-color: var(--good); color: var(--good); }
+    .fail { border-color: var(--bad); color: var(--bad); }
+
+    .breakdown { max-width: 600px; width: 100%; }
+    .bd-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-family: Arial;}
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <div class="hud-title">Mastery Assessment // Layer 4</div>
+    <div class="hud-timer" id="timerDisplay">12:00</div>
+  </div>
+
+  <div class="shell" id="assessment-form">
+    <!-- Intro Warning -->
+    <div class="card" style="border-left-color: var(--gold); border-bottom: 1px solid var(--gold);">
+      <h2>Terminal Deployment Protocols Active</h2>
+      <p>You have 12 minutes to parse the architectural demands below. Base execution will be scored out of 200 points. A minimum of 160 points is required to pass the module. Auto-submission occurs at T-00:00.</p>
+    </div>
+
+    <!-- Phase 1 -->
+    <div class="card active-phase">
+      <h2 style="color:var(--accent)">Phase 1: Contract Specification (80 pts)</h2>
+      <p>Translate the human specification directly into the exact logical signature required by the CCP framework.</p>
+
+      <div class="code-input-group">
+        <label>1. Pydantic QA Verification (40 pts)</label>
+        <p style="font-size:13px">Spec: "The Object must be named 'AgentResponse'. It requires an 'intent_score' (Float) and an 'action_taken' (Boolean)."</p>
+        <textarea id="p1-q1" rows="4" placeholder="class AgentResponse(BaseModel):..."></textarea>
+      </div>
+
+      <div class="code-input-group">
+        <label>2. DSPy LLM Prompt Replacement (40 pts)</label>
+        <p style="font-size:13px">Spec: "The Signature must be named 'DetermineBias'. You pass in a 'raw_article' explicitly as an InputField. You demand an 'is_biased' explicitly as an OutputField."</p>
+        <textarea id="p1-q2" rows="4" placeholder="class DetermineBias(dspy.Signature):..."></textarea>
+      </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="card">
+      <h2 style="color:var(--accent)">Phase 2: Defect Triage (60 pts)</h2>
+      <p>Analyze the execution failures below and identify the exact structural mistake.</p>
+
+      <div class="code-input-group">
+        <label>3. FastAPI Ghosting Incident (30 pts)</label>
+<pre>
+@app.get("/system/status")
+def get_system_status():
+    internal_stat = db.read_stat()
+    return internal_stat
+</pre>
+        <p style="font-size:13px; margin-top:10px;">The endpoint randomly returns raw memory objects instead of JSON, crashing the frontend. Why?</p>
+        <div class="choices" id="choices-q3">
+          <button class="choice-btn" onclick="selectChoice('q3', 'A', this)">🔴 Omission: The return signature `-> dict` is missing, allowing anything to slip out.</button>
+          <button class="choice-btn" onclick="selectChoice('q3', 'B', this)">🟡 Hallucination: The base Python logic is guessing what the frontend wants.</button>
+          <button class="choice-btn" onclick="selectChoice('q3', 'C', this)">🔵 Misapplication: You cannot return data from a GET request.</button>
+        </div>
+      </div>
+
+      <div class="code-input-group" style="margin-top: 40px;">
+        <label>4. DSPy Infinite Loop (30 pts)</label>
+<pre>
+class Summarize(dspy.Signature):
+    text = dspy.InputField()
+    summary = dspy.OutputField()
+
+# Console: Error. Expected string, got complex logic object. Retrying...
+# Console: Error. Expected string, got complex logic object. Retrying...
+</pre>
+        <p style="font-size:13px; margin-top:10px;">The LLM execution is caught in a mechanical retry loop. What is happening under the hood?</p>
+        <div class="choices" id="choices-q4">
+          <button class="choice-btn" onclick="selectChoice('q4', 'A', this)">🔴 The interpreter is out of memory.</button>
+          <button class="choice-btn" onclick="selectChoice('q4', 'B', this)">🟡 The DSPy Executor is detecting that the generation violates the rigid contract, blocking it, and attempting self-correction.</button>
+          <button class="choice-btn" onclick="selectChoice('q4', 'C', this)">🔵 The underlying LLM server has disconnected.</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="card">
+      <h2 style="color:var(--accent)">Phase 3: Feynman Compression (60 pts)</h2>
+      <p>Compress the entire concept of the "Function Signature" as it applies to building Sovereign Agentic systems. Your answer must syntactically connect to the <strong>Skill Compiler</strong>, the <strong>QA Department</strong> (Pydantic), and the prevention of <strong>Execution Hallucinations</strong>.</p>
+      
+      <textarea id="p3-feynman" rows="7" placeholder="A signature is not just a type hint. In the context of..."></textarea>
+    </div>
+
+    <button class="btn-submit" id="submitBtn" onclick="evaluateAssessment()">Execute Evaluation Pipeline</button>
+  </div>
+
+  <div id="results-overlay">
+    <div class="hud-title" style="margin-bottom: 20px;">Execution Terminated</div>
+    <div class="score-circle" id="final-score-display">0</div>
+    <div class="hud-title" id="pass-fail-text" style="font-size: 24px; margin-bottom: 30px;">EVALUATING...</div>
+    
+    <div class="breakdown">
+      <div class="bd-item">
+        <span>Phase 1: Pydantic Contract</span>
+        <span id="score-p1q1">0/40</span>
+      </div>
+      <div class="bd-item">
+        <span>Phase 1: DSPy Contract</span>
+        <span id="score-p1q2">0/40</span>
+      </div>
+      <div class="bd-item">
+        <span>Phase 2: Triage - Ghosting</span>
+        <span id="score-p2q3">0/30</span>
+      </div>
+      <div class="bd-item">
+        <span>Phase 2: Triage - Loop</span>
+        <span id="score-p2q4">0/30</span>
+      </div>
+      <div class="bd-item">
+        <span>Phase 3: Feynman Compression</span>
+        <span id="score-p3">0/60</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Timer Logic
+    let timeRemaining = 720; // 12 minutes
+    const timerDisplay = document.getElementById('timerDisplay');
+    let timerInterval;
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+      const s = (seconds % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        timeRemaining--;
+        timerDisplay.textContent = formatTime(timeRemaining);
+        
+        if (timeRemaining <= 60) {
+          timerDisplay.classList.add('warning');
+        }
+
+        if (timeRemaining <= 0) {
+          clearInterval(timerInterval);
+          evaluateAssessment();
+        }
+      }, 1000);
+    }
+    
+    // Start timer on load
+    window.onload = startTimer;
+
+    // Selections
+    const selections = { q3: null, q4: null };
+
+    function selectChoice(q, answer, element) {
+      selections[q] = answer;
+      document.querySelectorAll(`#choices-${q} .choice-btn`).forEach(btn => btn.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    // Checking Logic
+    function evaluateAssessment() {
+      clearInterval(timerInterval);
+      document.getElementById('submitBtn').disabled = true;
+      document.getElementById('submitBtn').textContent = "CALCULATING...";
+
+      let scoreP1Q1 = 0;
+      let scoreP1Q2 = 0;
+      let scoreP2Q3 = 0;
+      let scoreP2Q4 = 0;
+      let scoreP3 = 0;
+
+      // Eval P1 Q1 (Pydantic)
+      const p1q1 = document.getElementById('p1-q1').value.toLowerCase();
+      if (p1q1.includes('class agentresponse(basemodel)') || p1q1.includes('class agentresponse(pydantic.basemodel)')) scoreP1Q1 += 20;
+      if (p1q1.includes('intent_score: float')) scoreP1Q1 += 10;
+      if (p1q1.includes('action_taken: bool')) scoreP1Q1 += 10;
+
+      // Eval P1 Q2 (DSPy)
+      const p1q2 = document.getElementById('p1-q2').value.toLowerCase();
+      if (p1q2.includes('class determinebias(dspy.signature)')) scoreP1Q2 += 20;
+      if (p1q2.includes('inputfield')) scoreP1Q2 += 10;
+      if (p1q2.includes('outputfield')) scoreP1Q2 += 10;
+
+      // Eval P2 choices
+      if (selections['q3'] === 'A') scoreP2Q3 = 30;
+      if (selections['q4'] === 'B') scoreP2Q4 = 30;
+
+      // Eval P3 Feynman (Regex/Keywords)
+      const feynman = document.getElementById('p3-feynman').value.toLowerCase();
+      let fHits = 0;
+      if (feynman.includes('skill compiler')) fHits++;
+      if (feynman.includes('qa') || feynman.includes('pydantic')) fHits++;
+      if (feynman.includes('hallucination') || feynman.includes('execution')) fHits++;
+      
+      scoreP3 = fHits * 20;
+
+      const total = scoreP1Q1 + scoreP1Q2 + scoreP2Q3 + scoreP2Q4 + scoreP3;
+
+      // Update UI
+      setTimeout(() => {
+        document.getElementById('results-overlay').classList.add('active');
+        
+        document.getElementById('score-p1q1').textContent = `${scoreP1Q1}/40`;
+        document.getElementById('score-p1q2').textContent = `${scoreP1Q2}/40`;
+        document.getElementById('score-p2q3').textContent = `${scoreP2Q3}/30`;
+        document.getElementById('score-p2q4').textContent = `${scoreP2Q4}/30`;
+        document.getElementById('score-p3').textContent = `${scoreP3}/60`;
+
+        const display = document.getElementById('final-score-display');
+        const text = document.getElementById('pass-fail-text');
+        
+        display.textContent = total;
+
+        if (total >= 160) {
+          display.className = 'score-circle pass';
+          text.textContent = 'MODULE CLEAR: PLATFORM ARCHITECT QUALIFIED';
+          text.style.color = 'var(--good)';
+        } else {
+          display.className = 'score-circle fail';
+          text.textContent = 'EXECUTION FAILURE: RETURN TO CAPABILITY LAYER';
+          text.style.color = 'var(--bad)';
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Stateless Execution Loop — Master Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0A;--surface:#151515;--surface2:#1e1e1e;--surface3:#2A2A2A;
+  --text:#FAFAFA;--muted:#A0A0A0;--border:#2e2e2e;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;--blue:#61afef;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--serif:'Playfair Display',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.65;overflow-x:hidden;}
+.container{max-width:880px;margin:0 auto;padding:4rem 2rem 10rem;}
+
+h1{font-family:var(--serif);font-size:clamp(2.5rem,6vw,3.8rem);line-height:1.0;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-family:var(--sans);font-size:1.4rem;margin:3.5rem 0 1rem;color:var(--accent);font-weight:600;}
+h3{font-family:var(--sans);font-weight:600;font-size:1.1rem;margin:2rem 0 0.75rem;color:#fff;}
+p{margin-bottom:1.3rem;color:var(--muted);font-size:1rem;line-height:1.7;}
+strong{color:#fff;}
+.lesson-tag{font-family:var(--mono);font-size:0.7rem;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.15em;}
+
+/* LOGISTICS BOX */
+.logistics-box{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--red);padding:2rem;margin-bottom:3rem;border-radius:0 6px 6px 0;}
+.logistics-title{font-family:var(--mono);font-size:0.75rem;color:var(--red);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:1rem;font-weight:600;}
+.log-item{display:flex;align-items:flex-start;gap:0.75rem;margin-bottom:0.75rem;}
+.log-item span{color:#fff;font-weight:500;}
+
+/* EXAM BLOCK */
+.exam-block{border:1px solid var(--border);border-radius:8px;padding:2rem;margin-bottom:2rem;background:var(--surface);}
+.exam-prompt{background:var(--bg);border-left:3px solid var(--accent);padding:1.5rem;font-size:0.95rem;color:#ccc;line-height:1.7;margin-bottom:1.5rem;}
+.code-target{font-family:var(--mono);background:var(--bg);border:1px solid var(--border);padding:1.5rem;color:#ccc;font-size:0.85rem;border-radius:4px;margin-bottom:1.5rem;overflow-x:auto;white-space:pre-wrap;}
+
+/* INPUTS */
+.input-area{width:100%;background:var(--bg);border:1px solid var(--border);color:#fff;font-family:var(--mono);font-size:0.9rem;padding:1.25rem;border-radius:4px;min-height:150px;resize:vertical;transition:border-color 0.2s;}
+.input-area.small{min-height:60px;}
+.input-area:focus{outline:none;border-color:var(--accent);}
+.input-area:disabled{opacity:0.6;cursor:not-allowed;}
+
+.field-label{font-family:var(--mono);font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.4rem;display:block;}
+.input-row{margin-bottom:1.25rem;}
+
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.8rem 1.6rem;font-family:var(--sans);font-weight:600;font-size:0.95rem;border-radius:4px;cursor:pointer;transition:all 0.18s;margin-top:1rem;}
+.btn:hover:not(:disabled){background:#fff;transform:translateY(-1px);}
+.btn-submit{background:var(--red);color:#fff;}
+.btn-submit:hover:not(:disabled){background:#ff856b;}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+
+.radio-group{display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;}
+.radio-label{display:flex;align-items:center;gap:0.5rem;font-size:0.9rem;color:#ccc;cursor:pointer;padding:0.6rem 1rem;border:1px solid var(--border);border-radius:4px;background:var(--bg);transition:all 0.2s;}
+.radio-label:hover{background:var(--surface2);}
+.radio-label input:checked + span{color:var(--accent);font-weight:600;}
+
+/* KEY / GRADING SECTION */
+.grade-key{display:none;margin-top:4rem;padding-top:3rem;border-top:2px solid var(--border);}
+.grade-key.visible{display:block;animation:fadein 0.5s;}
+.key-block{background:rgba(42,157,143,0.05);border:1px solid rgba(42,157,143,0.3);border-left:3px solid var(--green);padding:1.5rem;margin-bottom:1.5rem;border-radius:0 6px 6px 0;}
+.key-title{font-family:var(--mono);font-size:0.75rem;color:var(--green);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;font-weight:600;}
+.key-text{font-size:0.9rem;color:#ccc;line-height:1.7;}
+
+@keyframes fadein{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+/* DIVIDER */
+.divider{border:none;border-top:1px solid var(--border);margin:3rem 0;}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-tag">Lesson 19 · Layer 4 — Master</div>
+  <h1>Terminal Capstone</h1>
+
+  <!-- LOGISTICS -->
+  <div class="logistics-box">
+    <div class="logistics-title">Rules of Engagement</div>
+    <p>You are the Sovereign Architect. The execution loop is the most critical dynamic boundary within the entire system—it is the pulse of the Robot Arm. Without an airtight loop contract, an agent will hallucinate endlessly.</p>
+    <div class="log-item"><span>⏱️ Time:</span> 12 Minutes (Strictly Enforced). </div>
+    <div class="log-item"><span>🎯 Threshold:</span> 160 / 200 Points to Pass.</div>
+    <div class="log-item"><span>⛔ Rules:</span> Reference Materials Forbidden. No syntax hints.</div>
+    <p style="font-size:0.85rem;margin-top:1rem;margin-bottom:0;border-top:1px solid var(--border);padding-top:1rem;">Do not write functioning code unless requested. Write the contracts, specifications, and boundaries that guarantee the code functions perfectly when generated by an LLM.</p>
+  </div>
+
+  <form id="masterForm" onsubmit="submitExam(event)">
+    <!-- SECTION 1 -->
+    <h2>⏱️ SECTION 1: CONTRACT SPECIFICATION (60 Points)</h2>
+
+    <div class="exam-block">
+      <h3>Specification 1 (20 Points)</h3>
+      <div class="exam-prompt">
+        "The CCP needs an Execution Guardrail schema within the QA Department to strictly track a Pipecat WebSocket interaction loop. Encapsulate: `session_id` (UUID), array of action history, integer of websocket loop turns, and a cycle ceiling. Ceiling cannot exceed 25. Array can be empty at init. If the current count >= ceiling, the Pydantic model must trigger a catastrophic validation error upon parsing."
+      </div>
+      <label class="field-label">Construct Pydantic BaseModel (Include @model_validator)</label>
+      <textarea class="input-area" id="s1_ans" placeholder="class ExecutionGuardrail(BaseModel):..."></textarea>
+    </div>
+
+    <div class="exam-block">
+      <h3>Specification 2 (20 Points)</h3>
+      <div class="exam-prompt">
+        "The Machinist requires a DSPy signature for `ActionEvaluator`. It sits mid-loop. Inputs: the flattened history string, integer of attempts on current tool, integer of tries left before global cap. Output: precise string for the next bash command in XML, or `<TERMINATE_LOOP>`."
+      </div>
+      <label class="field-label">Construct DSPy Signature (Include exact Typing & desc)</label>
+      <textarea class="input-area" id="s2_ans" placeholder="class ActionEvaluator(dspy.Signature):..."></textarea>
+    </div>
+
+    <div class="exam-block">
+      <h3>Specification 3 (20 Points)</h3>
+      <div class="exam-prompt">
+        "Define an OpenProse contract for `append_tool_execution(tool_stdout, loop_state)`. Define exactly the 'Requires' block (pre-append array length logic), 'Ensures' block (post-append mathematical mutation), and 'Invariants' (macro loop boundary laws that ALWAYS hold true)."
+      </div>
+      <label class="field-label">Write OpenProse Contract (Requires, Ensures, Invariants)</label>
+      <textarea class="input-area" id="s3_ans" placeholder="Requires: ... Ensures: ... Invariants: ..."></textarea>
+    </div>
+
+    <!-- SECTION 2 -->
+    <h2>⏱️ SECTION 2: DEFECT TRIAGE (60 Points)</h2>
+
+    <div class="exam-block">
+      <h3>Block A: The Chassis (15 Points)</h3>
+      <div class="code-target">
+1. async def execute_agent_session(session_history: list):
+2.    current_interval_turn = 0
+3.    max_turn_limit = 15
+4.    while True:
+5.        action_payload = get_next_action(session_history)
+6.        if action_payload == "FINAL_ANSWER":
+7.            break
+8.        execution_result = run_command(action_payload)
+9.        session_history.append(execution_result)
+10.       current_interval_turn += 1
+11.       if current_interval_turn > max_turn_limit:
+12.           return {"error": "Exceeded maximum cycles."}
+13.   return {"state": session_history}
+      </div>
+      <div class="input-row">
+        <label class="field-label">Classification</label>
+        <div class="radio-group">
+          <label class="radio-label"><input type="radio" name="b1_class" value="Correct"> <span>✅ Correct</span></label>
+          <label class="radio-label"><input type="radio" name="b1_class" value="Omission"> <span>🔴 Omission</span></label>
+          <label class="radio-label"><input type="radio" name="b1_class" value="Hallucination"> <span>🟡 Hallucination</span></label>
+          <label class="radio-label"><input type="radio" name="b1_class" value="Misapplication"> <span>🔵 Misapplication</span></label>
+        </div>
+      </div>
+      <div class="input-row">
+        <label class="field-label">Specific Line #</label>
+        <input type="text" class="input-area small" id="b1_line" placeholder="Line #">
+      </div>
+      <div class="input-row">
+        <label class="field-label">Contract Violated</label>
+        <input type="text" class="input-area small" id="b1_contract" placeholder="Which Dictum or Loop Rule?">
+      </div>
+      <div class="input-row">
+        <label class="field-label">Natural Language Fix</label>
+        <textarea class="input-area small" id="b1_fix" placeholder="How do you architecturally repair this?"></textarea>
+      </div>
+    </div>
+
+    <div class="exam-block">
+      <h3>Block B: The Robot Arm (15 Points)</h3>
+      <div class="code-target">
+1. async def trigger_agent_tool(bash_string_input: str, loop_tracker_current: int):
+2.     try:
+3.         proc_instance = subprocess.run(
+4.             bash_string_input.split(),
+5.             capture_output=True,
+6.             text=True
+7.         )
+8.         return {"stdout": proc_instance.stdout, "status": "tool_executed_success"}
+9.     except Exception as fatal_error:
+10.        return {"stdout": str(fatal_error), "status": "tool_executed_failed"}
+      </div>
+      <div class="input-row">
+        <label class="field-label">Classification</label>
+        <div class="radio-group">
+          <label class="radio-label"><input type="radio" name="b2_class" value="Correct"> <span>✅ Correct</span></label>
+          <label class="radio-label"><input type="radio" name="b2_class" value="Omission"> <span>🔴 Omission</span></label>
+          <label class="radio-label"><input type="radio" name="b2_class" value="Hallucination"> <span>🟡 Hallucination</span></label>
+          <label class="radio-label"><input type="radio" name="b2_class" value="Misapplication"> <span>🔵 Misapplication</span></label>
+        </div>
+      </div>
+      <div class="input-row"><label class="field-label">Specific Line #</label><input type="text" class="input-area small" id="b2_line"></div>
+      <div class="input-row"><label class="field-label">Contract Violated</label><input type="text" class="input-area small" id="b2_contract"></div>
+      <div class="input-row"><label class="field-label">Natural Language Fix</label><textarea class="input-area small" id="b2_fix"></textarea></div>
+    </div>
+
+
+    <div class="exam-block">
+      <h3>Block C: The QA Department (15 Points)</h3>
+      <div class="code-target">
+1. class IndividualTurnState(BaseModel):
+2.     origin_role: str
+3.     data_contents: str
+4. 
+5. class OverallAgentExecution(BaseModel):
+6.     overriding_max_turns: int = Field(default=20)
+7.     global_history: list[IndividualTurnState]
+8.     
+9.     @field_validator('overriding_max_turns')
+10.    def validate_integer_cap(cls, cap_value):
+11.        if cap_value <= 0:
+12.            raise ValueError("Execution Loop Turn length must be a strictly positive integer.")
+13.        return cap_value
+      </div>
+      <div class="input-row">
+        <label class="field-label">Classification</label>
+        <div class="radio-group">
+          <label class="radio-label"><input type="radio" name="b3_class" value="Correct"> <span>✅ Correct</span></label>
+          <label class="radio-label"><input type="radio" name="b3_class" value="Omission"> <span>🔴 Omission</span></label>
+          <label class="radio-label"><input type="radio" name="b3_class" value="Hallucination"> <span>🟡 Hallucination</span></label>
+          <label class="radio-label"><input type="radio" name="b3_class" value="Misapplication"> <span>🔵 Misapplication</span></label>
+        </div>
+      </div>
+      <div class="input-row"><label class="field-label">Specific Line #</label><input type="text" class="input-area small" id="b3_line"></div>
+      <div class="input-row"><label class="field-label">Contract Violated</label><input type="text" class="input-area small" id="b3_contract"></div>
+      <div class="input-row"><label class="field-label">Natural Language Fix</label><textarea class="input-area small" id="b3_fix"></textarea></div>
+    </div>
+
+    <div class="exam-block">
+      <h3>Block D: The Machinist (15 Points)</h3>
+      <div class="code-target">
+1. class ObserveState(dspy.Module):
+2.    def __init__(self):
+3.        self.generate = dspy.Predict("history, current_turn -> next_action")
+4. 
+5.    def forward(self, history_array: list, current_turn: int):
+6.        flattened_history_string = json.dumps(history_array)
+7.        if "FINAL" in flattened_history_string:
+8.            return "Task explicitly previously finalized."
+9.        
+10.       predicted_result = self.generate(
+11.           history=flattened_history_string, 
+12.           current_turn=str(current_turn)
+13.       )
+14.       return predicted_result.next_action
+      </div>
+      <div class="input-row">
+        <label class="field-label">Classification</label>
+        <div class="radio-group">
+          <label class="radio-label"><input type="radio" name="b4_class" value="Correct"> <span>✅ Correct</span></label>
+          <label class="radio-label"><input type="radio" name="b4_class" value="Omission"> <span>🔴 Omission</span></label>
+          <label class="radio-label"><input type="radio" name="b4_class" value="Hallucination"> <span>🟡 Hallucination</span></label>
+          <label class="radio-label"><input type="radio" name="b4_class" value="Misapplication"> <span>🔵 Misapplication</span></label>
+        </div>
+      </div>
+      <div class="input-row"><label class="field-label">Specific Line #</label><input type="text" class="input-area small" id="b4_line"></div>
+      <div class="input-row"><label class="field-label">Contract Violated</label><input type="text" class="input-area small" id="b4_contract"></div>
+      <div class="input-row"><label class="field-label">Natural Language Fix</label><textarea class="input-area small" id="b4_fix"></textarea></div>
+    </div>
+
+    <!-- SECTION 3 -->
+    <h2>⏱️ SECTION 3: ARCHITECTURAL REASONING (40 Points)</h2>
+    <div class="exam-block">
+      <h3>Question A (20 Points)</h3>
+      <div class="exam-prompt">Why does the Orchestration Dichotomy strictly mandate that the autonomous execution `while` loop reside entirely within FastAPI (The Chassis) rather than delegating the iteration loop to DSPy (The Optimizer) or relying on Neo4j?</div>
+      <textarea class="input-area" id="reason_a"></textarea>
+    </div>
+
+    <div class="exam-block">
+      <h3>Question B (20 Points)</h3>
+      <div class="exam-prompt">Why does the `pi-mono` agentic harness explicitly ban the use of arbitrary conversational output formats when deciding to break an execution loop, instead demanding rigid regex parsing (e.g., `&lt;FINAL_ANSWER&gt;`)? Address the OODA layer mapping.</div>
+      <textarea class="input-area" id="reason_b"></textarea>
+    </div>
+
+    <!-- SECTION 4 -->
+    <h2>⏱️ SECTION 4: FEYNMAN COMPRESSION (40 Points)</h2>
+    <div class="exam-block">
+      <div class="exam-prompt">
+        Explain in your own cohesive words why the <strong>Stateless Execution Loop</strong> is the absolutely most critical primitive mechanism for maintaining unbreakable sovereign control. Synthesize these 3 elements: <strong>[The Robot Arm Subprocess Spawning]</strong>, <strong>[The Infinite Execution Hallucination Failure]</strong>, and <strong>[The Chassis Runtime Limits]</strong>.
+      </div>
+      <textarea class="input-area" id="feynman"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-submit" id="submitAllBtn">Finalize Assessment & Reveal Foreman Key</button>
+
+  </form>
+
+  <!-- GRADING KEY -->
+  <div class="grade-key" id="gradingKey">
+    <h2>📋 END OF ASSESSMENT: THE FOREMAN'S SCORECARD</h2>
+    <p>Self-Grade your submission against the sovereign truths.</p>
+
+    <div class="key-block">
+      <div class="key-title">Section 1: Specifications Key (60 pts)</div>
+      <div class="key-text">
+        <strong>Spec 1:</strong> Requires <code>history: list[AgentTurn] = Field(default_factory=list)</code>, <code>current_turn: int = Field(ge=0)</code>, <code>max_turn_limit: int = Field(le=25)</code>. Vital validation: <code>@model_validator(mode='after')</code> asserting <code>if self.current_turn >= self.max_turn_limit: raise ValueError</code>.<br><br>
+        <strong>Spec 2:</strong> Requires <code>history_trace: str = dspy.InputField()</code>, <code>current_tool_attempts: int = dspy.InputField()</code>, <code>remaining_turn_attempts: int = dspy.InputField()</code>, and <code>action_evaluation_string: str = dspy.OutputField(desc="XML or TERMINATE")</code>.<br><br>
+        <strong>Spec 3:</strong> Requires: <code>len(loop_state_origin.history) == N</code> (validating pre-state size). Ensures: <code>len(loop_state_after.history) == N + 1</code> (strict monotonic incrementing). Invariant: <code>loop_state.turn_count <= loop_state.max_turns</code> ALWAYS REMAINS TRUE.
+      </div>
+    </div>
+
+    <div class="key-block">
+      <div class="key-title">Section 2: Defect Triage Key (60 pts)</div>
+      <div class="key-text">
+        <strong>Block A:</strong> 🔴 Omission. <strong>Line 4</strong>. Contract: <em>Dictum 1 Deterministic Bounds</em>. Fix: The main routing body should never use an ambiguous <code>while True</code> relying completely on internal breaks. It must evaluate the limit directly in the gate condition (<code>while turn < max_t</code>).<br><br>
+        <strong>Block B:</strong> 🔴 Omission / 🔵 Misapplication. <strong>Line 3</strong>. Contract: <em>MCDA Terminal Agents</em>. Fix: It is missing the explicit <code>timeout=X</code> parameter in the subprocess run call. It will hang indefinitely and bypass the overarching execution loop limit.<br><br>
+        <strong>Block C:</strong> ✅ Correct. The code acts as a clean representation and successfully implements valid Pydantic field-level logic testing integrity.<br><br>
+        <strong>Block D:</strong> 🟡 Hallucination / 🔵 Misapplication. <strong>Line 7</strong>. Contract: <em>Orchestration Dichotomy / Isolation limits</em>. Fix: The Machinist (DSPy) must never execute functional routing logic (like determining task conclusion via string indexing). The optimization wrapper strictly formats textual arrays, it does not manage overarching Chassis flow.
+      </div>
+    </div>
+
+    <div class="key-block">
+      <div class="key-title">Section 3: Architectural Key (40 pts)</div>
+      <div class="key-text">
+        <strong>Question A:</strong> Dictum 1 asserts absolute Deterministic control. If DSPy holds the loop, the non-deterministic LLM optimizer dictates flow constraints. If Neo4j holds it, async latency breaks real-time streams. The FastAPI Chassis acts as the singular deterministic synchronous entry point managing the client. It alone must retain authority to terminate.<br><br>
+        <strong>Question B:</strong> Originating from <em>Building Effective Terminal Agents</em>: If loop termination relies on semantic LLM intent, hallucination variance breaks the 'DECIDE' phase. The strict regex parser lives in the 'ORIENT' phase, acting as a scalpel filter transforming muddy logic into binary execution signals based on absolute characters.
+      </div>
+    </div>
+
+    <div class="key-block">
+      <div class="key-title">Section 4: Feynman Compression Key (40 pts)</div>
+      <div class="key-text">
+        Proper evaluation requires mapping how the lack of explicit integer limits <strong>[The Chassis Runtime Limits]</strong> allows an agent executing tasks via <strong>[The Robot Arm Subprocess Spawning]</strong> to loop forever, triggering an endless context array bloat known as <strong>[The Infinite Execution Hallucination Failure]</strong>. Sovereign control demands the Chassis rigidly upholds these boundaries via a stateless array so the Robot Arm never spins unpredictably into the void. Without the loop, safety fundamentally collapses.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function submitExam(e) {
+  e.preventDefault();
+  
+  // Disable all inputs
+  document.querySelectorAll('input, textarea, button').forEach(el => {
+    el.disabled = true;
+  });
+  
+  // Show grading key
+  document.getElementById('gradingKey').classList.add('visible');
+  
+  // Scroll to key
+  setTimeout(() => {
+    document.getElementById('gradingKey').scrollIntoView({ behavior: 'smooth' });
+  }, 100);
+}
+</script>
+</body>
+</html>

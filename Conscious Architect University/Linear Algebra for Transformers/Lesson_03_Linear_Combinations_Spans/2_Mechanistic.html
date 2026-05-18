@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linear Combinations & Spans — Mechanistic Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:.85em;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1;min-width:280px;}
+.visual-col{flex:1.2;min-width:320px;}
+
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+.insight.teal{border-color:var(--teal);background:var(--teal-glow);}.insight.teal strong{color:var(--teal);}
+.insight.rose{border-color:var(--rose);background:var(--rose-glow);}.insight.rose strong{color:var(--rose);}
+.insight.violet{border-color:var(--violet);background:var(--violet-glow);}.insight.violet strong{color:var(--violet);}
+.insight.emerald{border-color:var(--emerald);background:var(--emerald-glow);}.insight.emerald strong{color:var(--emerald);}
+
+.formula{background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--text-muted);line-height:1.8;overflow-x:auto;margin-bottom:1rem;}
+.formula .hl{color:var(--amber);font-weight:600;}
+.formula .tl{color:var(--teal);}.formula .rl{color:var(--rose);}.formula .vl{color:var(--violet);}.formula .el{color:var(--emerald);}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-amber{background:var(--amber);color:#000;}
+.btn-amber:hover{background:#fbbf24;transform:translateY(-1px);}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text-muted);color:var(--text);}
+.btn-outline.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow);}
+.btn-sm{padding:.4rem .8rem;font-size:.78rem;}
+
+.quiz-option{display:block;width:100%;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:.88rem;color:var(--text-muted);transition:all .25s;text-align:left;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;}
+.quiz-option:hover{border-color:var(--border-light);color:var(--text);}
+.quiz-option.correct{border-color:var(--emerald);color:var(--emerald);background:var(--emerald-glow);}
+.quiz-option.wrong{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+.quiz-option.disabled{pointer-events:none;opacity:.6;}
+.quiz-explanation{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+.quiz-explanation.show{max-height:300px;}
+
+.step-row{display:flex;gap:.75rem;align-items:flex-start;margin-bottom:1rem;padding:1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);transition:border-color .3s;}
+.step-num{min-width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.78rem;font-family:'Space Grotesk';}
+.step-active{border-color:var(--amber)!important;background:var(--bg-elevated)!important;}
+
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+.scroll-hint{animation:bounce 2s ease infinite;}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column!important;}
+  .canvas-wrap{min-height:280px!important;}
+  .nav-links{gap:.5rem;}.nav-link{font-size:.7rem;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">LINEAR COMBINATIONS</span>
+    <div class="nav-links">
+      <a href="#pipeline" class="nav-link active" data-section="pipeline">Attention Pipeline</a>
+      <a href="#steering" class="nav-link" data-section="steering">Steering Stack</a>
+      <a href="#riser" class="nav-link" data-section="riser">RISER</a>
+      <a href="#edges" class="nav-link" data-section="edges">Edge Cases</a>
+      <a href="#checkpoint" class="nav-link" data-section="checkpoint">Checkpoint</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 03 — MECHANISTIC LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Linear Combinations<br><span style="color:var(--text-muted);font-weight:300;">The Attention Engine</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      Trace the exact GPU pipeline that blends Value vectors into new meaning — then watch WAS, HYPERSteer, and RISER evolve the linear combination from static to autonomous.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: Attention Pipeline Walkthrough -->
+<section id="pipeline" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — ATTENTION OUTPUT PIPELINE</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Tracing "She was brave."</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          Every attention output is a linear combination of all Value vectors, weighted by Softmax scores. Let's trace the complete pipeline for the sentence <strong style="color:var(--text);">"She was brave."</strong>
+        </p>
+
+        <div class="step-row step-active" id="step1">
+          <div class="step-num" style="background:var(--amber-glow);border:1px solid var(--amber);color:var(--amber);">1</div>
+          <div>
+            <h4 style="font-size:.9rem;margin-bottom:.25rem;">Value Vector Generation</h4>
+            <p style="font-size:.85rem;color:var(--text-muted);">After W_v projection:<br>
+              <span style="color:var(--amber);">V_She = (0.1, 0.8, 0.3)</span><br>
+              <span style="color:var(--text-dim);">V_was = (0.0, 0.1, 0.0)</span><br>
+              <span style="color:var(--teal);">V_brave = (0.9, 0.2, 0.7)</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="step-row" id="step2">
+          <div class="step-num" style="background:var(--teal-glow);border:1px solid var(--teal);color:var(--teal);">2</div>
+          <div>
+            <h4 style="font-size:.9rem;margin-bottom:.25rem;">Attention Weights (from Q·K/√d_k + Softmax)</h4>
+            <p style="font-size:.85rem;color:var(--text-muted);">
+              α<sub>brave→She</sub> = <strong style="color:var(--amber);">0.55</strong>,
+              α<sub>brave→was</sub> = <strong style="color:var(--text-dim);">0.05</strong>,
+              α<sub>brave→brave</sub> = <strong style="color:var(--teal);">0.40</strong>
+            </p>
+          </div>
+        </div>
+
+        <div class="step-row" id="step3">
+          <div class="step-num" style="background:var(--violet-glow);border:1px solid var(--violet);color:var(--violet);">3</div>
+          <div>
+            <h4 style="font-size:.9rem;margin-bottom:.25rem;">Linear Combination (The Blend)</h4>
+            <div class="formula" style="margin-top:.5rem;margin-bottom:0;">
+              output = <span class="hl">0.55</span>·(0.1,0.8,0.3) + <span class="tl">0.05</span>·(0.0,0.1,0.0) + <span class="vl">0.40</span>·(0.9,0.2,0.7)<br>
+              = (0.055,0.44,0.165) + (0.0,0.005,0.0) + (0.36,0.08,0.28)<br>
+              = <span class="el">(0.415, 0.525, 0.445)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="insight teal" style="margin-top:.75rem;">
+          <strong>Click each step</strong> to highlight it on the pipeline canvas. The output vector borrows 55% from "She" (the referent) and 40% from "brave" (self-attention), manufacturing a blended representation.
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:440px;">
+          <canvas id="pipelineCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: WAS & HYPERSteer -->
+<section id="steering" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">02 — THE STEERING EVOLUTION</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">From Fixed Weights to Language-Driven Coefficients</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.5rem;margin-bottom:1.5rem;">
+      <div class="card" style="padding:1.5rem;border-left:3px solid var(--amber);">
+        <div style="font-size:.75rem;color:var(--amber);font-weight:600;letter-spacing:.08em;margin-bottom:.25rem;">PAPER #15</div>
+        <h4 style="margin-bottom:.75rem;">WAS — Weighted Activation Steering</h4>
+        <div class="formula" style="font-size:.8rem;">
+          h_new = h_old + Σ <span class="hl">α_i(x)</span> · e_i
+        </div>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;margin-bottom:.75rem;">
+          Replaces fixed scalar α with a <strong style="color:var(--text);">learned function α(x)</strong>. A lightweight neural controller reads the input and outputs dynamic weights per steering direction per layer. Same formula — adaptive coefficients.
+        </p>
+        <div class="insight" style="font-size:.82rem;">
+          <strong>Angry client →</strong> empathy=0.2, firmness=0.9<br>
+          <strong>Calm client →</strong> empathy=0.8, firmness=0.3
+        </div>
+      </div>
+      <div class="card" style="padding:1.5rem;border-left:3px solid var(--violet);">
+        <div style="font-size:.75rem;color:var(--violet);font-weight:600;letter-spacing:.08em;margin-bottom:.25rem;">PAPER #16</div>
+        <h4 style="margin-bottom:.75rem;">HYPERSteer — Language → Coefficients</h4>
+        <div class="formula" style="font-size:.8rem;">
+          α = f_hyper(<span class="vl">"warm, encouraging, metaphorical"</span>)
+        </div>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;margin-bottom:.75rem;">
+          A hypernetwork processes a <strong style="color:var(--text);">natural language behavior description</strong> and automatically outputs the coefficient vector for combining latent steering directions. No manual tuning required.
+        </p>
+        <div class="insight violet" style="font-size:.82rem;">
+          <strong>Span constraint:</strong> If the basis lacks an independent direction for "humor," no text description will produce it.
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-layout">
+      <div class="reading-col" style="flex:1;">
+        <div class="insight" style="margin-bottom:1rem;">
+          <strong>Drag the steering sliders</strong> to compare Static (fixed) vs WAS (dynamic) vs HYPERSteer (language-driven) behavior.
+        </div>
+        <div style="display:flex;gap:.5rem;margin-bottom:1rem;">
+          <button class="btn btn-outline btn-sm active" data-steer="static">Static</button>
+          <button class="btn btn-outline btn-sm" data-steer="was">WAS (Dynamic)</button>
+          <button class="btn btn-outline btn-sm" data-steer="hyper">HYPERSteer</button>
+        </div>
+        <div id="steerDesc" class="card" style="padding:1rem;">
+          <p style="font-size:.88rem;color:var(--text-muted);line-height:1.6;">
+            <strong style="color:var(--amber);">Static steering:</strong> Fixed α=0.8 empathy injection regardless of context. A calm reflective message gets the same intensity as a panic-level crisis. No contextual intelligence.
+          </p>
+        </div>
+      </div>
+      <div class="visual-col" style="flex:1.2;">
+        <div class="canvas-wrap" style="min-height:300px;">
+          <canvas id="steeringCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: RISER Timeline -->
+<section id="riser" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">03 — RISER: TOKEN-BY-TOKEN ROUTING</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Dynamic Support — The Pinnacle</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          RISER makes <em>both</em> the weights <strong style="color:var(--text);">and which basis vectors participate</strong> change at every single token. A meta-router activates/deactivates cognitive primitives in real-time.
+        </p>
+        <div class="card" style="padding:1rem;margin-bottom:.75rem;">
+          <div style="font-size:.78rem;color:var(--text-dim);margin-bottom:.5rem;">TOKEN FLOW — User Message</div>
+          <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.75rem;" id="tokenFlow">
+            <span class="token-chip" data-phase="0" style="padding:.3rem .6rem;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;">I</span>
+            <span class="token-chip" data-phase="0" style="padding:.3rem .6rem;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;">feel</span>
+            <span class="token-chip" data-phase="0" style="padding:.3rem .6rem;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;">so</span>
+            <span class="token-chip" data-phase="0" style="padding:.3rem .6rem;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;">anxious</span>
+            <span class="token-chip" data-phase="1" style="padding:.3rem .6rem;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;">but</span>
+            <span class="token-chip" data-phase="1" style="padding:.3rem .6rem;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;">I</span>
+            <span class="token-chip" data-phase="1" style="padding:.3rem .6rem;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;">think</span>
+            <span class="token-chip" data-phase="1" style="padding:.3rem .6rem;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;">my</span>
+            <span class="token-chip" data-phase="1" style="padding:.3rem .6rem;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;">triggers</span>
+            <span class="token-chip" data-phase="1" style="padding:.3rem .6rem;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;">are</span>
+            <span class="token-chip" data-phase="2" style="padding:.3rem .6rem;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;">lol</span>
+            <span class="token-chip" data-phase="2" style="padding:.3rem .6rem;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;">I'm</span>
+            <span class="token-chip" data-phase="2" style="padding:.3rem .6rem;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;">a</span>
+            <span class="token-chip" data-phase="2" style="padding:.3rem .6rem;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;">mess</span>
+            <span class="token-chip" data-phase="3" style="padding:.3rem .6rem;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;">anyway</span>
+            <span class="token-chip" data-phase="3" style="padding:.3rem .6rem;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;">it</span>
+            <span class="token-chip" data-phase="3" style="padding:.3rem .6rem;border-radius:4px;font-size:.78rem;cursor:pointer;border:1px solid var(--border);color:var(--text-dim);transition:all .2s;">hurts</span>
+          </div>
+          <div id="riserState" style="font-family:'JetBrains Mono';font-size:.78rem;color:var(--text-muted);"></div>
+        </div>
+        <div class="insight emerald">
+          <strong>Click any token</strong> to see how RISER's meta-router re-computes the active primitives and weights at that position.
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:380px;">
+          <canvas id="riserCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 4: Edge Cases -->
+<section id="edges" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--rose);margin-bottom:.5rem;">04 — EDGE CASES & INVARIANTS</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Where the Math Constrains You</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;margin-bottom:1.5rem;">
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--rose);">
+        <h4 style="color:var(--rose);margin-bottom:.5rem;">Rank-Deficient Steering</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">
+          5 steering vectors, but 3 are linear combinations of the first 2? You have 5 faders but <strong>3 are ghost controls</strong> — moving them produces only changes already achievable by the first 2. Effective span = 2D.
+        </p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--amber);">
+        <h4 style="color:var(--amber);margin-bottom:.5rem;">LoRA Span Collapse</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">
+          A rank-4 LoRA update can only modify behavior along <strong>4 independent directions</strong>. If the target behavioral shift requires 12 independent directions, the model approximates by projecting onto the closest 4D subspace — losing 8 dimensions of nuance.
+        </p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--violet);">
+        <h4 style="color:var(--violet);margin-bottom:.5rem;">Attention Degeneracy</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">
+          Near-one-hot Softmax (α = [0.99, 0.005, 0.005]) degenerates the combination into a <strong>copy</strong>. The model stops blending and starts parroting. This is the overconfidence failure that EAST addresses.
+        </p>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;">
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--teal);">
+        <h4 style="color:var(--teal);margin-bottom:.5rem;">Invariant: Zero Vector Inclusion</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">
+          <strong>0</strong> = 0·v₁ + 0·v₂ + ... The zero vector is always in the span. In attention, this corresponds to zero weight on everything — prevented by Softmax normalization.
+        </p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--emerald);">
+        <h4 style="color:var(--emerald);margin-bottom:.5rem;">Invariant: Closure Under Combination</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">
+          If <strong>u</strong> and <strong>w</strong> are both in the span, any combination β₁·u + β₂·w is also in the span. Cascaded attention layers cannot escape the geometric boundary.
+        </p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--text-dim);">
+        <h4 style="margin-bottom:.5rem;">Invariant: Dimension Bound</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">
+          dim(span) ≤ min(k, n). The span never exceeds the number of independent vectors or the ambient space dimensionality. The hard mathematical ceiling on expressiveness.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 5: Checkpoint -->
+<section id="checkpoint" class="section">
+  <div class="section-inner" style="max-width:720px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">05 — CHECKPOINT</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Mechanistic Verification</h2>
+    <div id="quizContainer" style="display:flex;flex-direction:column;gap:1.5rem;"></div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);">
+  Interactive Visual Learning — Lesson 03: Linear Combinations & Spans Mechanistic Layer
+</footer>
+
+<script>
+const DPR=window.devicePixelRatio||1;
+function setupCanvas(c){const p=c.parentElement,r=p.getBoundingClientRect();c.width=r.width*DPR;c.height=r.height*DPR;c.style.width=r.width+'px';c.style.height=r.height+'px';const ctx=c.getContext('2d');ctx.scale(DPR,DPR);return{ctx,w:r.width,h:r.height};}
+
+/* Hero */
+(function(){const c=document.getElementById('heroCanvas');let W,H,ctx;
+function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+resize();window.addEventListener('resize',resize);
+let t=0;const nodes=[];for(let i=0;i<40;i++)nodes.push({x:Math.random(),y:Math.random(),vx:(Math.random()-0.5)*0.001,vy:(Math.random()-0.5)*0.001});
+function draw(){ctx.clearRect(0,0,W,H);
+  nodes.forEach(n=>{n.x+=n.vx;n.y+=n.vy;if(n.x<0||n.x>1)n.vx*=-1;if(n.y<0||n.y>1)n.vy*=-1;
+    ctx.beginPath();ctx.arc(n.x*W,n.y*H,2.5,0,Math.PI*2);ctx.fillStyle='rgba(245,158,11,0.2)';ctx.fill();});
+  for(let i=0;i<nodes.length;i++){const a=nodes[i];for(let j=i+1;j<nodes.length;j++){const b=nodes[j];
+    const d=Math.hypot((a.x-b.x)*W,(a.y-b.y)*H);if(d<100){ctx.beginPath();ctx.moveTo(a.x*W,a.y*H);ctx.lineTo(b.x*W,b.y*H);
+    ctx.strokeStyle=`rgba(20,184,166,${0.06*(1-d/100)})`;ctx.lineWidth=1;ctx.stroke();}}}
+  t++;requestAnimationFrame(draw);}
+draw();})();
+
+/* Section 1: Pipeline Canvas */
+(function(){
+  const canvas=document.getElementById('pipelineCanvas');
+  let activeStep=0;
+  const V=[{x:0.1,y:0.8,z:0.3,label:'She',c:'#f59e0b'},{x:0.0,y:0.1,z:0.0,label:'was',c:'#52525b'},{x:0.9,y:0.2,z:0.7,label:'brave',c:'#14b8a6'}];
+  const alphas=[0.55,0.05,0.40];
+
+  function draw(){
+    const{ctx,w,h}=setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+    const padL=30,padR=30,padT=30,padB=30;
+    const usableW=w-padL-padR,usableH=h-padT-padB;
+
+    // Section layout: top = value vectors, middle = weights, bottom = output
+    const yVals=padT+usableH*0.15;
+    const yWeights=padT+usableH*0.45;
+    const yOutput=padT+usableH*0.8;
+    const spacing=usableW/(V.length+1);
+
+    // Title
+    ctx.font='600 11px Space Grotesk';ctx.textAlign='center';
+    ctx.fillStyle='#52525b';ctx.fillText('VALUE VECTORS (V_j)',w/2,yVals-15);
+
+    // Draw value vectors as bars
+    V.forEach((v,i)=>{
+      const cx=padL+spacing*(i+1);
+      const barW=35,barMax=60;
+      const dims=[v.x,v.y,v.z];const dimLabels=['d₁','d₂','d₃'];
+      const highlight=activeStep===0||activeStep===2;
+      dims.forEach((d,di)=>{
+        const bh=d*barMax;const x=cx-barW/2-12+di*18;
+        ctx.fillStyle=highlight?v.c+'55':'rgba(255,255,255,0.08)';
+        ctx.fillRect(x,yVals+40-bh,14,bh);
+        ctx.font='8px JetBrains Mono';ctx.fillStyle='#52525b';ctx.textAlign='center';
+        ctx.fillText(dimLabels[di],x+7,yVals+52);
+      });
+      ctx.font='600 11px Space Grotesk';ctx.fillStyle=v.c;ctx.textAlign='center';
+      ctx.fillText(v.label,cx,yVals+10);
+      ctx.font='9px JetBrains Mono';ctx.fillStyle='#3f3f46';
+      ctx.fillText(`(${v.x},${v.y},${v.z})`,cx,yVals+68);
+    });
+
+    // Weights
+    ctx.fillStyle='#52525b';ctx.font='600 11px Space Grotesk';ctx.textAlign='center';
+    ctx.fillText('ATTENTION WEIGHTS (α)',w/2,yWeights-15);
+    const highlight1=activeStep>=1;
+    V.forEach((v,i)=>{
+      const cx=padL+spacing*(i+1);
+      const bw=40,bh=alphas[i]*80;
+      ctx.fillStyle=highlight1?v.c+'77':'rgba(255,255,255,0.06)';
+      ctx.fillRect(cx-bw/2,yWeights+5,bw,bh);
+      ctx.font='700 11px JetBrains Mono';ctx.fillStyle=highlight1?v.c:'#3f3f46';ctx.textAlign='center';
+      ctx.fillText(alphas[i].toFixed(2),cx,yWeights+bh+20);
+    });
+
+    // Connection lines
+    if(activeStep>=2){
+      V.forEach((v,i)=>{
+        const cx=padL+spacing*(i+1);
+        ctx.setLineDash([3,3]);ctx.strokeStyle=v.c+'44';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(cx,yWeights+alphas[i]*80+25);ctx.lineTo(w/2,yOutput-15);ctx.stroke();
+        ctx.setLineDash([]);
+      });
+    }
+
+    // Output
+    ctx.fillStyle='#52525b';ctx.font='600 11px Space Grotesk';ctx.textAlign='center';
+    ctx.fillText('OUTPUT (linear combination)',w/2,yOutput-20);
+    if(activeStep>=2){
+      const ox=0.415,oy=0.525,oz=0.445;
+      const dims=[ox,oy,oz];const barMax=60,barW=28;
+      dims.forEach((d,di)=>{
+        const bh=d*barMax;const x=w/2-barW*1.5-6+di*(barW+6);
+        ctx.fillStyle='#10b981';ctx.fillRect(x,yOutput+20-bh,barW,bh);
+        ctx.font='9px JetBrains Mono';ctx.fillStyle='#10b981';ctx.textAlign='center';
+        ctx.fillText(d.toFixed(3),x+barW/2,yOutput+34);
+      });
+      ctx.font='700 13px Space Grotesk';ctx.fillStyle='#10b981';ctx.textAlign='center';
+      ctx.fillText('(0.415, 0.525, 0.445)',w/2,yOutput+52);
+    }
+  }
+
+  document.querySelectorAll('.step-row').forEach((row,i)=>{
+    row.addEventListener('click',()=>{
+      activeStep=i;
+      document.querySelectorAll('.step-row').forEach(r=>r.classList.remove('step-active'));
+      row.classList.add('step-active');
+      draw();
+    });
+  });
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Section 2: Steering Canvas */
+(function(){
+  const canvas=document.getElementById('steeringCanvas');
+  let mode='static';
+  const descs={
+    static:'<strong style="color:var(--amber);">Static steering:</strong> Fixed α=0.8 empathy injection regardless of context. A calm reflective message gets the same intensity as a panic-level crisis. No contextual intelligence.',
+    was:'<strong style="color:var(--teal);">WAS (Dynamic):</strong> A learned controller reads the input and outputs adaptive coefficients. Angry client → empathy=0.2, firmness=0.9. Calm client → empathy=0.8, firmness=0.3. Same formula, intelligent weights.',
+    hyper:'<strong style="color:var(--violet);">HYPERSteer:</strong> Describe the persona in natural language — "warm, encouraging, uses metaphors" — and a hypernetwork automatically generates the optimal coefficient vector. No manual tuning required.'
+  };
+
+  function draw(){
+    const{ctx,w,h}=setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+    const labels=['Empathy','Firmness','Humor','Socratic'];
+    const vals={static:[0.8,0.8,0.8,0.8],was:[0.2,0.9,0.0,0.5],hyper:[0.6,0.3,0.7,0.8]};
+    const cs={static:'#f59e0b',was:'#14b8a6',hyper:'#8b5cf6'};
+    const v=vals[mode],c=cs[mode];
+    const n=labels.length,gap=w/(n+1),barW=30;
+
+    ctx.font='600 11px Space Grotesk';ctx.fillStyle=c;ctx.textAlign='center';
+    const titles={static:'STATIC (fixed α)',was:'WAS (context-adaptive α)',hyper:'HYPERSteer (language → α)'};
+    ctx.fillText(titles[mode],w/2,25);
+
+    v.forEach((val,i)=>{
+      const x=gap*(i+1);
+      const bh=val*(h-80);
+      ctx.fillStyle=val>0?c+'aa':'rgba(255,255,255,0.03)';
+      ctx.fillRect(x-barW/2,h-30-bh,barW,bh);
+      ctx.font='9px JetBrains Mono';ctx.fillStyle='#a1a1aa';ctx.textAlign='center';
+      ctx.fillText(val.toFixed(1),x,h-32-bh);
+      ctx.font='10px DM Sans';ctx.fillStyle='#52525b';ctx.fillText(labels[i],x,h-14);
+    });
+  }
+
+  document.querySelectorAll('[data-steer]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('[data-steer]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      mode=btn.dataset.steer;
+      document.getElementById('steerDesc').innerHTML='<p style="font-size:.88rem;color:var(--text-muted);line-height:1.6;">'+descs[mode]+'</p>';
+      draw();
+    });
+  });
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Section 3: RISER Canvas */
+(function(){
+  const canvas=document.getElementById('riserCanvas');
+  let activePhase=0;
+  const phases=[
+    {label:'Anxiety tokens',empathy:0.9,logic:0.3,humor:0.0,c:'#f59e0b'},
+    {label:'Analytical tokens',empathy:0.4,logic:0.8,humor:0.0,c:'#14b8a6'},
+    {label:'Self-deprecating humor',empathy:0.4,logic:0.5,humor:0.3,c:'#8b5cf6'},
+    {label:'Return to vulnerability',empathy:0.9,logic:0.2,humor:0.0,c:'#f43f5e'}
+  ];
+
+  function draw(){
+    const{ctx,w,h}=setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+    const p=phases[activePhase];
+    const prims=[{label:'Empathy',val:p.empathy,c:'#f59e0b'},{label:'Logic',val:p.logic,c:'#14b8a6'},{label:'Humor',val:p.humor,c:'#8b5cf6'}];
+    const padT=40,padB=40;
+    const barW=50,gap=w/(prims.length+1);
+
+    ctx.font='700 13px Space Grotesk';ctx.fillStyle=p.c;ctx.textAlign='center';
+    ctx.fillText('Phase: '+p.label,w/2,25);
+
+    prims.forEach((pr,i)=>{
+      const x=gap*(i+1);
+      const maxH=h-padT-padB-30;
+      const bh=pr.val*maxH;
+      const active=pr.val>0;
+
+      // Background track
+      ctx.fillStyle='rgba(255,255,255,0.03)';ctx.fillRect(x-barW/2,padT+20,barW,maxH);
+      // Active bar
+      if(active){
+        ctx.save();ctx.shadowColor=pr.c;ctx.shadowBlur=12;
+        ctx.fillStyle=pr.c;ctx.fillRect(x-barW/2,padT+20+maxH-bh,barW,bh);
+        ctx.restore();
+      }
+      // Label
+      ctx.font='600 11px Space Grotesk';ctx.fillStyle=active?pr.c:'#3f3f46';ctx.textAlign='center';
+      ctx.fillText(pr.label,x,h-padB+15);
+      // Value
+      ctx.font='700 14px JetBrains Mono';ctx.fillStyle=active?pr.c:'#27272a';
+      ctx.fillText(pr.val.toFixed(1),x,padT+15+maxH-bh);
+      // Status indicator
+      if(!active){
+        ctx.font='600 10px Space Grotesk';ctx.fillStyle='#3f3f46';
+        ctx.fillText('OFF',x,padT+20+maxH/2);
+      }
+    });
+  }
+
+  // Token click events
+  document.querySelectorAll('.token-chip').forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      const phase=parseInt(chip.dataset.phase);
+      activePhase=phase;
+      document.querySelectorAll('.token-chip').forEach(c=>{
+        c.style.borderColor='var(--border)';c.style.color='var(--text-dim)';c.style.background='transparent';
+      });
+      document.querySelectorAll(`.token-chip[data-phase="${phase}"]`).forEach(c=>{
+        c.style.borderColor=phases[phase].c;c.style.color=phases[phase].c;
+        c.style.background=phases[phase].c+'18';
+      });
+      const p=phases[phase];
+      document.getElementById('riserState').innerHTML=
+        `<span style="color:${p.c}">${p.label}:</span> empathy=<span style="color:#f59e0b">${p.empathy}</span>, logic=<span style="color:#14b8a6">${p.logic}</span>, humor=<span style="color:#8b5cf6">${p.humor}</span>`;
+      draw();
+    });
+  });
+
+  // Default state
+  document.querySelectorAll('.token-chip[data-phase="0"]').forEach(c=>{
+    c.style.borderColor=phases[0].c;c.style.color=phases[0].c;c.style.background=phases[0].c+'18';
+  });
+  document.getElementById('riserState').innerHTML=`<span style="color:${phases[0].c}">${phases[0].label}:</span> empathy=<span style="color:#f59e0b">${phases[0].empathy}</span>, logic=<span style="color:#14b8a6">${phases[0].logic}</span>, humor=<span style="color:#8b5cf6">${phases[0].humor}</span>`;
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Quiz */
+(function(){
+  const questions=[
+    {q:"The residual stream at layer L is h_L = h_0 + Σ Δ_l. What mathematical structure is this?",
+     opts:["A matrix multiplication","A dot product","A linear combination of the original embedding plus all layer contributions","A non-linear activation function"],
+     correct:2,explanation:"The residual stream is literally a running linear combination: the original embedding (h_0) plus additive updates from each layer. Each Δ_l is weighted implicitly by the learned parameters."},
+    {q:"WAS replaces static α with a learned function α(x). What is the mathematical difference between WAS and basic steering?",
+     opts:["WAS uses completely different basis vectors","WAS changes the formula from linear to non-linear","Nothing changes except the coefficients become input-dependent functions instead of fixed constants","WAS eliminates the need for steering vectors entirely"],
+     correct:2,explanation:"The formula is identical: h_new = h_old + Σ α_i · e_i. The only difference is whether α_i is a hardcoded constant or a learned function of the input. The boundary between static and dynamic steering is just fixed vs variable coefficients."},
+    {q:"A LoRA fine-tune with rank r=4 tries to capture a behavior requiring 12 independent directions. What happens?",
+     opts:["The LoRA update perfectly captures all 12 directions","The model fails completely and produces random output","The update projects the 12D target onto the closest 4D subspace, losing nuance in 8 dimensions","The rank automatically increases to 12"],
+     correct:2,explanation:"LoRA constrains updates to a rank-r subspace. With r=4, only 4 independent behavioral directions are expressible. The model approximates the 12D target by projecting it onto the best 4D subspace — losing the detail that lives in the other 8 dimensions."},
+    {q:"RISER allows α_i = 0, completely deactivating a primitive. Why is this better than WAS where all primitives stay active?",
+     opts:["It saves GPU compute by skipping multiplications","Zeroing out irrelevant primitives prevents them from injecting noise into the output — the effective span narrows to match the current context precisely","It allows RISER to use more total primitives than WAS","It makes the math simpler"],
+     correct:1,explanation:"When irrelevant primitives remain active even at low weights, they inject residual noise. RISER's dynamic support (activating/terminating primitives per-token) ensures the effective span exactly matches what the current conversational moment requires — no more, no less."}
+  ];
+  const container=document.getElementById('quizContainer');
+  questions.forEach((q,qi)=>{
+    const card=document.createElement('div');card.className='card';card.style.padding='1.25rem';
+    let optsHTML='';q.opts.forEach((o,oi)=>{optsHTML+=`<button class="quiz-option" data-q="${qi}" data-o="${oi}">${o}</button>`;});
+    card.innerHTML=`<p style="font-size:.82rem;font-weight:600;color:var(--text-dim);margin-bottom:.75rem;">Question ${qi+1}</p>
+      <p style="font-size:.92rem;line-height:1.6;margin-bottom:1rem;">${q.q}</p>
+      <div id="qO${qi}">${optsHTML}</div>
+      <div class="quiz-explanation" id="qE${qi}" style="margin-top:.75rem;"><div class="insight">${q.explanation}</div></div>`;
+    container.appendChild(card);
+  });
+  container.addEventListener('click',(e)=>{
+    const btn=e.target.closest('.quiz-option');if(!btn)return;
+    const qi=+btn.dataset.q,oi=+btn.dataset.o;
+    const opts=document.querySelectorAll(`#qO${qi} .quiz-option`);
+    if(opts[0].classList.contains('disabled'))return;
+    opts.forEach((o,i)=>{o.classList.add('disabled');
+      if(i===questions[qi].correct)o.classList.add('correct');
+      else if(i===oi&&oi!==questions[qi].correct)o.classList.add('wrong');});
+    document.getElementById(`qE${qi}`).classList.add('show');
+  });
+})();
+
+/* Nav */
+(function(){
+  const links=document.querySelectorAll('.nav-link');
+  const ids=['pipeline','steering','riser','edges','checkpoint'];
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+100;let active=ids[0];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+    links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));
+  });
+})();
+</script>
+</body>
+</html>

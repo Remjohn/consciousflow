@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pydantic Data Contracts — Application Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0A;--surface:#151515;--surface2:#1e1e1e;--surface3:#2A2A2A;
+  --text:#FAFAFA;--muted:#A0A0A0;--border:#2e2e2e;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;--blue:#56B6C2;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--serif:'Playfair Display',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.65;overflow-x:hidden;}
+.container{max-width:820px;margin:0 auto;padding:4rem 2rem 10rem;}
+
+h1{font-family:var(--serif);font-size:clamp(2.5rem,6vw,3.8rem);line-height:1.0;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-family:var(--serif);font-size:1.9rem;margin-bottom:1rem;color:var(--accent);}
+h3{font-size:1.2rem;margin-bottom:1rem;}
+p{margin-bottom:1.4rem;color:var(--muted);font-size:1rem;line-height:1.7;}
+strong{color:var(--text);}
+ul, ol{margin-bottom:1.4rem;color:var(--muted);padding-left:1.5rem;font-size:1rem;line-height:1.7;}
+li{margin-bottom:0.5rem;}
+
+/* CODE BLOCKS */
+pre {background: var(--surface2); padding: 1.25rem; border-radius: 6px; border: 1px solid var(--border); overflow-x: auto; margin-bottom: 1.5rem;}
+code {font-family: var(--mono); font-size: 0.85rem;}
+.hljs-keyword {color: #C678DD;}
+.hljs-class {color: #E5C07B;}
+.hljs-string {color: #98C379;}
+.hljs-comment {color: #5C6370; font-style: italic;}
+.hljs-builtin {color: #56B6C2;}
+.hljs-number {color: #D19A66;}
+.hljs-decorator {color: #61AFEF;}
+code.inline {background: var(--surface2); color: var(--accent); padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.85em;}
+
+/* INTERACTION BOX */
+.interaction-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2.25rem;margin:2rem 0;}
+.interaction-header{font-family:var(--mono);font-size:0.7rem;color:var(--accent);text-transform:uppercase;margin-bottom:1.25rem;letter-spacing:0.12em;padding-bottom:0.6rem;border-bottom:1px solid var(--border);}
+.question-text{font-size:1.05rem;font-weight:500;margin-bottom:1.75rem;color:#fff;line-height:1.6;}
+
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.7rem 1.4rem;font-family:var(--sans);font-weight:600;font-size:0.95rem;border-radius:4px;cursor:pointer;transition:all 0.18s;}
+.btn:hover:not(:disabled){background:#fff;transform:translateY(-1px);}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);padding:0.65rem 1.25rem;}
+.btn-outline:hover:not(:disabled){border-color:var(--text);background:var(--surface2);}
+
+.choices{display:flex;flex-direction:column;gap:0.85rem;margin-bottom:0.5rem;}
+.choice-btn{text-align:left;padding:1rem 1.2rem;background:var(--bg);border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;transition:all 0.18s;font-size:0.92rem;font-weight:400;font-family:var(--sans);line-height:1.5;}
+.choice-btn:hover{border-color:var(--text);color:var(--text);}
+.choice-btn.selected-wrong{border-color:var(--red);color:var(--red);background:rgba(231,111,81,0.05);}
+.choice-btn.selected-right{border-color:var(--green);color:var(--green);background:rgba(42,157,143,0.05);}
+.input-group{display:flex;gap:1rem;align-items:center;margin-bottom:0.5rem;}
+.input-text{background:var(--bg);border:2px solid var(--border);color:#fff;font-family:var(--mono);font-size:0.95rem;padding:0.7rem 1rem;flex:1;border-radius:4px;transition:border-color 0.2s;}
+
+/* FEEDBACK */
+.feedback{display:none;margin-top:1.5rem;padding:1.25rem 1.5rem;border-radius:4px;font-size:0.9rem;line-height:1.65;}
+.feedback.visible{display:block;animation:fadein 0.35s;}
+.feedback.error{background:rgba(231,111,81,0.08);border-left:3px solid var(--red);color:#ffb3a1;}
+.feedback.success{background:rgba(42,157,143,0.08);border-left:3px solid var(--green);color:#a7ece2;}
+.feedback-title{font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;margin-bottom:0.5rem;font-weight:600;letter-spacing:0.1em;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+/* TABS */
+.tab-container{margin:3rem 0;border-radius:8px;overflow:hidden;border:1px solid var(--border);}
+.tab-bar{display:flex;background:var(--surface2);border-bottom:1px solid var(--border);overflow-x:auto;}
+.tab-btn{font-family:var(--mono);font-size:0.8rem;padding:0.8rem 1.5rem;background:transparent;border:none;color:var(--muted);cursor:pointer;transition:all 0.2s;}
+.tab-btn:hover{color:var(--text);background:rgba(255,255,255,0.02);}
+.tab-btn.active{color:var(--accent);border-bottom:2px solid var(--accent);background:var(--surface);}
+.tab-content{display:none;padding:2rem;background:var(--surface);}
+.tab-content.active{display:block;animation:fadein 0.3s;}
+
+.source-tag{display:inline-block;font-family:var(--mono);font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;background:var(--surface2);color:var(--blue);padding:0.3rem 0.6rem;border-radius:2px;border:1px solid var(--border);margin-bottom:1rem;}
+.trace-step{font-size:0.9rem;color:var(--muted);padding-left:1rem;border-left:2px solid var(--border);margin-bottom:0.4rem;}
+.trace-step strong{color:var(--text);}
+
+/* GATED CONTENT */
+.gated-content{opacity:0;pointer-events:none;transform:translateY(16px);transition:all 0.45s ease;display:none;}
+.gated-content.unlocked{opacity:1;pointer-events:auto;transform:translateY(0);display:block;}
+
+.divider{border:none;border-top:1px solid var(--border);margin:3rem 0;}
+
+/* GAUNTLET */
+.gauntlet-wrap{margin-top:4rem;border-top:2px solid var(--border);padding-top:3rem;}
+.gauntlet-intro{font-size:0.88rem;color:var(--muted);margin-bottom:2rem;padding:1rem 1.25rem;background:var(--surface2);border-radius:4px;border-left:2px solid var(--border);}
+.q-block{background:var(--surface2);padding:1.4rem 1.5rem;border-radius:6px;margin-bottom:1.25rem;border:1px solid var(--border);}
+.q-num{font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.4rem;letter-spacing:0.1em;}
+.q-text{font-size:1rem;margin-bottom:1.25rem;font-weight:500;color:#fff;line-height:1.55;}
+.q-misconception{font-family:var(--mono);font-size:0.65rem;color:rgba(232,196,106,0.45);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.08em;}
+.mc-tag{display:inline-block;font-family:var(--mono);font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(231,111,81,0.15);color:var(--red);padding:0.15rem 0.45rem;border-radius:2px;margin-bottom:0.4rem;}
+
+/* FLOW CHART */
+.flow-container{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:1.5rem;font-family:var(--mono);font-size:0.85rem;color:var(--muted);line-height:1.6;}
+.flow-step{margin-bottom:0.8rem;padding-bottom:0.8rem;border-bottom:1px dashed var(--border);}
+.flow-step:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.flow-arrow{color:var(--accent);font-weight:bold;margin:0 0.5rem;}
+.flow-concept{color:var(--text);font-weight:600;}
+
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div style="font-family:var(--mono);font-size:0.7rem;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.15em;">Lesson 11 · Layer 2 — Application</div>
+  <h1>Pydantic Data Contracts</h1>
+
+  <!-- SPACED RETRIEVAL INTERRUPT -->
+  <div class="interaction-box" id="interrupt1">
+    <div class="interaction-header">Spaced Retrieval Interrupt</div>
+    <div class="question-text">Without looking back at Layer 1: What specific structural entity prevents a floating-point number like <code>42.9</code> from entering an integer pipeline, and does it reject the payload entirely or silently coerce it to <code>42</code>?</div>
+    <div class="choices" id="choices_i1">
+      <button class="choice-btn" onclick="checkInterrupt(this, false)">A. Standard Python type hints execute the check, throwing a TypeError immediately.</button>
+      <button class="choice-btn" onclick="checkInterrupt(this, true)">B. Pydantic's BaseModel handles this before execution logic, and it coerces the value to 42 natively.</button>
+      <button class="choice-btn" onclick="checkInterrupt(this, false)">C. Pydantic throws a ValidationError instantly because 42.9 is strictly not an integer.</button>
+    </div>
+    <div class="feedback" id="fb_i1"></div>
+  </div>
+
+<div class="gated-content" id="gallery-content">
+
+  <h2>The CCP Artifact Gallery</h2>
+  <p>This section explores exactly where Python's Pydantic infrastructure operates inside the CCP codebase. Every snippet is a production-level architectural construct.</p>
+
+  <div class="tab-container">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab(event, 'artifact-1')">JIT Compiler</button>
+      <button class="tab-btn" onclick="switchTab(event, 'artifact-2')">DSPy Output</button>
+      <button class="tab-btn" onclick="switchTab(event, 'artifact-3')">FastAPI API</button>
+      <button class="tab-btn" onclick="switchTab(event, 'artifact-4')">Robot Arm Pi</button>
+      <button class="tab-btn" onclick="switchTab(event, 'artifact-5')">Neo4j Graph</button>
+    </div>
+
+    <!-- ARTIFACT 1 -->
+    <div id="artifact-1" class="tab-content active">
+      <h3>JIT Skill Compiler — Trigger Validation</h3>
+      <div class="source-tag">Strategic Source: OpenProse Contract Vocabulary</div>
+      <p>The JIT Skill Compiler dynamically generates prompts based on client necessity. "Ensures" logic dictates output arrays must have deterministic bounding limits.</p>
+      <pre><code><span class="hljs-keyword">from</span> pydantic <span class="hljs-keyword">import</span> BaseModel, Field, field_validator
+<span class="hljs-keyword">from</span> typing <span class="hljs-keyword">import</span> Literal
+
+<span class="hljs-keyword">class</span> <span class="hljs-class">TriggerArrayEnsure</span>(BaseModel):
+    session_id: <span class="hljs-builtin">str</span>
+    trigger_sequence: <span class="hljs-builtin">list</span>[<span class="hljs-builtin">str</span>] = Field(min_length=<span class="hljs-number">1</span>, max_length=<span class="hljs-number">5</span>)
+    confidence_weight: <span class="hljs-builtin">float</span> = Field(ge=<span class="hljs-number">0.0</span>, le=<span class="hljs-number">1.0</span>)
+    urgency_tier: Literal[<span class="hljs-string">"low"</span>, <span class="hljs-string">"medium"</span>, <span class="hljs-string">"critical"</span>]
+
+    <span class="hljs-decorator">@field_validator</span>(<span class="hljs-string">"trigger_sequence"</span>)
+    <span class="hljs-decorator">@classmethod</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-builtin">validate_known_triggers</span>(cls, sequence: <span class="hljs-builtin">list</span>[<span class="hljs-builtin">str</span>]) -> <span class="hljs-builtin">list</span>[<span class="hljs-builtin">str</span>]:
+        valid_registry = {<span class="hljs-string">"empathic_silence"</span>, <span class="hljs-string">"confrontational_pivot"</span>, <span class="hljs-string">"socratic_probe"</span>}
+        <span class="hljs-keyword">for</span> t <span class="hljs-keyword">in</span> sequence:
+            <span class="hljs-keyword">if</span> t <span class="hljs-keyword">not in</span> valid_registry:
+                <span class="hljs-keyword">raise</span> ValueError(<span class="hljs-string">f"Hallucinated trigger detected: {t}"</span>)
+        <span class="hljs-keyword">return</span> sequence</code></pre>
+      
+      <p><strong>Data Flow Trace:</strong></p>
+      <div class="trace-step"><strong>1.</strong> LLM Output JSON arrives as a raw Python dictionary <code class="inline">data</code>.</div>
+      <div class="trace-step"><strong>2.</strong> <code class="inline">TriggerArrayEnsure(**data)</code> is instantiated.</div>
+      <div class="trace-step"><strong>3.</strong> Type bounds checked (<code class="inline">confidence_weight</code> = 0.85).</div>
+      <div class="trace-step"><strong>4.</strong> <code class="inline">Literal</code> bounds verified. If output is "high", it throws instantly.</div>
+      <div class="trace-step"><strong>5.</strong> Custom validation executes. If the LLM hallucinated "yelling_loudly", propagation stops.</div>
+      
+      <div class="interaction-header" style="margin-top:2rem;">Prediction Gate</div>
+      <p>If the LLM returns <code class="inline">trigger_sequence=["socratic_probe"]</code>, but <code class="inline">urgency_tier</code> is completely omitted from the dictionary...</p>
+      <button class="choice-btn" style="width:100%" onclick="revealArt1(this)">What happens?</button>
+      <div class="feedback" id="fb-art1"><strong>Answer:</strong> Pydantic intercepts the payload creation and raises a <code>ValidationError</code> complaining <code>urgency_tier</code> is required, throwing a structured error back to the DSPy retry loop before any core logic executes.</div>
+    </div>
+
+    <!-- ARTIFACT 2 -->
+    <div id="artifact-2" class="tab-content">
+      <h3>The Machinist — DSPy Output Signature</h3>
+      <div class="source-tag">Strategic Source: DSPy — The End of Prompt Engineering (185/200)</div>
+      <p>DSPy transforms non-deterministic strings into constrained Pydantic payloads using native parsing extensions.</p>
+      <pre><code><span class="hljs-keyword">import</span> dspy
+<span class="hljs-keyword">from</span> pydantic <span class="hljs-keyword">import</span> BaseModel
+
+<span class="hljs-keyword">class</span> <span class="hljs-class">CoachingOutput</span>(BaseModel):
+    raw_transcript: <span class="hljs-builtin">str</span>
+    cbcs_alignment_score: <span class="hljs-builtin">float</span>
+
+<span class="hljs-keyword">class</span> <span class="hljs-class">GenerateScript</span>(dspy.Signature):
+    <span class="hljs-string">"""Generate a high-fidelity coaching script based on prior historical Context."""</span>
+    context_premise: <span class="hljs-builtin">str</span> = dspy.InputField()
+    voice_dna_profile: <span class="hljs-builtin">str</span> = dspy.InputField()
+    
+    <span class="hljs-comment"># The output is mapped directly to a Pydantic object</span>
+    coaching_result: CoachingOutput = dspy.OutputField(desc=<span class="hljs-string">"Valid Output"</span>)</code></pre>
+      
+      <div class="interaction-header" style="margin-top:2rem;">Prediction Gate</div>
+      <p>If the LLM generates mathematically un-parseable JSON due to a missing curly brace (`}`), does Pydantic fix this?</p>
+      <button class="choice-btn" style="width:100%" onclick="revealArt2(this)">What happens?</button>
+      <div class="feedback" id="fb-art2"><strong>Answer:</strong> DSPy provides native wrappers to attempt JSON repair. However, if unrepairable, DSPy relies on Pydantic's <code>ValidationError</code> to recognize the exact failure and intelligently loops the Prompt via its inner retry execution engine.</div>
+    </div>
+
+    <!-- ARTIFACT 3 -->
+    <div id="artifact-3" class="tab-content">
+      <h3>The Chassis — FastAPI Deterministic Orchestrator</h3>
+      <div class="source-tag">Strategic Source: Building Effective Terminal Agents (190/200)</div>
+      <p>FastAPI is fundamentally bolted to Pydantic. It utilizes Pydantic under the hood for every request and response definition.</p>
+      <pre><code><span class="hljs-keyword">from</span> fastapi <span class="hljs-keyword">import</span> FastAPI, HTTPException
+<span class="hljs-keyword">from</span> pydantic <span class="hljs-keyword">import</span> BaseModel
+
+app = FastAPI()
+
+<span class="hljs-keyword">class</span> <span class="hljs-class">SessionInitializationRequest</span>(BaseModel):
+    client_id: <span class="hljs-builtin">str</span>
+    archetype_override: <span class="hljs-builtin">str</span> | <span class="hljs-builtin">None</span> = <span class="hljs-builtin">None</span>
+
+<span class="hljs-keyword">class</span> <span class="hljs-class">SessionBlueprint</span>(BaseModel):
+    session_id: <span class="hljs-builtin">str</span>
+    status: <span class="hljs-builtin">str</span>
+    
+<span class="hljs-decorator">@app.post</span>(<span class="hljs-string">"/session/init"</span>, response_model=SessionBlueprint)
+<span class="hljs-keyword">async def</span> <span class="hljs-builtin">init_session</span>(payload: SessionInitializationRequest):
+    <span class="hljs-keyword">if not</span> payload.client_id.startswith(<span class="hljs-string">"CL-"</span>):
+        <span class="hljs-keyword">raise</span> HTTPException(status_code=<span class="hljs-number">400</span>, detail=<span class="hljs-string">"Invalid client sig"</span>)
+        
+    <span class="hljs-keyword">return</span> {<span class="hljs-string">"session_id"</span>: <span class="hljs-string">f"S-{payload.client_id}"</span>, <span class="hljs-string">"status"</span>: <span class="hljs-string">"active"</span>}</code></pre>
+      
+      <div class="interaction-header" style="margin-top:2rem;">Prediction Gate</div>
+      <p>Look closely at the return statement. The function returns a raw dictionary, not a <code class="inline">SessionBlueprint</code> object. Will this code break the API response?</p>
+      <button class="choice-btn" style="width:100%" onclick="revealArt3(this)">What happens?</button>
+      <div class="feedback" id="fb-art3"><strong>Answer:</strong> No. Because FastAPI employs Pydantic via <code>response_model=SessionBlueprint</code>, it natively casts any compatible dictionary into the required Pydantic model implicitly on the outbound response trip.</div>
+    </div>
+    
+    <!-- ARTIFACT 4 -->
+    <div id="artifact-4" class="tab-content">
+      <h3>The Robot Arm — Pi Harness Shell Event Wrapper</h3>
+      <div class="source-tag">Strategic Source: Pi Agentic Harness (pi-mono)</div>
+      <p>When the Pi harness drops into the bash shell, it automatically structures its execution results for deterministic tracking.</p>
+      <pre><code><span class="hljs-keyword">from</span> pydantic <span class="hljs-keyword">import</span> BaseModel, Field
+<span class="hljs-keyword">import</span> subprocess
+
+<span class="hljs-keyword">class</span> <span class="hljs-class">SubprocessPayload</span>(BaseModel):
+    command: <span class="hljs-builtin">str</span>
+    returncode: <span class="hljs-builtin">int</span> = Field(alias=<span class="hljs-string">"exit_status"</span>)
+    stdout: <span class="hljs-builtin">str</span>
+    stderr: <span class="hljs-builtin">str</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-builtin">execute_safely</span>(command: <span class="hljs-builtin">str</span>) -> SubprocessPayload:
+    result = subprocess.run(command.split(), capture_output=<span class="hljs-builtin">True</span>, timeout=<span class="hljs-number">15</span>)
+    <span class="hljs-keyword">return</span> SubprocessPayload(
+        command=command,
+        exit_status=result.returncode,
+        stdout=result.stdout.decode(<span class="hljs-string">"utf-8"</span>),
+        stderr=result.stderr.decode(<span class="hljs-string">"utf-8"</span>)
+    )</code></pre>
+
+      <div class="interaction-header" style="margin-top:2rem;">Prediction Gate</div>
+      <p>What happens if <code class="inline">timeout=15</code> triggers inside the execution block? Does it reach the Pydantic Instance?</p>
+      <button class="choice-btn" style="width:100%" onclick="revealArt4(this)">What happens?</button>
+      <div class="feedback" id="fb-art4"><strong>Answer:</strong> The execution never reaches the Pydantic step. The <code>subprocess.run</code> organically raises a <code>TimeoutExpired</code> exception, aborting the method before <code>SubprocessPayload</code> ever gets created. Pydantic is a data validation layer, not an execution error handler.</div>
+    </div>
+
+    <!-- ARTIFACT 5 -->
+    <div id="artifact-5" class="tab-content">
+      <h3>The Memory Engine — Neo4j Return Wrapper</h3>
+      <div class="source-tag">Strategic Source: OpenProse Filesystem State Model</div>
+      <p>Neo4j returns fluid, loosely typed dictionaries on matching nodes. The Model wraps this into impenetrable safe instances.</p>
+      <pre><code><span class="hljs-keyword">from</span> pydantic <span class="hljs-keyword">import</span> BaseModel
+
+<span class="hljs-keyword">class</span> <span class="hljs-class">GraphNode</span>(BaseModel):
+    node_id: <span class="hljs-builtin">str</span>
+    weight: <span class="hljs-builtin">float</span>
+    labels: <span class="hljs-builtin">list</span>[<span class="hljs-builtin">str</span>]
+
+<span class="hljs-keyword">async def</span> <span class="hljs-builtin">extract_node</span>(neo4j_driver, node_name: <span class="hljs-builtin">str</span>) -> GraphNode:
+    <span class="hljs-comment"># Hypothetical Neo4j Execution Result </span>
+    raw_db_row = {<span class="hljs-string">"node_id"</span>: node_name, <span class="hljs-string">"weight"</span>: <span class="hljs-number">0.88</span>, <span class="hljs-string">"labels"</span>: [<span class="hljs-string">"Coach"</span>, <span class="hljs-string">"Active"</span>]}
+    
+    <span class="hljs-keyword">return</span> GraphNode(**raw_db_row)</code></pre>
+      <p><strong>Trace:</strong> The `**` syntax explodes the dict into initialization arguments. Pydantic coercively corrects loosely typed elements returning an untamperable graph abstraction to Python.</p>
+      <button class="btn btn-outline" style="margin-top:1rem;" onclick="unlockGate3()">Acknowledge Data Flow & Continue</button>
+    </div>
+  </div>
+</div>
+
+<div class="gated-content" id="strat-content">
+  <hr class="divider">
+
+  <h2>Data Flow Tracing Exercise</h2>
+  <div class="flow-container">
+    <div class="flow-step"><strong>1. Client WebSocket</strong> <span class="flow-arrow">→</span> Message JSON: <code class="inline">{"client_id": "CL-01", "intent": "venting"}</code> arrives.</div>
+    <div class="flow-step"><strong>2. FastAPI Endpoint</strong> <span class="flow-arrow">→</span> Mapped to <span class="flow-concept">IncomingIntentData(BaseModel)</span>. Ensures client_id exists. Throws HTTP 422 if invalid.</div>
+    <div class="flow-step"><strong>3. DSPy Signature</strong> <span class="flow-arrow">→</span> Mapped via <span class="flow-concept">dspy.Signature</span> definitions. Guarantees DSPy cannot instantiate heavily optimized pipelines on corrupted types.</div>
+    <div class="flow-step"><strong>4. Qwen-3.5 Generates</strong> <span class="flow-arrow">→</span> Raw String textual generation.</div>
+    <div class="flow-step"><strong>5. DSPy Output Validation</strong> <span class="flow-arrow">→</span> Mapped to <span class="flow-concept">CoachingScriptResponse(BaseModel)</span>. Parses JSON from text, executes @model_validator logic.</div>
+    <div class="flow-step"><strong>6. FastAPI Response</strong> <span class="flow-arrow">→</span> Serializes the <span class="flow-concept">.model_dump_json()</span> result. Sends safe text directly back to active socket.</div>
+  </div>
+
+  <h2 style="margin-top:3rem;">Production Edge Cases</h2>
+  <p>Pydantic is highly flexible but incredibly definitive in boundary behavior. A Sovereign Architect must know the exceptions.</p>
+
+  <div class="interaction-box">
+    <h3 style="color:var(--accent)">Edge Case 1: DSPy Triggering Retry Loops</h3>
+    <p><strong>When:</strong> The LLM bypasses a structured Pydantic format entirely and just outputs "I am a language model..." instead of JSON.</p>
+    <p><strong>State:</strong> DSPy wrapper attempts validation via Pydantic on the raw string and triggers a core formatting error.</p>
+    <p><strong>Why the Architecture handles it natively:</strong> DSPy catches the `ValidationError`, appends the specific string failure text (the exact exception message generated by Pydantic) dynamically into a new prompt, and runs a secondary compilation pass over the LLM asking it to mathematically repair its specific violation of the Schema.</p>
+  </div>
+
+  <h2>Strategic Paper Integration</h2>
+  <p>To master the ecosystem, you must comprehend why Dictum 2 of the Orchestration Dichotomy states: <em>"Never allow probabilistic entities to make structural decisions."</em></p>
+  <ul>
+    <li><strong>Inside the Scaffold (182/200):</strong> The paper heavily maps the separation of execution scaffolding vs token generation. Pydantic forms the rigid scaffold inside which generation resides.</li>
+    <li><strong>OpenProse Contract Vocabulary:</strong> Maps comprehensively. <code>BaseModel</code> defines "Requires", formats "Ensures", and <code>@model_validator</code> handles static Time "Invariants".</li>
+  </ul>
+
+  <hr class="divider">
+
+  <div class="gauntlet-wrap">
+    <h2>Application Gauntlet</h2>
+    <div class="gauntlet-intro">
+      7 questions. Do not write code. Formulate mental execution models of advanced Pydantic deployments traversing unknown CCP systems.
+    </div>
+    <div id="q-container"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// TABS
+function switchTab(evt, tabId) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+  evt.currentTarget.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+
+// INTERRUPT
+function checkInterrupt(btn, isCorrect) {
+  const fb = document.getElementById('fb_i1');
+  fb.classList.add('visible');
+  document.querySelectorAll('#choices_i1 .choice-btn').forEach(c => c.style.pointerEvents = 'none');
+  
+  if (isCorrect) {
+    btn.classList.add('selected-right');
+    fb.classList.add('success');
+    fb.innerHTML = `<strong>Correct.</strong> Pydantic's BaseModel handles this internally, coercing the float <code>42.9</code> down to the strict integer <code>42</code> instead of outright rejecting it, safeguarding downstream logic perfectly while providing operational flexibility.`;
+    setTimeout(() => { document.getElementById('gallery-content').classList.add('unlocked'); }, 1500);
+  } else {
+    btn.classList.add('selected-wrong');
+    fb.classList.add('error');
+    fb.innerHTML = `<strong>Incorrect.</strong> Standard Python ignores type hints natively. Pydantic <em>coerces</em> integers before rejecting them. Resetting...`;
+    setTimeout(() => {
+      document.querySelectorAll('#choices_i1 .choice-btn').forEach(c => { c.style.pointerEvents = 'auto'; c.classList.remove('selected-wrong'); });
+      fb.classList.remove('visible', 'error'); fb.innerHTML = '';
+    }, 2500);
+  }
+}
+
+// ARTIFACT REVEALS
+function revealArt1(btn) { btn.style.display = 'none'; document.getElementById('fb-art1').style.display = 'block'; }
+function revealArt2(btn) { btn.style.display = 'none'; document.getElementById('fb-art2').style.display = 'block'; }
+function revealArt3(btn) { btn.style.display = 'none'; document.getElementById('fb-art3').style.display = 'block'; }
+function revealArt4(btn) { btn.style.display = 'none'; document.getElementById('fb-art4').style.display = 'block'; }
+
+function unlockGate3() {
+  document.getElementById('strat-content').classList.add('unlocked');
+  renderGauntlet();
+  setTimeout(() => {
+    document.getElementById('strat-content').scrollIntoView({behavior: "smooth", block: "start"});
+  }, 100);
+}
+
+// GAUNTLET
+const G_DATA = [
+  {
+    num: '01',
+    target: 'Voice DNA Injection Layer (LoRA)',
+    q: 'Given: <code class="inline">alpha_rate: float = Field(ge=0.01)</code>. What would happen if `alpha_rate` was removed from the input JSON?',
+    type: 'text',
+    match: ['error', 'validationerror', 'fails', 'required', 'rejected'],
+    exp: 'Pydantic throws a ValidationError. Float does not use `| None`, nor a default value making it strictly required.'
+  },
+  {
+    num: '02',
+    target: 'Websocket Deserialization',
+    q: 'Line: <code class="inline">session_data = SessionConnect.model_validate_json(payload)</code>. What happens if this is omitted and `payload` (a string) is passed downstream?',
+    type: 'text',
+    match: ['crash', 'string subscript', 'typeerror', 'exception', 'subscript laws'],
+    exp: 'The incoming data remains a raw JSON string. If deeply nested access `session_data["id"]` occurs without parsing, the system crashes on string subscript rules natively.'
+  },
+  {
+    num: '03',
+    target: 'Cross-Field Integrity (@model_validator)',
+    q: 'If a user configures 30 reasoning steps with a 5-second `budget_timeout` and you lack a cross-field validation check assessing both values, what happens?',
+    type: 'text',
+    match: ['panic', 'timeout', 'crash', 'rlm drift', 'time-series failure'],
+    exp: 'It violates time-series integrity constraints globally, causing timeout panics in the RL engine without warning because the parameters individually were valid types.'
+  },
+  {
+    num: '04',
+    target: 'Literal Boundaries (Robot Arm)',
+    q: 'Given <code class="inline">tool_name: Literal["search", "execute_bash"]</code>. What happens if the agent hallucinates `tool_name="drop_table"`?',
+    type: 'bool',
+    ans: true,
+    exp: 'True (ValidationError). The payload violates the Literal boundaries natively at instantiation and aborts the function call immediately.'
+  },
+  {
+    num: '05',
+    target: 'Graph Edge Constraints',
+    q: 'If <code class="inline">relationship: str</code> is removed from a GraphEdge Model, what structural damage occurs to the Neo4j schema?',
+    type: 'text',
+    match: ['detached', 'spatial', 'connections', 'definition', 'meaning'],
+    exp: 'Relationship data becomes detached. Graph representations would solely be spatial nodes lacking structural definition connections, crippling the traversal logic.'
+  },
+  {
+    num: '06',
+    target: 'Implicit Boolean Coercion',
+    q: 'LLM outputs <code class="inline">{"is_hallucinating": "nope"}</code>. Does Pydantic correctly coerce "nope" to False for the boolean field?',
+    type: 'bool',
+    ans: false,
+    exp: 'False. While Pydantic coerces string "True" to True, "nope" is non-standard boolean casting logic and triggers a ValidationError immediately.'
+  },
+  {
+    num: '07',
+    target: 'DSPy Signature Constraints',
+    q: 'In <code class="inline">intent_mapped: Literal["positive", "negative"] = dspy.OutputField()</code>, what occurs if the <code class="inline">Literal</code> type is removed leaving just <code class="inline">str</code>?',
+    type: 'text',
+    match: ['sentence', 'sentences', 'strings', 'free form', 'unconstrained', 'verbose'],
+    exp: 'The model lacks strict mapping constraints and will default to generating full sentence strings or unconstrained paragraph text as output rather than exactly one of two tokens.'
+  }
+];
+
+function renderGauntlet() {
+  const container = document.getElementById('q-container');
+  let html = '';
+  G_DATA.forEach((item, idx) => {
+    html += `
+    <div class="q-block" id="gq-${idx}">
+      <div class="q-num">Drill ${item.num}</div>
+      <div class="q-misconception">Targets: ${item.target}</div>
+      <div class="q-text">${item.q}</div>
+    `;
+    if (item.type === 'bool') {
+      html += `
+        <div style="display:flex;gap:0.85rem;">
+          <button class="btn btn-outline" onclick="answerG(${idx}, true, this)">True</button>
+          <button class="btn btn-outline" onclick="answerG(${idx}, false, this)">False/Validation Error</button>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="input-group" style="margin-bottom:0;">
+          <input type="text" id="gInput-${idx}" class="input-text" placeholder="Type logic projection...">
+          <button class="btn" onclick="answerGText(${idx}, this)">Lock</button>
+        </div>
+      `;
+    }
+    html += `<div class="feedback" id="gfb-${idx}"></div></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function answerG(idx, val, btn) {
+  const block = document.getElementById(`gq-${idx}`);
+  block.querySelectorAll('button').forEach(b => b.style.pointerEvents = 'none');
+  const fb = document.getElementById(`gfb-${idx}`);
+  fb.classList.add('visible');
+
+  if (val === G_DATA[idx].ans) {
+    btn.style.background = 'rgba(42,157,143,0.2)';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">Correct</div>${G_DATA[idx].exp}`;
+  } else {
+    btn.style.background = 'rgba(231,111,81,0.12)';
+    btn.style.borderColor = 'var(--red)';
+    btn.style.color = 'var(--red)';
+    fb.classList.add('error');
+    fb.innerHTML = `<span class="mc-tag">Projection Fractured</span><br>${G_DATA[idx].exp}`;
+  }
+}
+
+function answerGText(idx, btn) {
+  const input = document.getElementById(`gInput-${idx}`);
+  const val = input.value.toLowerCase().trim();
+  if (!val) return;
+  input.disabled = true;
+  btn.disabled = true;
+  const fb = document.getElementById(`gfb-${idx}`);
+  fb.classList.add('visible');
+
+  let correct = false;
+  if (G_DATA[idx].match) {
+    correct = G_DATA[idx].match.some(m => val.includes(m));
+  }
+
+  if (correct) {
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">Correct Verification</div>${G_DATA[idx].exp}`;
+  } else {
+    fb.classList.add('error');
+    fb.innerHTML = `<span class="mc-tag">Projection Fractured</span><br><strong>Close, but consider:</strong> ${G_DATA[idx].exp}`;
+  }
+}
+</script>
+</body>
+</html>

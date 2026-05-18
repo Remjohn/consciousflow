@@ -1,0 +1,1229 @@
+﻿=== A Statistical Exploration of Text Partition Into Constituents The Case of.md ===
+
+> md\A Statistical Exploration of Text Partition Into Constituents The Case of.md:55:**Abstract**
+  md\A Statistical Exploration of Text Partition Into Constituents The Case of.md:56:
+  md\A Statistical Exploration of Text Partition Into Constituents The Case of.md:57:
+  md\A Statistical Exploration of Text Partition Into Constituents The Case of.md:58:
+  md\A Statistical Exploration of Text Partition Into Constituents The Case of.md:59:We present a pipeline for a 
+statistical textual exploration, offering a **stylometry-based expla-**
+  md\A Statistical Exploration of Text Partition Into Constituents The Case of.md:60:**nation and statistical 
+validation of a hypothe-**
+  md\A Statistical Exploration of Text Partition Into Constituents The Case of.md:61:**sized partition of a text** . 
+Given a parameterization of the text, our pipeline: ( **1** ) detects literary
+  md\A Statistical Exploration of Text Partition Into Constituents The Case of.md:62:features yielding the optimal 
+overlap between
+  md\A Statistical Exploration of Text Partition Into Constituents The Case of.md:63:the hypothesized and unsupervised 
+partitions,
+  md\A Statistical Exploration of Text Partition Into Constituents The Case of.md:64:( **2** ) performs a 
+hypothesis-testing analysis to
+  md\A Statistical Exploration of Text Partition Into Constituents The Case of.md:65:quantify the statistical 
+significance of the optimal overlap, while conserving implicit correlations between units of text that are more likely
+  md\A Statistical Exploration of Text Partition Into Constituents The Case of.md:66:to be grouped, and ( **3** ) 
+extracts and quantifies
+  md\A Statistical Exploration of Text Partition Into Constituents The Case of.md:67:the importance of features most 
+responsible for
+  md\A Statistical Exploration of Text Partition Into Constituents The Case of.md:68:the classification, estimates 
+their statistical stability and cluster-wise abundance.
+  md\A Statistical Exploration of Text Partition Into Constituents The Case of.md:69:
+  md\A Statistical Exploration of Text Partition Into Constituents The Case of.md:70:
+
+=== A Unified Interpretable Intelligent Learning Diagnosis.md ===
+> md\A Unified Interpretable Intelligent Learning Diagnosis.md:42:**Abstract**
+  md\A Unified Interpretable Intelligent Learning Diagnosis.md:43:
+  md\A Unified Interpretable Intelligent Learning Diagnosis.md:44:
+  md\A Unified Interpretable Intelligent Learning Diagnosis.md:45:Intelligent learning diagnosis is a critical engine 
+of intelligent tutoring systems,
+  md\A Unified Interpretable Intelligent Learning Diagnosis.md:46:
+  md\A Unified Interpretable Intelligent Learning Diagnosis.md:47:
+  md\A Unified Interpretable Intelligent Learning Diagnosis.md:48:which aims to estimate learners’ current knowledge 
+mastery status and predict their
+  md\A Unified Interpretable Intelligent Learning Diagnosis.md:49:
+  md\A Unified Interpretable Intelligent Learning Diagnosis.md:50:
+  md\A Unified Interpretable Intelligent Learning Diagnosis.md:51:future learning performance. The significant 
+challenge with traditional learning diag
+  md\A Unified Interpretable Intelligent Learning Diagnosis.md:52:
+  md\A Unified Interpretable Intelligent Learning Diagnosis.md:53:nosis methods is the inability to balance diagnostic 
+accuracy and interpretability.
+  md\A Unified Interpretable Intelligent Learning Diagnosis.md:54:
+  md\A Unified Interpretable Intelligent Learning Diagnosis.md:55:
+  md\A Unified Interpretable Intelligent Learning Diagnosis.md:56:Although the existing psychometric-based learning 
+diagnosis methods provide some
+  md\A Unified Interpretable Intelligent Learning Diagnosis.md:57:
+
+=== AgenticAI-DialogGen Topic-Guided Conversation Generation for.md ===
+> md\AgenticAI-DialogGen Topic-Guided Conversation Generation for.md:9:**Abstract**
+  md\AgenticAI-DialogGen Topic-Guided Conversation Generation for.md:10:
+  md\AgenticAI-DialogGen Topic-Guided Conversation Generation for.md:11:
+  md\AgenticAI-DialogGen Topic-Guided Conversation Generation for.md:12:
+  md\AgenticAI-DialogGen Topic-Guided Conversation Generation for.md:13:
+  md\AgenticAI-DialogGen Topic-Guided Conversation Generation for.md:14:
+  md\AgenticAI-DialogGen Topic-Guided Conversation Generation for.md:15:
+  md\AgenticAI-DialogGen Topic-Guided Conversation Generation for.md:16:
+  md\AgenticAI-DialogGen Topic-Guided Conversation Generation for.md:17:
+  md\AgenticAI-DialogGen Topic-Guided Conversation Generation for.md:18:
+  md\AgenticAI-DialogGen Topic-Guided Conversation Generation for.md:19:
+  md\AgenticAI-DialogGen Topic-Guided Conversation Generation for.md:20:
+  md\AgenticAI-DialogGen Topic-Guided Conversation Generation for.md:21:
+  md\AgenticAI-DialogGen Topic-Guided Conversation Generation for.md:22:
+  md\AgenticAI-DialogGen Topic-Guided Conversation Generation for.md:23:
+  md\AgenticAI-DialogGen Topic-Guided Conversation Generation for.md:24:
+
+=== Ask, Answer, and Detect Role-Playing LLMs for Personality.md ===
+> md\Ask, Answer, and Detect Role-Playing LLMs for Personality.md:20:**Abstract**
+  md\Ask, Answer, and Detect Role-Playing LLMs for Personality.md:21:
+  md\Ask, Answer, and Detect Role-Playing LLMs for Personality.md:22:
+  md\Ask, Answer, and Detect Role-Playing LLMs for Personality.md:23:Understanding human personality is crucial for 
+web applications
+  md\Ask, Answer, and Detect Role-Playing LLMs for Personality.md:24:
+  md\Ask, Answer, and Detect Role-Playing LLMs for Personality.md:25:such as personalized recommendation and mental 
+health assess
+  md\Ask, Answer, and Detect Role-Playing LLMs for Personality.md:26:ment. Existing studies on personality detection 
+predominantly
+  md\Ask, Answer, and Detect Role-Playing LLMs for Personality.md:27:
+  md\Ask, Answer, and Detect Role-Playing LLMs for Personality.md:28:adopt a “posts → user vector → labels” modeling 
+paradigm, which
+  md\Ask, Answer, and Detect Role-Playing LLMs for Personality.md:29:
+  md\Ask, Answer, and Detect Role-Playing LLMs for Personality.md:30:encodes social media posts into user 
+representations for predicting
+  md\Ask, Answer, and Detect Role-Playing LLMs for Personality.md:31:
+  md\Ask, Answer, and Detect Role-Playing LLMs for Personality.md:32:personality labels ( _e.g._, MBTI labels). While 
+recent advances in large
+  md\Ask, Answer, and Detect Role-Playing LLMs for Personality.md:33:
+  md\Ask, Answer, and Detect Role-Playing LLMs for Personality.md:34:language models (LLMs) have improved text 
+encoding capacities,
+  md\Ask, Answer, and Detect Role-Playing LLMs for Personality.md:35:
+
+=== Asymptotic Theory for Graphical SLOPE Precision.md ===
+> md\Asymptotic Theory for Graphical SLOPE Precision.md:5:**Abstract**
+  md\Asymptotic Theory for Graphical SLOPE Precision.md:6:
+  md\Asymptotic Theory for Graphical SLOPE Precision.md:7:
+  md\Asymptotic Theory for Graphical SLOPE Precision.md:8:This paper studies Graphical SLOPE for precision matrix 
+estimation, with emphasis on its ability to recover both sparsity and clusters of edges with equal or similar
+  md\Asymptotic Theory for Graphical SLOPE Precision.md:9:strength. In a fixed-dimensional regime, we establish that 
+the root- _n_ scaled estimation error converges to the unique minimizer of a strictly convex optimization problem
+  md\Asymptotic Theory for Graphical SLOPE Precision.md:10:defined through the directional derivative of the SLOPE 
+penalty. We also establish
+  md\Asymptotic Theory for Graphical SLOPE Precision.md:11:convergence of the induced SLOPE pattern, thereby obtaining 
+an asymptotic characterization of the clustering structure selected by the estimator. A comparison with
+  md\Asymptotic Theory for Graphical SLOPE Precision.md:12:GLASSO shows that the grouping property of SLOPE can 
+substantially improve estimation accuracy when the precision matrix exhibits structured edge patterns.
+  md\Asymptotic Theory for Graphical SLOPE Precision.md:13:To assess the effect of departures from Gaussianity, we 
+then analyze Gaussian-loss
+  md\Asymptotic Theory for Graphical SLOPE Precision.md:14:precision matrix estimation under elliptical distributions. 
+In this setting, we derive the
+  md\Asymptotic Theory for Graphical SLOPE Precision.md:15:limiting distribution and quantify the inflation in 
+variability induced by heavy tails
+  md\Asymptotic Theory for Graphical SLOPE Precision.md:16:relative to the Gaussian benchmark. We also study TSLOPE, 
+based on the multivariate _t_ -loss, and derive its limiting distribution. The results show that TSLOPE offers
+  md\Asymptotic Theory for Graphical SLOPE Precision.md:17:clear advantages over GSLOPE under heavy-tailed 
+data-generating mechanisms. Simulation evidence suggests that these qualitative conclusions persist in high-dimensional
+  md\Asymptotic Theory for Graphical SLOPE Precision.md:18:settings, and an empirical application shows that 
+SLOPE-based estimators, especially
+  md\Asymptotic Theory for Graphical SLOPE Precision.md:19:TSLOPE, can uncover economically meaningful clustered 
+dependence structures.
+  md\Asymptotic Theory for Graphical SLOPE Precision.md:20:
+
+=== Automatic Data Curation for Self-Supervised Learning A Clustering-Based Approach.md ===
+> md\Automatic Data Curation for Self-Supervised Learning A Clustering-Based Approach.md:16:**Abstract**
+  md\Automatic Data Curation for Self-Supervised Learning A Clustering-Based Approach.md:17:
+  md\Automatic Data Curation for Self-Supervised Learning A Clustering-Based Approach.md:18:
+  md\Automatic Data Curation for Self-Supervised Learning A Clustering-Based Approach.md:19:Self-supervised features 
+are the cornerstone of modern machine learning systems. They
+  md\Automatic Data Curation for Self-Supervised Learning A Clustering-Based Approach.md:20:are typically pre-trained 
+on data collections whose construction and curation typically require extensive human effort. This manual process has 
+some limitations similar to those
+  md\Automatic Data Curation for Self-Supervised Learning A Clustering-Based Approach.md:21:encountered in supervised 
+learning, e.g., the crowd-sourced selection of data is costly and
+  md\Automatic Data Curation for Self-Supervised Learning A Clustering-Based Approach.md:22:time-consuming, preventing 
+scaling the dataset size. In this work, we consider the problem
+  md\Automatic Data Curation for Self-Supervised Learning A Clustering-Based Approach.md:23:of automatic curation of 
+high-quality datasets for self-supervised pre-training. We posit
+  md\Automatic Data Curation for Self-Supervised Learning A Clustering-Based Approach.md:24:that such datasets should 
+be large, diverse and balanced, and propose a clustering-based
+  md\Automatic Data Curation for Self-Supervised Learning A Clustering-Based Approach.md:25:approach for building ones 
+satisfying all these criteria. Our method involves successive and
+  md\Automatic Data Curation for Self-Supervised Learning A Clustering-Based Approach.md:26:hierarchical applications 
+of _k_ -means on a large and diverse data repository to obtain clusters that distribute uniformly among data concepts, 
+followed by a hierarchical, balanced
+  md\Automatic Data Curation for Self-Supervised Learning A Clustering-Based Approach.md:27:sampling step from these 
+clusters. Extensive experiments on three different data domains
+  md\Automatic Data Curation for Self-Supervised Learning A Clustering-Based Approach.md:28:including web-based 
+images, satellite images and text show that features trained on our
+  md\Automatic Data Curation for Self-Supervised Learning A Clustering-Based Approach.md:29:automatically curated 
+datasets outperform those trained on uncurated data while being on
+  md\Automatic Data Curation for Self-Supervised Learning A Clustering-Based Approach.md:30:par or better than ones 
+trained on manually curated data.
+  md\Automatic Data Curation for Self-Supervised Learning A Clustering-Based Approach.md:31:
+
+=== AutoPKG An Automated Framework for Dynamic E-commerce.md ===
+> md\AutoPKG An Automated Framework for Dynamic E-commerce.md:14:**Abstract**
+  md\AutoPKG An Automated Framework for Dynamic E-commerce.md:15:
+  md\AutoPKG An Automated Framework for Dynamic E-commerce.md:16:
+  md\AutoPKG An Automated Framework for Dynamic E-commerce.md:17:Product attribute extraction in e-commerce is
+  md\AutoPKG An Automated Framework for Dynamic E-commerce.md:18:bottlenecked by ontologies that are inconsistent, 
+incomplete, and costly to maintain. We
+  md\AutoPKG An Automated Framework for Dynamic E-commerce.md:19:present **AutoPKG**, a multi-agent Large Language 
+Model (LLM) framework that automatically constructs a Product-attribute Knowledge
+  md\AutoPKG An Automated Framework for Dynamic E-commerce.md:20:Graph (PKG) from multimodal product content. AutoPKG 
+induces product types and typespecific attribute keys on demand, extracts attribute values from text and images, and 
+consolidates updates through a centralized decision agent that maintains a globally consistent
+  md\AutoPKG An Automated Framework for Dynamic E-commerce.md:21:canonical graph. We also propose an **evalu-**
+  md\AutoPKG An Automated Framework for Dynamic E-commerce.md:22:**ation** **protocol** for dynamic PKGs that measures 
+type/key validity and consolidation quality, as well as edge-level accuracy for value
+  md\AutoPKG An Automated Framework for Dynamic E-commerce.md:23:assertions after canonicalization. On a large
+  md\AutoPKG An Automated Framework for Dynamic E-commerce.md:24:real-world marketplace catalog **dataset from**
+  md\AutoPKG An Automated Framework for Dynamic E-commerce.md:25:**Lazada (Alibaba)**, AutoPKG achieves up to
+  md\AutoPKG An Automated Framework for Dynamic E-commerce.md:26:0.953 Weighted Knowledge Efficiency (WKE)
+  md\AutoPKG An Automated Framework for Dynamic E-commerce.md:27:for product types, 0.724 WKE for attribute
+  md\AutoPKG An Automated Framework for Dynamic E-commerce.md:28:keys, and 0.531 edge-level _F_ 1 for multimodal
+  md\AutoPKG An Automated Framework for Dynamic E-commerce.md:29:value extraction. Across three public benchmarks, we 
+improve edge-level exact-match _F_ 1
+
+=== Breaking the PIM Capacity Wall for.md ===
+> md\Breaking the PIM Capacity Wall for.md:11:_**Abstract**_ **—Processing-in-Memory** **(PIM)** **architectures** 
+**offer** **a**
+  md\Breaking the PIM Capacity Wall for.md:12:**promising** **solution** **to** **the** **memory** **bottlenecks** 
+**in** **data-intensive**
+  md\Breaking the PIM Capacity Wall for.md:13:**machine** **learning,** **yet** **often** **overlook** **the** 
+**growing** **challenge**
+  md\Breaking the PIM Capacity Wall for.md:14:**of** **activation** **memory** **footprint.** **Conventional** **PIM** 
+**approaches**
+  md\Breaking the PIM Capacity Wall for.md:15:**struggle** **with** **massive** **KV** **cache** **sizes** 
+**generated** **in** **long-context**
+  md\Breaking the PIM Capacity Wall for.md:16:**scenarios** **by** **Transformer-based** **models,** **frequently** 
+**exceeding**
+  md\Breaking the PIM Capacity Wall for.md:17:**PIM’s** **limited** **memory** **capacity,** **while** **techniques** 
+**like** **sparse**
+  md\Breaking the PIM Capacity Wall for.md:18:**attention** **can** **conflict** **with** **PIM’s** **need** **for** 
+**data** **locality.** **Existing**
+  md\Breaking the PIM Capacity Wall for.md:19:**PIM** **approaches** **and** **quantization** **methods** **are** 
+**often** **insuffi-**
+  md\Breaking the PIM Capacity Wall for.md:20:**cient** **or** **poorly** **suited** **for** **leveraging** **the** 
+**unique** **characteristics**
+  md\Breaking the PIM Capacity Wall for.md:21:**of** **activations.** **This** **work** **identifies** **an** 
+**opportunity** **for** **PIM-**
+  md\Breaking the PIM Capacity Wall for.md:22:**specialized** **activation** **quantization** **to** **enhance** 
+**bandwidth** **and**
+  md\Breaking the PIM Capacity Wall for.md:23:**compute** **efficiency.**
+  md\Breaking the PIM Capacity Wall for.md:24:**We** **explore** **clustering-based** **vector** **quantization** 
+**approaches,**
+  md\Breaking the PIM Capacity Wall for.md:25:**which** **align** **well** **with** **activation** **characteristics** 
+**and** **PIM’s** **in-**
+  md\Breaking the PIM Capacity Wall for.md:26:**ternal** **bandwidth** **capabilities.** **Building** **on** **this,** 
+**we** **introduce**
+
+=== CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md ===
+> md\CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md:14:ABSTRACT
+  md\CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md:15:
+  md\CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md:16:
+  md\CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md:17:Deploying clinical ML is slow and brittle: models that work at 
+one hospital often
+  md\CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md:18:degrade under distribution shifts at the next. In this work, 
+we study a simple question – can large language models (LLMs) create _portable_ patient embeddings i.e.
+  md\CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md:19:representations of patients enable a downstream predictor 
+built on one hospital to
+  md\CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md:20:be used elsewhere with minimal-to-no retraining and 
+fine-tuning. To do so, we
+  md\CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md:21:map from irregular ICU time series onto concise natural 
+language summaries using a frozen LLM, then embed each summary with a frozen text embedding model
+  md\CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md:22:to obtain a fixed length vector capable of serving as input to 
+a variety of downstream predictors. Across three cohorts (MIMIC-IV, HIRID, PPICU), on multiple
+  md\CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md:23:clinically grounded forecasting and classification tasks, we 
+find that our approach
+  md\CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md:24:is simple, easy to use and competitive with in-distribution 
+with grid imputation,
+  md\CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md:25:self-supervised representation learning, and time series 
+foundation models, while
+  md\CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md:26:exhibiting smaller relative performance drops when 
+transferring to new hospitals. We study the variation in performance across prompt design, with structured
+  md\CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md:27:prompts being crucial to reducing the variance of the 
+predictive models without altering mean accuracy. We find that using these portable representations improves
+  md\CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md:28:few-shot learning and does not increase demographic 
+recoverability of age or sex
+  md\CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md:29:relative to baselines, suggesting little additional privacy 
+risk. Our work points to
+
+=== Characterizing user archetypes and discussions on Scored.co.md ===
+> md\Characterizing user archetypes and discussions on Scored.co.md:15:**Abstract**
+  md\Characterizing user archetypes and discussions on Scored.co.md:16:
+  md\Characterizing user archetypes and discussions on Scored.co.md:17:
+  md\Characterizing user archetypes and discussions on Scored.co.md:18:In recent years, the proliferation of social 
+platforms has drastically transformed the way individuals interact,
+  md\Characterizing user archetypes and discussions on Scored.co.md:19:organize, and share information. In this 
+scenario, we experience an unprecedented increase in the scale and
+  md\Characterizing user archetypes and discussions on Scored.co.md:20:complexity of interactions and, at the same 
+time, little to no research about some fringe social platforms. In this
+  md\Characterizing user archetypes and discussions on Scored.co.md:21:paper, we present a multi-dimensional framework 
+for characterizing nodes and hyperedges in social hypernetworks,
+  md\Characterizing user archetypes and discussions on Scored.co.md:22:with a focus on the understudied alt-right 
+platform Scored.co. Our approach integrates the possibility of studying
+  md\Characterizing user archetypes and discussions on Scored.co.md:23:higher-order interactions, thanks to the 
+hypernetwork representation, and various node features such as user activity,
+  md\Characterizing user archetypes and discussions on Scored.co.md:24:sentiment, and toxicity, with the aim to define 
+distinct user archetypes and understand their roles within the network.
+  md\Characterizing user archetypes and discussions on Scored.co.md:25:Utilizing a comprehensive dataset from 
+Scored.co, we analyze the dynamics of these archetypes over time and
+  md\Characterizing user archetypes and discussions on Scored.co.md:26:explore their interactions and influence within 
+the community. The framework’s versatility allows for detailed
+  md\Characterizing user archetypes and discussions on Scored.co.md:27:analysis of both individual user behaviors and 
+broader social structures. Our findings highlight the importance of
+  md\Characterizing user archetypes and discussions on Scored.co.md:28:higher-order interactions in understanding 
+social dynamics, offering new insights into the roles and behaviors that
+  md\Characterizing user archetypes and discussions on Scored.co.md:29:emerge in complex online environments.
+  md\Characterizing user archetypes and discussions on Scored.co.md:30:
+
+=== Circadian Phase Locking of Epilepsy Seizures in Wearable Data A.md ===
+> md\Circadian Phase Locking of Epilepsy Seizures in Wearable Data A.md:17:**Abstract**
+  md\Circadian Phase Locking of Epilepsy Seizures in Wearable Data A.md:18:
+  md\Circadian Phase Locking of Epilepsy Seizures in Wearable Data A.md:19:
+  md\Circadian Phase Locking of Epilepsy Seizures in Wearable Data A.md:20:
+  md\Circadian Phase Locking of Epilepsy Seizures in Wearable Data A.md:21:Matthew Wragg
+  md\Circadian Phase Locking of Epilepsy Seizures in Wearable Data A.md:22:University of Bristol
+  md\Circadian Phase Locking of Epilepsy Seizures in Wearable Data A.md:23:Bristol, United Kingdom
+  md\Circadian Phase Locking of Epilepsy Seizures in Wearable Data A.md:24:matthew.wragg@bristol.ac.uk
+  md\Circadian Phase Locking of Epilepsy Seizures in Wearable Data A.md:25:
+  md\Circadian Phase Locking of Epilepsy Seizures in Wearable Data A.md:26:
+  md\Circadian Phase Locking of Epilepsy Seizures in Wearable Data A.md:27:Paul Marshall
+  md\Circadian Phase Locking of Epilepsy Seizures in Wearable Data A.md:28:University of Bristol
+  md\Circadian Phase Locking of Epilepsy Seizures in Wearable Data A.md:29:Bristol, United Kingdom
+  md\Circadian Phase Locking of Epilepsy Seizures in Wearable Data A.md:30:p.marshall@bristol.ac.uk
+  md\Circadian Phase Locking of Epilepsy Seizures in Wearable Data A.md:31:
+  md\Circadian Phase Locking of Epilepsy Seizures in Wearable Data A.md:32:
+
+=== Cluster-First Labelling An Automated Pipeline for.md ===
+> md\Cluster-First Labelling An Automated Pipeline for.md:46:### **Abstract**
+  md\Cluster-First Labelling An Automated Pipeline for.md:47:
+  md\Cluster-First Labelling An Automated Pipeline for.md:48:Labelling tissue components in histology whole slide 
+images
+  md\Cluster-First Labelling An Automated Pipeline for.md:49:(WSIs) is prohibitively labour-intensive: a single slide 
+may
+  md\Cluster-First Labelling An Automated Pipeline for.md:50:contain tens of thousands of structures—cells, nuclei, and
+  md\Cluster-First Labelling An Automated Pipeline for.md:51:other morphologically distinct objects—each requiring 
+manual
+  md\Cluster-First Labelling An Automated Pipeline for.md:52:boundary delineation and classification. We present a 
+cloudnative, end-to-end pipeline that automates this process through
+  md\Cluster-First Labelling An Automated Pipeline for.md:53:a _cluster-first_ paradigm. Our system tiles WSIs, 
+filters out tiles
+  md\Cluster-First Labelling An Automated Pipeline for.md:54:deemed unlikely to contain valuable information, segments
+  md\Cluster-First Labelling An Automated Pipeline for.md:55:tissue components with Cellpose-SAM (including cells, 
+nuclei,
+  md\Cluster-First Labelling An Automated Pipeline for.md:56:and other morphologically similar structures), extracts 
+neural
+  md\Cluster-First Labelling An Automated Pipeline for.md:57:embeddings via a pretrained ResNet-50, reduces 
+dimensionality with UMAP, and groups morphologically similar objects
+  md\Cluster-First Labelling An Automated Pipeline for.md:58:using DBSCAN clustering. Under this paradigm, a human
+  md\Cluster-First Labelling An Automated Pipeline for.md:59:annotator labels representative clusters rather than 
+individual
+  md\Cluster-First Labelling An Automated Pipeline for.md:60:objects, reducing annotation effort by orders of 
+magnitude. We
+  md\Cluster-First Labelling An Automated Pipeline for.md:61:evaluate the pipeline on 3,696 tissue components across 13
+
+=== CLUSTSEG Clustering for Universal Segmentation.md ===
+> md\CLUSTSEG Clustering for Universal Segmentation.md:22:**Abstract**
+  md\CLUSTSEG Clustering for Universal Segmentation.md:23:
+  md\CLUSTSEG Clustering for Universal Segmentation.md:24:
+  md\CLUSTSEG Clustering for Universal Segmentation.md:25:We present CLUSTSEG, a general, transformerbased framework 
+that tackles different image segmentation tasks ( _i.e_ ., superpixel, semantic, instance, and panoptic) through a 
+unified, neural clusteringscheme.Regardingqueriesasclustercenters,
+  md\CLUSTSEG Clustering for Universal Segmentation.md:26:CLUSTSEG is innovative in two aspects:xcluster
+  md\CLUSTSEG Clustering for Universal Segmentation.md:27:centers are initialized in heterogeneous ways so as
+  md\CLUSTSEG Clustering for Universal Segmentation.md:28:to pointedly address task-specific demands ( _e.g_ .,
+  md\CLUSTSEG Clustering for Universal Segmentation.md:29:instance- or category-level distinctiveness), yet
+  md\CLUSTSEG Clustering for Universal Segmentation.md:30:without modifying the architecture; and y pixelcluster 
+assignment, formalized in a cross-attention
+  md\CLUSTSEG Clustering for Universal Segmentation.md:31:fashion, is alternated with cluster center update, yet
+  md\CLUSTSEG Clustering for Universal Segmentation.md:32:without learning additional parameters. These innovations 
+closely link CLUSTSEG to EM clustering and make it a transparent and powerful framework that yields superior results 
+across the above
+  md\CLUSTSEG Clustering for Universal Segmentation.md:33:segmentation tasks.
+  md\CLUSTSEG Clustering for Universal Segmentation.md:34:
+  md\CLUSTSEG Clustering for Universal Segmentation.md:35:
+  md\CLUSTSEG Clustering for Universal Segmentation.md:36:**1. Introduction**
+  md\CLUSTSEG Clustering for Universal Segmentation.md:37:
+
+=== Collaborative Filtering using Variational Quantum.md ===
+> md\Collaborative Filtering using Variational Quantum.md:21:**Abstract**
+  md\Collaborative Filtering using Variational Quantum.md:22:
+  md\Collaborative Filtering using Variational Quantum.md:23:
+  md\Collaborative Filtering using Variational Quantum.md:24:Quantum computing, with its ability to do exponentially 
+faster computation
+  md\Collaborative Filtering using Variational Quantum.md:25:compared to classical systems, has found novel 
+applications in various fields such
+  md\Collaborative Filtering using Variational Quantum.md:26:as machine learning and recommendation systems. Quantum 
+Machine Learning
+  md\Collaborative Filtering using Variational Quantum.md:27:(QML), which integrates quantum computing with machine 
+learning techniques,
+  md\Collaborative Filtering using Variational Quantum.md:28:presents powerful new tools for data processing and 
+pattern recognition. This
+  md\Collaborative Filtering using Variational Quantum.md:29:paper proposes a hybrid recommendation system that 
+combines Quantum Hopfield Associative Memory (QHAM) with deep neural networks to improve the
+  md\Collaborative Filtering using Variational Quantum.md:30:extraction and classification on the MovieLens 1M 
+dataset. User archetypes are
+  md\Collaborative Filtering using Variational Quantum.md:31:clustered into multiple unique groups using the K-Means 
+algorithm and converted into polar patterns through the encoder’s activation function. These polar
+  md\Collaborative Filtering using Variational Quantum.md:32:patterns are then integrated into the variational 
+QHAM-based hybrid recommendation model. The system was trained using the MSE loss over 35 epochs in
+  md\Collaborative Filtering using Variational Quantum.md:33:an ideal environment, achieving an ROC value of 0.9795, 
+an accuracy of 0.8841,
+  md\Collaborative Filtering using Variational Quantum.md:34:and a F-1 Score of 0.8786. Trained with the same number 
+of epochs in a noisy
+  md\Collaborative Filtering using Variational Quantum.md:35:environment using a custom Qiskit AER noise model 
+incorporating bit-flip and
+  md\Collaborative Filtering using Variational Quantum.md:36:readout errors with the same probabilities as in real 
+quantum hardware, achieves
+
+=== DESIGNING OCEAN VISION AI AN INVESTIGATION OF.md ===
+> md\DESIGNING OCEAN VISION AI AN INVESTIGATION OF.md:70:**ABSTRACT**
+  md\DESIGNING OCEAN VISION AI AN INVESTIGATION OF.md:71:
+  md\DESIGNING OCEAN VISION AI AN INVESTIGATION OF.md:72:
+  md\DESIGNING OCEAN VISION AI AN INVESTIGATION OF.md:73:
+  md\DESIGNING OCEAN VISION AI AN INVESTIGATION OF.md:74:[Angus G. Forbes](https://orcid.org/0000-0002-8700-7795)
+  md\DESIGNING OCEAN VISION AI AN INVESTIGATION OF.md:75:Purdue University
+  md\DESIGNING OCEAN VISION AI AN INVESTIGATION OF.md:76:West Lafayette, IN, USA 47907
+  md\DESIGNING OCEAN VISION AI AN INVESTIGATION OF.md:77:```
+  md\DESIGNING OCEAN VISION AI AN INVESTIGATION OF.md:78: agforbes@purdue.edu
+  md\DESIGNING OCEAN VISION AI AN INVESTIGATION OF.md:79:
+  md\DESIGNING OCEAN VISION AI AN INVESTIGATION OF.md:80:```
+  md\DESIGNING OCEAN VISION AI AN INVESTIGATION OF.md:81:
+  md\DESIGNING OCEAN VISION AI AN INVESTIGATION OF.md:82:
+  md\DESIGNING OCEAN VISION AI AN INVESTIGATION OF.md:83:Ocean scientists studying diverse organisms and phenomena 
+increasingly rely on imaging devices
+  md\DESIGNING OCEAN VISION AI AN INVESTIGATION OF.md:84:for their research. These scientists have many tools to 
+collect their data, but few resources for
+  md\DESIGNING OCEAN VISION AI AN INVESTIGATION OF.md:85:automated analysis. In this paper, we report on discussions 
+with diverse stakeholders to identify
+
+=== Effective Clustering for Large Multi-Relational Graphs.md ===
+> md\Effective Clustering for Large Multi-Relational Graphs.md:16:**Abstract**
+  md\Effective Clustering for Large Multi-Relational Graphs.md:17:
+  md\Effective Clustering for Large Multi-Relational Graphs.md:18:
+  md\Effective Clustering for Large Multi-Relational Graphs.md:19:
+  md\Effective Clustering for Large Multi-Relational Graphs.md:20:[Runhao Jiang](https://orcid.org/0009-0000-4841-9175)
+  md\Effective Clustering for Large Multi-Relational Graphs.md:21:
+  md\Effective Clustering for Large Multi-Relational Graphs.md:22:Hong Kong Baptist University
+  md\Effective Clustering for Large Multi-Relational Graphs.md:23:
+  md\Effective Clustering for Large Multi-Relational Graphs.md:24:Hong Kong SAR, China
+  md\Effective Clustering for Large Multi-Relational Graphs.md:25:
+  md\Effective Clustering for Large Multi-Relational Graphs.md:26:csrhjiang@comp.hkbu.edu.hk
+  md\Effective Clustering for Large Multi-Relational Graphs.md:27:
+  md\Effective Clustering for Large Multi-Relational Graphs.md:28:
+  md\Effective Clustering for Large Multi-Relational Graphs.md:29:**Keywords**
+  md\Effective Clustering for Large Multi-Relational Graphs.md:30:
+  md\Effective Clustering for Large Multi-Relational Graphs.md:31:
+
+=== Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md ===
+> md\Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md:32:**Abstract**
+  md\Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md:33:
+  md\Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md:34:**Background:** 
+Large language models (LLMs) enable patient-facing conversational
+  md\Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md:35:agents, creating 
+a plausible pathway toward patient digital twins that can capture older
+  md\Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md:36:adults’ lived 
+experiences, beliefs, and behavioral responses across time. A central barrier to
+  md\Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md:37:clinical-grade 
+digital twins is personality drift—inconsistent trait expression across repeated,
+  md\Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md:38:longitudinal 
+interactions—which can undermine the reliability of generated trajectories and
+  md\Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital 
+Twins.md:39:intervention-response simulation in geriatric care contexts.
+  md\Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md:40:
+  md\Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md:41:**Objective:** 
+To develop ELDER-SIM as a multi-role elderly-care conversational
+  md\Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md:42:platform 
+oriented toward building personality-stable elderly digital twin agents, and to
+  md\Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md:43:propose a 
+psychometric validation framework for quantifying and improving personality
+  md\Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md:44:consistency in 
+LLM-based agents across repeated interactions.
+  md\Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md:45:
+  md\Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md:46:**Methods:** 
+ELDER-SIM was implemented using n8n workflow orchestration with local
+  md\Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md:47:LLM inference 
+(Ollama/vLLM), integrating (1) Big Five (OCEAN) trait specifications, (2) a
+
+=== Enhancing Clustering An Explainable Approach via Filtered Patterns.md ===
+> md\Enhancing Clustering An Explainable Approach via Filtered Patterns.md:10:**Abstract**
+  md\Enhancing Clustering An Explainable Approach via Filtered Patterns.md:11:
+  md\Enhancing Clustering An Explainable Approach via Filtered Patterns.md:12:
+  md\Enhancing Clustering An Explainable Approach via Filtered Patterns.md:13:Machine learning has become a central 
+research area, with
+  md\Enhancing Clustering An Explainable Approach via Filtered Patterns.md:14:increasing attention devoted to 
+explainable clustering, also
+  md\Enhancing Clustering An Explainable Approach via Filtered Patterns.md:15:known as conceptual clustering, which is 
+a knowledge-driven
+  md\Enhancing Clustering An Explainable Approach via Filtered Patterns.md:16:unsupervised learning paradigm that 
+partitions data into _θ_ disjoint clusters, where each cluster is described by an explicit
+  md\Enhancing Clustering An Explainable Approach via Filtered Patterns.md:17:symbolic representation, typically 
+expressed as a closed pattern or itemset. By providing human-interpretable cluster
+  md\Enhancing Clustering An Explainable Approach via Filtered Patterns.md:18:descriptions, explainable clustering 
+plays an important role
+  md\Enhancing Clustering An Explainable Approach via Filtered Patterns.md:19:in explainable artificial intelligence 
+and knowledge discovery. Recent work improved clustering quality by introducing
+  md\Enhancing Clustering An Explainable Approach via Filtered Patterns.md:20:_k_ -relaxed frequent patterns ( _k_ 
+-RFPs), a pattern model that
+  md\Enhancing Clustering An Explainable Approach via Filtered Patterns.md:21:relaxes strict coverage constraints 
+through a generalized _k_  cover definition. This framework integrates constraint-based
+  md\Enhancing Clustering An Explainable Approach via Filtered Patterns.md:22:reasoning, using SAT solvers for pattern 
+generation, with
+  md\Enhancing Clustering An Explainable Approach via Filtered Patterns.md:23:combinatorial optimization, using 
+Integer Linear Programming (ILP) for cluster selection. Despite its effectiveness,
+  md\Enhancing Clustering An Explainable Approach via Filtered Patterns.md:24:this approach suffers from a critical 
+limitation: multiple distinct _k_ -RFPs may induce identical _k_ -covers, leading to redundant symbolic 
+representations that unnecessarily enlarge
+  md\Enhancing Clustering An Explainable Approach via Filtered Patterns.md:25:the search space and increase 
+computational complexity during cluster construction. In this paper, we address this redundancy through a pattern 
+reduction framework. Our contributions are threefold. First, we formally characterize the
+
+=== Enhancing Mental Health Counseling Support in Bangladesh using.md ===
+> md\Enhancing Mental Health Counseling Support in Bangladesh using.md:13:**Abstract**
+  md\Enhancing Mental Health Counseling Support in Bangladesh using.md:14:
+  md\Enhancing Mental Health Counseling Support in Bangladesh using.md:15:
+  md\Enhancing Mental Health Counseling Support in Bangladesh using.md:16:
+  md\Enhancing Mental Health Counseling Support in Bangladesh using.md:17:Large language models (LLMs) show promise
+  md\Enhancing Mental Health Counseling Support in Bangladesh using.md:18:in generating supportive responses for mental
+  md\Enhancing Mental Health Counseling Support in Bangladesh using.md:19:health and counseling applications. However,
+  md\Enhancing Mental Health Counseling Support in Bangladesh using.md:20:their responses often lack cultural 
+sensitivity,
+  md\Enhancing Mental Health Counseling Support in Bangladesh using.md:21:contextual grounding, and clinically 
+appropriate guidance. This work addresses the gap
+  md\Enhancing Mental Health Counseling Support in Bangladesh using.md:22:of how to systematically incorporate 
+domainspecific, clinically validated knowledge into
+  md\Enhancing Mental Health Counseling Support in Bangladesh using.md:23:LLMs to improve counseling quality. We 
+utilize and compare two approaches, retrievalaugmented generation (RAG) and a knowledge
+  md\Enhancing Mental Health Counseling Support in Bangladesh using.md:24:graph (KG)–based method, designed to support 
+para-counselors. Our KG is constructed
+  md\Enhancing Mental Health Counseling Support in Bangladesh using.md:25:manually and clinically validated, capturing
+  md\Enhancing Mental Health Counseling Support in Bangladesh using.md:26:causal relationships between stressors, 
+interventions, and outcomes, with contributions from
+  md\Enhancing Mental Health Counseling Support in Bangladesh using.md:27:multidisciplinary people. We evaluated 
+multiple LLMs in both settings using BERTScore
+  md\Enhancing Mental Health Counseling Support in Bangladesh using.md:28:F1 and SBERT cosine similarity, as well as
+
+=== Generating consensus and dissent on massive discussion platforms.md ===
+
+=== Identifying General Mechanism Shifts in Linear.md ===
+> md\Identifying General Mechanism Shifts in Linear.md:13:**Abstract**
+  md\Identifying General Mechanism Shifts in Linear.md:14:
+  md\Identifying General Mechanism Shifts in Linear.md:15:
+  md\Identifying General Mechanism Shifts in Linear.md:16:We consider the linear causal representation learning 
+setting where we observe a
+  md\Identifying General Mechanism Shifts in Linear.md:17:linear mixing of _d_ unknown latent factors, which follow a 
+linear structural causal
+  md\Identifying General Mechanism Shifts in Linear.md:18:model. Recent work has shown that it is possible to recover 
+the latent factors as well
+  md\Identifying General Mechanism Shifts in Linear.md:19:as the underlying structural causal model over them, up to 
+permutation and scaling,
+  md\Identifying General Mechanism Shifts in Linear.md:20:provided that we have at least _d_ environments, each of 
+which corresponds to perfect
+  md\Identifying General Mechanism Shifts in Linear.md:21:interventions on a single latent node (factor). After this 
+powerful result, a key open
+  md\Identifying General Mechanism Shifts in Linear.md:22:problem faced by the community has been to relax these 
+conditions: allow for
+  md\Identifying General Mechanism Shifts in Linear.md:23:coarser than perfect single-node interventions, and allow 
+for fewer than _d_ of them,
+  md\Identifying General Mechanism Shifts in Linear.md:24:since the number of latent factors _d_ could be very large. 
+In this work, we consider
+  md\Identifying General Mechanism Shifts in Linear.md:25:precisely such a setting, where we allow a smaller than _d_ 
+number of environments,
+  md\Identifying General Mechanism Shifts in Linear.md:26:and also allow for very coarse interventions that can very 
+coarsely _change_ _the_
+  md\Identifying General Mechanism Shifts in Linear.md:27:_entire_ _causal_ _graph_ _over_ _the_ _latent_ _factors_ . 
+On the flip side, we relax what we
+  md\Identifying General Mechanism Shifts in Linear.md:28:wish to extract to simply the _list of nodes that have 
+shifted between one or more_
+
+=== Integrating Graphs, Large Language Models, and.md ===
+> md\Integrating Graphs, Large Language Models, and.md:10:_**Abstract**_ **—Generative** **AI,** **particularly** 
+**Large** **Language** **Mod-**
+  md\Integrating Graphs, Large Language Models, and.md:11:**els,** **increasingly** **integrates** **graph-based** 
+**representations** **to** **en-**
+  md\Integrating Graphs, Large Language Models, and.md:12:**hance** **reasoning,** **retrieval,** **and** 
+**structured** **decision-making.** **De-**
+  md\Integrating Graphs, Large Language Models, and.md:13:**spite** **rapid** **advances,** **there** **remains** 
+**limited** **clarity** **regarding**
+  md\Integrating Graphs, Large Language Models, and.md:14:**when,** **why,** **where,** **and** **what** **types** 
+**of** **graph–LLM** **integrations**
+  md\Integrating Graphs, Large Language Models, and.md:15:**are** **most** **appropriate** **across** 
+**applications.** **This** **survey** **provides** **a**
+  md\Integrating Graphs, Large Language Models, and.md:16:**concise,** **structured** **overview** **of** **the** 
+**design** **choices** **underlying** **the**
+  md\Integrating Graphs, Large Language Models, and.md:17:**integration of graphs with LLMs. We categorize existing 
+methods**
+  md\Integrating Graphs, Large Language Models, and.md:18:**based** **on** **their** **purpose** **(e.g.,** 
+**reasoning,** **retrieval,** **generation,**
+  md\Integrating Graphs, Large Language Models, and.md:19:**recommendation),** **graph** **modality** **(knowledge** 
+**graphs,** **scene**
+  md\Integrating Graphs, Large Language Models, and.md:20:**graphs,** **interaction** **graphs,** **causal** 
+**graphs,** **dependency** **graphs),**
+  md\Integrating Graphs, Large Language Models, and.md:21:**and** **integration** **strategies** **(prompting,** 
+**augmentation,** **training,**
+  md\Integrating Graphs, Large Language Models, and.md:22:**or** **agent-based** **use).** **By** **mapping** 
+**representative** **works** **across**
+  md\Integrating Graphs, Large Language Models, and.md:23:**domains** **such** **as** **cybersecurity,** 
+**healthcare,** **materials** **science,**
+  md\Integrating Graphs, Large Language Models, and.md:24:**finance, robotics,** **and** **multimodal** 
+**environments,** **we** **highlight the**
+  md\Integrating Graphs, Large Language Models, and.md:25:**strengths,** **limitations,** **and** **best-fit** 
+**scenarios** **for** **each** **technique.**
+
+=== Interpretable Clustering A Survey.md ===
+> md\Interpretable Clustering A Survey.md:9:**Abstract** —In recent years, much of the research on clustering 
+algorithms has primarily focused on enhancing their accuracy and
+  md\Interpretable Clustering A Survey.md:10:efficiency, frequently at the expense of interpretability. However, as 
+these methods are increasingly being applied in high-stakes
+  md\Interpretable Clustering A Survey.md:11:domains such as healthcare, finance, and autonomous systems, the need for 
+transparent and interpretable clustering outcomes has
+  md\Interpretable Clustering A Survey.md:12:become a critical concern. This is not only necessary for gaining user 
+trust but also for satisfying the growing ethical and regulatory
+  md\Interpretable Clustering A Survey.md:13:demands in these fields. Ensuring that decisions derived from clustering 
+algorithms can be clearly understood and justified is now a
+  md\Interpretable Clustering A Survey.md:14:fundamental requirement. To address this need, this paper provides a 
+comprehensive and structured review of the current state of
+  md\Interpretable Clustering A Survey.md:15:explainable clustering algorithms, identifying key criteria to 
+distinguish between various methods. These insights can effectively assist
+  md\Interpretable Clustering A Survey.md:16:researchers in making informed decisions about the most suitable 
+explainable clustering methods for specific application contexts,
+  md\Interpretable Clustering A Survey.md:17:while also promoting the development and adoption of clustering 
+algorithms that are both efficient and transparent. For convenient
+  md\Interpretable Clustering A Survey.md:18:access and reference, an open repository organizes representative and 
+emerging interpretable clustering methods under the taxonomy
+  md\Interpretable Clustering A Survey.md:19:[proposed in this survey, available at https://github.com/hulianyu/Awesome
+-Interpretable-Clustering](https://github.com/hulianyu/Awesome-Interpretable-Clustering)
+  md\Interpretable Clustering A Survey.md:20:
+  md\Interpretable Clustering A Survey.md:21:
+  md\Interpretable Clustering A Survey.md:22:**Index Terms** —Interpretable Clustering, Algorithmic Interpretability, 
+Interpretable Machine Learning and Data Mining, Explainable
+  md\Interpretable Clustering A Survey.md:23:Artificial Intelligence (XAI)
+  md\Interpretable Clustering A Survey.md:24:
+
+=== Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md ===
+> md\Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md:13:ABSTRACT
+  md\Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md:14:
+  md\Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md:15:
+  md\Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md:16:Learning primitive ( _i_ . _e_ ., 
+attribute and object) concepts from seen compositions
+  md\Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md:17:is the primary challenge of 
+Compositional Zero-Shot Learning (CZSL). Existing
+  md\Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md:18:CZSL solutions typically rely on 
+oversimplified data assumptions, _e_ . _g_ ., modeling each primitive with a single centroid primitive representation, 
+ignoring the
+  md\Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md:19:natural diversities of the 
+attribute ( _resp_ . object) when coupled with different objects ( _resp_ . attribute). In this work, we develop 
+CLUSPRO, a robust clusteringbased prototype mining framework for CZSL that defines the conceptual boundaries of 
+primitives through a set of diversified prototypes. Specifically, CLUSPRO
+  md\Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md:20:conducts within-primitive 
+clustering on the embedding space for automatically
+  md\Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md:21:discovering and dynamically 
+updating prototypes. These representative prototypes are subsequently used to repaint a well-structured and 
+independent primitive
+  md\Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md:22:embedding space, ensuring 
+intra-primitive separation and inter-primitive decorrelation through prototype-based contrastive learning and 
+decorrelation learning. Moreover, CLUSPRO efficiently performs prototype clustering in a nonparametric fashion without 
+the introduction of additional learnable parameters or
+  md\Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md:23:computational budget during 
+testing. Experiments on three benchmarks demonstrate CLUSPRO outperforms various top-leading CZSL solutions under both
+  md\Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md:24:closed-world and open-world 
+settings. [Our code is available at CLUSPRO.](https://github.com/quhongyu/ClusPro)
+  md\Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md:25:
+  md\Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md:26:
+  md\Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md:27:1 INTRODUCTION
+  md\Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md:28:
+
+=== Leveraging Text-Driven Semantic Variation.md ===
+> md\Leveraging Text-Driven Semantic Variation.md:7:_**Abstract**_ **— In** **autonomous** **driving** **and** 
+**robotics,** **ensuring**
+  md\Leveraging Text-Driven Semantic Variation.md:8:**road** **safety** **and** **reliable** **decision-making** 
+**critically** **depends**
+  md\Leveraging Text-Driven Semantic Variation.md:9:**on** **out-of-distribution** **(OOD)** **segmentation.** 
+**While** **numerous**
+  md\Leveraging Text-Driven Semantic Variation.md:10:**methods** **have** **been** **proposed** **to** **detect** 
+**anomalous** **objects** **on**
+  md\Leveraging Text-Driven Semantic Variation.md:11:**the** **road,** **leveraging** **the** **vision-language** 
+**space–which** **provides**
+  md\Leveraging Text-Driven Semantic Variation.md:12:**rich** **linguistic** **knowledge–remains** **an** 
+**underexplored** **field.** **We**
+  md\Leveraging Text-Driven Semantic Variation.md:13:**hypothesize** **that** **incorporating** **these** 
+**linguistic** **cues** **can** **be**
+  md\Leveraging Text-Driven Semantic Variation.md:14:**especially beneficial in the complex contexts found in 
+real-world**
+  md\Leveraging Text-Driven Semantic Variation.md:15:**autonomous** **driving** **scenarios.**
+  md\Leveraging Text-Driven Semantic Variation.md:16:**To** **this** **end,** **we** **present** **a** **novel** 
+**approach** **that** **trains** **a**
+  md\Leveraging Text-Driven Semantic Variation.md:17:_**Text-Driven**_ _**OOD**_ _**Segmentation**_ **model** **to** 
+**learn** **a** **semantically**
+  md\Leveraging Text-Driven Semantic Variation.md:18:**diverse** **set** **of** **objects** **in** **the** 
+**vision-language** **space.** **Concretely,**
+  md\Leveraging Text-Driven Semantic Variation.md:19:**our approach combines a vision-language model’s encoder with**
+  md\Leveraging Text-Driven Semantic Variation.md:20:**a** **transformer** **decoder,** **employs** 
+_**Distance-Based**_ _**OOD**_ _**prompts**_
+  md\Leveraging Text-Driven Semantic Variation.md:21:**located** **at** **varying** **semantic** **distances** 
+**from** **in-distribution** **(ID)**
+  md\Leveraging Text-Driven Semantic Variation.md:22:**classes,** **and** **utilizes** _**OOD**_ _**Semantic**_ 
+_**Augmentation**_ **for** **OOD**
+
+=== Machine individualitySeparating genuine idiosyncrasy.md ===
+> md\Machine individualitySeparating genuine idiosyncrasy.md:16:**Abstract**
+  md\Machine individualitySeparating genuine idiosyncrasy.md:17:
+  md\Machine individualitySeparating genuine idiosyncrasy.md:18:
+  md\Machine individualitySeparating genuine idiosyncrasy.md:19:As large language models (LLMs) are increasingly 
+integrated into daily life, in roles ranging
+  md\Machine individualitySeparating genuine idiosyncrasy.md:20:from high-stakes decision support to companionship, 
+understanding their behavioral dispositions
+  md\Machine individualitySeparating genuine idiosyncrasy.md:21:becomes critical. A growing literature uses 
+psychometric inventories and cognitive paradigms
+  md\Machine individualitySeparating genuine idiosyncrasy.md:22:to profile LLM dispositions. However, these approaches 
+cannot determine whether behavioral
+  md\Machine individualitySeparating genuine idiosyncrasy.md:23:differences reflect stable, stimulus-specific 
+individuality or global response biases and stochastic
+  md\Machine individualitySeparating genuine idiosyncrasy.md:24:noise. Here, we apply crossed random-effects 
+models—widely used in psychometrics to separate
+  md\Machine individualitySeparating genuine idiosyncrasy.md:25:systematic effects—to 74.9 million ratings provided by 
+10 open-weight LLMs for over 100,000
+  md\Machine individualitySeparating genuine idiosyncrasy.md:26:words across 14 psycholinguistic norms. On average, 
+16.9% of variance is attributable to stimulusspecific individuality, robustly exceeding a statistical null model. 
+Cross-norm prediction analyses
+  md\Machine individualitySeparating genuine idiosyncrasy.md:27:reveal this individuality as a coherent fingerprint, 
+unique to each model. These results identify
+  md\Machine individualitySeparating genuine idiosyncrasy.md:28:individual differences among LLMs that cannot be 
+attributed to response biases or stochastic
+  md\Machine individualitySeparating genuine idiosyncrasy.md:29:noise. We term these differences _machine_ 
+_individuality_ . **Keywords:** Artificial intelligence _|_ large
+  md\Machine individualitySeparating genuine idiosyncrasy.md:30:
+  md\Machine individualitySeparating genuine idiosyncrasy.md:31:
+
+=== Measuring Human Behavior Through Controlled Perturbations A Framework.md ===
+> md\Measuring Human Behavior Through Controlled Perturbations A Framework.md:10:# **Abstract**
+  md\Measuring Human Behavior Through Controlled Perturbations A Framework.md:11:
+  md\Measuring Human Behavior Through Controlled Perturbations A Framework.md:12:The measurement of human behavior 
+remains a central challenge across the behavioral sciences.
+  md\Measuring Human Behavior Through Controlled Perturbations A Framework.md:13:Traditional approaches typically rely 
+on passive observation of responses collected under static or
+  md\Measuring Human Behavior Through Controlled Perturbations A Framework.md:14:weakly controlled conditions, 
+limiting the identifiability of the underlying generative processes. As a
+  md\Measuring Human Behavior Through Controlled Perturbations A Framework.md:15:result, different behavioral 
+mechanisms may produce indistinguishable observations, constraining
+  md\Measuring Human Behavior Through Controlled Perturbations A Framework.md:16:both inference and theoretical 
+development.
+  md\Measuring Human Behavior Through Controlled Perturbations A Framework.md:17:In this paper, we propose a 
+methodological framework for behavioral measurement based on
+  md\Measuring Human Behavior Through Controlled Perturbations A Framework.md:18:controlled perturbations. From this 
+perspective, behavior is conceptualized as the observable output
+  md\Measuring Human Behavior Through Controlled Perturbations A Framework.md:19:of a dynamical system, and 
+measurement is reframed as a problem of system identification.
+  md\Measuring Human Behavior Through Controlled Perturbations A Framework.md:20:Experimental environments act as 
+measurement instruments that apply structured inputs
+  md\Measuring Human Behavior Through Controlled Perturbations A Framework.md:21:(perturbations) and record behavioral 
+trajectories as outputs over time.
+  md\Measuring Human Behavior Through Controlled Perturbations A Framework.md:22:We outline the core components of 
+this framework, including the design of perturbations, the role of
+  md\Measuring Human Behavior Through Controlled Perturbations A Framework.md:23:temporal resolution, and the 
+integration of multimodal data streams. We further discuss how advances
+  md\Measuring Human Behavior Through Controlled Perturbations A Framework.md:24:in immersive technologies, 
+programmable environments, and computational modeling enable the
+  md\Measuring Human Behavior Through Controlled Perturbations A Framework.md:25:implementation of closed-loop 
+experimental systems, where perturbation, observation, and model
+
+=== Mimetic Alignment with ASPECT Evaluation of AI-inferred.md ===
+> md\Mimetic Alignment with ASPECT Evaluation of AI-inferred.md:17:**Abstract**
+  md\Mimetic Alignment with ASPECT Evaluation of AI-inferred.md:18:
+  md\Mimetic Alignment with ASPECT Evaluation of AI-inferred.md:19:
+  md\Mimetic Alignment with ASPECT Evaluation of AI-inferred.md:20:AI agents that communicate on behalf of individuals 
+need to capture
+  md\Mimetic Alignment with ASPECT Evaluation of AI-inferred.md:21:how each person actually communicates, yet current 
+approaches
+  md\Mimetic Alignment with ASPECT Evaluation of AI-inferred.md:22:either require costly per-person fine-tuning, 
+produce generic outputs from shallow persona descriptions, or optimize preferences
+  md\Mimetic Alignment with ASPECT Evaluation of AI-inferred.md:23:without modeling communication style. We present 
+ASPECT (Automated Social Psychometric Evaluation of Communication Traits),
+  md\Mimetic Alignment with ASPECT Evaluation of AI-inferred.md:24:a pipeline that directs LLMs to assess constructs 
+from a validated
+  md\Mimetic Alignment with ASPECT Evaluation of AI-inferred.md:25:communication scale against behavioral evidence 
+from workplace
+  md\Mimetic Alignment with ASPECT Evaluation of AI-inferred.md:26:data, without per-person training. In a case study 
+with 20 participants (1,840 paired item ratings, 600 scenario evaluations), ASPECTgenerated profiles achieved moderate 
+alignment with self-assessments,
+  md\Mimetic Alignment with ASPECT Evaluation of AI-inferred.md:27:and ASPECT-generated responses were preferred over 
+generic and
+  md\Mimetic Alignment with ASPECT Evaluation of AI-inferred.md:28:self-report baselines on aggregate, with 
+substantial variation across
+  md\Mimetic Alignment with ASPECT Evaluation of AI-inferred.md:29:individuals and scenarios. During the profile 
+review phase, linked
+  md\Mimetic Alignment with ASPECT Evaluation of AI-inferred.md:30:evidence helped participants identify 
+mischaracterizations, recalibrate their own self-ratings, and negotiate context-appropriate
+  md\Mimetic Alignment with ASPECT Evaluation of AI-inferred.md:31:representations. We discuss implications for 
+building inspectable,
+  md\Mimetic Alignment with ASPECT Evaluation of AI-inferred.md:32:individually scoped communication profiles that let 
+individuals
+
+=== On the Optimality of Hierarchical Secure.md ===
+> md\On the Optimality of Hierarchical Secure.md:11:_**Abstract**_ **—This** **paper** **studies** **the** 
+**information** **theoretic** **secure**
+  md\On the Optimality of Hierarchical Secure.md:12:**aggregation** **problem** **in** **a** **three-layer** 
+**hierarchical** **network** **with**
+  md\On the Optimality of Hierarchical Secure.md:13:**arbitrary** **heterogeneous** **data** **assignment,** **where** 
+**clustered** **users**
+  md\On the Optimality of Hierarchical Secure.md:14:**communicate** **with** **an** **aggregation** **server** 
+**through** **an** **intermedi-**
+  md\On the Optimality of Hierarchical Secure.md:15:**ate** **layer** **of** **relays.** **We** **consider** **a** 
+**more** **general** **setting** **with**
+  md\On the Optimality of Hierarchical Secure.md:16:**arbitrary** **heterogeneous** **data** **assignment** **across** 
+**users,** **where**
+  md\On the Optimality of Hierarchical Secure.md:17:**‘arbitrary’** **means** **that** **the** **data** **assignment** 
+**is** **given** **in** **advance**
+  md\On the Optimality of Hierarchical Secure.md:18:**and** **‘heterogeneous’** **means** **that** **the** **users** 
+**may** **hold** **different**
+  md\On the Optimality of Hierarchical Secure.md:19:**numbers** **of** **datasets.** **Each** **user** **locally** 
+**computes** **the** **partially**
+  md\On the Optimality of Hierarchical Secure.md:20:**aggregated** **gradients** **as** **its** **input** **based** 
+**on** **the** **assigned** **datasets**
+  md\On the Optimality of Hierarchical Secure.md:21:**and** **transmits** **masked** **input** **to** **its** 
+**associated** **relay.** **The** **relays**
+  md\On the Optimality of Hierarchical Secure.md:22:**then** **forward** **the** **aggregated** **messages** **to** 
+**the** **server,** **which** **aims**
+  md\On the Optimality of Hierarchical Secure.md:23:**to** **recover** **the** **sum** **of** **the** **gradients.** 
+**In** **this** **process,** **while**
+  md\On the Optimality of Hierarchical Secure.md:24:**some** **users** **may** **drop** **out** **unpredictably,** 
+**the** **server** **needs** **to**
+  md\On the Optimality of Hierarchical Secure.md:25:**correctly** **recover** **the** **desired** **aggregation** 
+**from** **the** **surviving**
+  md\On the Optimality of Hierarchical Secure.md:26:**users. Moreover, the server or any relay may collude with a 
+subset**
+
+=== Position Science of AI Evaluation Requires Item-level Benchmark Data.md ===
+> md\Position Science of AI Evaluation Requires Item-level Benchmark Data.md:7:**Abstract**
+  md\Position Science of AI Evaluation Requires Item-level Benchmark Data.md:8:
+  md\Position Science of AI Evaluation Requires Item-level Benchmark Data.md:9:
+  md\Position Science of AI Evaluation Requires Item-level Benchmark Data.md:10:AI evaluations have become the primary 
+evidence
+  md\Position Science of AI Evaluation Requires Item-level Benchmark Data.md:11:for deploying generative AI systems 
+across highstakes domains. However, current evaluation
+  md\Position Science of AI Evaluation Requires Item-level Benchmark Data.md:12:paradigms often exhibit systemic 
+validity failures. These issues, ranging from unjustified design choices to misaligned metrics, remain intractable 
+without a principled framework for gathering validity evidence and conducting granular
+  md\Position Science of AI Evaluation Requires Item-level Benchmark Data.md:13:diagnostic analysis. In this position 
+paper, we argue that **item-level AI benchmark data** is essential for establishing a rigorous science of AI 
+evaluation. Item-level analysis enables fine-grained
+  md\Position Science of AI Evaluation Requires Item-level Benchmark Data.md:14:diagnostics and principled validation 
+of benchmarks. We substantiate this position by dissecting
+  md\Position Science of AI Evaluation Requires Item-level Benchmark Data.md:15:current validity failures and 
+revisiting evaluation
+  md\Position Science of AI Evaluation Requires Item-level Benchmark Data.md:16:paradigms across computer science and 
+psychometrics. Through illustrative analyses of item
+  md\Position Science of AI Evaluation Requires Item-level Benchmark Data.md:17:properties and latent constructs, we 
+demonstrate
+  md\Position Science of AI Evaluation Requires Item-level Benchmark Data.md:18:the unique insights afforded by 
+item-level data. To
+  md\Position Science of AI Evaluation Requires Item-level Benchmark Data.md:19:catalyze community-wide adoption, we 
+introduce
+  md\Position Science of AI Evaluation Requires Item-level Benchmark Data.md:20:OpenEval, a growing repository of 
+item-level
+  md\Position Science of AI Evaluation Requires Item-level Benchmark Data.md:21:benchmark data designed supporting 
+evidencecentered AI evaluation.
+  md\Position Science of AI Evaluation Requires Item-level Benchmark Data.md:22:
+
+=== Prompt Engineering for Scale Development in.md ===
+> md\Prompt Engineering for Scale Development in.md:9:**Abstract**
+  md\Prompt Engineering for Scale Development in.md:10:This Monte Carlo simulation examines how prompt engineering 
+strategies shape the quality of large
+  md\Prompt Engineering for Scale Development in.md:11:language model (LLM)–generated personality assessment items 
+within the AI-GENIE framework for
+  md\Prompt Engineering for Scale Development in.md:12:generative psychometrics. Item pools targeting the Big Five 
+traits were generated using multiple prompting
+  md\Prompt Engineering for Scale Development in.md:13:designs (zero-shot, few-shot, persona-based, and adaptive), 
+model temperatures, and LLMs, then evaluated
+  md\Prompt Engineering for Scale Development in.md:14:and reduced using network psychometric methods. Across all 
+conditions, AI-GENIE reliably improved
+  md\Prompt Engineering for Scale Development in.md:15:structural validity following reduction, with the magnitude of 
+its incremental contribution inversely related
+  md\Prompt Engineering for Scale Development in.md:16:to the quality of the incoming item pool. Prompt design exerted 
+a substantial influence on both preand post-reduction item quality. Adaptive prompting consistently outperformed 
+non-adaptive strategies
+  md\Prompt Engineering for Scale Development in.md:17:by sharply reducing semantic redundancy, elevating 
+pre-reduction structural validity, and preserving
+  md\Prompt Engineering for Scale Development in.md:18:substantially larger item pool, particularly when paired with 
+newer, higher-capacity models. These gains
+  md\Prompt Engineering for Scale Development in.md:19:were robust across temperature settings for most models, 
+indicating that adaptive prompting mitigates
+  md\Prompt Engineering for Scale Development in.md:20:common trade-offs between creativity and psychometric 
+coherence. An exception was observed for
+  md\Prompt Engineering for Scale Development in.md:21:the GPT-4o model at high temperatures, suggesting 
+model-specific sensitivity to adaptive constraints at
+  md\Prompt Engineering for Scale Development in.md:22:elevated stochasticity. Overall, the findings demonstrate that 
+adaptive prompting is the strongest approach
+  md\Prompt Engineering for Scale Development in.md:23:in this context, and that its benefits scale with model 
+capability, motivating continued investigation of
+  md\Prompt Engineering for Scale Development in.md:24:model–prompt interactions in generative psychometric pipelines.
+
+=== Rethinking Wine Tasting for Chinese Consumers.md ===
+> md\Rethinking Wine Tasting for Chinese Consumers.md:36:_**Abstract**_ **—Wine** **tasting** **is** **a** 
+**multimodal** **and** **culturally** **em-**
+  md\Rethinking Wine Tasting for Chinese Consumers.md:37:**bedded** **activity** **that** **presents** **unique** 
+**challenges** **when** **adapted**
+  md\Rethinking Wine Tasting for Chinese Consumers.md:38:**to** **non-Western** **contexts.** **This** **paper** 
+**proposes** **a** **service** **design**
+  md\Rethinking Wine Tasting for Chinese Consumers.md:39:**approach** **rooted** **in** **contextual** **co-creation** 
+**to** **reimagine** **wine**
+  md\Rethinking Wine Tasting for Chinese Consumers.md:40:**tasting experiences for Chinese consumers. Drawing on 26 
+in-situ**
+  md\Rethinking Wine Tasting for Chinese Consumers.md:41:**interviews** **and** **follow-up** **validation** 
+**sessions,** **we** **identify** **three**
+  md\Rethinking Wine Tasting for Chinese Consumers.md:42:**distinct** **user** **archetypes:** **Curious** 
+**Tasters,** **Experience** **Seekers,**
+  md\Rethinking Wine Tasting for Chinese Consumers.md:43:**and** **Knowledge** **Builders,** **each** **exhibiting** 
+**different** **needs** **in**
+  md\Rethinking Wine Tasting for Chinese Consumers.md:44:**vocabulary,** **interaction,** **and** **emotional** 
+**pacing.** **Our** **findings**
+  md\Rethinking Wine Tasting for Chinese Consumers.md:45:**reveal** **that** **traditional** **wine** **descriptors** 
+**lack** **cultural** **resonance**
+  md\Rethinking Wine Tasting for Chinese Consumers.md:46:**and** **that** **cross-modal** **metaphors** **grounded** 
+**in** **local** **gastronomy**
+  md\Rethinking Wine Tasting for Chinese Consumers.md:47:**(e.g.,** **green** **mango** **for** **acidity)** 
+**significantly** **improve** **cognitive**
+  md\Rethinking Wine Tasting for Chinese Consumers.md:48:**and** **emotional** **engagement.** **These** **insights** 
+**informed** **a** **partially**
+  md\Rethinking Wine Tasting for Chinese Consumers.md:49:**implemented** **prototype,** **featuring** **AI-driven** 
+**metaphor-to-flavour**
+  md\Rethinking Wine Tasting for Chinese Consumers.md:50:**mappings and real-time affective feedback visualisation. A 
+small-**
+  md\Rethinking Wine Tasting for Chinese Consumers.md:51:**scale** **usability** **evaluation** **(n=10)** 
+**confirmed** **improvements** **in**
+
+=== Semantic Distance Measurement based on.md ===
+
+=== Semantic distance organizes social knowledge Insights from semantic dementia.md ===
+> md\Semantic distance organizes social knowledge Insights from semantic dementia.md:7:**Abstract**
+  md\Semantic distance organizes social knowledge Insights from semantic dementia.md:8:
+  md\Semantic distance organizes social knowledge Insights from semantic dementia.md:9:
+  md\Semantic distance organizes social knowledge Insights from semantic dementia.md:10:Our interaction with others 
+largely hinges on how we semantically organize the social world. The organization of such
+  md\Semantic distance organizes social knowledge Insights from semantic dementia.md:11:conceptual information is not 
+static– as we age, our experiences and ever-changing anatomy alter how we represent
+  md\Semantic distance organizes social knowledge Insights from semantic dementia.md:12:and arrange semantic 
+information. How does semantic distance between concepts affect this organization, particularly
+  md\Semantic distance organizes social knowledge Insights from semantic dementia.md:13:for those with pathological 
+deficits in semantic knowledge?
+  md\Semantic distance organizes social knowledge Insights from semantic dementia.md:14:Using triplet judgment 
+responses collected from healthy participants, we compute an ordinal similarity embedding for a
+  md\Semantic distance organizes social knowledge Insights from semantic dementia.md:15:set of social words and images 
+that vary in the dimensions
+  md\Semantic distance organizes social knowledge Insights from semantic dementia.md:16:of age and gender. We compare 
+semantic distances between
+  md\Semantic distance organizes social knowledge Insights from semantic dementia.md:17:items in the space to patterns 
+of error in a word-picture matching task performed by patients with semantic dementia (SD).
+  md\Semantic distance organizes social knowledge Insights from semantic dementia.md:18:Error patterns reveal that SD 
+patients retain gender information more robustly than age information, and that age-related
+  md\Semantic distance organizes social knowledge Insights from semantic dementia.md:19:errors are a function of 
+linear distance in age from a concept
+  md\Semantic distance organizes social knowledge Insights from semantic dementia.md:20:word. The distances between 
+probed and exemplar items in
+  md\Semantic distance organizes social knowledge Insights from semantic dementia.md:21:the resulting conceptual map 
+reflect error patterns in SD patient responses such that items semantically closer to a probed
+  md\Semantic distance organizes social knowledge Insights from semantic dementia.md:22:concept– in gender category or 
+in linear age– are more likely
+
+=== Stories of Your Life as Others A Round-Trip Evaluation of.md ===
+> md\Stories of Your Life as Others A Round-Trip Evaluation of.md:11:**Abstract**
+  md\Stories of Your Life as Others A Round-Trip Evaluation of.md:12:
+  md\Stories of Your Life as Others A Round-Trip Evaluation of.md:13:
+  md\Stories of Your Life as Others A Round-Trip Evaluation of.md:14:Personality traits are richly encoded in natural 
+language, and large language models (LLMs) trained on human text can simulate personality when
+  md\Stories of Your Life as Others A Round-Trip Evaluation of.md:15:conditioned on persona descriptions. However, 
+existing evaluations rely
+  md\Stories of Your Life as Others A Round-Trip Evaluation of.md:16:predominantly on questionnaire self-report by the 
+conditioned model, are
+  md\Stories of Your Life as Others A Round-Trip Evaluation of.md:17:typically limited in architectural diversity, and 
+rarely use real human psychometric data. Without addressing these limitations, it remains unclear
+  md\Stories of Your Life as Others A Round-Trip Evaluation of.md:18:whether personality conditioning produces 
+psychometrically informative
+  md\Stories of Your Life as Others A Round-Trip Evaluation of.md:19:representations of individual differences or 
+merely superficial alignment
+  md\Stories of Your Life as Others A Round-Trip Evaluation of.md:20:with trait descriptors. To test how robustly LLMs 
+can encode personality
+  md\Stories of Your Life as Others A Round-Trip Evaluation of.md:21:into extended text, we introduce a round-trip 
+evaluation paradigm: we
+  md\Stories of Your Life as Others A Round-Trip Evaluation of.md:22:condition LLMs on real psychometric profiles from 
+290 participants to generate first-person life story narratives, and then task independent LLMs
+  md\Stories of Your Life as Others A Round-Trip Evaluation of.md:23:to recover personality scores from those 
+narratives alone. We show that
+  md\Stories of Your Life as Others A Round-Trip Evaluation of.md:24:personality scores can be recovered from the 
+generated narratives at levels
+  md\Stories of Your Life as Others A Round-Trip Evaluation of.md:25:approaching human test-retest reliability (mean 
+_r_ = 0.750, 85% of the human
+  md\Stories of Your Life as Others A Round-Trip Evaluation of.md:26:ceiling), and that recovery is robust across 10 
+LLM narrative generators
+
+=== Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md ===
+> md\Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md:16:### **Abstract**
+  md\Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md:17:
+  md\Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md:18:
+  md\Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md:19:Talk2AI is a large-scale longitudinal dataset of 
+3,080 conversations (totaling 30,800 turns) between
+  md\Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md:20:human participants and Large Language Models (LLMs), 
+designed to support research on persuasion, opinion change, and human–AI interaction. The corpus was collected from 
+770 profiled Italian
+  md\Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md:21:adults across four weekly sessions in Spring 2025, 
+using a within-subject design in which each participant conversed with a single model (GPT-4o, Claude Sonnet 3.7, 
+DeepSeek-chat V3, or Mistral
+  md\Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md:22:Large) on three socially relevant topics: climate 
+change, math anxiety, and health misinformation.
+  md\Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md:23:Each conversation is linked to rich contextual data, 
+including sociodemographic characteristics and
+  md\Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md:24:psychometric profiles. After each session, 
+participants reported on opinion change, conviction stability, perceived humanness of the AI, and behavioral 
+intentions, enabling fine-grained longitudinal
+  md\Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md:25:analysis of how AI-mediated dialogue shapes beliefs 
+and attitudes over time.
+  md\Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md:26:
+  md\Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md:27:### **Background & Summary**
+  md\Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md:28:
+  md\Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md:29:
+  md\Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md:30:Large Language Models (LLMs) increasingly serve as 
+routine conversational interfaces for navigating complex information and discussing personal or socio-political 
+queries. Alongside this
+  md\Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md:31:widespread adoption, researchers have begun 
+investigating how repeated interactions with conversational AI shape belief systems and cognitive organization [1, 2]. 
+A growing body of evidence indicates that these models can function as persuasive agents, even after brief exposures
+
+=== The Representational Alignment between Humans and Language Models is.md ===
+> md\The Representational Alignment between Humans and Language Models is.md:21:**Abstract**
+  md\The Representational Alignment between Humans and Language Models is.md:22:
+  md\The Representational Alignment between Humans and Language Models is.md:23:
+
+=== The Ultimate Tutorial for AI-driven Scale Development.md ===
+> md\The Ultimate Tutorial for AI-driven Scale Development.md:15:**Abstract**
+  md\The Ultimate Tutorial for AI-driven Scale Development.md:16:Psychological scale development has traditionally 
+required extensive expert involvement, iterative revision, and large-scale pilot testing before psychometric 
+evaluation can begin. The `AIGENIE` R package implements the AI-GENIE framework (Automatic Item Generation with 
+Network-Integrated Evaluation),
+  md\The Ultimate Tutorial for AI-driven Scale Development.md:17:which integrates large language model (LLM) text 
+generation with network psychometric methods to
+  md\The Ultimate Tutorial for AI-driven Scale Development.md:18:automate the early stages of this process. The 
+package generates candidate item pools using LLMs, transforms them into high-dimensional embeddings, and applies a 
+multi-step reduction pipeline— Exploratory
+  md\The Ultimate Tutorial for AI-driven Scale Development.md:19:Graph Analysis (EGA), Unique Variable Analysis (UVA), 
+and bootstrap EGA— to produce structurally
+  md\The Ultimate Tutorial for AI-driven Scale Development.md:20:validated item pools entirely _in_ _silico_ . This 
+tutorial introduces the package across six parts: installation
+  md\The Ultimate Tutorial for AI-driven Scale Development.md:21:and setup, understanding Application Programming 
+Interfaces (APIs), text generation, item generation,
+  md\The Ultimate Tutorial for AI-driven Scale Development.md:22:the `AIGENIE` function, and the `GENIE` function. Two 
+running examples illustrate the package’s use: the
+  md\The Ultimate Tutorial for AI-driven Scale Development.md:23:Big Five personality model (a well-established 
+construct) and AI Anxiety (an emerging construct). The
+  md\The Ultimate Tutorial for AI-driven Scale Development.md:24:package supports multiple LLM providers (OpenAI, 
+Anthropic, Groq, HuggingFace, and local models),
+  md\The Ultimate Tutorial for AI-driven Scale Development.md:25:offers a fully offline mode with no external API 
+calls, and provides the `GENIE()` function for researchers
+  md\The Ultimate Tutorial for AI-driven Scale Development.md:26:who wish to apply the psychometric reduction pipeline 
+to existing item pools regardless of their origin.
+  md\The Ultimate Tutorial for AI-driven Scale Development.md:27:The `AIGENIE` [package is freely available on 
+R-universe at https://laralee.r-universe.dev/AIGENIE.](https://laralee.r-universe.dev/AIGENIE)
+  md\The Ultimate Tutorial for AI-driven Scale Development.md:28:
+  md\The Ultimate Tutorial for AI-driven Scale Development.md:29:
+  md\The Ultimate Tutorial for AI-driven Scale Development.md:30:**Keywords:** AIGENIE, Generative Psychometrics, 
+tutorial, LLMs, AI, EGA, UVA, R package
+
+=== The Umwelt Representation Hypothesis.md ===
+
+=== Topeax - An Improved Clustering Topic Model with Density.md ===
+> md\Topeax - An Improved Clustering Topic Model with Density.md:8:### **Abstract**
+  md\Topeax - An Improved Clustering Topic Model with Density.md:9:
+  md\Topeax - An Improved Clustering Topic Model with Density.md:10:Text clustering is today the most popular paradigm 
+for topic modelling, both in academia and
+  md\Topeax - An Improved Clustering Topic Model with Density.md:11:industry. Despite clustering topic models’ 
+apparent success, we identify a number of issues in
+  md\Topeax - An Improved Clustering Topic Model with Density.md:12:Top2Vec and BERTopic, which remain largely 
+unsolved. Firstly, these approaches are unreliable at
+  md\Topeax - An Improved Clustering Topic Model with Density.md:13:discovering natural clusters in corpora, due to 
+extreme sensitivity to sample size and
+  md\Topeax - An Improved Clustering Topic Model with Density.md:14:hyperparameters, the default values of which 
+result in suboptimal behaviour. Secondly, when
+  md\Topeax - An Improved Clustering Topic Model with Density.md:15:estimating term importance, BERTopic ignores the 
+semantic distance of keywords to topic vectors,
+  md\Topeax - An Improved Clustering Topic Model with Density.md:16:while Top2Vec ignores word counts in the corpus. 
+This results in, on the one hand, less coherent
+  md\Topeax - An Improved Clustering Topic Model with Density.md:17:topics due to the presence of stop words and junk 
+words, and lack of variety and trust on the other.
+  md\Topeax - An Improved Clustering Topic Model with Density.md:18:In this paper, I introduce a new approach, 
+**Topeax**, which discovers the number of clusters from
+  md\Topeax - An Improved Clustering Topic Model with Density.md:19:peaks in density estimates, and combines lexical 
+and semantic indices of term importance to gain
+  md\Topeax - An Improved Clustering Topic Model with Density.md:20:high-quality topic keywords. Topeax is 
+demonstrated to be better at both cluster recovery and
+  md\Topeax - An Improved Clustering Topic Model with Density.md:21:cluster description than Top2Vec and BERTopic, 
+while also exhibiting less erratic behaviour in
+  md\Topeax - An Improved Clustering Topic Model with Density.md:22:response to changing sample size and 
+hyperparameters.
+  md\Topeax - An Improved Clustering Topic Model with Density.md:23:
+
+=== Topology-Aware Reasoning over Incomplete Knowledge Graph with.md ===
+> md\Topology-Aware Reasoning over Incomplete Knowledge Graph with.md:11:**Abstract**
+  md\Topology-Aware Reasoning over Incomplete Knowledge Graph with.md:12:
+  md\Topology-Aware Reasoning over Incomplete Knowledge Graph with.md:13:
+  md\Topology-Aware Reasoning over Incomplete Knowledge Graph with.md:14:Large Language Models (LLMs) have shown
+  md\Topology-Aware Reasoning over Incomplete Knowledge Graph with.md:15:remarkable capabilities across various tasks 
+but
+  md\Topology-Aware Reasoning over Incomplete Knowledge Graph with.md:16:remain prone to hallucinations in 
+knowledgeintensive scenarios. Knowledge Base Question
+  md\Topology-Aware Reasoning over Incomplete Knowledge Graph with.md:17:Answering (KBQA) mitigates this by grounding 
+generation in Knowledge Graphs (KGs).
+  md\Topology-Aware Reasoning over Incomplete Knowledge Graph with.md:18:However, most multi-hop KBQA methods rely
+  md\Topology-Aware Reasoning over Incomplete Knowledge Graph with.md:19:on explicit edge traversal, making them 
+fragile to KG incompleteness. In this paper, we
+  md\Topology-Aware Reasoning over Incomplete Knowledge Graph with.md:20:proposed a novel graph-based soft prompting
+  md\Topology-Aware Reasoning over Incomplete Knowledge Graph with.md:21:framework that shifts the reasoning paradigm
+  md\Topology-Aware Reasoning over Incomplete Knowledge Graph with.md:22:from node-level path traversal to 
+subgraphlevel reasoning. Specifically, we employ a
+  md\Topology-Aware Reasoning over Incomplete Knowledge Graph with.md:23:Graph Neural Network (GNN) to encode 
+extracted structural subgraphs into soft prompts,
+  md\Topology-Aware Reasoning over Incomplete Knowledge Graph with.md:24:enabling LLM to reason over richer structural
+  md\Topology-Aware Reasoning over Incomplete Knowledge Graph with.md:25:context and identify relevant entities beyond
+  md\Topology-Aware Reasoning over Incomplete Knowledge Graph with.md:26:immediate graph neighbors, thereby reducing
+
+=== Towards Generalising Neural Topical.md ===
+> md\Towards Generalising Neural Topical.md:10:_**Abstract**_ **—Topic** **models** **have** **evolved** **from** 
+**conventional**
+  md\Towards Generalising Neural Topical.md:11:**Bayesian** **probabilistic** **models** **to** **recent** **Neural** 
+**Topic** **Models**
+  md\Towards Generalising Neural Topical.md:12:**(NTMs).** **Although** **NTMs** **have** **shown** **promising** 
+**performance**
+  md\Towards Generalising Neural Topical.md:13:**when trained and tested on a specific corpus, their generalisation**
+  md\Towards Generalising Neural Topical.md:14:**ability** **across** **corpora** **has** **yet** **to** **be** 
+**studied.** **In** **practice,** **we** **often**
+  md\Towards Generalising Neural Topical.md:15:**expect** **that** **an** **NTM** **trained** **on** **a** **source** 
+**corpus** **can** **still** **produce**
+  md\Towards Generalising Neural Topical.md:16:**quality topical representation (i.e., latent distribution over 
+topics)**
+  md\Towards Generalising Neural Topical.md:17:**for** **the** **document** **from** **different** **target** 
+**corpora** **to** **a** **certain**
+  md\Towards Generalising Neural Topical.md:18:**degree.** **In** **this** **work,** **we** **aim** **to** **improve** 
+**NTMs** **further** **so** **that**
+  md\Towards Generalising Neural Topical.md:19:**their** **representation** **power** **for** **documents** 
+**generalises** **reliably**
+  md\Towards Generalising Neural Topical.md:20:**across corpora and tasks. To do so, we propose to enhance NTMs**
+  md\Towards Generalising Neural Topical.md:21:**by** **narrowing** **the** **semantic** **distance** **between** 
+**similar** **documents,**
+  md\Towards Generalising Neural Topical.md:22:**with** **the** **underlying** **assumption** **that** **documents** 
+**from** **different**
+  md\Towards Generalising Neural Topical.md:23:**corpora** **may** **share** **similar** **semantics.** 
+**Specifically,** **we** **obtain**
+  md\Towards Generalising Neural Topical.md:24:**a** **similar** **document** **for** **each** **training** 
+**document** **by** **text** **data**
+  md\Towards Generalising Neural Topical.md:25:**augmentation.** **Then,** **we** **optimise** **NTMs** **further** 
+**by** **minimising**
+
+=== Transformer Semantic Genetic Programming.md ===
+
+=== Understanding the Prompt Sensitivity.md ===
+> md\Understanding the Prompt Sensitivity.md:9:**Abstract**
+  md\Understanding the Prompt Sensitivity.md:10:
+  md\Understanding the Prompt Sensitivity.md:11:
+  md\Understanding the Prompt Sensitivity.md:12:Prompt sensitivity, which refers to how strongly
+  md\Understanding the Prompt Sensitivity.md:13:the output of a large language model (LLM) depends on the exact 
+wording of its input prompt,
+  md\Understanding the Prompt Sensitivity.md:14:raises concerns among users about the LLM’s
+  md\Understanding the Prompt Sensitivity.md:15:stability and reliability. In this work, we consider LLMs as 
+multivariate functions and perform a first-order Taylor expansion, thereby
+  md\Understanding the Prompt Sensitivity.md:16:analyzing the relationship between meaningpreserving prompts, their 
+gradients, and the
+  md\Understanding the Prompt Sensitivity.md:17:log probabilities of the model’s next token.
+  md\Understanding the Prompt Sensitivity.md:18:We derive an upper bound on the difference
+  md\Understanding the Prompt Sensitivity.md:19:between log probabilities using the CauchySchwarz inequality. We show 
+that LLMs do
+  md\Understanding the Prompt Sensitivity.md:20:not internally cluster similar inputs like smaller
+  md\Understanding the Prompt Sensitivity.md:21:neural networks do, but instead disperse them.
+  md\Understanding the Prompt Sensitivity.md:22:This dispersing behavior leads to an excessively high upper bound on 
+the difference of log
+  md\Understanding the Prompt Sensitivity.md:23:probabilities between two meaning-preserving
+  md\Understanding the Prompt Sensitivity.md:24:prompts, making it difficult to effectively reduce to 0. In our 
+analysis, we also show which
+
+=== User Archetypes and Information Dynamics on Telegram COVID-19 and.md ===
+> md\User Archetypes and Information Dynamics on Telegram COVID-19 and.md:88:of this work owned by others than ACM 
+must be honored. Abstracting with credit is permitted. To copy otherwise, or republish, to post on servers or
+  md\User Archetypes and Information Dynamics on Telegram COVID-19 and.md:89:to redistribute to lists, requires prior 
+specific permission and/or a fee. Request permissions from permissions@acm.org.
+  md\User Archetypes and Information Dynamics on Telegram COVID-19 and.md:90:
+  md\User Archetypes and Information Dynamics on Telegram COVID-19 and.md:91:
+  md\User Archetypes and Information Dynamics on Telegram COVID-19 and.md:92:© 2018 Association for Computing 
+Machinery.
+  md\User Archetypes and Information Dynamics on Telegram COVID-19 and.md:93:Manuscript submitted to ACM
+  md\User Archetypes and Information Dynamics on Telegram COVID-19 and.md:94:
+  md\User Archetypes and Information Dynamics on Telegram COVID-19 and.md:95:
+  md\User Archetypes and Information Dynamics on Telegram COVID-19 and.md:96:1
+  md\User Archetypes and Information Dynamics on Telegram COVID-19 and.md:97:
+  md\User Archetypes and Information Dynamics on Telegram COVID-19 and.md:98:
+  md\User Archetypes and Information Dynamics on Telegram COVID-19 and.md:99:Conference acronym ’XX, June 03–05, 2018, 
+Woodstock, NY Kumar et al.
+  md\User Archetypes and Information Dynamics on Telegram COVID-19 and.md:100:
+  md\User Archetypes and Information Dynamics on Telegram COVID-19 and.md:101:
+  md\User Archetypes and Information Dynamics on Telegram COVID-19 and.md:102:During the COVID-19 pandemic, Telegram 
+saw a significant rise in popularityin Singapore, becoming a major venue
+  md\User Archetypes and Information Dynamics on Telegram COVID-19 and.md:103:
+
+=== Using Large Language Models and Knowledge.md ===
+> md\Using Large Language Models and Knowledge.md:14:**Abstract.** Explaining Machine Learning (ML) results in a 
+transparent
+  md\Using Large Language Models and Knowledge.md:15:and user-friendly manner remains a challenging task of 
+Explainable Artificial Intelligence (XAI). In this paper, we present a method to enhance
+  md\Using Large Language Models and Knowledge.md:16:the interpretability of ML models by using a Knowledge Graph 
+(KG). We
+  md\Using Large Language Models and Knowledge.md:17:store domain-specific data along with ML results and their 
+corresponding explanations, establishing a structured connection between domain
+  md\Using Large Language Models and Knowledge.md:18:knowledge and ML insights. To make these insights accessible to 
+users,
+  md\Using Large Language Models and Knowledge.md:19:we designed a selective retrieval method in which relevant 
+triplets are extracted from the KG and processed by a Large Language Model (LLM)
+  md\Using Large Language Models and Knowledge.md:20:to generate user-friendly explanations of ML results. We 
+evaluated our
+  md\Using Large Language Models and Knowledge.md:21:method in a manufacturing environment using the XAI Question Bank.
+  md\Using Large Language Models and Knowledge.md:22:Beyond standard questions, we introduce more complex, tailored 
+questions that highlight the strengths of our approach. We evaluated 33 questions, analyzing responses using 
+quantitative metrics such as accuracy
+  md\Using Large Language Models and Knowledge.md:23:and consistency, as well as qualitative ones such as clarity and 
+usefulness.
+  md\Using Large Language Models and Knowledge.md:24:Our contribution is both theoretical and practical: from a 
+theoretical
+  md\Using Large Language Models and Knowledge.md:25:perspective, we present a novel approach for effectively enabling 
+LLMs
+  md\Using Large Language Models and Knowledge.md:26:to dynamically access a KG in order to improve the explainability 
+of
+  md\Using Large Language Models and Knowledge.md:27:ML results. From a practical perspective, we provide empirical 
+evidence
+  md\Using Large Language Models and Knowledge.md:28:showing that such explanations can be successfully applied in 
+real-world
+  md\Using Large Language Models and Knowledge.md:29:manufacturing environments, supporting better decision-making in 
+manufacturing processes.
+
+=== Who We Are Where We Are Mental Health at the Intersection of Person.md ===
+> md\Who We Are Where We Are Mental Health at the Intersection of Person.md:14:**Abstract**
+  md\Who We Are Where We Are Mental Health at the Intersection of Person.md:15:
+  md\Who We Are Where We Are Mental Health at the Intersection of Person.md:16:
+  md\Who We Are Where We Are Mental Health at the Intersection of Person.md:17:Mental health is not a fixed trait but 
+a dynamic process shaped by the interplay between individual dispositions and situational
+  md\Who We Are Where We Are Mental Health at the Intersection of Person.md:18:contexts. Building on interactionist 
+and constructionist psychological theories, we develop
+  md\Who We Are Where We Are Mental Health at the Intersection of Person.md:19:interpretable models to predict 
+well-being and
+  md\Who We Are Where We Are Mental Health at the Intersection of Person.md:20:identify adaptive and maladaptive 
+self-states
+  md\Who We Are Where We Are Mental Health at the Intersection of Person.md:21:in longitudinal social media data. Our 
+approach integrates person-level psychological
+  md\Who We Are Where We Are Mental Health at the Intersection of Person.md:22:traits (e.g., resilience, cognitive 
+distortions, implicit motives) with language-inferred situational features derived from the Situational 8
+  md\Who We Are Where We Are Mental Health at the Intersection of Person.md:23:DIAMONDS framework. We compare these
+  md\Who We Are Where We Are Mental Health at the Intersection of Person.md:24:theory-grounded features to embeddings 
+from
+  md\Who We Are Where We Are Mental Health at the Intersection of Person.md:25:a psychometrically-informed language 
+model
+  md\Who We Are Where We Are Mental Health at the Intersection of Person.md:26:that captures temporal and 
+individual-specific
+  md\Who We Are Where We Are Mental Health at the Intersection of Person.md:27:patterns. Results show that our 
+principled,
+  md\Who We Are Where We Are Mental Health at the Intersection of Person.md:28:theory-driven features provide 
+competitive performance while offering greater interpretability. Qualitative analyses further highlight the
+  md\Who We Are Where We Are Mental Health at the Intersection of Person.md:29:psychological coherence of features 
+most predictive of well-being. These findings underscore the value of integrating computational
+
+
+

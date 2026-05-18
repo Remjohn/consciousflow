@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 13 - DSPy: Application Layer</title>
+  <style>
+    :root {
+      --bg: #08111a; --panel: rgba(12, 20, 30, 0.88); --line: rgba(255,255,255,0.08); 
+      --text: #f3f7fb; --muted: #9ab0c2; --accent: #ff7a18; --accent-2: #56c5ff; 
+      --good: #2ecc71; --bad: #ff5c73; --gold: #ffd166;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--text);
+      font-family: Georgia, "Times New Roman", serif; line-height: 1.6;
+      background: radial-gradient(circle at 85% 15%, rgba(86,197,255,0.12), transparent 25%),
+                  linear-gradient(180deg, #071018 0%, #09131c 100%);
+    }
+
+    .progress { position: fixed; top: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.05); z-index: 50; }
+    .progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, #ff7a18, #ffd166, #56c5ff); transition: width 0.35s ease; }
+    .shell { max-width: 1120px; margin: 0 auto; padding: 42px 18px 80px; }
+
+    .stage { display: none; animation: fadeUp 0.4s ease; }
+    .stage.active { display: block; }
+    
+    .card {
+      border-radius: 20px; border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+      box-shadow: 0 16px 40px rgba(0,0,0,0.2); padding: 28px; margin-top: 18px;
+    }
+
+    .eyebrow { color: var(--gold); text-transform: uppercase; letter-spacing: 0.15em; font: 700 0.75rem/1.2 Arial, sans-serif; margin-bottom: 12px; }
+    h1, h2, h3 { margin: 0 0 12px; font-weight: 500; font-family: -apple-system, sans-serif; }
+    h1 { font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.1; }
+    h2 { font-size: 1.6rem; }
+    p { margin: 0 0 16px; color: #d9e4ec; font-size: 1.08rem; }
+    .muted-text { color: var(--muted); font-size: 0.95rem; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .divider { height: 1px; margin: 24px 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    .btn { border: 0; cursor: pointer; padding: 12px 20px; border-radius: 8px; font: 700 0.9rem/1 Arial, sans-serif; transition: 0.2s; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.2); }
+
+    .choices { display: grid; gap: 10px; margin-top: 16px; }
+    .choice { text-align: left; padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); color: #fff; font: 400 0.95rem/1.4 Arial, sans-serif; cursor: pointer; }
+    .choice.selected { border-color: var(--accent); background: rgba(255,122,24,0.1); }
+
+    .feedback { display: none; margin-top: 16px; padding: 16px; border-radius: 8px; border: 1px solid var(--line); }
+    .feedback.show { display: block; animation: fadeUp 0.3s ease; }
+    .feedback.good { border-color: rgba(46,204,113,0.4); background: rgba(46,204,113,0.05); }
+    .feedback.bad { border-color: rgba(255,92,115,0.4); background: rgba(255,92,115,0.05); }
+    
+    .locked { margin-top: 12px; color: var(--gold); font-size: 0.75rem; font-family: Arial, sans-serif; text-transform: uppercase; font-weight: bold; }
+    .hidden { display: none !important; }
+
+    .code-window { border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #0c141e; overflow: hidden; margin-bottom: 20px; font-family: Consolas, monospace; font-size: 0.85rem; }
+    .code-header { background: rgba(255,255,255,0.05); padding: 6px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #89a1b2; font-size: 0.7rem; display: flex; align-items: center; gap: 6px; }
+    .code-body { padding: 16px; color: #d6deeb; margin: 0; line-height: 1.5; overflow-x: auto; }
+    
+    .syn-kw { color: #c792ea; } .syn-cls { color: #ffcb6b; } .syn-str { color: #ecc48d; } .syn-cm { color: #637777; font-style: italic; } .syn-fn { color: #82aaff; } .syn-op { color: #89ddff; } .syn-type { color: #addb67; } .syn-dec { color: #f07178; }
+
+    .gauntlet-grid { display: grid; gap: 14px; margin-top: 20px; }
+    .q-card { padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); }
+    .q-card label { display: block; margin-bottom: 6px; color: var(--accent-2); font-family: Arial, sans-serif; font-size: 0.85rem; font-weight: bold; }
+    input[type="text"] { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: #fff; font-size: 0.9rem; }
+
+    .paper-cite { background: rgba(86,197,255,0.1); border-left: 3px solid var(--accent-2); padding: 12px; margin-bottom: 20px; font-size: 0.9rem; color: #b5d5ef; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="progress"><div id="progressFill" class="progress-fill"></div></div>
+
+  <main class="shell">
+    
+    <!-- STAGE 0: Spaced Retrieval Interrupt -->
+    <section id="stage-0" class="stage active">
+      <div class="card">
+        <p class="eyebrow">Spaced Retrieval Interrupt</p>
+        <h2>Recall from Layer 1</h2>
+        <p>Before mapping production artifacts, you must retrieve the core mechanism.</p>
+        <p style="font-family: Arial, sans-serif; font-weight: bold;">Without looking: What specific mechanism does a DSPy pipeline physically return that replaces the need to manually parse a raw JSON string from a non-deterministic generative text output?</p>
+        
+        <div class="choices" data-group="interrupt">
+          <button class="choice" onclick="selectChoice('interrupt','A',this)">A dictionary parsed automatically via `json.loads` natively inside the prompt.</button>
+          <button class="choice" onclick="selectChoice('interrupt','B',this)">A strictly typed `Prediction` object governed by the Signature's OutputFields.</button>
+          <button class="choice" onclick="selectChoice('interrupt','C',this)">A raw string wrapped in markdown formatting blocks.</button>
+        </div>
+
+        <div id="interrupt-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions">
+          <button id="interrupt-submit" class="btn btn-primary" onclick="submitChoice('interrupt', 'B', fbkInt)">Lock response</button>
+        </div>
+        <div id="interrupt-feedback" class="feedback"></div>
+        <div id="interrupt-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(1)">Enter the Application Layer</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 1: Artifact 1 & 2 -->
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="eyebrow">CCP Artifact Gallery</p>
+        <h2>The Machinist mapping to The QA Department</h2>
+        <p>We are looking directly at production code handling intervention compilation.</p>
+        
+        <div class="paper-cite">
+          <strong>Strategic Source:</strong> <em>DSPy Paper (185/200)</em> & <em>OpenProse Contract Vocabulary</em><br>
+          "Prompt optimization is a computational compiler problem, not a linguistic drafting exercise. Pydantic evaluates; DSPy compiles."
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <h3>1. The Machinist (DSPy Signature)</h3>
+            <div class="code-window">
+              <div class="code-header">GenerateInterventionContext.py</div>
+              <pre class="code-body">
+<span class="syn-kw">from</span> typing <span class="syn-kw">import</span> Literal
+
+<span class="syn-kw">class</span> <span class="syn-cls">GenContext</span>(dspy.Signature):
+    client_transcript: <span class="syn-type">str</span> <span class="syn-op">=</span> dspy.InputField()
+    
+    selected_trigger: Literal[<span class="syn-str">'empathy'</span>, <span class="syn-str">'confrontation'</span>] <span class="syn-op">=</span> dspy.OutputField()
+    cbcs_score: <span class="syn-type">float</span> <span class="syn-op">=</span> dspy.OutputField()
+              </pre>
+            </div>
+          </div>
+          <div>
+            <h3>2. The QA Department (Pydantic)</h3>
+            <div class="code-window">
+              <div class="code-header">InterventionResponse.py</div>
+              <pre class="code-body">
+<span class="syn-kw">from</span> pydantic <span class="syn-kw">import</span> BaseModel, field_validator
+
+<span class="syn-kw">class</span> <span class="syn-cls">InterventionResponse</span>(BaseModel):
+    selected_trigger: <span class="syn-type">str</span>
+    cbcs_score: <span class="syn-type">float</span>
+    
+    <span class="syn-dec">@field_validator</span>(<span class="syn-str">'cbcs_score'</span>)
+    <span class="syn-kw">def</span> <span class="syn-fn">enforce_threshold</span>(cls, v: <span class="syn-type">float</span>) <span class="syn-op">-></span> <span class="syn-type">float</span>:
+        <span class="syn-kw">if</span> v <span class="syn-op"><</span> <span class="syn-type">0.65</span>: <span class="syn-kw">raise</span> ValueError(<span class="syn-str">"Too low."</span>)
+        <span class="syn-kw">return</span> v
+              </pre>
+            </div>
+          </div>
+        </div>
+
+        <p style="font-family: Arial; font-weight: bold; margin-top:16px;">Why do we still fundamentally need the mathematical threshold (<code>&lt; 0.65</code>) inside Pydantic when we could just write a description inside DSPy saying <em>"Only generate a score if it is greater than 0.65"</em>?</p>
+
+        <div class="choices" data-group="cr1">
+          <button class="choice" onclick="selectChoice('cr1','A',this)">Because DSPy guarantees extraction (pulling out a float), but cannot permanently guarantee truth evaluation (the model can still hallucinate a bad float value). Pydantic checks facts; DSPy coerces types.</button>
+          <button class="choice" onclick="selectChoice('cr1','B',this)">Because the DSPy framework physically cannot parse floating-point numbers.</button>
+          <button class="choice" onclick="selectChoice('cr1','C',this)">It is legally redundant, but required by Python formatting rules.</button>
+        </div>
+
+        <div id="cr1-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions">
+          <button id="cr1-submit" class="btn btn-primary" onclick="submitChoice('cr1', 'A', fbkCR1)">Lock prediction</button>
+        </div>
+        <div id="cr1-feedback" class="feedback"></div>
+        <div id="cr1-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(2)">Analyze Execution Flow</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 2: Artifact 3 & 4 -->
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="eyebrow">The Routing Subsystems</p>
+        <h2>From Request to Execution</h2>
+        <p>Observe how The Chassis seamlessly wraps the pipeline.</p>
+
+        <div class="code-window">
+          <div class="code-header">FastAPI_Router.py</div>
+          <pre class="code-body">
+<span class="syn-dec">@app.post</span>(<span class="syn-str">"/api/v1/intervention/deploy"</span>)
+<span class="syn-kw">async def</span> <span class="syn-fn">deploy_intervention</span>(transcript: <span class="syn-type">str</span>):
+    <span class="syn-kw">try</span>:
+        <span class="syn-cm"># 1. Dispatch string to Machinist (DSPy)</span>
+        prediction <span class="syn-op">=</span> coach_module(client_transcript<span class="syn-op">=</span>transcript)
+        
+        <span class="syn-cm"># 2. Inject structural payload into QA Department (Pydantic)</span>
+        validated <span class="syn-op">=</span> InterventionResponse(
+            selected_trigger<span class="syn-op">=</span>prediction.selected_trigger,
+            cbcs_score<span class="syn-op">=</span>prediction.cbcs_score
+        )
+        <span class="syn-cm"># 3. Serialize response</span>
+        <span class="syn-kw">return</span> validated.model_dump()
+        
+    <span class="syn-kw">except</span> ValueError <span class="syn-kw">as</span> val_err:
+        <span class="syn-kw">raise</span> HTTPException(status_code<span class="syn-op">=</span><span class="syn-type">400</span>, detail<span class="syn-op">=</span><span class="syn-str">"QA Rejection"</span>)
+    <span class="syn-kw">except</span> RuntimeError <span class="syn-kw">as</span> r_err:
+        <span class="syn-kw">raise</span> HTTPException(status_code<span class="syn-op">=</span><span class="syn-type">500</span>, detail<span class="syn-op">=</span><span class="syn-str">"Machinist Failed."</span>)
+          </pre>
+        </div>
+
+        <p style="font-family: Arial; font-weight: bold;">If the <code>coach_module</code> constantly fails to coerce the unstructured output into the format required and permanently blocks by throwing `RuntimeError`, throwing a 500 status repeatedly to the client, whose explicit architectural responsibility is it to catch and retry this Web API execution?</p>
+
+        <div class="choices" data-group="cr2">
+          <button class="choice" onclick="selectChoice('cr2','A',this)">FastAPI's internal while-loop routing system.</button>
+          <button class="choice" onclick="selectChoice('cr2','B',this)">The DSPy Optimizer, which trains during the web request.</button>
+          <button class="choice" onclick="selectChoice('cr2','C',this)">The Client Application or frontend architecture; the Chassis is purely stateless and strictly rejects invalidity without looping.</button>
+        </div>
+
+        <div id="cr2-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions">
+          <button id="cr2-submit" class="btn btn-primary" onclick="submitChoice('cr2', 'C', fbkCR2)">Lock prediction</button>
+        </div>
+        <div id="cr2-feedback" class="feedback"></div>
+        <div id="cr2-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(3)">Enter Application Gauntlet</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 3: Gauntlet -->
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="eyebrow">Application Gauntlet</p>
+        <h2>Seven Production Checks</h2>
+        <p>Identify architectural mapping constraints inside CCP code structures.</p>
+        
+        <div class="gauntlet-grid">
+          <div class="q-card">
+            <label>1. If <code>result = dspy.Predict(Profiler)(logs=data)</code> returns `result.archetype` as "Rebellious" but Pydantic requires `Literal['rebel']`, which system throws the error?</label>
+            <input id="g1" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label>2. Inside the DSPy Signature, what component directly replaces the `desc=` prompt string to guarantee format isolation offline?</label>
+            <input id="g2" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label>3. Which layer in the Orchestration Dichotomy acts as The Foreman in artifact tracing?</label>
+            <input id="g3" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label>4. Which specific DSPy wrapper permits dynamic loop execution against external commands using observations and inputs?</label>
+            <input id="g4" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label>5. If you execute a regular expression `re.search()` to manually rip a number out of an LLM string generation, which subsystem are you dangerously bypassing?</label>
+            <input id="g5" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label>6. A `ChainOfThought` pipeline runs wide and exceeds max_tokens length. Does it return half a type object, or trigger a failure exception?</label>
+            <input id="g6" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label>7. What specific compiler component optimizes prompts physically based on a score metric offline before FastAPI routes it?</label>
+            <input id="g7" type="text" placeholder="Short answer">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" id="gauntSubmitBtn" onclick="gradeGauntlet()">Submit Gauntlet</button>
+        </div>
+        <div id="gauntlet-feedback" class="feedback"></div>
+        <div id="final-box" class="final-box hidden">
+          <p class="eyebrow" style="margin-bottom:10px;">Layer 2 Complete</p>
+          <p id="final-text">You have mapped DSPy to FastAPI, Pydantic, and the Agentic Harness. It is not an abstract theory; it is the physical bridge isolating non-deterministic cognitive probability from rigid silicon parameters. Proceed to Orchestration Multi-Context evaluation.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const totalStages = 4;
+    const selections = {};
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function selectChoice(groupId, value, element) {
+      if (document.querySelector(`[data-group="${groupId}"]`).dataset.locked === 'true') return;
+      selections[groupId] = value;
+      document.querySelectorAll(`[data-group="${groupId}"] .choice`).forEach(b => b.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = `feedback show ${type}`;
+      box.innerHTML = `<h3>${title}</h3><p>${body}</p>`;
+    }
+
+    function submitChoice(groupId, correct, feedbackPack) {
+      const selected = selections[groupId];
+      if (!selected) {
+        showFeedback(groupId + '-feedback', 'bad', 'Prediction required', 'Commit to what the architecture does before checking.');
+        return;
+      }
+      document.querySelector(`[data-group="${groupId}"]`).dataset.locked = 'true';
+      document.getElementById(groupId + '-submit').disabled = true;
+      document.getElementById(groupId + '-lock').classList.remove('hidden');
+      
+      const isCorrect = selected === correct;
+      const payload = isCorrect ? feedbackPack.good : feedbackPack.bad;
+      showFeedback(groupId + '-feedback', isCorrect ? 'good' : 'bad', payload.title, payload.body);
+      
+      const nextBtn = document.getElementById(groupId + '-next');
+      if(nextBtn) nextBtn.classList.remove('hidden');
+    }
+
+    const fbkInt = {
+      good: { title: 'Access Granted.', body: 'You remembered. DSPy intercepts the text and generates an instantiated typed `Prediction` object. You never parse JSON strings manually.' },
+      bad: { title: 'Access Denied: Re-evaluate layer 1.', body: 'DSPy absolutely prevents the usage of raw JSON string parsing. It returns a deterministic Python Prediction object with typed field attributes.' }
+    };
+
+    const fbkCR1 = {
+      good: { title: 'Correct: DSPy extracts; Pydantic validates.', body: 'DSPy compiles the semantic instruction into a floating-point integer. But it cannot natively guarantee you that 0.12 is bad and 0.88 is good natively. Pydantic serves as the merciless QA calipers measuring the value.' },
+      bad: { title: 'Misconception exposed.', body: 'DSPy is not a physical logic gate; it is a type coercion and routing compiler. It cannot evaluate mathematical correctness constraints internally within a purely probabilistic string extraction node.' }
+    };
+
+    const fbkCR2 = {
+      good: { title: 'Correct: Stateless delegation.', body: 'The Chassis routes. If the Machinist faults out due to a model hallucination failing coercion, FastAPI throws a 500 error up the chain instantly. The client must handle the retry. Letting FastAPI while-loop infinitely halts asynchronous routing queues.' },
+      bad: { title: 'Misconception exposed.', body: 'FastAPI has no internal intelligence to salvage probabilistic AI requests. Its job is purely to route deterministic inputs and outputs. Overloading the route with recursive loops causes server death.' }
+    };
+
+    function containsAny(val, arr) { return arr.some(x => val.includes(x)); }
+
+    function gradeGauntlet() {
+      const ans = {
+        g1: ['pydantic', 'qa department', 'qa', 'the qa department'],
+        g2: ['type', 'type hint', 'outputfield'],
+        g3: ['chassis', 'fastapi', 'the chassis'],
+        g4: ['react'],
+        g5: ['dspy', 'machinist', 'the machinist'],
+        g6: ['exception', 'failure', 'failure exception', 'triggers exception'],
+        g7: ['interpreter', 'teleprompt', 'optimizer', 'bootstrap']
+      };
+      
+      let passCount = 0;
+      Object.keys(ans).forEach(k => {
+        const v = document.getElementById(k).value.toLowerCase();
+        if(v && containsAny(v, ans[k])) passCount++;
+      });
+      
+      document.getElementById('gauntSubmitBtn').disabled = true;
+      if(passCount >= 5) {
+        showFeedback('gauntlet-feedback', 'good', `Gauntlet Cleared: ${passCount}/7`, 'Your architectural trace parameters map successfully to reality.');
+        document.getElementById('final-box').classList.remove('hidden');
+      } else {
+        showFeedback('gauntlet-feedback', 'bad', `Gauntlet Failed: ${passCount}/7`, 'Trace logic weak. Review the structural split between The Chassis, QA, and The Machinist.');
+        document.getElementById('gauntSubmitBtn').disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

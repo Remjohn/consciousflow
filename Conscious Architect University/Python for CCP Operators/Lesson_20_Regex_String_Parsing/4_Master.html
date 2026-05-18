@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regex & String Parsing — Master Assessor</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-dim:#92400e;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-dim:#0f766e;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-dim:#9f1239;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-dim:#065f46;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--amber);background:rgba(245,158,11,0.08);padding:.1em .4em;border-radius:4px;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+
+/* HUD Elements */
+.hud-timer{font-family:'JetBrains Mono';font-size:1.1rem;font-weight:600;color:var(--rose);display:flex;align-items:center;gap:.5rem;}
+.hud-pulse{width:8px;height:8px;border-radius:50%;background:var(--rose);animation:pulse 1s infinite;}
+@keyframes pulse{0%{opacity:1;box-shadow:0 0 0 0 rgba(244,63,94,0.4);}70%{opacity:.5;box-shadow:0 0 0 6px rgba(244,63,94,0);}100%{opacity:1;box-shadow:0 0 0 0 rgba(244,63,94,0);}}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;}
+.section-inner{max-width:800px;margin:0 auto;}
+
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;transition:border-color .3s;}
+.card:focus-within{border-color:var(--amber);}
+
+.q-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;}
+.q-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:var(--amber-glow);border:1px solid var(--amber);color:var(--amber);border-radius:50%;font-size:.8rem;font-weight:700;font-family:'Space Grotesk';}
+.q-type{font-size:.7rem;font-weight:600;letter-spacing:.05em;color:var(--text-dim);text-transform:uppercase;}
+.q-body{font-size:.95rem;line-height:1.6;margin-bottom:1.25rem;}
+
+.input-field{width:100%;background:var(--bg-elevated);border:1px solid var(--border);border-radius:6px;padding:.85rem;color:var(--text);font-family:'JetBrains Mono';font-size:.85rem;transition:border-color .3s;}
+.input-field:focus{outline:none;border-color:var(--amber);}
+textarea.input-field{min-height:120px;resize:vertical;font-family:'DM Sans';}
+
+.option-group{display:flex;flex-direction:column;gap:.5rem;}
+.option-label{display:flex;align-items:flex-start;gap:.75rem;padding:.85rem;border:1px solid var(--border);border-radius:6px;background:var(--bg-elevated);cursor:pointer;transition:all .2s;}
+.option-label:hover{border-color:var(--border-light);background:var(--bg-card);}
+.option-label input{margin-top:.2rem;accent-color:var(--amber);}
+.option-text{font-size:.88rem;color:var(--text-muted);line-height:1.5;flex:1;}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.75rem 1.5rem;border-radius:8px;font-size:.9rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;width:100%;transition:all .2s;}
+.btn-amber{background:var(--amber);color:#000;}
+.btn-amber:hover{background:#fbbf24;}
+.btn-disabled{background:var(--bg-elevated);color:var(--text-dim);cursor:not-allowed;}
+
+#resultsBox{display:none;margin-top:2rem;padding:2rem;border-radius:12px;border:1px solid var(--border);background:var(--bg-elevated);text-align:center;}
+.score-circle{width:120px;height:120px;border-radius:50%;border:4px solid var(--amber);display:flex;align-items:center;justify-content:center;font-size:2.5rem;font-weight:800;font-family:'Space Grotesk';margin:0 auto 1rem;color:var(--amber);}
+
+/* Read-Only State After Submission */
+.submitted .option-label{pointer-events:none;opacity:.7;}
+.submitted .input-field{pointer-events:none;opacity:.7;}
+.submitted .correct-ans{border-color:var(--emerald);background:var(--emerald-glow);}
+.submitted .wrong-ans{border-color:var(--rose);background:var(--rose-glow);}
+.feedback-box{display:none;margin-top:1rem;padding:1rem;border-left:3px solid var(--text-dim);background:var(--bg-elevated);font-size:.85rem;line-height:1.5;color:var(--text-muted);}
+.submitted .feedback-box{display:block;}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">REGEX & STRING PARSING — ASSESSMENT</span>
+    <div class="hud-timer" id="timer"><div class="hud-pulse"></div><span id="timeDisplay">12:00</span></div>
+  </div>
+</nav>
+
+<section class="section" id="quizSection">
+  <div class="section-inner">
+    <h1 style="font-size:2.5rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:.5rem;">Mastery Gate</h1>
+    <p style="color:var(--text-muted);font-size:1.1rem;margin-bottom:2rem;line-height:1.6;">
+      Secure the perimeter. You have 12 minutes to prove architectural command over structural boundaries. Fusing execution without structural constraints is engineering negligence.
+    </p>
+
+    <!-- Q1 -->
+    <div class="card" id="q1">
+      <div class="q-header"><span class="q-num">1</span><span class="q-type">Contract Construction</span></div>
+      <div class="q-body">
+        The Pi harness uses <code>&lt;bash&gt;</code> tags. Write the <strong>exact Python regex pattern string</strong> required to extract the inner payload from these tags safely, without being greedy, using group extraction.<br>
+        <span style="font-size:.8rem;color:var(--text-dim);">Do not include `re.DOTALL` code here, just the pure `r"..."` pattern string. Example: <code>r"&lt;tag&gt;(.*?)&lt;/tag&gt;"</code></span>
+      </div>
+      <input type="text" class="input-field answer-input" data-correct="r&quot;<bash>(.*?)</bash>&quot;|r'<bash>(.*?)</bash>'" placeholder="Your pattern here...">
+      <div class="feedback-box"><strong>Expected:</strong> <code>r"&lt;bash&gt;(.*?)&lt;/bash&gt;"</code>. The <code>(.*?)</code> is crucial for non-greedy payload capture.</div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="card" id="q2">
+      <div class="q-header"><span class="q-num">2</span><span class="q-type">Defect Triage</span></div>
+      <div class="q-body">
+        An agent successfully generates a `<python>` code block. Your logs show the execution runner throws `NoneType has no attribute 'group'`. Which of the following is the <strong>most likely architectural cause</strong>?
+      </div>
+      <div class="option-group answer-mcq" data-correct="1">
+        <label class="option-label"><input type="radio" name="q2"> <span class="option-text">The Pydantic Field constraint blocked the output before regex could parse it.</span></label>
+        <label class="option-label"><input type="radio" name="q2"> <span class="option-text">The agent generated multi-line code, but the Python regex engine was called without the <code>re.DOTALL</code> flag, causing the match to fail silently.</span></label>
+        <label class="option-label"><input type="radio" name="q2"> <span class="option-text">The LLM hallucinated the code block entirely.</span></label>
+        <label class="option-label"><input type="radio" name="q2"> <span class="option-text">The `re.IGNORECASE` flag was missing, so the tags were case-sensitive.</span></label>
+      </div>
+      <div class="feedback-box"><strong>Correct Answer: Missing `re.DOTALL`.</strong> Without this flag, Regex stops capturing at the first newline character. Multi-line code returns no match, resulting in a None object.</div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="card" id="q3">
+      <div class="q-header"><span class="q-num">3</span><span class="q-type">Schema Hardening</span></div>
+      <div class="q-body">
+        You are defining a Pydantic schema for a `user_uuid` field. You must enforce that the string starts with `USR-`, followed by exactly 4 digits. Write the EXACT regex pattern for the <code>Field(pattern=...)</code> argument.
+      </div>
+      <input type="text" class="input-field answer-input" data-correct="^USR-\d{4}$|^USR-[0-9]{4}$" placeholder="Your regex pattern...">
+      <div class="feedback-box"><strong>Expected:</strong> <code>^USR-\d{4}$</code>. The anchors <code>^</code> and <code>$</code> are mandatory to prevent injection (e.g., stopping "USR-1234-MALICIOUS").</div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="card" id="q4">
+      <div class="q-header"><span class="q-num">4</span><span class="q-type">Structural Philosophy</span></div>
+      <div class="q-body">
+        Why does the skill compiler use <code>match.group(1)</code> instead of returning the full string detected via native Python operators like <code>in</code>?
+      </div>
+      <div class="option-group answer-mcq" data-correct="2">
+        <label class="option-label"><input type="radio" name="q4"> <span class="option-text">Because <code>match.group(1)</code> is native to C++, making it faster for GPU execution.</span></label>
+        <label class="option-label"><input type="radio" name="q4"> <span class="option-text">Because native Python operators cannot search inside strings.</span></label>
+        <label class="option-label"><input type="radio" name="q4"> <span class="option-text">Because <code>in</code> is probabilistic and blind. Group extraction physically separates the specific algorithmic payload from the generative conversational noise surrounding it.</span></label>
+        <label class="option-label"><input type="radio" name="q4"> <span class="option-text">Because the LLM requires group parameters to understand the prompt.</span></label>
+      </div>
+      <div class="feedback-box"><strong>Correct Answer: Isolation.</strong> `group(1)` isolates the exact data payload, decoupling valid algorithmic data from hallucinated conversation.</div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="card" id="q5">
+      <div class="q-header"><span class="q-num">5</span><span class="q-type">Feynman Compression</span></div>
+      <div class="q-body">
+        Explain why Regex and exact String Parsing capabilities are structurally necessary for maintaining a sovereign architecture.<br>
+        <span style="font-size:.8rem;color:var(--text-dim);">Mandatory keywords: <strong>[Pi Agentic Harness]</strong>, <strong>[Silent execution timeouts]</strong>, <strong>[The Robot Arm]</strong>.</span>
+      </div>
+      <textarea class="input-field answer-feynman" placeholder="Perform Feynman compression here..."></textarea>
+      <div class="feedback-box" id="feynmanFbk"></div>
+    </div>
+
+    <button id="submitBtn" class="btn btn-amber"><i class="fas fa-lock"></i> Lock Predictions & Submit</button>
+
+    <!-- Results Box -->
+    <div id="resultsBox">
+      <div class="score-circle" id="finalScore">0%</div>
+      <h3 style="font-size:1.5rem;margin-bottom:.5rem;" id="resultTitle">System Evaluated</h3>
+      <p style="color:var(--text-muted);margin-bottom:1.5rem;" id="resultDesc">Review the telemetry below.</p>
+      <button class="btn btn-outline" onclick="location.reload()" style="max-width:200px;margin:0 auto;">Restart Certification</button>
+    </div>
+  </div>
+</section>
+
+<script>
+// HUD Timer (12 mins)
+let timeLeft = 12 * 60;
+const timerEl = document.getElementById('timeDisplay');
+const timerInterval = setInterval(()=>{
+  if(document.getElementById('quizSection').classList.contains('submitted')){
+    clearInterval(timerInterval); return;
+  }
+  timeLeft--;
+  const m = Math.floor(timeLeft/60).toString().padStart(2,'0');
+  const s = (timeLeft%60).toString().padStart(2,'0');
+  timerEl.textContent = `${m}:${s}`;
+  if(timeLeft <= 0){
+    clearInterval(timerInterval);
+    submitExam();
+  }
+}, 1000);
+
+document.getElementById('submitBtn').addEventListener('click', submitExam);
+
+function submitExam(){
+  clearInterval(timerInterval);
+  document.getElementById('quizSection').classList.add('submitted');
+  const btn = document.getElementById('submitBtn');
+  btn.style.display = 'none';
+  
+  let score = 0;
+  let total = 5;
+
+  // Grade Inputs (Q1, Q3)
+  document.querySelectorAll('.answer-input').forEach(input => {
+    const val = input.value.trim().replace(/\s+/g,''); // strip spaces for matching
+    const corrects = input.getAttribute('data-correct').split('|');
+    let isCorrect = false;
+    corrects.forEach(c => {
+       const cleanC = c.replace(/\s+/g,'');
+       if(val === cleanC || val === `r"${cleanC}"` || val === `r'${cleanC}'`) isCorrect = true;
+    });
+    
+    // Loosen up the check for the raw strings if they forgot the 'r' syntax
+    const rawVal = input.value.trim();
+    if(corrects.includes(rawVal)) isCorrect = true;
+
+    if(isCorrect){
+      input.classList.add('correct-ans');
+      score++;
+    } else {
+      input.classList.add('wrong-ans');
+    }
+  });
+
+  // Grade MCQs (Q2, Q4)
+  document.querySelectorAll('.answer-mcq').forEach(mcq => {
+    const correctIdx = parseInt(mcq.getAttribute('data-correct'));
+    const options = mcq.querySelectorAll('.option-label');
+    options.forEach((opt, idx) => {
+      const radio = opt.querySelector('input');
+      if(idx === correctIdx){
+        opt.style.borderColor = 'var(--emerald)';
+        if(radio.checked) score++;
+      } else if(radio.checked) {
+        opt.style.borderColor = 'var(--rose)';
+        opt.style.background = 'var(--rose-glow)';
+      }
+    });
+  });
+
+  // Grade Feynman (Q5)
+  const feynman = document.querySelector('.answer-feynman');
+  const text = feynman.value.toLowerCase();
+  const kw = ["pi agentic harness", "silent execution timeouts", "the robot arm"];
+  let kwCount = 0;
+  kw.forEach(k => { if(text.includes(k)) kwCount++; });
+  
+  const fbk = document.getElementById('feynmanFbk');
+  if(kwCount === 3 && text.length > 50){
+    feynman.classList.add('correct-ans');
+    score++;
+    fbk.innerHTML = `<strong style="color:var(--emerald);">Feynman Accepted:</strong> All structural keywords deployed correctly.`;
+  } else {
+    feynman.classList.add('wrong-ans');
+    fbk.innerHTML = `<strong style="color:var(--rose);">Feynman Rejected:</strong> Missing required structural keywords or insufficient logic density. Found ${kwCount}/3 keywords.`;
+  }
+
+  // Display Results
+  const resBox = document.getElementById('resultsBox');
+  resBox.style.display = 'block';
+  const pct = Math.round((score/total)*100);
+  document.getElementById('finalScore').textContent = `${pct}%`;
+  
+  const circle = document.getElementById('finalScore');
+  const title = document.getElementById('resultTitle');
+  
+  if(pct >= 80){
+    circle.style.color = 'var(--emerald)'; circle.style.borderColor = 'var(--emerald)';
+    title.textContent = "Architectural Mastery Confirmed";
+    title.style.color = 'var(--emerald)';
+  } else {
+    circle.style.color = 'var(--rose)'; circle.style.borderColor = 'var(--rose)';
+    title.textContent = "Execution Compromised";
+    title.style.color = 'var(--rose)';
+  }
+}
+</script>
+</body>
+</html>

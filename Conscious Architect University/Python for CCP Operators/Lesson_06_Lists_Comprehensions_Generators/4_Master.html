@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 06 - Master Layer</title>
+  <style>
+    :root {
+      --bg: #09090b;
+      --panel: #111114;
+      --line: rgba(255,255,255,0.08);
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --accent: #f97316;
+      --good: #22c55e;
+      --bad: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #0b0b0e 0%, #09090b 100%);
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+    }
+
+    .hud {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 20;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(9, 9, 11, 0.92);
+      font: 700 0.86rem/1 Arial, Helvetica, sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #f8fafc;
+    }
+
+    .shell {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 34px 18px 90px;
+    }
+
+    .hero,
+    .card,
+    .result {
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+      padding: 24px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 12px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 14px;
+      line-height: 1.08;
+      font-weight: 500;
+    }
+
+    h1 { font-size: clamp(2.2rem, 4vw, 3.8rem); }
+    h2 { font-size: clamp(1.4rem, 2.7vw, 2rem); }
+    h3 { font-size: 1.08rem; }
+    p { margin: 0 0 14px; }
+
+    .divider {
+      height: 1px;
+      margin: 22px 0;
+      background: linear-gradient(90deg, transparent, rgba(249,115,22,0.3), transparent);
+    }
+
+    .mono {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.95rem;
+    }
+
+    .code-block {
+        font-family: Consolas, Monaco, "Courier New", monospace;
+        font-size: 0.85rem;
+        padding: 16px;
+        border-radius: 8px;
+        background: #060d13;
+        border: 1px solid var(--line);
+        color: #d9e4ec;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+    }
+
+    .meta {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 18px;
+    }
+
+    .meta div {
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .meta span {
+      display: block;
+      color: var(--muted);
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .card { margin-top: 18px; }
+
+    .qnum {
+      color: #fdba74;
+      font: 700 0.78rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .points {
+      color: var(--muted);
+      font: 700 0.8rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .choices {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .choice {
+      width: 100%;
+      text-align: left;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      transition: border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .choice.selected {
+      border-color: rgba(249,115,22,0.7);
+      background: rgba(249,115,22,0.08);
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 170px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(249,115,22,0.55);
+      box-shadow: 0 0 0 4px rgba(249,115,22,0.12);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      padding: 14px 18px;
+      border-radius: 999px;
+      font: 700 0.94rem/1 Arial, Helvetica, sans-serif;
+      transition: transform 0.18s ease, opacity 0.18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .result {
+      margin-top: 22px;
+      display: none;
+    }
+
+    .result.show { display: block; }
+
+    .score {
+      font: 700 1.2rem/1.3 Arial, Helvetica, sans-serif;
+      margin-bottom: 14px;
+    }
+
+    .pass { color: var(--good); }
+    .fail { color: var(--bad); }
+
+    .breakdown {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .breakdown div {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .footnote {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.96rem;
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 720px) {
+      .hud {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        justify-content: space-between;
+      }
+      .meta { grid-template-columns: 1fr; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+      .shell { padding: 74px 14px 60px; }
+      .hero, .card, .result { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <span>Master Exam</span>
+    <span id="timer">12:00</span>
+  </div>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Lesson 06 - Master / Capstone Layer</p>
+      <h1>Contract specification. Defect execution. No scaffolding.</h1>
+      <div class="divider"></div>
+      <p>This master assessment tests your ability to read, supervise, and command Python sequential data structures ensuring absolute sovereign control. You will not write execution code; you will specify contracts, detect defects, and define consequence.</p>
+      <div class="meta">
+        <div><span>Questions</span>9 total</div>
+        <div><span>Time</span>12 minutes</div>
+        <div><span>Passing Score</span>160 / 200</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="startExam()">Start exam</button>
+      </div>
+    </section>
+
+    <form id="examForm" class="hidden" onsubmit="return false;">
+      
+      <!-- Section 1: Contracts -->
+      <section class="card">
+        <div class="qnum">Question 1 - Section 1: Contract Specification</div>
+        <div class="points">20 points</div>
+        <h2>The QA Department Boundary</h2>
+        <p>The CCP requires a Pydantic `BaseModel` named `BatchOptimizationLogs`. Outline requires: `session_id` (string), a strictly bounded array of `trigger_keywords` (strings, bounded between 1 and 20 items), and a `confidence_matrix` (an array of floats representing alignment scores, requiring a minimum of 5 scores).</p>
+        <p>Write the correct Pydantic Field notation for <span class="mono">trigger_keywords</span>.</p>
+        <div class="choices" data-question="q1">
+          <button type="button" class="choice" onclick="pickChoice('q1','A',this)">trigger_keywords: generator[str] = Field(min_length=1, max_length=20)</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','B',this)">trigger_keywords: list[str] = Field(min_length=1, max_length=20)</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','C',this)">trigger_keywords: list[str] = Field(len=20)</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','D',this)">trigger_keywords: list[str]</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 2 - Section 1: Contract Specification</div>
+        <div class="points">20 points</div>
+        <h2>The Machinist Definition</h2>
+        <p>A DSPy agent signature named `OptimizeContext` receives `raw_transcripts` (array of strings) and must output `structured_analysis` (string) and `key_breakthrough_points` (array of evaluated strings).</p>
+        <p>Write the valid DSPy Signature component for <span class="mono">key_breakthrough_points</span>.</p>
+        <input id="q2" type="text" placeholder="e.g. key_breakthrough_points: ??? = dspy.OutputField()">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 3 - Section 1: Contract Specification</div>
+        <div class="points">20 points</div>
+        <h2>The Chassis Fast-Pass Sanitizer</h2>
+        <p>Write the highly optimized list comprehension extracting ONLY the `"reward_token"` from a massive list of dictionaries `db_results` if the dictionary's `"active_status"` is exactly `True`.</p>
+        <input id="q3" type="text" placeholder="e.g. [node['reward_token'] for... ]">
+      </section>
+
+      <!-- Section 2: Defect Triage -->
+      <section class="card">
+        <div class="qnum">Question 4 - Section 2: Defect Triage</div>
+        <div class="points">20 points</div>
+        <h2>Code Block: QA Schema Validation</h2>
+        <div class="code-block">
+klass ClientHistoryPayload(BaseModel):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;client_id: str<br>
+&nbsp;&nbsp;&nbsp;&nbsp;historic_sessions: list[dict]<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;@field_validator("historic_sessions")<br>
+&nbsp;&nbsp;&nbsp;&nbsp;@classmethod<br>
+&nbsp;&nbsp;&nbsp;&nbsp;def extract_valid(cls, sessions: list[dict]) -> list[dict]:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return (s for s in sessions if s.get("valid") is True)
+        </div>
+        <p>Identify the defect class mapping and the specific line.</p>
+        <div class="choices" data-question="q4">
+          <button type="button" class="choice" onclick="pickChoice('q4','A',this)">Hallucination: line 3, historic_sessions cannot be a list[dict].</button>
+          <button type="button" class="choice" onclick="pickChoice('q4','B',this)">Misapplication: line 8, returning a Generator `(...)` while the type specifies a strict `list`. Pydantic will fail coercion.</button>
+          <button type="button" class="choice" onclick="pickChoice('q4','C',this)">Omission: line 5, the validator decorator requires `mode="before"`.</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 5 - Section 2: Defect Triage</div>
+        <div class="points">20 points</div>
+        <h2>Code Block: FastAPI Real-Time Conveyor</h2>
+        <div class="code-block">
+@app.get("/stream/session/{session_id}")<br>
+async def get_live_audio(session_id: str):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;audio_buffer = []<br>
+&nbsp;&nbsp;&nbsp;&nbsp;while True:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;chunk = await pi_harness.get_audio()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if not chunk: break<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;audio_buffer.append(chunk)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return StreamingResponse(audio_buffer, media_type="audio/webm")
+        </div>
+        <p>This code deployed to staging. Why did the server detonate?</p>
+        <textarea id="q5" placeholder="Explain the violated contract and fix..."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 6 - Section 2: Defect Triage</div>
+        <div class="points">20 points</div>
+        <h2>Code Block: DSPy Compilation Execution</h2>
+        <div class="code-block">
+def compile_prompts(raw_inputs: list[str]) -> list[str]:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;compiled = []<br>
+&nbsp;&nbsp;&nbsp;&nbsp;compiled.append(["BASE_PROMPT_" + v for v in raw_inputs])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return compiled
+        </div>
+        <p>What geometric distortion occurs on line 3?</p>
+        <div class="choices" data-question="q6">
+          <button type="button" class="choice" onclick="pickChoice('q6','A',this)">It produces a Generator instead of a List.</button>
+          <button type="button" class="choice" onclick="pickChoice('q6','B',this)">`append` onto an empty list with a list comprehension inside creates a deeply nested list geometry `[["..."]]`, corrupting the `list[str]` flat structure.</button>
+          <button type="button" class="choice" onclick="pickChoice('q6','C',this)">It immediately throws an Out Of Memory Crash.</button>
+        </div>
+      </section>
+
+      <!-- Section 3: Architectural Reasoning -->
+      <section class="card">
+        <div class="qnum">Question 7 - Section 3: Architectural Reasoning</div>
+        <div class="points">20 points</div>
+        <h2>The Bounding Mandate</h2>
+        <p>Why does the Orchestration Dichotomy mandate that Pydantic Models use strictly bounded Lists (min/max length) when communicating with Neo4j instead of endlessly yielding generator streams?</p>
+        <textarea id="q7" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 8 - Section 3: Architectural Reasoning</div>
+        <div class="points">20 points</div>
+        <h2>The Generator Latency Requisite</h2>
+        <p>Why must the Pi Execution Harness interact with the Chassis via generators instead of buffered lists?</p>
+        <textarea id="q8" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <!-- Section 4: Feynman Compression -->
+      <section class="card">
+        <div class="qnum">Question 9 - Section 4: Feynman Compression</div>
+        <div class="points">40 points</div>
+        <h2>Terminal Gauntlet</h2>
+        <p>Explain, in your own words, why understanding the strict architectural delineation between Lists (bounded memory) and Generators (memoryless streaming) is critical for maintaining sovereign control over the CCP's agentic systems.</p>
+        <p class="footnote">Full credit requires all three structural elements: *The Chassis (FastAPI) Layer*, *Catastrophic OOM Failures*, and *Trigger-First Determinism*.</p>
+        <textarea id="q9" placeholder="Write the mechanism, not a slogan. Minimum 4 sentences."></textarea>
+      </section>
+
+      <div class="actions">
+        <button class="btn btn-primary" type="button" onclick="submitExam(false)">Submit Exam</button>
+        <button class="btn btn-secondary" type="button" onclick="scrollToTop()">Back to top</button>
+      </div>
+    </form>
+
+    <section id="result" class="result">
+      <div class="eyebrow">Result</div>
+      <div id="scoreLine" class="score"></div>
+      <p id="resultSummary"></p>
+      <div id="breakdown" class="breakdown"></div>
+      <p id="timeoutNote" class="footnote"></p>
+    </section>
+  </main>
+
+  <script>
+    const answers = {};
+    let examStarted = false;
+    let examSubmitted = false;
+    let secondsRemaining = 720;
+    let timerHandle = null;
+
+    function pickChoice(question, value, element) {
+      if (examSubmitted) return;
+      answers[question] = value;
+      document.querySelectorAll('[data-question="' + question + '"] .choice').forEach((btn) => btn.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function startExam() {
+      if (examStarted) return;
+      examStarted = true;
+      document.getElementById('examForm').classList.remove('hidden');
+      window.scrollTo({ top: document.getElementById('examForm').offsetTop - 20, behavior: 'smooth' });
+      timerHandle = setInterval(tick, 1000);
+    }
+
+    function tick() {
+      if (examSubmitted) return;
+      secondsRemaining -= 1;
+      if (secondsRemaining <= 0) {
+        secondsRemaining = 0;
+        updateTimer();
+        submitExam(true);
+        return;
+      }
+      updateTimer();
+    }
+
+    function updateTimer() {
+      const mins = String(Math.floor(secondsRemaining / 60)).padStart(2, '0');
+      const secs = String(secondsRemaining % 60).padStart(2, '0');
+      document.getElementById('timer').textContent = mins + ':' + secs;
+    }
+
+    function textValue(id) {
+      return (document.getElementById(id)?.value || '').trim().toLowerCase();
+    }
+
+    function containsAny(value, options) {
+      return options.some((option) => value.includes(option));
+    }
+
+    function gradeRichText(value, keywordGroups) {
+      if (!value) return 0;
+      let hits = 0;
+      keywordGroups.forEach((group) => {
+        if (containsAny(value, group)) hits += 1;
+      });
+      return hits;
+    }
+
+    function submitExam(fromTimeout) {
+      if (examSubmitted) return;
+      examSubmitted = true;
+      clearInterval(timerHandle);
+
+      document.querySelectorAll('input, textareabutton.choice').forEach((el) => el.disabled = true);
+
+      let total = 0;
+      const breakdown = [];
+
+      // Q1
+      const q1 = answers.q1 === 'B' ? 20 : 0;
+      total += q1;
+      breakdown.push(['Q1 - QA Boundary', q1, 'Pydantic requires explicit `list` bounds over generators.']);
+
+      // Q2
+      const q2hits = containsAny(textValue('q2'), ['list[str]']);
+      const q2 = q2hits ? 20 : 0;
+      total += q2;
+      breakdown.push(['Q2 - Machinist Signature', q2, 'DSPy OutputFields native mappings utilize `list[str]`.']);
+
+      // Q3
+      const q3value = textValue('q3');
+      const q3hits = containsAny(q3value, ['[']) && containsAny(q3value, [']']) && containsAny(q3value, ['active_status', 'true']) && containsAny(q3value, ['reward_token', 'node']);
+      const q3 = q3hits ? 20 : 0;
+      total += q3;
+      breakdown.push(['Q3 - Chassis Comprehension', q3, 'Must be a bracketed comprehension `[...]` applying a truthy filter.']);
+
+      // Q4
+      const q4 = answers.q4 === 'B' ? 20 : 0;
+      total += q4;
+      breakdown.push(['Q4 - Defect Validation', q4, 'Returning a Generator `(...)` where `list` is expected violently breaks schema validation.']);
+
+      // Q5
+      const q5hits = gradeRichText(textValue('q5'), [['oom', 'memory', 'crash', 'infinite loop', 'detonate'], ['yield', 'generator']]);
+      const q5 = q5hits >= 2 ? 20 : q5hits * 10;
+      total += q5;
+      breakdown.push(['Q5 - Real-Time Crash', q5, 'OOM failure due to infinite append looping; requires replacing `.append()` with `yield`.']);
+
+      // Q6
+      const q6 = answers.q6 === 'B' ? 20 : 0;
+      total += q6;
+      breakdown.push(['Q6 - Nested Structure', q6, 'List comprehension wrapped in `.append()` causes multi-dimensional nest fault.']);
+
+      // Q7
+      const q7hits = gradeRichText(textValue('q7'), [['neo4j', 'database', 'graph', 'unwind'], ['bound', 'size', 'length', 'len', 'measure']]);
+      const q7 = q7hits >= 2 ? 20 : q7hits * 10;
+      total += q7;
+      breakdown.push(['Q7 - Neo4j Boundaries', q7, 'Neo4j ingestion relies on explicitly sized bounded arrays to prevent unbounded memory loop attacks.']);
+
+      // Q8
+      const q8hits = gradeRichText(textValue('q8'), [['latency', 'wait', 'buffer', 'delay', 'real-time'], ['suspend', 'immediate', 'yield', 'stream']]);
+      const q8 = q8hits >= 2 ? 20 : q8hits * 10;
+      total += q8;
+      breakdown.push(['Q8 - Generator Latency', q8, 'Webrtc generators yield chunks directly instead of waiting for list concatenation.']);
+
+      // Q9 (Feynman)
+      const q9Value = textValue('q9');
+      let q9 = 0;
+      let missing = [];
+      if (q9Value.length < 50) {
+         missing = ['minimum length not met'];
+      } else {
+         const hz = gradeRichText(q9Value, [['chassis', 'fastapi'], ['oom', 'out of memory', 'catastrophic'], ['trigger-first', 'determinism', 'reflex']]);
+         if(hz === 3) q9 = 40;
+         else if (hz===2) q9 = 25;
+         else if (hz===1) q9 = 10;
+         else q9 = 0;
+
+         if (!containsAny(q9Value, ['chassis', 'fastapi'])) missing.push('The Chassis (FastAPI) Layer');
+         if (!containsAny(q9Value, ['oom', 'out of memory'])) missing.push('Catastrophic OOM Failures');
+         if (!containsAny(q9Value, ['trigger-first', 'determinism'])) missing.push('Trigger-First Determinism');
+      }
+      total += q9;
+      breakdown.push(['Q9 - Feynman Compression', q9, missing.length ? 'Missing: ' + missing.join(', ') : 'All structural points mapped perfectly.']);
+
+      const pass = total >= 160;
+      const scoreLine = document.getElementById('scoreLine');
+      scoreLine.textContent = total + ' / 200';
+      scoreLine.className = 'score ' + (pass ? 'pass' : 'fail');
+
+      document.getElementById('resultSummary').textContent =
+        pass
+          ? 'Passing threshold reached. You possess the sovereign structural control to orchestrate bounded memory validation against infinite streamed environments.'
+          : 'Passing threshold not reached. Structural components such as memory bounds, the comprehension speed advantage, or the OOM yield-suspend requirements require deeper embedding.';
+
+      const breakdownNode = document.getElementById('breakdown');
+      breakdownNode.innerHTML = '';
+      breakdown.forEach(([label, score, note]) => {
+        const row = document.createElement('div');
+        row.innerHTML = '<strong>' + label + ': ' + score + ' points</strong><br>' + note;
+        breakdownNode.appendChild(row);
+      });
+
+      document.getElementById('timeoutNote').textContent = fromTimeout
+        ? 'Exam auto-submitted at time expiration.'
+        : 'Exam submitted before time expiration.';
+
+      document.getElementById('result').classList.add('show');
+      document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    updateTimer();
+  </script>
+</body>
+</html>

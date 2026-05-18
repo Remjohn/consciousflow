@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linear Transformations — Analogy Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1.2;min-width:320px;}
+.visual-col{flex:1;min-width:280px;}
+
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+
+.tab-btn{padding:.6rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-dim);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.85rem;transition:all .2s;}
+.tab-btn:hover{color:var(--text);border-color:var(--border-light);}
+.tab-btn.active{background:var(--amber-glow);color:var(--amber);border-color:var(--amber);}
+
+.domain-content{display:none;}
+.domain-content.active{display:block;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+
+.puzzle-card{border:1px solid var(--border);background:var(--bg-card);border-radius:8px;margin-bottom:.75rem;overflow:hidden;}
+.puzzle-header{padding:1rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:600;background:var(--bg-elevated);}
+.puzzle-header:hover{background:rgba(255,255,255,0.05);}
+.puzzle-body{padding:0 1rem;max-height:0;overflow:hidden;transition:all .3s;color:var(--text-muted);font-size:.9rem;line-height:1.6;}
+.puzzle-card.open .puzzle-body{padding:1rem;max-height:500px;}
+.puzzle-card.open .puzzle-icon{transform:rotate(180deg);}
+.puzzle-icon{transition:transform .3s;}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text-muted);color:var(--text);}
+.btn-outline.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow);}
+.btn-sm{padding:.4rem .8rem;font-size:.78rem;}
+
+.scroll-hint{animation:bounce 2s ease infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column-reverse!important;}
+  .canvas-wrap{min-height:300px!important;}
+  .nav-links{display:none;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">TRANSFORMATIONS</span>
+    <div class="nav-links">
+      <a href="#domains" class="nav-link active" data-section="domains">6 Domains</a>
+      <a href="#crossdomain" class="nav-link" data-section="crossdomain">Cross-Domain</a>
+      <a href="#puzzles" class="nav-link" data-section="puzzles">Logic Puzzles</a>
+      <a href="#builder" class="nav-link" data-section="builder">Builder</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 04 — ANALOGY LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Linear Transformations<br><span style="color:var(--text-muted);font-weight:300;">Systems That Reshape</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      Tactical systems, class specializations, EQ curves, cooking methods, therapeutic modalities, and Transformer layers — all follow the same reshaping rules.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: 6-Domain System -->
+<section id="domains" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — UNIVERSAL MAPPING</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">The 6-Domain System</h2>
+
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.5rem;">
+      <button class="tab-btn active" data-target="sports"><i class="fas fa-futbol"></i> Tactics</button>
+      <button class="tab-btn" data-target="gaming"><i class="fas fa-gamepad"></i> Classes</button>
+      <button class="tab-btn" data-target="music"><i class="fas fa-sliders-h"></i> EQ</button>
+      <button class="tab-btn" data-target="cooking"><i class="fas fa-fire"></i> Cooking</button>
+      <button class="tab-btn" data-target="psych"><i class="fas fa-brain"></i> Therapy</button>
+      <button class="tab-btn" data-target="ai"><i class="fas fa-microchip"></i> Layers</button>
+    </div>
+
+    <div class="flex-layout">
+      <div class="reading-col">
+        <!-- SPORTS -->
+        <div id="sports" class="domain-content active">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Tactical System as Transformation</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+            Input: Barella's raw stats [Speed, Passing, Tackling, Positioning, Creativity] = (8,7,6,9,7).
+          </p>
+          <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1rem;font-size:.9rem;">
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--emerald);">Counter-Attack T:</strong> Amplifies Speed+Position, dampens Creativity → (9.5, 7, 6, 10, 4)</li>
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--teal);">Possession T:</strong> Amplifies Creativity+Passing, suppresses Tackling → (7, 9, 4, 8, 9)</li>
+            <li><strong style="color:var(--rose);">Null Space:</strong> A pure creative dribbler in a rigid defensive system has his key dimension annihilated. He is benched — not for lack of talent, but because the transformation destroys his specific type of talent.</li>
+          </ul>
+          <div class="insight">
+            <strong>Break:</strong> Real coaching involves morale, fatigue, interpersonal chemistry — non-linear dynamics the linear model cannot capture.
+          </div>
+        </div>
+
+        <!-- GAMING -->
+        <div id="gaming" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Class Specialization as Transformation</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+            Base character (6,6,6,6) on [Str, Dex, Int, Wis]:
+          </p>
+          <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1rem;font-size:.9rem;">
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--amber);">Warrior T:</strong> (6,6,6,6) → (12, 8, 3, 6). Doubles STR, halves INT</li>
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--teal);">Mage T:</strong> (6,6,6,6) → (3, 6, 12, 6). Doubles INT, halves STR</li>
+            <li><strong style="color:var(--violet);">Dual-Class:</strong> T_Mage(T_Warrior(x)) = (6,8,6,6). Partial cancellation. <strong style="color:var(--text);">Order matters</strong> — T_Warrior(T_Mage(x)) ≠ T_Mage(T_Warrior(x)).</li>
+          </ul>
+          <div class="insight">
+            <strong>Break:</strong> Games impose hard caps, thresholds, and non-linear scaling curves that the linear model cannot capture.
+          </div>
+        </div>
+
+        <!-- MUSIC -->
+        <div id="music" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">EQ as Linear Transformation</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+            Vocal recording (2, 5, 8, 6, 3, 1) across [Sub, Low, Mid, Hi-Mid, Treble, Air].
+          </p>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'Space Grotesk';font-size:.85rem;margin-bottom:1rem;">
+            T_EQ(2,5,8,6,3,1) = (0.2, 5, 8, <span style="color:var(--emerald);">12</span>, 3, 1)<br>
+            <span style="font-size:.78rem;color:var(--text-dim);">Sub cut to 0.1×, Hi-Mid boosted 2×</span>
+          </div>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.9rem;">
+            EQ is <strong style="color:var(--emerald);">genuinely linear</strong>: T(A+B) = T(A)+T(B). Compression and distortion are NOT — they break homogeneity, acting as audio equivalents of GELU activations.
+          </p>
+          <div class="insight">
+            <strong>Break:</strong> Reverb and delay operate on temporal structure, not instantaneous frequency — beyond the linear spectral model.
+          </div>
+        </div>
+
+        <!-- COOKING -->
+        <div id="cooking" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Cooking Method as Transformation</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+            Raw garlic [Sweet, Bitter, Umami, Pungent, Acid] = (1, 2, 3, 9, 0).
+          </p>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'Space Grotesk';font-size:.85rem;margin-bottom:1rem;">
+            T_roast(1, 2, 3, 9, 0) = (<span style="color:var(--amber);">8</span>, 0.5, <span style="color:var(--teal);">5</span>, <span style="color:var(--rose);">1</span>, 0)<br>
+            <span style="font-size:.78rem;color:var(--text-dim);">Pungency → Sweetness via caramelization</span>
+          </div>
+          <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1rem;font-size:.9rem;">
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--rose);">Null Space:</strong> Boiling herbs destroys volatile aromatics — those flavor dimensions are irretrievably annihilated</li>
+            <li><strong style="color:var(--violet);">Composition:</strong> Marinate-then-grill ≠ grill-then-marinate. Order of transformations matters.</li>
+          </ul>
+          <div class="insight">
+            <strong>Break:</strong> Maillard reactions create new molecular compounds not present in any input. Chemistry is non-linear.
+          </div>
+        </div>
+
+        <!-- PSYCH -->
+        <div id="psych" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Therapeutic Modality as Transformation</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+            Client Big Five: (O=7, C=5, E=3, A=6, N=9).
+          </p>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'Space Grotesk';font-size:.85rem;margin-bottom:1rem;">
+            T_CBT(7, 5, 3, 6, 9) ≈ (7, <span style="color:var(--teal);">7</span>, 3, 6, <span style="color:var(--emerald);">5</span>)<br>
+            <span style="font-size:.78rem;color:var(--text-dim);">Neuroticism ↓, Conscientiousness ↑, others unchanged</span>
+          </div>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.9rem;">
+            <strong style="color:var(--rose);">ESR Analogy:</strong> A profoundly introverted client forced into aggressive extroversion therapy shows temporary change — but their deep personality reasserts itself. The "downstream layers" of their psyche counter-correct the intervention.
+          </p>
+          <div class="insight">
+            <strong>Break:</strong> Small interventions can trigger cascading breakthroughs — profoundly non-linear dynamics.
+          </div>
+        </div>
+
+        <!-- AI -->
+        <div id="ai" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Transformer Layers as Composed Transformations</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.9rem;">
+            "Anxiety" enters layer 12. The learned transformation rotates the embedding to emphasize clinical features while suppressing surface-level lexical features. Output: "anxiety-in-the-context-of-this-client's-trauma."
+          </p>
+          <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1rem;font-size:.9rem;">
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--emerald);">Amplification:</strong> Clinical dimensions preserved in the high-rank portion</li>
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--rose);">Null Space:</strong> W_Q annihilates 704 dims of syntactic features already handled by earlier layers</li>
+            <li><strong style="color:var(--violet);">Composition:</strong> T₂₄ ∘ ... ∘ T₁. Early → syntax. Middle → semantics. Late → formatting.</li>
+          </ul>
+          <div class="insight">
+            <strong>Break:</strong> Self-attention is position-dependent (different tokens get different transformations). MLP is position-independent. This hybrid isn't captured by one linear model.
+          </div>
+        </div>
+      </div>
+
+      <!-- Visual: Before/After Transformation -->
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:420px;">
+          <canvas id="domainCanvas"></canvas>
+        </div>
+        <div style="display:flex;gap:.5rem;justify-content:center;margin-top:.75rem;">
+          <button class="btn btn-outline btn-sm active" data-case="amplify">Amplification</button>
+          <button class="btn btn-outline btn-sm" data-case="null">Null Space</button>
+          <button class="btn btn-outline btn-sm" data-case="compose">Composition</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: Cross-Domain -->
+<section id="crossdomain" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:.5rem;">02 — WHERE THE MODEL BREAKS</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Cross-Domain Comparison</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin-bottom:1.5rem;">
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--emerald);">
+        <h4 style="color:var(--emerald);margin-bottom:.5rem;">🤖 AI & 🎵 Audio</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;"><strong style="color:var(--text);">Exact linearity.</strong> Matrix multiplications and EQ curves are rigorously linear. The math is exact.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--amber);">
+        <h4 style="color:var(--amber);margin-bottom:.5rem;">⚽ Sports & 🎮 Gaming</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;"><strong style="color:var(--text);">First-order structure.</strong> Captures the reshaping rules but misses caps, thresholds, and non-linear scaling curves.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--rose);">
+        <h4 style="color:var(--rose);margin-bottom:.5rem;">🍳 Cooking & 🧠 Psych</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;"><strong style="color:var(--text);">Non-linear emergence.</strong> Maillard reactions create new molecules. Therapeutic breakthroughs cascade far beyond proportional input.</p>
+      </div>
+    </div>
+    <div class="insight">
+      <strong>Analogy Failures to Watch:</strong> (1) Transformation ≠ improvement — many transformations are destructive. (2) Order always matters — composition is not commutative. (3) The model's transformations are <strong>active geometric operators</strong>, not passive pipes.
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: Logic Puzzles -->
+<section id="puzzles" class="section">
+  <div class="section-inner" style="max-width:800px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">03 — REASONING TRAPS</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Logic Puzzles</h2>
+
+    <div class="puzzle-card">
+      <div class="puzzle-header"><span>1. The Linearity Test</span><i class="fas fa-chevron-down puzzle-icon"></i></div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Setup:</strong> T(x,y) = (x+y, 2x). Is this linear?</p>
+        <div class="insight" style="border-color:var(--emerald);background:var(--emerald-glow);">
+          <strong style="color:var(--emerald);">Yes.</strong> Additivity: T(x₁+x₂, y₁+y₂) = (x₁+x₂+y₁+y₂, 2x₁+2x₂) = T(x₁,y₁) + T(x₂,y₂) ✓. Homogeneity: T(αx,αy) = α(x+y, 2x) ✓. Both axioms pass.
+        </div>
+      </div>
+    </div>
+
+    <div class="puzzle-card">
+      <div class="puzzle-header"><span>2. The Null Space Question</span><i class="fas fa-chevron-down puzzle-icon"></i></div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Setup:</strong> T(x,y,z) = (x+y, 0). What's the null space?</p>
+        <div class="insight" style="border-color:var(--rose);background:var(--rose-glow);">
+          <strong style="color:var(--rose);">2-dimensional.</strong> Solve x+y = 0 → y = -x. Any (x, -x, z) maps to zero. Both x and z are free parameters. The transformation destroys 2 of 3 input dimensions.
+        </div>
+      </div>
+    </div>
+
+    <div class="puzzle-card">
+      <div class="puzzle-header"><span>3. The Composition Trap</span><i class="fas fa-chevron-down puzzle-icon"></i></div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Setup:</strong> T₁ = 90° rotation, T₂ = 2× scaling. Is T₂∘T₁ = T₁∘T₂?</p>
+        <div class="insight" style="border-color:var(--violet);background:var(--violet-glow);">
+          <strong style="color:var(--violet);">They happen to agree</strong> because rotation and <em>uniform</em> scaling commute. But rotation + <em>non-uniform</em> scaling (stretch one axis only) do NOT commute. In Transformers, layer order always matters because the transformations are not uniform.
+        </div>
+      </div>
+    </div>
+
+    <div class="puzzle-card">
+      <div class="puzzle-header"><span>4. The ESR Escape</span><i class="fas fa-chevron-down puzzle-icon"></i></div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Setup:</strong> Injection at layer 4 washes out by layer 12. Injection at layer 18 persists. Why?</p>
+        <div class="insight">
+          <strong>Fewer downstream transformations.</strong> Layer 18 → only 6 layers of ESR correction. Layer 4 → 20 layers of correction. Shorter gauntlet = higher survival. Tradeoff: later injection means less influence on earlier representational decisions.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 4: Builder -->
+<section id="builder" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">04 — KINESTHETIC TASK</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Build-Your-Own Analogy</h2>
+    <div style="background:var(--bg-elevated);border:1px dashed var(--amber);border-radius:12px;padding:2rem;">
+      <p style="color:var(--text-muted);font-size:.95rem;line-height:1.7;margin-bottom:1.5rem;">
+        Choose a domain where inputs are consistently transformed into outputs. Define the input/output vectors, describe the transformation rule, test linearity, and identify the null space.
+      </p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;">
+        <div><label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Domain</label><input type="text" placeholder="e.g. Camera Lens, Corporate Training" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';"></div>
+        <div><label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Input Vector (axes)</label><input type="text" placeholder="e.g. [Brightness, Contrast, Color]" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';"></div>
+        <div><label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Transformation Rule</label><input type="text" placeholder="e.g. Wide-angle lens: amplify FOV, distort edges" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+        <div><label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Null Space — What gets destroyed?</label><textarea rows="2" placeholder="Which input features does the transformation annihilate?" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';resize:vertical;"></textarea></div>
+        <div><label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Non-Linear Boundary — Where does it break?</label><textarea rows="2" placeholder="Where does the linear model fail in this domain?" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';resize:vertical;"></textarea></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:1rem;">
+        <button class="btn" style="background:var(--amber);color:#000;"><i class="fas fa-save"></i> Save Framework</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);margin-top:2rem;">
+  <p style="max-width:600px;margin:0 auto 1rem;line-height:1.5;">
+    <strong>Compression:</strong> A linear transformation reshapes meaning. The Transformer is a stack of them. Work WITH the geometry, not against it.
+  </p>
+  Interactive Visual Learning — Lesson 04: Linear Transformations Analogy Layer
+</footer>
+
+<script>
+const DPR=window.devicePixelRatio||1;
+
+/* Hero */
+(function(){const c=document.getElementById('heroCanvas');let W,H,ctx;
+function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+resize();window.addEventListener('resize',resize);
+let t=0;
+function draw(){ctx.clearRect(0,0,W,H);
+  const cx=W/2,cy=H/2;
+  for(let i=0;i<8;i++){
+    const r=60+i*35;const ang=t*0.004+i*0.5;
+    const x=cx+Math.cos(ang)*r*0.3,y=cy+Math.sin(ang)*r*0.3;
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(${i%3===0?'245,158,11':i%3===1?'20,184,166':'139,92,246'},0.04)`;ctx.lineWidth=1;ctx.stroke();
+  }
+  t++;requestAnimationFrame(draw);}
+draw();})();
+
+/* Domain Canvas */
+(function(){
+  const canvas=document.getElementById('domainCanvas');
+  let domain='sports',caseType='amplify';
+
+  const cfgs={
+    sports:{axes:['Spd','Pass','Tack','Pos','Cre'],
+      amplify:{input:[8,7,6,9,7],output:[9.5,7,6,10,4],label:'Counter-Attack: amplify Speed+Position'},
+      null:{input:[8,7,6,9,7],output:[3,2,8,4,0],label:'Rigid Defense: Creativity → null space'},
+      compose:{input:[8,7,6,9,7],output:[7,9,4,8,9],label:'Possession→Counter compound'}},
+    gaming:{axes:['STR','DEX','INT','WIS','CHA'],
+      amplify:{input:[6,6,6,6,6],output:[12,8,3,6,6],label:'Warrior T: STR×2, INT÷2'},
+      null:{input:[6,6,6,6,6],output:[6,6,6,0,6],label:'Berserker: WIS → null space'},
+      compose:{input:[6,6,6,6,6],output:[6,8,6,6,6],label:'Warrior→Mage dual-class'}},
+    music:{axes:['Sub','Low','Mid','HiMid','Treb'],
+      amplify:{input:[2,5,8,6,3],output:[2,5,8,12,3],label:'Presence EQ: Hi-Mid ×2'},
+      null:{input:[2,5,8,6,3],output:[0.2,5,8,6,3],label:'Sub cut: bass → null space'},
+      compose:{input:[2,5,8,6,3],output:[0.2,5,8,12,5],label:'Presence + Air boost chain'}},
+    cooking:{axes:['Sweet','Bitter','Umami','Pung','Acid'],
+      amplify:{input:[1,2,3,9,0],output:[8,0.5,5,1,0],label:'Roast garlic: pungency → sweetness'},
+      null:{input:[3,0,2,0,1],output:[3,0,2,0,0],label:'Boiling: volatile acid → destroyed'},
+      compose:{input:[1,2,3,9,0],output:[6,0.5,6,2,3],label:'Marinate → Roast compound'}},
+    psych:{axes:['Open','Consc','Extra','Agree','Neur'],
+      amplify:{input:[7,5,3,6,9],output:[7,7,3,6,5],label:'CBT: Neuroticism ↓, Conscientiousness ↑'},
+      null:{input:[7,5,3,6,9],output:[7,5,3,6,9],label:'Misaligned therapy: no lasting change (ESR)'},
+      compose:{input:[7,5,3,6,9],output:[7,7,6,6,4],label:'CBT → Group Exposure compound'}},
+    ai:{axes:['Syntax','Semantic','Clinical','Format','Lexical'],
+      amplify:{input:[6,5,3,4,7],output:[2,8,7,4,3],label:'Layer 12: clinical dims amplified'},
+      null:{input:[6,5,3,4,7],output:[0,8,7,4,0],label:'W_Q null space: syntax+lexical annihilated'},
+      compose:{input:[6,5,3,4,7],output:[1,9,8,7,2],label:'L12→L18 progressive composition'}}
+  };
+
+  function draw(){
+    const p=canvas.parentElement,r=p.getBoundingClientRect();
+    canvas.width=r.width*DPR;canvas.height=r.height*DPR;canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';
+    const ctx=canvas.getContext('2d');ctx.scale(DPR,DPR);
+    const w=r.width,h=r.height;ctx.clearRect(0,0,w,h);
+    const cfg=cfgs[domain][caseType];
+    const axes=cfgs[domain].axes;
+    const n=axes.length;
+    const cx=w/2,cy=h/2,R=Math.min(w,h)*0.32;
+
+    // Radar axes
+    for(let i=0;i<n;i++){
+      const ang=-Math.PI/2+i*Math.PI*2/n;
+      const ax=cx+Math.cos(ang)*R*1.2,ay=cy+Math.sin(ang)*R*1.2;
+      ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ax,ay);ctx.stroke();
+      ctx.font='10px DM Sans';ctx.fillStyle='#52525b';ctx.textAlign='center';
+      ctx.fillText(axes[i],ax+(Math.cos(ang)*15),ay+(Math.sin(ang)*15));
+    }
+    for(let r2=0.25;r2<=1;r2+=0.25){
+      ctx.beginPath();
+      for(let i=0;i<=n;i++){const ang=-Math.PI/2+(i%n)*Math.PI*2/n;
+        const px=cx+Math.cos(ang)*R*r2,py=cy+Math.sin(ang)*R*r2;
+        if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);}
+      ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.stroke();
+    }
+
+    const maxV=13;
+    function drawShape(vals,color,fill){
+      ctx.beginPath();
+      vals.forEach((v,i)=>{
+        const ang=-Math.PI/2+i*Math.PI*2/n;
+        const px=cx+Math.cos(ang)*R*(v/maxV);
+        const py=cy+Math.sin(ang)*R*(v/maxV);
+        if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+      });
+      ctx.closePath();
+      if(fill){ctx.fillStyle=color+'15';ctx.fill();}
+      ctx.strokeStyle=color;ctx.lineWidth=fill?2.5:1.5;ctx.stroke();
+      // Dots
+      vals.forEach((v,i)=>{
+        const ang=-Math.PI/2+i*Math.PI*2/n;
+        const px=cx+Math.cos(ang)*R*(v/maxV);
+        const py=cy+Math.sin(ang)*R*(v/maxV);
+        ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
+      });
+    }
+
+    // Input (faded)
+    ctx.setLineDash([4,3]);drawShape(cfg.input,'#a1a1aa77',false);ctx.setLineDash([]);
+    // Output (solid)
+    ctx.save();ctx.shadowColor='#10b981';ctx.shadowBlur=6;
+    drawShape(cfg.output,'#10b981',true);ctx.restore();
+
+    // Labels
+    ctx.font='600 10px Space Grotesk';ctx.textAlign='left';
+    ctx.fillStyle='#a1a1aa';ctx.fillText('Input (raw)',14,20);
+    ctx.fillStyle='#10b981';ctx.fillText('Output (transformed)',14,34);
+    ctx.font='10px DM Sans';ctx.fillStyle='#52525b';ctx.fillText(cfg.label,14,h-14);
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      domain=btn.dataset.target;
+      document.querySelectorAll('.domain-content').forEach(c=>c.classList.remove('active'));
+      document.getElementById(domain).classList.add('active');
+      draw();
+    });
+  });
+  document.querySelectorAll('[data-case]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('[data-case]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      caseType=btn.dataset.case;draw();
+    });
+  });
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Puzzles */
+(function(){
+  document.querySelectorAll('.puzzle-header').forEach(hdr=>{
+    hdr.addEventListener('click',()=>{
+      const c=hdr.parentElement;const isOpen=c.classList.contains('open');
+      document.querySelectorAll('.puzzle-card').forEach(p=>p.classList.remove('open'));
+      if(!isOpen)c.classList.add('open');
+    });
+  });
+})();
+
+/* Nav */
+(function(){
+  const links=document.querySelectorAll('.nav-link');
+  const ids=['domains','crossdomain','puzzles','builder'];
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+100;let active=ids[0];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+    links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 11 — Exposure Layer</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Space+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        :root {
+            --bg: #0a0a08;
+            --fg: #e8e4dc;
+            --muted: #7a756c;
+            --accent: #d4a843;
+            --accent-dim: #8b7230;
+            --error: #c45c4a;
+            --success: #6b9e6b;
+            --card: #141412;
+            --border: #2a2622;
+            --input-bg: #0f0f0d;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            color: var(--fg);
+            background: var(--bg);
+            min-height: 100vh;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse at 25% 40%, rgba(20, 18, 14, 0.9) 0%, transparent 65%),
+                radial-gradient(ellipse at 75% 60%, rgba(18, 16, 12, 0.7) 0%, transparent 55%);
+            animation: fogDrift 25s ease-in-out infinite alternate;
+        }
+
+        @keyframes fogDrift {
+            0% {
+                transform: translateX(-15px) scale(1)
+            }
+
+            100% {
+                transform: translateX(15px) scale(1.04)
+            }
+        }
+
+        #app {
+            position: relative;
+            z-index: 1;
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 60px 24px 100px;
+        }
+
+        .section {
+            display: none;
+            opacity: 0;
+            transform: translateY(16px)
+        }
+
+        .section.visible {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity .5s ease, transform .5s ease
+        }
+
+        .section.entering {
+            display: block;
+            opacity: 0;
+            transform: translateY(16px)
+        }
+
+        .divider {
+            width: 180px;
+            height: 1px;
+            background: var(--accent);
+            opacity: .25;
+            margin: 44px auto
+        }
+
+        h1 {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(1.4rem, 4vw, 1.7rem);
+            font-weight: 700;
+            color: var(--fg);
+            letter-spacing: -.02em;
+            margin-bottom: 8px
+        }
+
+        h2 {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(1rem, 3vw, 1.15rem);
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: .02em;
+            margin-bottom: 12px;
+            text-transform: uppercase
+        }
+
+        p {
+            color: var(--fg);
+            margin-bottom: 14px;
+            font-weight: 300
+        }
+
+        p strong {
+            font-weight: 700;
+            color: var(--fg)
+        }
+
+        .muted-text {
+            color: var(--muted);
+            font-size: .92rem
+        }
+
+        .scenario-text {
+            font-size: 1.05rem;
+            line-height: 1.85;
+            color: var(--fg);
+            font-weight: 300
+        }
+
+        .scenario-text em {
+            color: var(--accent);
+            font-style: normal;
+            font-weight: 500
+        }
+
+        .prompt-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 20px 24px;
+            margin: 24px 0;
+        }
+
+        .prompt-box code {
+            font-family: 'Space Mono', monospace;
+            font-size: .95rem;
+            color: var(--accent);
+            background: rgba(212, 168, 67, .08);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+            flex-wrap: wrap
+        }
+
+        .input-field {
+            font-family: 'Space Mono', monospace;
+            font-size: .95rem;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--fg);
+            padding: 10px 14px;
+            outline: none;
+            transition: border-color .2s;
+            width: 260px;
+        }
+
+        .input-field:focus {
+            border-color: var(--accent)
+        }
+
+        .input-field.locked {
+            border-color: var(--accent-dim);
+            opacity: .7;
+            pointer-events: none
+        }
+
+        .input-field.wrong {
+            border-color: var(--error)
+        }
+
+        .input-field.right {
+            border-color: var(--success)
+        }
+
+        .input-label {
+            font-family: 'Space Mono', monospace;
+            font-size: .85rem;
+            color: var(--muted);
+            min-width: 60px
+        }
+
+        .submit-btn {
+            font-family: 'Space Mono', monospace;
+            font-size: .82rem;
+            letter-spacing: .06em;
+            background: none;
+            border: 1px solid var(--accent-dim);
+            color: var(--accent);
+            padding: 10px 22px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all .25s;
+            text-transform: uppercase;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            border-color: var(--accent);
+            background: rgba(212, 168, 67, .08)
+        }
+
+        .submit-btn:disabled {
+            opacity: .35;
+            cursor: default
+        }
+
+        .option-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 14px
+        }
+
+        .option-btn {
+            font-family: 'DM Sans', sans-serif;
+            font-size: .95rem;
+            text-align: left;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--fg);
+            padding: 12px 18px;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: var(--accent-dim);
+            background: rgba(212, 168, 67, .04)
+        }
+
+        .option-btn:disabled {
+            cursor: default
+        }
+
+        .option-btn.selected {
+            border-color: var(--accent);
+            background: rgba(212, 168, 67, .08)
+        }
+
+        .option-btn.selected.wrong {
+            border-color: var(--error);
+            background: rgba(196, 92, 74, .08);
+            color: var(--error)
+        }
+
+        .option-btn.selected.right {
+            border-color: var(--success);
+            background: rgba(107, 158, 107, .08);
+            color: var(--success)
+        }
+
+        .option-btn.dimmed {
+            opacity: .4
+        }
+
+        .feedback {
+            margin-top: 16px;
+            padding: 16px 20px;
+            border-radius: 5px;
+            font-size: .93rem;
+            line-height: 1.7;
+            display: none;
+        }
+
+        .feedback.show {
+            display: block;
+            animation: fadeUp .35s ease forwards
+        }
+
+        .feedback.error {
+            background: rgba(196, 92, 74, .08);
+            border-left: 3px solid var(--error)
+        }
+
+        .feedback.success {
+            background: rgba(107, 158, 107, .08);
+            border-left: 3px solid var(--success)
+        }
+
+        .feedback .misconception-tag {
+            font-family: 'Space Mono', monospace;
+            font-size: .78rem;
+            letter-spacing: .05em;
+            color: var(--error);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .comparison {
+            font-family: 'Space Mono', monospace;
+            font-size: .88rem;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 12px 16px;
+            margin: 12px 0;
+            display: none;
+        }
+
+        .comparison.show {
+            display: block
+        }
+
+        .comparison .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 3px 0
+        }
+
+        .comparison .label {
+            color: var(--muted)
+        }
+
+        .comparison .val {
+            color: var(--fg)
+        }
+
+        .comparison .val.wrong-val {
+            color: var(--error);
+            text-decoration: line-through;
+            text-decoration-color: var(--error)
+        }
+
+        .comparison .val.right-val {
+            color: var(--success)
+        }
+
+        .verification {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            display: none;
+        }
+
+        .verification.show {
+            display: block;
+            animation: fadeUp .35s ease forwards
+        }
+
+        .continue-wrap {
+            margin-top: 28px;
+            display: none
+        }
+
+        .continue-wrap.show {
+            display: block;
+            animation: fadeUp .35s ease forwards
+        }
+
+        .continue-btn {
+            font-family: 'Space Mono', monospace;
+            font-size: .8rem;
+            letter-spacing: .06em;
+            background: none;
+            border: 1px solid var(--accent-dim);
+            color: var(--accent);
+            padding: 8px 28px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all .25s;
+        }
+
+        .continue-btn:hover {
+            border-color: var(--accent);
+            background: rgba(212, 168, 67, .06)
+        }
+
+        .gauntlet-counter {
+            font-family: 'Space Mono', monospace;
+            font-size: .82rem;
+            color: var(--muted);
+            letter-spacing: .04em;
+            margin-bottom: 20px;
+        }
+
+        .gauntlet-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 22px 24px;
+            margin-bottom: 16px;
+        }
+
+        .gauntlet-card .q-text {
+            font-size: .95rem;
+            margin-bottom: 14px;
+            line-height: 1.6
+        }
+
+        .gauntlet-card .q-code {
+            font-family: 'Space Mono', monospace;
+            font-size: .88rem;
+            color: var(--accent);
+            display: block;
+            margin: 8px 0 14px;
+        }
+
+        .gauntlet-mini-feedback {
+            font-family: 'Space Mono', monospace;
+            font-size: .82rem;
+            margin-top: 10px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .gauntlet-mini-feedback.show {
+            display: block
+        }
+
+        .gauntlet-mini-feedback.correct {
+            color: var(--success);
+            background: rgba(107, 158, 107, .06)
+        }
+
+        .gauntlet-mini-feedback.incorrect {
+            color: var(--error);
+            background: rgba(196, 92, 74, .06)
+        }
+
+        .gauntlet-card.answered {
+            opacity: .6;
+            pointer-events: none
+        }
+
+        .final-score {
+            font-family: 'Space Mono', monospace;
+            text-align: center;
+            padding: 32px 0;
+        }
+
+        .final-score .score-num {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: var(--accent)
+        }
+
+        .final-score .score-label {
+            font-size: .85rem;
+            color: var(--muted);
+            letter-spacing: .06em;
+            margin-top: 4px
+        }
+
+        .three-inputs {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 14px
+        }
+
+        .three-inputs .input-field {
+            width: 120px
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        @media(max-width:500px) {
+            #app {
+                padding: 36px 16px 80px
+            }
+
+            .input-field {
+                width: 100%
+            }
+
+            .three-inputs .input-field {
+                width: calc(33% - 8px);
+                min-width: 80px
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0s !important;
+                transition-duration: 0s !important
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+
+        <!-- ========== SECTION 0: OPENING ========== -->
+        <section id="s0" class="section visible">
+            <p class="scenario-text">You are lost on a mountain.</p>
+            <p class="scenario-text">The fog is so thick you cannot see your hand. You cannot see the valley below. You
+                cannot see the ridge above. Your GPS is dead. Your phone is dead. <em>Night is three hours away.</em>
+            </p>
+            <p class="scenario-text">But you can feel the slope under your boots.</p>
+            <p class="scenario-text">The ground tilts differently in every direction. One direction drops sharply.
+                Another drops gently. A third rises. If you turn slowly and test every direction, you find the single
+                direction where the ground drops <em>most steeply.</em></p>
+            <p class="scenario-text" style="color:var(--accent);font-weight:500;margin-top:20px">That direction is the
+                gradient.</p>
+            <div class="divider"></div>
+            <p class="muted-text">Every AI model ever trained — GPT-4, Claude, Gemini, the CCP's RISER router — learned
+                by navigating exactly this way. They cannot see the destination. They can only feel the local slope.
+                They take a step. Measure the new slope. Take another step. Millions of steps.</p>
+            <p style="margin-top:20px">Before you learn the mechanics, let's test what your intuition already believes
+                about it.</p>
+            <div class="continue-wrap show" style="margin-top:32px">
+                <button class="continue-btn" onclick="revealSection('s1')">Begin</button>
+            </div>
+        </section>
+
+        <!-- ========== SECTION 1: GRADIENT IS A NUMBER ========== -->
+        <section id="s1" class="section">
+            <h2>Trap 1 of 5</h2>
+            <h1>What is "the gradient"?</h1>
+            <div class="prompt-box">
+                <p>Consider the function <code>f(x, y) = x&sup2; + y&sup2;</code> — a bowl shape in 3D space. The bottom
+                    of the bowl sits at the origin (0, 0).</p>
+                <p style="margin-top:10px">You are standing at point <strong>(3, 4)</strong>. What is the gradient of
+                    <code>f</code> at this point?</p>
+                <p class="muted-text" style="margin-top:6px">Enter a single value, a vector, or whatever you believe
+                    "the gradient" to be.</p>
+                <div class="input-row">
+                    <input type="text" id="s1-input" class="input-field" placeholder="your answer" autocomplete="off">
+                    <button class="submit-btn" id="s1-submit" onclick="submitS1()">Lock Answer</button>
+                </div>
+            </div>
+            <div class="comparison" id="s1-compare">
+                <div class="row"><span class="label">Your answer</span><span class="val wrong-val" id="s1-your"></span>
+                </div>
+                <div class="row"><span class="label">Gradient</span><span class="val right-val" id="s1-correct"></span>
+                </div>
+            </div>
+            <div class="feedback" id="s1-fb"></div>
+            <div class="verification" id="s1-ver">
+                <p class="muted-text" style="margin-bottom:10px">Verification — same structure, different numbers:</p>
+                <p>Compute the gradient of <code>f(x, y) = x&sup2; + 2y&sup2;</code> at point <strong>(2, 1)</strong>.
+                </p>
+                <div class="input-row">
+                    <input type="text" id="s1-ver-input" class="input-field" placeholder="vector" autocomplete="off">
+                    <button class="submit-btn" id="s1-ver-submit" onclick="submitS1Ver()">Lock Answer</button>
+                </div>
+                <div class="feedback" id="s1-ver-fb"></div>
+            </div>
+            <div class="continue-wrap" id="s1-continue">
+                <button class="continue-btn" onclick="revealSection('s2')">Continue</button>
+            </div>
+        </section>
+
+        <!-- ========== SECTION 2: BIGGER LR = FASTER ========== -->
+        <section id="s2" class="section">
+            <h2>Trap 2 of 5</h2>
+            <h1>Bigger steps, faster arrival?</h1>
+            <div class="prompt-box">
+                <p>Function: <code>f(x) = x&sup2;</code>. Starting position: <code>x = 5</code>. Learning rate:
+                    <code>&eta; = 1.5</code>.</p>
+                <p style="margin-top:10px">How many gradient descent steps until <code>x</code> is within 0.01 of the
+                    minimum at <code>x = 0</code>?</p>
+                <div class="option-grid" id="s2-options">
+                    <button class="option-btn" onclick="submitS2(this,'a')">2 — 3 steps</button>
+                    <button class="option-btn" onclick="submitS2(this,'b')">5 — 10 steps</button>
+                    <button class="option-btn" onclick="submitS2(this,'c')">10 — 20 steps</button>
+                    <button class="option-btn" onclick="submitS2(this,'d')">It never converges</button>
+                </div>
+            </div>
+            <div class="feedback" id="s2-fb"></div>
+            <div class="verification" id="s2-ver">
+                <p class="muted-text" style="margin-bottom:10px">Verification — different starting point, same
+                    principle:</p>
+                <p>Same function <code>f(x) = x&sup2;</code>. Start at <code>x = 3</code>. Learning rate
+                    <code>&eta; = 2.0</code>. What happens?</p>
+                <div class="option-grid" id="s2-ver-options">
+                    <button class="option-btn" onclick="submitS2Ver(this,'a')">Converges in 1 — 2 steps</button>
+                    <button class="option-btn" onclick="submitS2Ver(this,'b')">Converges slowly over 10+ steps</button>
+                    <button class="option-btn" onclick="submitS2Ver(this,'c')">It diverges</button>
+                </div>
+                <div class="feedback" id="s2-ver-fb"></div>
+            </div>
+            <div class="continue-wrap" id="s2-continue">
+                <button class="continue-btn" onclick="revealSection('s3')">Continue</button>
+            </div>
+        </section>
+
+        <!-- ========== SECTION 3: ZERO GRADIENT = OPTIMUM ========== -->
+        <section id="s3" class="section">
+            <h2>Trap 3 of 5</h2>
+            <h1>Flat ground means you've arrived?</h1>
+            <div class="prompt-box">
+                <p>True or False:</p>
+                <p style="margin-top:8px"><strong>"If the gradient is exactly zero at every component, the model has
+                        definitively reached an optimal minimum."</strong></p>
+                <div class="option-grid" id="s3-options">
+                    <button class="option-btn" onclick="submitS3(this,'true')">True</button>
+                    <button class="option-btn" onclick="submitS3(this,'false')">False</button>
+                </div>
+            </div>
+            <div class="feedback" id="s3-fb"></div>
+            <div class="verification" id="s3-ver">
+                <p class="muted-text" style="margin-bottom:10px">Verification:</p>
+                <p>The gradient of <code>L(&theta;)</code> is <code>[0, 0, 0]</code>. The Hessian matrix has eigenvalues
+                    <code>[5.2, &minus;3.1, 0.01]</code>. What type of critical point is this?</p>
+                <div class="option-grid" id="s3-ver-options">
+                    <button class="option-btn" onclick="submitS3Ver(this,'a')">Local minimum</button>
+                    <button class="option-btn" onclick="submitS3Ver(this,'b')">Local maximum</button>
+                    <button class="option-btn" onclick="submitS3Ver(this,'c')">Saddle point</button>
+                    <button class="option-btn" onclick="submitS3Ver(this,'d')">Flat plateau</button>
+                </div>
+                <div class="feedback" id="s3-ver-fb"></div>
+            </div>
+            <div class="continue-wrap" id="s3-continue">
+                <button class="continue-btn" onclick="revealSection('s4')">Continue</button>
+            </div>
+        </section>
+
+        <!-- ========== SECTION 4: MODEL SEES WHOLE LANDSCAPE ========== -->
+        <section id="s4" class="section">
+            <h2>Trap 4 of 5</h2>
+            <h1>The compass can see ahead?</h1>
+            <div class="prompt-box">
+                <p>A Transformer with 4 billion parameters is training. At its current position, the gradient has been
+                    computed across all 4 billion dimensions.</p>
+                <p style="margin-top:10px">True or False:</p>
+                <p><strong>"The gradient at this position can tell you whether there exists a deeper valley (lower loss)
+                        approximately 500 gradient steps away."</strong></p>
+                <div class="option-grid" id="s4-options">
+                    <button class="option-btn" onclick="submitS4(this,'true')">True — the gradient encodes information
+                        about the landscape ahead</button>
+                    <button class="option-btn" onclick="submitS4(this,'false')">False — the gradient only describes the
+                        local slope at the current position</button>
+                </div>
+            </div>
+            <div class="feedback" id="s4-fb"></div>
+            <div class="verification" id="s4-ver">
+                <p class="muted-text" style="margin-bottom:10px">Verification:</p>
+                <p>What does the gradient at position <code>&theta;</code> tell you about
+                    <code>L(&theta; + 1000 &middot; &nabla;L)</code>?</p>
+                <div class="option-grid" id="s4-ver-options">
+                    <button class="option-btn" onclick="submitS4Ver(this,'a')">Exactly how much the loss
+                        changes</button>
+                    <button class="option-btn" onclick="submitS4Ver(this,'b')">Nothing reliable — local linearity only
+                        holds for small steps</button>
+                    <button class="option-btn" onclick="submitS4Ver(this,'c')">The approximate loss value at that
+                        distant point</button>
+                </div>
+                <div class="feedback" id="s4-ver-fb"></div>
+            </div>
+            <div class="continue-wrap" id="s4-continue">
+                <button class="continue-btn" onclick="revealSection('s5')">Continue</button>
+            </div>
+        </section>
+
+        <!-- ========== SECTION 5: BACKPROP SEPARATE FROM LA ========== -->
+        <section id="s5" class="section">
+            <h2>Trap 5 of 5</h2>
+            <h1>Backpropagation is its own math?</h1>
+            <div class="prompt-box">
+                <p>True or False:</p>
+                <p style="margin-top:8px"><strong>"Backpropagation through a linear layer requires a fundamentally
+                        different mathematical operation than the forward pass."</strong></p>
+                <div class="option-grid" id="s5-options">
+                    <button class="option-btn" onclick="submitS5(this,'true')">True — backpropagation is a distinct
+                        algorithm with its own mathematics</button>
+                    <button class="option-btn" onclick="submitS5(this,'false')">False — the backward pass is matrix
+                        multiplication, same as the forward pass but transposed</button>
+                </div>
+            </div>
+            <div class="feedback" id="s5-fb"></div>
+            <div class="verification" id="s5-ver">
+                <p class="muted-text" style="margin-bottom:10px">Verification:</p>
+                <p>Forward pass: <code>z = Wx</code> where <code>W</code> is 3&times;2 and <code>x</code> is 2&times;1.
+                    The backward pass computes <code>&part;L/&part;x = W&supT; &middot; (&part;L/&part;z)</code>. What
+                    are the dimensions of <code>W&supT;</code>?</p>
+                <div class="option-grid" id="s5-ver-options">
+                    <button class="option-btn" onclick="submitS5Ver(this,'a')">2 &times; 3</button>
+                    <button class="option-btn" onclick="submitS5Ver(this,'b')">3 &times; 2</button>
+                    <button class="option-btn" onclick="submitS5Ver(this,'c')">2 &times; 2</button>
+                    <button class="option-btn" onclick="submitS5Ver(this,'d')">3 &times; 3</button>
+                </div>
+                <div class="feedback" id="s5-ver-fb"></div>
+            </div>
+            <div class="continue-wrap" id="s5-continue">
+                <button class="continue-btn" onclick="revealSection('mastery')">Continue to Mastery Gate</button>
+            </div>
+        </section>
+
+        <!-- ========== MASTERY GATE ========== -->
+        <section id="mastery" class="section">
+            <h2>Mastery Gate</h2>
+            <h1>Compute the gradient</h1>
+            <div class="prompt-box">
+                <p>Function: <code>f(x, y, z) = 3x&sup2; + y&sup2; &minus; z&sup2;</code></p>
+                <p style="margin-top:8px">Point: <strong>(1, 2, 3)</strong></p>
+                <p class="muted-text" style="margin-top:10px">Enter each partial derivative component.</p>
+                <div class="three-inputs">
+                    <div>
+                        <span class="input-label">&part;f/&part;x</span>
+                        <input type="text" id="mg-x" class="input-field" placeholder="?" autocomplete="off">
+                    </div>
+                    <div>
+                        <span class="input-label">&part;f/&part;y</span>
+                        <input type="text" id="mg-y" class="input-field" placeholder="?" autocomplete="off">
+                    </div>
+                    <div>
+                        <span class="input-label">&part;f/&part;z</span>
+                        <input type="text" id="mg-z" class="input-field" placeholder="?" autocomplete="off">
+                    </div>
+                </div>
+                <div class="input-row" style="margin-top:14px">
+                    <button class="submit-btn" onclick="submitMastery()">Lock Answer</button>
+                </div>
+            </div>
+            <div class="comparison" id="mg-compare">
+                <div class="row"><span class="label">Your gradient</span><span class="val" id="mg-your"></span></div>
+                <div class="row"><span class="label">Correct gradient</span><span class="val right-val"
+                        id="mg-correct"></span></div>
+            </div>
+            <div class="feedback" id="mg-fb"></div>
+            <div class="continue-wrap" id="mg-continue">
+                <button class="continue-btn" onclick="revealSection('gauntlet')">Enter Gauntlet</button>
+            </div>
+        </section>
+
+        <!-- ========== GAUNTLET ========== -->
+        <section id="gauntlet" class="section">
+            <h2>Exposure Gauntlet</h2>
+            <h1>7 questions. No scaffolding.</h1>
+            <div class="gauntlet-counter" id="gq-counter">0 / 7</div>
+            <div id="gq-container"></div>
+            <div class="final-score" id="gq-final" style="display:none">
+                <div class="score-num" id="gq-score-num"></div>
+                <div class="score-label">out of 7 correct</div>
+                <div class="continue-wrap show" id="gq-done-continue" style="margin-top:24px;display:none">
+                    <button class="continue-btn" onclick="finishLayer1()">Complete Exposure Layer</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== COMPLETION ========== -->
+        <section id="done" class="section">
+            <div class="divider" style="margin-top:0;margin-bottom:36px"></div>
+            <h1>Exposure layer complete.</h1>
+            <p class="muted-text">You have confronted five misconceptions about gradients. Your wrong answers were the
+                entry point — not a failure state.</p>
+            <p class="muted-text" style="margin-top:10px">In Layer 2, you will derive the chain rule by hand and trace
+                gradients through a real neural network — starting with an unannounced retrieval probe from this layer.
+            </p>
+            <p style="margin-top:24px;color:var(--accent);font-weight:500">The gradient pointed here all along.</p>
+        </section>
+
+    </div>
+
+    <script>
+        /* ============================================================
+           STATE
+           ============================================================ */
+        const completed = { s1: false, s2: false, s3: false, s4: false, s5: false, mg: false };
+        let gauntletScore = 0;
+        let gauntletCurrent = 0;
+
+        /* ============================================================
+           SECTION REVEAL
+           ============================================================ */
+        function revealSection(id) {
+            const el = document.getElementById(id);
+            el.classList.remove('hidden');
+            el.classList.add('entering');
+            // Force reflow then animate in
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    el.classList.remove('entering');
+                    el.classList.add('visible');
+                });
+            });
+            // Scroll into view
+            setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+            // If gauntlet, build it
+            if (id === 'gauntlet') buildGauntlet();
+        }
+
+        /* ============================================================
+           VECTOR PARSER
+           ============================================================ */
+        function parseVector(str) {
+            if (!str || !str.trim()) return null;
+            let cleaned = str.replace(/[\[\]\<\>\(\)\{\}]/g, '');
+            let parts = cleaned.split(/[,\s]+/).filter(s => s.trim() !== '');
+            if (parts.length === 0) return null;
+            let nums = parts.map(s => parseFloat(s.trim()));
+            if (nums.some(n => isNaN(n))) return null;
+            return nums;
+        }
+
+        function vectorsMatch(a, b, tol) {
+            tol = tol || 0.05;
+            if (!a || !b || a.length !== b.length) return false;
+            return a.every((v, i) => Math.abs(v - b[i]) < tol);
+        }
+
+        function showFeedback(id, type, html) {
+            const el = document.getElementById(id);
+            el.className = 'feedback show ' + type;
+            el.innerHTML = html;
+        }
+
+        function showComparison(id, yourText, correctText) {
+            const el = document.getElementById(id);
+            document.querySelector('#' + id + ' .wrong-val').textContent = yourText;
+            document.querySelector('#' + id + ' .right-val').textContent = correctText;
+            el.classList.add('show');
+        }
+
+        function showVerification(id) {
+            document.getElementById(id).classList.add('show');
+        }
+
+        function showContinue(id) {
+            document.getElementById(id).classList.add('show');
+        }
+
+        function lockInputs(parentId) {
+            const parent = document.getElementById(parentId);
+            parent.querySelectorAll('.input-field').forEach(i => i.classList.add('locked'));
+            parent.querySelectorAll('.submit-btn').forEach(b => b.disabled = true);
+        }
+
+        function lockOptions(gridId) {
+            document.querySelectorAll('#' + gridId + ' .option-btn').forEach(b => b.disabled = true);
+        }
+
+        /* ============================================================
+           SECTION 1: GRADIENT IS A NUMBER
+           ============================================================ */
+        function submitS1() {
+            const input = document.getElementById('s1-input');
+            const raw = input.value.trim();
+            if (!raw) return;
+
+            lockInputs('s1');
+            input.classList.add('locked');
+            const nums = parseVector(raw);
+
+            // Check if they gave a scalar (magnitude 10) or the vector [6, 8]
+            const gaveScalar = (nums && nums.length === 1 && Math.abs(nums[0] - 10) < 0.5);
+            const gaveVector = vectorsMatch(nums, [6, 8]);
+
+            if (gaveVector) {
+                // Correct on first try
+                input.classList.add('right');
+                showFeedback('s1-fb', 'success',
+                    'Correct. The gradient of f(x,y) = x² + y² at (3,4) is the vector <strong>[6, 8]</strong>. ' +
+                    '∂f/∂x = 2x = 6. ∂f/∂y = 2y = 8. Two partial derivatives, assembled into a 2-component vector. ' +
+                    'The magnitude (10) is a property of this vector — it is not the vector itself.');
+                showContinue('s1-continue');
+                completed.s1 = true;
+            } else {
+                // Wrong
+                input.classList.add('wrong');
+                const yourDisplay = raw.length > 20 ? raw.slice(0, 20) + '...' : raw;
+                showComparison('s1-compare', yourDisplay, '[6, 8]');
+                const misconceptionName = gaveScalar ? 'Magnitude Confusion' : 'Scalar Expectation';
+                const explanation = gaveScalar
+                    ? 'You computed the <strong>magnitude</strong> of the gradient vector: √(6² + 8²) = 10. ' +
+                    'That tells you <em>how steep</em> the terrain is. But the gradient <em>is</em> the vector [6, 8] — it tells you <strong>both</strong> the direction and the steepness. ' +
+                    'In a model with 4 billion parameters, there is no single "gradient number." There are 4 billion directional components. The magnitude is a derived property, not the vector itself.'
+                    : 'The gradient is not a single number. It is a <strong>vector</strong> — one component per input variable. ' +
+                    'For f(x, y), the gradient has two components: [∂f/∂x, ∂f/∂y] = [2(3), 2(4)] = [6, 8]. ' +
+                    'A 4-billion-parameter model has a gradient with 4 billion components.';
+                showFeedback('s1-fb', 'error',
+                    '<span class="misconception-tag">' + misconceptionName + '</span>' + explanation);
+                showVerification('s1-ver');
+            }
+        }
+
+        function submitS1Ver() {
+            const input = document.getElementById('s1-ver-input');
+            const raw = input.value.trim();
+            if (!raw) return;
+            input.classList.add('locked');
+            document.getElementById('s1-ver-submit').disabled = true;
+
+            const nums = parseVector(raw);
+            // f(x,y) = x² + 2y², point (2,1): ∂f/∂x = 2x = 4, ∂f/∂y = 4y = 4
+            if (vectorsMatch(nums, [4, 4])) {
+                input.classList.add('right');
+                showFeedback('s1-ver-fb', 'success', 'Correct. [4, 4] — two partial derivatives, assembled into a vector.');
+                showContinue('s1-continue');
+                completed.s1 = true;
+            } else {
+                input.classList.add('wrong');
+                showFeedback('s1-ver-fb', 'error',
+                    'Not yet. Compute each partial derivative separately: ∂f/∂x = 2x = 2(2) = 4. ∂f/∂y = 4y = 4(1) = 4. The gradient is the vector [4, 4]. Try again.');
+                setTimeout(() => {
+                    input.classList.remove('locked', 'wrong');
+                    input.value = '';
+                    input.focus();
+                    document.getElementById('s1-ver-submit').disabled = false;
+                }, 1200);
+            }
+        }
+
+        /* ============================================================
+           SECTION 2: BIGGER LR = FASTER
+           ============================================================ */
+        function submitS2(btn, choice) {
+            lockOptions('s2-options');
+            const correct = choice === 'd';
+
+            if (correct) {
+                btn.classList.add('selected', 'right');
+                showFeedback('s2-fb', 'success',
+                    'Correct. With η = 1.5, the model <strong>diverges</strong>. Step 1: 5 → 5 − 1.5×10 = −10. ' +
+                    'Step 2: −10 → −10 − 1.5×(−20) = 20. Step 3: 20 → −40. Each step overshoots and lands farther away. ' +
+                    'A bigger learning rate does not mean faster training — past a critical threshold, it means <em>no</em> training.');
+                showContinue('s2-continue');
+                completed.s2 = true;
+            } else {
+                btn.classList.add('selected', 'wrong');
+                // Dim others
+                document.querySelectorAll('#s2-options .option-btn').forEach(b => {
+                    if (!b.classList.contains('selected')) b.classList.add('dimmed');
+                });
+                // Highlight correct
+                document.querySelectorAll('#s2-options .option-btn')[3].classList.add('right');
+                showFeedback('s2-fb', 'error',
+                    '<span class="misconception-tag">Stride Fallacy</span>' +
+                    'You assumed a bigger step means faster arrival. Here is what actually happens with η = 1.5:<br><br>' +
+                    '<code>Step 1: x = 5, gradient = 10, x_new = 5 − 15 = −10</code><br>' +
+                    '<code>Step 2: x = −10, gradient = −20, x_new = −10 + 30 = 20</code><br>' +
+                    '<code>Step 3: x = 20, gradient = 40, x_new = 20 − 60 = −40</code><br><br>' +
+                    'Each step <strong>overshoots the minimum</strong> and lands farther away. The model diverges. The learning rate is too large for the terrain curvature. This is not a theoretical edge case — it is the most common cause of training failure in production.');
+                showVerification('s2-ver');
+            }
+        }
+
+        function submitS2Ver(btn, choice) {
+            lockOptions('s2-ver-options');
+            const correct = choice === 'c';
+            if (correct) {
+                btn.classList.add('selected', 'right');
+                showFeedback('s2-ver-fb', 'success', 'Correct. η = 2.0 also diverges: 3 → 3 − 2×6 = −9 → −9 − 2×(−18) = 27. The principle holds regardless of starting point.');
+                showContinue('s2-continue');
+                completed.s2 = true;
+            } else {
+                btn.classList.add('selected', 'wrong');
+                document.querySelectorAll('#s2-ver-options .option-btn').forEach(b => {
+                    if (!b.classList.contains('selected')) b.classList.add('dimmed');
+                });
+                document.querySelectorAll('#s2-ver-options .option-btn')[2].classList.add('right');
+                showFeedback('s2-ver-fb', 'error',
+                    'The gradient at x=3 is 6. With η=2.0: x_new = 3 − 12 = −9. Then gradient = −18, x_new = −9 + 36 = 27. It diverges. Any η > 1.0 on f(x)=x² causes divergence from most starting positions.');
+                setTimeout(() => {
+                    // Reset verification options
+                    const grid = document.getElementById('s2-ver-options');
+                    grid.querySelectorAll('.option-btn').forEach(b => {
+                        b.classList.remove('selected', 'wrong', 'right', 'dimmed');
+                        b.disabled = false;
+                    });
+                    document.getElementById('s2-ver-fb').className = 'feedback';
+                }, 2000);
+            }
+        }
+
+        /* ============================================================
+           SECTION 3: ZERO GRADIENT = OPTIMUM
+           ============================================================ */
+        function submitS3(btn, choice) {
+            lockOptions('s3-options');
+            const correct = choice === 'false';
+            if (correct) {
+                btn.classList.add('selected', 'right');
+                showFeedback('s3-fb', 'success',
+                    'Correct. Zero gradient means "flat terrain in every direction" — not "valley floor." ' +
+                    'At a <strong>saddle point</strong>, the terrain curves upward in some dimensions and downward in others. ' +
+                    'The gradient is zero, but you are not at a minimum. In high dimensions, saddle points vastly outnumber true minima.');
+                showContinue('s3-continue');
+                completed.s3 = true;
+            } else {
+                btn.classList.add('selected', 'wrong');
+                document.querySelectorAll('#s3-options .option-btn').forEach(b => {
+                    if (!b.classList.contains('selected')) b.classList.add('dimmed');
+                });
+                document.querySelectorAll('#s3-options .option-btn')[1].classList.add('right');
+                showFeedback('s3-fb', 'error',
+                    '<span class="misconception-tag">Saddle Point Blindness</span>' +
+                    'Zero gradient means "flat terrain in every direction" — not "valley floor." ' +
+                    'At a <strong>saddle point</strong>, the terrain curves upward in some dimensions and downward in others, like the saddle of a horse. ' +
+                    'You are at a minimum north-south but a maximum east-west. The gradient is zero because there is no single direction of descent — but you are NOT at the bottom. ' +
+                    'In a 4-billion-dimensional space, saddle points vastly outnumber true minima. Most training plateaus are saddle points, not optima.');
+                showVerification('s3-ver');
+            }
+        }
+
+        function submitS3Ver(btn, choice) {
+            lockOptions('s3-ver-options');
+            const correct = choice === 'c';
+            if (correct) {
+                btn.classList.add('selected', 'right');
+                showFeedback('s3-ver-fb', 'success', 'Correct. Eigenvalue +5.2 (positive → upward curvature) and −3.1 (negative → downward curvature) in different directions = saddle point. The gradient is zero, but the Hessian reveals the trap.');
+                showContinue('s3-continue');
+                completed.s3 = true;
+            } else {
+                btn.classList.add('selected', 'wrong');
+                document.querySelectorAll('#s3-ver-options .option-btn').forEach(b => {
+                    if (!b.classList.contains('selected')) b.classList.add('dimmed');
+                });
+                document.querySelectorAll('#s3-ver-options .option-btn')[2].classList.add('right');
+                const wrongMap = { a: 'minimum', b: 'maximum', d: 'plateau' };
+                showFeedback('s3-ver-fb', 'error',
+                    'A ' + (wrongMap[choice] || '') + ' requires all Hessian eigenvalues to be ' +
+                    (choice === 'a' ? 'positive' : choice === 'b' ? 'negative' : 'near-zero') +
+                    '. Here we have both positive (+5.2) AND negative (−3.1) eigenvalues — meaning curvature goes up in one direction and down in another. That is the definition of a saddle point.');
+                setTimeout(() => {
+                    const grid = document.getElementById('s3-ver-options');
+                    grid.querySelectorAll('.option-btn').forEach(b => {
+                        b.classList.remove('selected', 'wrong', 'right', 'dimmed');
+                        b.disabled = false;
+                    });
+                    document.getElementById('s3-ver-fb').className = 'feedback';
+                }, 2500);
+            }
+        }
+
+        /* ============================================================
+           SECTION 4: MODEL SEES WHOLE LANDSCAPE
+           ============================================================ */
+        function submitS4(btn, choice) {
+            lockOptions('s4-options');
+            const correct = choice === 'false';
+            if (correct) {
+                btn.classList.add('selected', 'right');
+                showFeedback('s4-fb', 'success',
+                    'Correct. The gradient is strictly local. It measures the slope at a single point — the first derivative. ' +
+                    'It contains zero information about terrain beyond the immediate neighborhood. The model navigates by touch alone.');
+                showContinue('s4-continue');
+                completed.s4 = true;
+            } else {
+                btn.classList.add('selected', 'wrong');
+                document.querySelectorAll('#s4-options .option-btn').forEach(b => {
+                    if (!b.classList.contains('selected')) b.classList.add('dimmed');
+                });
+                document.querySelectorAll('#s4-options .option-btn')[1].classList.add('right');
+                showFeedback('s4-fb', 'error',
+                    '<span class="misconception-tag">Omniscience Fallacy</span>' +
+                    'The gradient is <strong>strictly local</strong>. It measures the slope AT your current position — the first derivative at a single point. ' +
+                    'It contains zero information about terrain beyond your immediate neighborhood. ' +
+                    'The model cannot "see" whether a deeper valley exists 500 steps away. It can only feel the slope under its current feet. ' +
+                    'This is why two training runs with different random starting points can converge to completely different solutions — each starts in a different region and can only explore downhill from there.');
+                showVerification('s4-ver');
+            }
+        }
+
+        function submitS4Ver(btn, choice) {
+            lockOptions('s4-ver-options');
+            const correct = choice === 'b';
+            if (correct) {
+                btn.classList.add('selected', 'right');
+                showFeedback('s4-ver-fb', 'success', 'Correct. The gradient provides a linear approximation: f(θ+h) ≈ f(θ) + ∇f·h. This approximation is only accurate for small h. At h = 1000·∇L, the real function has long since diverged from the linear prediction.');
+                showContinue('s4-continue');
+                completed.s4 = true;
+            } else {
+                btn.classList.add('selected', 'wrong');
+                document.querySelectorAll('#s4-ver-options .option-btn').forEach(b => {
+                    if (!b.classList.contains('selected')) b.classList.add('dimmed');
+                });
+                document.querySelectorAll('#s4-ver-options .option-btn')[1].classList.add('right');
+                showFeedback('s4-ver-fb', 'error',
+                    'The gradient gives a <strong>local linear approximation</strong>: f(θ+h) ≈ f(θ) + ∇f·h. ' +
+                    'This is only valid for small h. A step of 1000·∇L is enormous — the real function\'s curvature makes the linear approximation useless at that distance. ' +
+                    'The gradient tells you about the slope directly under your feet, nothing more.');
+                setTimeout(() => {
+                    const grid = document.getElementById('s4-ver-options');
+                    grid.querySelectorAll('.option-btn').forEach(b => {
+                        b.classList.remove('selected', 'wrong', 'right', 'dimmed');
+                        b.disabled = false;
+                    });
+                    document.getElementById('s4-ver-fb').className = 'feedback';
+                }, 2500);
+            }
+        }
+
+        /* ============================================================
+           SECTION 5: BACKPROP SEPARATE FROM LINEAR ALGEBRA
+           ============================================================ */
+        function submitS5(btn, choice) {
+            lockOptions('s5-options');
+            const correct = choice === 'false';
+            if (correct) {
+                btn.classList.add('selected', 'right');
+                showFeedback('s5-fb', 'success',
+                    'Correct. The forward pass computes z = Wx. The backward pass computes ∂L/∂x = Wᵀ·(∂L/∂z). ' +
+                    'Same operation — transposed matrix multiplication — applied in reverse direction. Backpropagation IS matrix multiplication from output to input.');
+                showContinue('s5-continue');
+                completed.s5 = true;
+            } else {
+                btn.classList.add('selected', 'wrong');
+                document.querySelectorAll('#s5-options .option-btn').forEach(b => {
+                    if (!b.classList.contains('selected')) b.classList.add('dimmed');
+                });
+                document.querySelectorAll('#s5-options .option-btn')[1].classList.add('right');
+                showFeedback('s5-fb', 'error',
+                    '<span class="misconception-tag">Algorithm-Concept Conflation</span>' +
+                    'Backpropagation is not a separate mathematical operation. It <strong>is</strong> matrix multiplication — specifically, transposed matrix multiplication applied in reverse. ' +
+                    'The forward pass: z = Wx. The backward pass: ∂L/∂x = Wᵀ · (∂L/∂z). ' +
+                    'Same operation (matrix multiplication), same matrices (transposed), opposite direction. ' +
+                    'If you understood Lesson 5 (Matrix Multiplication), you already understood the core computation of backpropagation. The "algorithm" is just systematic application of the chain rule, layer by layer.');
+                showVerification('s5-ver');
+            }
+        }
+
+        function submitS5Ver(btn, choice) {
+            lockOptions('s5-ver-options');
+            const correct = choice === 'a';
+            if (correct) {
+                btn.classList.add('selected', 'right');
+                showFeedback('s5-ver-fb', 'success', 'Correct. If W is 3×2, then Wᵀ is 2×3. The transpose swaps rows and columns. The backward pass multiplies a 2×3 matrix by a 3×1 vector to produce a 2×1 gradient — matching the input dimension.');
+                showContinue('s5-continue');
+                completed.s5 = true;
+            } else {
+                btn.classList.add('selected', 'wrong');
+                document.querySelectorAll('#s5-ver-options .option-btn').forEach(b => {
+                    if (!b.classList.contains('selected')) b.classList.add('dimmed');
+                });
+                document.querySelectorAll('#s5-ver-options .option-btn')[0].classList.add('right');
+                showFeedback('s5-ver-fb', 'error',
+                    'The transpose of a 3×2 matrix is 2×3 — rows become columns and columns become rows. ' +
+                    'This is not a special "backprop operation." It is the standard matrix transpose from Lesson 5.');
+                setTimeout(() => {
+                    const grid = document.getElementById('s5-ver-options');
+                    grid.querySelectorAll('.option-btn').forEach(b => {
+                        b.classList.remove('selected', 'wrong', 'right', 'dimmed');
+                        b.disabled = false;
+                    });
+                    document.getElementById('s5-ver-fb').className = 'feedback';
+                }, 2000);
+            }
+        }
+
+        /* ============================================================
+           MASTERY GATE
+           ============================================================ */
+        function submitMastery() {
+            const xIn = document.getElementById('mg-x');
+            const yIn = document.getElementById('mg-y');
+            const zIn = document.getElementById('mg-z');
+            const xv = parseFloat(xIn.value);
+            const yv = parseFloat(yIn.value);
+            const zv = parseFloat(zIn.value);
+
+            if (isNaN(xv) || isNaN(yv) || isNaN(zv)) return;
+
+            [xIn, yIn, zIn].forEach(i => i.classList.add('locked'));
+            document.querySelector('#mastery .submit-btn').disabled = true;
+
+            // f(x,y,z) = 3x² + y² - z² → ∂f/∂x = 6x = 6, ∂f/∂y = 2y = 4, ∂f/∂z = -2z = -6
+            const xOk = Math.abs(xv - 6) < 0.1;
+            const yOk = Math.abs(yv - 4) < 0.1;
+            const zOk = Math.abs(zv - (-6)) < 0.1;
+
+            if (xOk) xIn.classList.add('right'); else xIn.classList.add('wrong');
+            if (yOk) yIn.classList.add('right'); else yIn.classList.add('wrong');
+            if (zOk) zIn.classList.add('right'); else zIn.classList.add('wrong');
+
+            const allOk = xOk && yOk && zOk;
+
+            showComparison('mg-compare',
+                '[' + xv + ', ' + yv + ', ' + zv + ']',
+                '[6, 4, −6]'
+            );
+
+            if (allOk) {
+                showFeedback('mg-fb', 'success',
+                    'Correct. ∂f/∂x = 6x = 6(1) = 6. ∂f/∂y = 2y = 2(2) = 4. ∂f/∂z = −2z = −2(3) = −6. ' +
+                    'The negative z-component means increasing z <em>decreases</em> f — the function slopes downward in the z-direction at this point.');
+                showContinue('mg-continue');
+                completed.mg = true;
+            } else {
+                let hint = 'Compute each partial derivative separately while treating the other variables as constants:<br>';
+                hint += '<code>∂f/∂x = 6x = 6(1) = 6</code><br>';
+                hint += '<code>∂f/∂y = 2y = 2(2) = 4</code><br>';
+                hint += '<code>∂f/∂z = −2z = −2(3) = −6</code><br>';
+                hint += 'Note the negative sign on ∂f/∂z — the −z² term differentiates to −2z.';
+                showFeedback('mg-fb', 'error', hint);
+                setTimeout(() => {
+                    [xIn, yIn, zIn].forEach(i => {
+                        i.classList.remove('locked', 'right', 'wrong');
+                        i.value = '';
+                    });
+                    document.querySelector('#mastery .submit-btn').disabled = false;
+                    document.getElementById('mg-compare').classList.remove('show');
+                    document.getElementById('mg-fb').className = 'feedback';
+                }, 3000);
+            }
+        }
+
+        /* ============================================================
+           GAUNTLET
+           ============================================================ */
+        const gauntletQuestions = [
+            {
+                text: 'The gradient of f(x, y) = 2x + 3y at any point is:',
+                code: null,
+                options: ['A scalar', 'A 2D vector [2, 3]', 'A 2D vector that changes with x and y', 'Undefined'],
+                correct: 1,
+                wrongMap: { 0: 'Scalar Expectation — the gradient always has one component per input variable', 2: 'The partial derivatives of 2x+3y are constants (2 and 3), not functions of x or y', 3: 'Every differentiable function has a gradient' },
+            },
+            {
+                text: 'Gradient descent updates parameters by:',
+                code: null,
+                options: ['Adding η·∇L', 'Subtracting η·∇L', 'Setting θ = ∇L', 'Multiplying θ by ∇L'],
+                correct: 1,
+                wrongMap: { 0: 'Adding the gradient would move UPHILL — toward higher loss', 2: 'This would destroy the parameter values entirely', 3: 'This has no mathematical basis in gradient descent' },
+            },
+            {
+                text: 'At the minimum of f(x) = (x − 3)², the gradient is:',
+                code: null,
+                options: ['3', '−3', '0', '1'],
+                correct: 2,
+                wrongMap: { 0: 'That is the x-coordinate of the minimum, not the gradient. f\'(3) = 2(3−3) = 0', 1: 'The sign depends on which side you approach from. At the minimum itself, the slope is zero', 3: 'f\'(x) = 2(x−3). At x=3, this equals 0' },
+            },
+            {
+                text: 'True or False: A gradient with large magnitude always means the model is far from a minimum.',
+                code: null,
+                options: ['True', 'False'],
+                correct: 1,
+                wrongMap: { 0: 'A large gradient can occur right next to a minimum if the valley walls are extremely steep. Magnitude measures steepness, not distance to optimum.' },
+            },
+            {
+                text: 'If ∂L/∂w₁ = 0.001 and ∂L/∂w₂ = −5.0, which weight receives a larger update during gradient descent?',
+                code: null,
+                options: ['w₁ — its gradient is positive', 'w₂ — its gradient magnitude is 5000× larger', 'Both change equally', 'Cannot determine from gradient alone'],
+                correct: 1,
+                wrongMap: { 0: 'The sign only determines direction, not step size. The step magnitude is η × |gradient|', 2: 'Correct reasoning but you selected the wrong option', 3: 'The gradient directly determines the update magnitude: |η × 0.001| vs |η × 5.0|' },
+            },
+            {
+                text: 'The chain rule for the derivative of f(g(x)) is:',
+                code: null,
+                options: ['f\'(x) · g\'(x)', 'f\'(g(x)) · g\'(x)', 'f(x) · g(x)', 'f\'(g(x)) + g\'(x)'],
+                correct: 1,
+                wrongMap: { 0: 'Close — but the outer function\'s derivative is evaluated at g(x), not at x', 2: 'That is multiplication of the functions, not composition of derivatives', 3: 'Derivatives compose through multiplication, not addition' },
+            },
+            {
+                text: 'In a model with 4 billion trainable parameters, the gradient is:',
+                code: null,
+                options: ['A single number', 'A vector with 4 billion components', 'A 4-billion × 4-billion matrix', '4 billion separate scalars that cannot be combined'],
+                correct: 1,
+                wrongMap: { 0: 'Scalar Expectation again — the gradient has one component per parameter', 2: 'That would be the Hessian (second derivatives), not the gradient', 3: 'The 4 billion components form a single vector in ℝ⁴⁰⁰⁰⁰⁰⁰⁰⁰⁰ — they are combined by definition' },
+            },
+        ];
+
+        function buildGauntlet() {
+            const container = document.getElementById('gq-container');
+            container.innerHTML = '';
+            gauntletScore = 0;
+            gauntletCurrent = 0;
+
+            gauntletQuestions.forEach((q, i) => {
+                const card = document.createElement('div');
+                card.className = 'gauntlet-card';
+                card.id = 'gq-' + i;
+                card.style.display = 'none';
+
+                let html = '<div class="q-text">' + q.text + '</div>';
+                if (q.code) html += '<span class="q-code">' + q.code + '</span>';
+                html += '<div class="option-grid">';
+                q.options.forEach((opt, j) => {
+                    html += '<button class="option-btn" onclick="answerGauntlet(' + i + ',' + j + ',this)">' + opt + '</button>';
+                });
+                html += '</div>';
+                html += '<div class="gauntlet-mini-feedback" id="gq-fb-' + i + '"></div>';
+                card.innerHTML = html;
+                container.appendChild(card);
+            });
+
+            showGauntletQuestion(0);
+        }
+
+        function showGauntletQuestion(idx) {
+            if (idx >= gauntletQuestions.length) {
+                // Show final score
+                document.getElementById('gq-container').style.display = 'none';
+                document.getElementById('gq-counter').style.display = 'none';
+                const final = document.getElementById('gq-final');
+                final.style.display = 'block';
+                document.getElementById('gq-score-num').textContent = gauntletScore + ' / ' + gauntletQuestions.length;
+                const doneCont = document.getElementById('gq-done-continue');
+                doneCont.style.display = 'block';
+                doneCont.classList.add('show');
+                return;
+            }
+
+            const card = document.getElementById('gq-' + idx);
+            card.style.display = 'block';
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            document.getElementById('gq-counter').textContent = (idx + 1) + ' / ' + gauntletQuestions.length;
+        }
+
+        function answerGauntlet(qIdx, choiceIdx, btn) {
+            const q = gauntletQuestions[qIdx];
+            const card = document.getElementById('gq-' + qIdx);
+            const isCorrect = choiceIdx === q.correct;
+
+            // Lock all options
+            card.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            btn.classList.add('selected');
+
+            const fb = document.getElementById('gq-fb-' + qIdx);
+
+            if (isCorrect) {
+                btn.classList.add('right');
+                fb.className = 'gauntlet-mini-feedback show correct';
+                fb.textContent = 'Correct.';
+                gauntletScore++;
+            } else {
+                btn.classList.add('wrong');
+                // Highlight correct
+                card.querySelectorAll('.option-btn')[q.correct].classList.add('right');
+                fb.className = 'gauntlet-mini-feedback show incorrect';
+                const wrongKey = String(choiceIdx);
+                fb.textContent = q.wrongMap[wrongKey] || 'Incorrect.';
+            }
+
+            card.classList.add('answered');
+
+            // Auto advance after delay
+            setTimeout(() => {
+                showGauntletQuestion(qIdx + 1);
+            }, 1600);
+        }
+
+        /* ============================================================
+           COMPLETION
+           ============================================================ */
+        function finishLayer1() {
+            revealSection('done');
+        }
+
+        /* ============================================================
+           KEYBOARD SUPPORT
+           ============================================================ */
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const active = document.activeElement;
+                if (active && active.classList.contains('input-field')) {
+                    const submitBtn = active.parentElement.querySelector('.submit-btn') ||
+                        active.closest('.prompt-box, .verification, .three-inputs')?.querySelector('.submit-btn');
+                    if (submitBtn && !submitBtn.disabled) submitBtn.click();
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

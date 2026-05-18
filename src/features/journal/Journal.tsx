@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Save, Bot, Loader, RefreshCw, Zap, TrendingUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Save, Loader, RefreshCw, TrendingUp } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, isFuture } from 'date-fns';
 import { useUserStore } from '../../store/useUserStore';
 import { API_URL } from '../../lib/api';
@@ -17,18 +17,15 @@ interface StatsSummary {
 }
 
 export const Journal = () => {
-    const { currentDate, today } = useUserStore();
+    const { currentDate } = useUserStore();
     const [selectedDate, setSelectedDate] = useState(currentDate);
     const [viewDate, setViewDate] = useState(new Date(currentDate));
 
     // Editor State
     const [entry, setEntry] = useState('');
-    const [aiResponse, setAiResponse] = useState('');
-    const [aiMood, setAiMood] = useState<string | null>(null);
     const [stats, setStats] = useState<{ videos: number | null, isWin: boolean | null }>({ videos: null, isWin: null });
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [isGenerating, setIsGenerating] = useState(false);
 
     // Calendar History State
     const [monthHistory, setMonthHistory] = useState<Record<string, MonthDay>>({});
@@ -73,8 +70,6 @@ export const Journal = () => {
                 const res = await fetch(`${API_URL}/api/journal/${selectedDate}`);
                 const data = await res.json();
                 setEntry(data.entry || '');
-                setAiResponse(data.aiResponse || '');
-                setAiMood(data.aiMood || null);
                 setStats(data.stats || { videos: null, isWin: null });
             } catch (error) {
                 console.error("Failed to load journal", error);
@@ -104,40 +99,6 @@ export const Journal = () => {
         }
     };
 
-    // THE CORE FUNCTIONALITY: Get AI Commander Orders
-    const handleGetOrders = async () => {
-        if (!entry.trim()) {
-            alert('Write your debrief first, soldier.');
-            return;
-        }
-
-        setIsGenerating(true);
-        try {
-            const res = await fetch(`${API_URL}/api/mission/log`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    journalEntry: entry,
-                    stats: {
-                        date: selectedDate,
-                        videos: today.production.videos,
-                        pushups: today.fitness.pushups,
-                        abs: today.fitness.abs
-                    }
-                })
-            });
-
-            const data = await res.json();
-            setAiResponse(data.message || 'COMMS INTERFERENCE. RETRY.');
-            setAiMood(data.mood || null);
-        } catch (error) {
-            console.error('Commander comms failed:', error);
-            setAiResponse('SATELLITE UPLINK FAILED. CHECK NETWORK STATUS.');
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-
     // Calendar Generation
     const daysInMonth = eachDayOfInterval({
         start: startOfMonth(viewDate),
@@ -158,7 +119,7 @@ export const Journal = () => {
     };
 
     return (
-        <div className="h-full flex flex-col bg-void overflow-hidden">
+        <div className="flex flex-col bg-void overflow-hidden">
             {/* Progress Summary Bar */}
             {summary && (
                 <div className="p-3 border-b border-steel/20 bg-steel/5 flex items-center justify-between gap-4 text-[10px] font-mono uppercase tracking-widest shrink-0">
@@ -282,51 +243,10 @@ export const Journal = () => {
                                 <textarea
                                     value={entry}
                                     onChange={(e) => setEntry(e.target.value)}
-                                    placeholder="Debrief your mission parameters here. What did you accomplish? What obstacles arose? What is your plan for tomorrow? The Commander is listening..."
-                                    className="w-full h-64 bg-transparent border border-steel/10 p-4 outline-none text-concrete font-mono text-sm resize-none placeholder:text-concrete/20 leading-relaxed focus:border-gold/30 transition-colors"
+                                    placeholder="Debrief your mission parameters here. What did you accomplish? What obstacles arose? What is your plan for tomorrow?"
+                                    className="w-full h-full bg-transparent border border-steel/10 p-4 outline-none text-concrete font-mono text-sm resize-none placeholder:text-concrete/20 leading-relaxed focus:border-gold/30 transition-colors"
                                     spellCheck={false}
                                 />
-
-                                {/* GET ORDERS BUTTON - THE CORE FEATURE */}
-                                <button
-                                    onClick={handleGetOrders}
-                                    disabled={isGenerating || !entry.trim()}
-                                    className="w-full py-4 bg-gold text-void font-display font-black text-lg uppercase tracking-widest hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg shadow-gold/20"
-                                >
-                                    {isGenerating ? (
-                                        <>
-                                            <Loader className="animate-spin" size={20} />
-                                            ESTABLISHING UPLINK...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Zap size={20} />
-                                            GET COMMANDER'S ORDERS
-                                        </>
-                                    )}
-                                </button>
-
-                                {/* AI COMMANDER RESPONSE */}
-                                {aiResponse && (
-                                    <div className={`mt-4 border p-6 relative ${aiMood === 'DOMINATION' ? 'border-gold/50 bg-gold/5' :
-                                        aiMood === 'DISGRACE' ? 'border-blood/50 bg-blood/5' :
-                                            aiMood === 'REDEMPTION' ? 'border-hologram/50 bg-hologram/5' :
-                                                'border-steel/30 bg-steel/5'
-                                        }`}>
-                                        <div className={`absolute -top-3 left-4 bg-void px-2 font-display font-black text-sm uppercase tracking-widest flex items-center gap-2 ${aiMood === 'DOMINATION' ? 'text-gold' :
-                                            aiMood === 'DISGRACE' ? 'text-blood' :
-                                                aiMood === 'REDEMPTION' ? 'text-hologram' :
-                                                    'text-concrete'
-                                            }`}>
-                                            <Bot size={14} />
-                                            Commander's Orders
-                                            {aiMood && <span className="text-[10px] font-mono opacity-70">({aiMood})</span>}
-                                        </div>
-                                        <div className="text-concrete font-serif italic leading-loose whitespace-pre-wrap pt-2">
-                                            {aiResponse}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </>
                     )}

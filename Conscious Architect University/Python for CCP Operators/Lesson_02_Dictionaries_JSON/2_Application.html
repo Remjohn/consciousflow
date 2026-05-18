@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 02: Dictionaries & JSON — Application Layer</title>
+    <style>
+        :root {
+            --bg-base: #0f111a;
+            --bg-panel: #1a1d27;
+            --bg-accent: #262a3b;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-primary: #3b82f6;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --border-dim: #334155;
+            --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 { font-weight: 600; color: #ffffff; }
+        h1 { margin-bottom: 2rem; font-size: 2.2rem; border-bottom: 1px solid var(--border-dim); padding-bottom: 0.5rem; }
+        h2 { margin: 2rem 0 1rem 0; font-size: 1.5rem; color: var(--accent-primary); }
+        p { margin-bottom: 1.2rem; }
+
+        .gate-modal {
+            background-color: rgba(0,0,0,0.8);
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .gate-content {
+            background-color: var(--bg-panel);
+            padding: 2.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-dim);
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        .gate-content h2 { margin-top: 0; color: var(--accent-danger); }
+        .gate-input {
+            width: 100%;
+            padding: 0.8rem;
+            margin: 1.5rem 0;
+            background-color: var(--bg-base);
+            border: 1px solid var(--border-dim);
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            border-radius: 4px;
+        }
+        
+        .btn {
+            background-color: var(--accent-primary);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn:hover { background-color: #2563eb; }
+
+        /* Main Content container blurred by default */
+        #main-content {
+            filter: blur(10px);
+            pointer-events: none;
+            transition: filter 0.5s ease;
+        }
+
+        .split-pane {
+            display: flex;
+            gap: 1.5rem;
+            margin: 2rem 0;
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-dim);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .code-pane {
+            flex: 1.2;
+            padding: 1.5rem;
+            background-color: #0d0f17;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            border-right: 1px solid var(--border-dim);
+            overflow-x: auto;
+        }
+
+        .visualizer-pane {
+            flex: 0.8;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .trace-step {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid var(--accent-primary);
+            border-radius: 0 4px 4px 0;
+            font-size: 0.9rem;
+            opacity: 0.3;
+            transition: opacity 0.3s;
+        }
+
+        .trace-step.active {
+            opacity: 1;
+            background-color: rgba(16, 185, 129, 0.1);
+            border-left-color: var(--accent-success);
+        }
+
+        .code-line {
+            display: block;
+            cursor: pointer;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+        }
+        .code-line:hover { background-color: var(--border-dim); }
+        .code-line.active { background-color: rgba(16, 185, 129, 0.2); }
+
+        .callout {
+            background-color: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid var(--accent-warning);
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .edge-case-switcher {
+            display: flex;
+            gap: 1rem;
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background-color: var(--bg-panel);
+            border-radius: 8px;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="gate-overlay" class="gate-modal">
+        <div class="gate-content">
+            <h2>SPACED RETRIEVAL INTERRUPT</h2>
+            <p>Without looking: What Python type would you use to define an object state that must be explicitly toggled between initialized (False) and resolved (True), acting as a binary trigger condition?</p>
+            <input type="text" id="gate-answer" class="gate-input" placeholder="Enter Python type...">
+            <button class="btn" onclick="checkGate()">Submit to Unlock</button>
+            <p id="gate-error" style="color: var(--accent-danger); margin-top: 1rem; display: none;">Incorrect. In the CCP, precision is mandatory. Try again.</p>
+        </div>
+    </div>
+
+    <div id="main-content">
+        <h1>Lesson 02: Dictionaries & JSON — Application Layer</h1>
+        
+        <h2>1. THE CCP ARTIFACT GALLERY</h2>
+        <p>You understand that dictionaries are labeled bins and JSON is the shipping crate. Now, we trace these crates across the production code.</p>
+
+        <h3>Artifact 1: The Pydantic Data Contract (QA Department)</h3>
+        <p>Hover over or tap the specific code lines on the left to trace the structural conversion on the right.</p>
+
+        <div class="split-pane">
+            <div class="code-pane">
+<span class="code-line" onclick="activateTrace(1, this)"><span style="color:#c678dd">from</span> pydantic <span style="color:#c678dd">import</span> BaseModel, Field</span><br>
+<br>
+<span class="code-line" onclick="activateTrace(2, this)"><span style="color:#c678dd">class</span> <span style="color:#e5c07b">SessionStateContract</span>(BaseModel):</span>
+<span class="code-line" onclick="activateTrace(3, this)">    coach_id: <span style="color:#56b6c2">str</span> = Field(..., description=<span style="color:#98c379">"Instance ID"</span>)</span>
+<span class="code-line" onclick="activateTrace(4, this)">    client_state: <span style="color:#56b6c2">dict</span> = Field(default_factory=<span style="color:#56b6c2">dict</span>)</span>
+<span class="code-line" onclick="activateTrace(5, this)">    cbcs_score: <span style="color:#56b6c2">float</span> = Field(..., ge=<span style="color:#d19a66">0.0</span>, le=<span style="color:#d19a66">1.0</span>)</span>
+            </div>
+            <div class="visualizer-pane">
+                <div id="trace-1" class="trace-step"><strong>Context:</strong> Inheriting from BaseModel morphs our class into a highly enforced Dictionary structure.</div>
+                <div id="trace-2" class="trace-step"><strong>Ingestion:</strong> Pydantic receives an untyped dictionary created from an incoming JSON string.</div>
+                <div id="trace-3" class="trace-step"><strong>Validation 1:</strong> Verifies the `coach_id` key exists and its value is strictly text (string).</div>
+                <div id="trace-4" class="trace-step"><strong>Validation 2:</strong> Requires `client_state` to be a nested dictionary structure. Automatically injects `{}` if missing.</div>
+                <div id="trace-5" class="trace-step"><strong>Validation 3:</strong> Math constraints. The float value MUST be between 0.0 and 1.0. If the LLM returned `1.5`, the conversion crashes here.</div>
+            </div>
+        </div>
+
+        <div class="callout">
+            <strong>Orchestration Dichotomy Mapping:</strong> If this dictionary validation is removed, the laser cutter (LLM) gains the ability to write direct, unverified logic to the Chassis. The factory turns into a hallucination spiral.
+        </div>
+
+        <h3>Artifact 2: The Robot Arm / Pi Harness Parsing</h3>
+        <p>The OS boundary is chaotic. We must force standard output tools to return JSON so we can map it to Python dictionaries.</p>
+        
+        <div class="split-pane" style="display:block; padding: 1.5rem;">
+            <div style="font-family: var(--font-mono); font-size: 0.9rem; margin-bottom:1rem;">
+<span style="color:#c678dd">import</span> subprocess, json<br><br>
+<span style="color:#61afef">def</span> <span style="color:#56b6c2">fetch_action</span>() -> <span style="color:#56b6c2">dict</span>:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;result = subprocess.run([<span style="color:#98c379">"pi-mono"</span>, <span style="color:#98c379">"--format=json"</span>], capture_output=<span style="color:#d19a66">True</span>, text=<span style="color:#d19a66">True</span>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#c678dd">return</span> json.loads(result.stdout)
+            </div>
+            <strong>PREDICTION GATE:</strong>
+            <p>What happens if the `pi-mono` tool prints a debugging warning to standard output before it prints the JSON payload? Example: <code>Warning: low memory\n{"action": "edit"}</code></p>
+            <div style="display:flex; gap:1rem; margin-top:1rem;">
+                <button class="btn" style="background-color: var(--border-dim)" onclick="alert('Incorrect. json.loads cannot parse combined text.')">It returns {"action": "edit"}</button>
+                <button class="btn" style="background-color: var(--accent-danger)" onclick="alert('Correct. Fatal JSONDecodeError. The string must be EXCLUSIVELY valid JSON or be stripped via Regex first.')">Fatal JSONDecodeError</button>
+            </div>
+        </div>
+
+        <h2>2. PRODUCTION EDGE CASES</h2>
+        
+        <div class="edge-case-switcher">
+            <div style="flex: 1;">
+                <strong>KeyError vs Silent None:</strong> Assume the payload lacks a <code>cbcs_score</code> key. Click the execution pathways to test the result.
+            </div>
+            <button class="btn" style="background-color: var(--accent-danger);" onclick="simulateEdgeCase(1)">payload["cbcs_score"]</button>
+            <button class="btn" style="background-color: var(--accent-warning);" onclick="simulateEdgeCase(2)">payload.get("cbcs_score")</button>
+        </div>
+        <div id="edge-case-result" style="padding: 1rem; border: 1px dashed var(--border-dim); min-height: 50px;">
+            Awaiting execution...
+        </div>
+
+    </div>
+
+    <script>
+        function checkGate() {
+            const answer = document.getElementById('gate-answer').value.toLowerCase().trim();
+            if (answer === 'bool' || answer === 'boolean') {
+                document.getElementById('gate-overlay').style.display = 'none';
+                document.getElementById('main-content').style.filter = 'none';
+                document.getElementById('main-content').style.pointerEvents = 'auto';
+            } else {
+                document.getElementById('gate-error').style.display = 'block';
+            }
+        }
+
+        function activateTrace(stepId, el) {
+            document.querySelectorAll('.trace-step').forEach(step => step.classList.remove('active'));
+            document.querySelectorAll('.code-line').forEach(line => line.classList.remove('active'));
+            
+            document.getElementById('trace-' + stepId).classList.add('active');
+            el.classList.add('active');
+        }
+
+        function simulateEdgeCase(type) {
+            const res = document.getElementById('edge-case-result');
+            if (type === 1) {
+                res.innerHTML = '<span style="color:var(--accent-danger);"><b>FATAL CRASH: KeyError</b><br>The pipeline completely halts. The application crashes immediately.</span>';
+                res.style.borderColor = 'var(--accent-danger)';
+            } else {
+                res.innerHTML = '<span style="color:var(--accent-warning);"><b>SILENT FALLBACK: Returns None</b><br>Safe from crashes, BUT dangerous because `None` silently proceeds into the graph database if not explicitly handled.</span>';
+                res.style.borderColor = 'var(--accent-warning)';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capability Layer — Environment Variables</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--amber);background:rgba(245,158,11,0.08);padding:.1em .4em;border-radius:4px;}
+pre code{background:transparent;padding:0;color:var(--text-muted);}
+pre{background:var(--bg-elevated);border:1px solid var(--border);padding:1rem;border-radius:8px;overflow-x:auto;margin-bottom:1.5rem;font-size:.85rem;line-height:1.6;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1;min-width:280px;}
+.visual-col{flex:1.2;min-width:320px;}
+
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);margin-bottom:1rem;}
+.insight strong{color:var(--amber);}
+.insight.rose{border-color:var(--rose);background:var(--rose-glow);}
+.insight.rose strong{color:var(--rose);}
+.insight.teal{border-color:var(--teal);background:var(--teal-glow);}
+.insight.teal strong{color:var(--teal);}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-amber{background:var(--amber);color:#000;}
+.btn-amber:hover{background:#fbbf24;transform:translateY(-1px);}
+
+.quiz-option{display:block;width:100%;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:.88rem;color:var(--text-muted);transition:all .25s;text-align:left;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;}
+.quiz-option:hover{border-color:var(--border-light);color:var(--text);}
+.quiz-option.correct{border-color:var(--emerald);color:var(--emerald);background:var(--emerald-glow);}
+.quiz-option.wrong{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+.quiz-option.disabled{pointer-events:none;opacity:.6;}
+.quiz-explanation{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+.quiz-explanation.show{max-height:300px;}
+
+.param-slider-container{margin-bottom:1rem;}
+.param-slider-container label{font-family:'Space Grotesk';font-size:.85rem;color:var(--text-muted);display:flex;justify-content:space-between;margin-bottom:.5rem;}
+input[type=range]{-webkit-appearance:none;background:transparent;width:100%;}
+input[type=range]::-webkit-slider-track{height:4px;background:var(--border);border-radius:2px;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--amber);border-radius:50%;margin-top:-6px;cursor:pointer;}
+
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+.scroll-hint{animation:bounce 2s ease infinite;}
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column!important;}
+  .canvas-wrap{min-height:280px!important;}
+  .nav-links{display:none;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">ENV VARS</span>
+    <div class="nav-links">
+      <a href="#catastrophe" class="nav-link active" data-section="catastrophe">Catastrophe</a>
+      <a href="#definition" class="nav-link" data-section="definition">Definition</a>
+      <a href="#mechanisms" class="nav-link" data-section="mechanisms">Mechanisms</a>
+      <a href="#gauntlet" class="nav-link" data-section="gauntlet">Gauntlet</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header id="catastrophe" class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:800px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 10 — CAPABILITY LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Environment Variables<br><span style="color:var(--text-muted);font-weight:300;">The Sovereign Dials</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:620px;margin:0 auto 2.5rem;line-height:1.7;">
+      If you cannot extract the configuration from the code, you cannot control the platform. Uncover how external dials govern internal logic without altering the factory blueprint.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Definition & Interactive Canvas -->
+<section id="definition" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — THE FACTORY FLOOR DIALS</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Controlling the Black Box</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          Environment variables allow a Sovereign Architect to change the fundamental behavior of the entire CCP ecosystem without rewriting, recompiling, or redeploying a single line of Python code. They are external string values injected into the operating system's memory before the process starts.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          In the Factory Floor metaphor:
+        </p>
+        <ul style="color:var(--text-muted);line-height:1.7;margin-bottom:1.5rem;padding-left:1.5rem;font-size:.95rem;">
+          <li>Variables/Types are the <strong>Raw Materials & Quality Tags</strong></li>
+          <li>Functions are the <strong>Work Stations</strong></li>
+          <li>Classes are the <strong>Machine Blueprints</strong></li>
+          <li>Decorators are the <strong>Quality Inspection Stamps</strong></li>
+          <li>Environment Variables are the <strong style="color:var(--amber);">Factory Floor Dials and Circuit Breakers</strong></li>
+        </ul>
+        <div class="insight teal">
+          <strong>Interactive Experiment:</strong> Use the sliders to adjust the environment variables <span class="mono">RLM_MAX_DEPTH</span> and <span class="mono">RLM_TIMEOUT</span>. Watch how the static Pi Harness Engine dynamically reshapes its recursive reasoning search space without changing a single line of internal code.
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="card" style="padding:1.5rem;">
+          <div class="param-slider-container">
+            <label><span>RLM_MAX_DEPTH</span><span id="depthVal" style="color:var(--amber);font-family:'JetBrains Mono';">3</span></label>
+            <input type="range" id="depthSlider" min="1" max="6" value="3">
+          </div>
+          <div class="param-slider-container" style="margin-bottom:1.5rem;">
+            <label><span>RLM_TIMEOUT (ms)</span><span id="timeoutVal" style="color:var(--teal);font-family:'JetBrains Mono';">400</span></label>
+            <input type="range" id="timeoutSlider" min="100" max="1000" step="50" value="400">
+          </div>
+          <div class="canvas-wrap" style="height:250px;">
+            <canvas id="dialCanvas"></canvas>
+          </div>
+          <div style="font-family:'JetBrains Mono';font-size:.75rem;color:var(--text-dim);text-align:center;margin-top:.5rem;">
+            Pi Harness Reasoning Bounds
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Core Mechanisms -->
+<section id="mechanisms" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:.5rem;">02 — THE SOURCE CODE</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Minimal Code Readings</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem;">
+      <div class="card" style="padding:1.5rem;border-left:3px solid var(--rose);">
+        <h3 style="color:var(--rose);margin-bottom:1rem;">The Hard Requirement</h3>
+<pre><code>import os
+
+# Reading guardrail timeout
+pi_timeout_str: str = os.environ["RLM_TIMEOUT"]
+pi_timeout: int = int(pi_timeout_str)</code></pre>
+        <p style="font-size:.9rem;color:var(--text-muted);line-height:1.6;">
+          <strong>Behavior:</strong> Strict dictionary accessor <span class="mono">os.environ["KEY"]</span>. If the value isn't there, the factory shuts down immediately with a <span class="mono">KeyError</span> rather than operating unpredictably. Fail fast.
+        </p>
+      </div>
+
+      <div class="card" style="padding:1.5rem;border-left:3px solid var(--emerald);">
+        <h3 style="color:var(--emerald);margin-bottom:1rem;">The Graceful Fallback</h3>
+<pre><code>import os
+
+# Active model routing
+active_model: str = os.environ.get("RLM_CHILD_MODEL", "qwen-3.5")
+
+# Extract threshold
+cbcs_str: str = os.environ.get("CBCS_THRESHOLD", "0.85")
+cbcs_val: float = float(cbcs_str)</code></pre>
+        <p style="font-size:.9rem;color:var(--text-muted);line-height:1.6;">
+          <strong>Behavior:</strong> <span class="mono">.get("KEY", "default")</span> allows the Architect to provide a safe, predetermined fallback. The platform continues to operate without crashing.
+        </p>
+      </div>
+
+      <div class="card" style="padding:1.5rem;border-left:3px solid var(--amber);">
+        <h3 style="color:var(--amber);margin-bottom:1rem;">The Boolean Trap</h3>
+<pre><code>import os
+
+# Check debug mode
+is_debug: bool = bool(os.environ.get("CCP_DEBUG", ""))</code></pre>
+        <p style="font-size:.9rem;color:var(--text-muted);line-height:1.6;">
+          <strong>Behavior:</strong> Environment variables are ALWAYS strings. The string <span class="mono">"False"</span> is not empty, and <span class="mono">bool("False")</span> evaluates to <strong style="color:var(--text);">True</strong>. You must explicitly parse string content: <span class="mono">if os.environ.get("...") == "True"</span>.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Capstone Gauntlet -->
+<section id="gauntlet" class="section">
+  <div class="section-inner" style="max-width:800px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">03 — CAPABILITY GAUNTLET</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Prediction Exercises</h2>
+    <div id="quizContainer" style="display:flex;flex-direction:column;gap:1.5rem;"></div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);margin-top:2rem;">
+  Interactive Visual Learning — Lesson 10: Environment Variables Capability Layer
+</footer>
+
+<script>
+const DPR = window.devicePixelRatio || 1;
+function setupCanvas(c) {
+  const p = c.parentElement; const r = p.getBoundingClientRect();
+  c.width = r.width * DPR; c.height = r.height * DPR;
+  c.style.width = r.width + 'px'; c.style.height = r.height + 'px';
+  const ctx = c.getContext('2d'); ctx.scale(DPR, DPR);
+  return { ctx, w: r.width, h: r.height };
+}
+
+/* Hero Canvas */
+(function(){
+  const c = document.getElementById('heroCanvas'); let W,H,ctx;
+  function resize(){
+    const p=c.parentElement; W=p.offsetWidth; H=p.offsetHeight;
+    c.width=W*DPR; c.height=H*DPR; c.style.width=W+'px'; c.style.height=H+'px';
+    ctx=c.getContext('2d'); ctx.scale(DPR,DPR);
+  }
+  resize(); window.addEventListener('resize', resize);
+  let dots = [];
+  for(let i=0; i<40; i++) {
+    dots.push({x: Math.random(), y: Math.random(), speed: Math.random()*0.5+0.1, linked: Math.random()>0.8});
+  }
+  let t = 0;
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    dots.forEach(d => {
+      d.y -= d.speed * 0.01;
+      if (d.y < 0) d.y = 1;
+      ctx.beginPath();
+      ctx.arc(d.x*W, d.y*H, 2, 0, Math.PI*2);
+      ctx.fillStyle = d.linked ? 'rgba(245,158,11,0.5)' : 'rgba(255,255,255,0.1)';
+      ctx.fill();
+    });
+    ctx.strokeStyle = 'rgba(245,158,11,0.1)'; ctx.lineWidth = 1;
+    dots.forEach(d => {
+      if (d.linked) {
+        ctx.beginPath(); ctx.moveTo(W/2, H); ctx.lineTo(d.x*W, d.y*H); ctx.stroke();
+      }
+    });
+    t++; requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* Dials Canvas */
+(function(){
+  const c = document.getElementById('dialCanvas'), dS = document.getElementById('depthSlider'), tS = document.getElementById('timeoutSlider');
+  const dV = document.getElementById('depthVal'), tV = document.getElementById('timeoutVal');
+  let t = 0;
+
+  function drawNode(ctx, x, y, radius, depth, maxDepth, active) {
+    if (depth > maxDepth) return;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI*2);
+    ctx.fillStyle = active ? '#10b981' : '#3f3f46';
+    ctx.fill();
+    ctx.strokeStyle = active ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.05)';
+    ctx.stroke();
+
+    if (depth < maxDepth && active) {
+      const spread = 60 / depth;
+      const childY = y + 30;
+      
+      // Node 1
+      ctx.beginPath(); ctx.moveTo(x, y+radius); ctx.lineTo(x-spread, childY);
+      ctx.strokeStyle = 'rgba(16,185,129,0.2)'; ctx.stroke();
+      drawNode(ctx, x-spread, childY, radius*0.8, depth+1, maxDepth, active);
+      
+      // Node 2
+      ctx.beginPath(); ctx.moveTo(x, y+radius); ctx.lineTo(x+spread, childY);
+      ctx.strokeStyle = 'rgba(16,185,129,0.2)'; ctx.stroke();
+      drawNode(ctx, x+spread, childY, radius*0.8, depth+1, maxDepth, active);
+    }
+  }
+
+  function draw() {
+    const {ctx, w, h} = setupCanvas(c);
+    ctx.clearRect(0,0,w,h);
+    const maxDepth = parseInt(dS.value);
+    const timeout = parseInt(tS.value);
+    dV.textContent = maxDepth;
+    tV.textContent = timeout;
+
+    const isActive = (t % 1000) < timeout;
+
+    // Draw progression
+    ctx.fillStyle='rgba(255,255,255,0.05)';
+    ctx.fillRect(10, 10, w-20, 4);
+    if (isActive) {
+      ctx.fillStyle='#f59e0b';
+      ctx.fillRect(10, 10, ((t % 1000)/timeout) * (w-20), 4);
+    }
+
+    drawNode(ctx, w/2, 40, 8, 1, maxDepth, isActive);
+
+    if (!isActive) {
+      ctx.fillStyle = '#f43f5e'; ctx.font = '12px Space Grotesk'; ctx.textAlign='center';
+      ctx.fillText('RLM_TIMEOUT EXCEEDED - THREAD KILLED', w/2, h/2);
+    }
+
+    t+=8;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* Quiz */
+(function(){
+  const questions = [
+    {q: 'import os\nos.environ["RLM_MAX_DEPTH"] = "3"\nmax_depth = os.environ.get("RLM_MAX_DEPTH", 5)\n\nWhat is the exact type and value of max_depth?',
+     opts: ['str, specifically "3" (Environment variables are always strings, and .get retrieves what is set ignoring defaults)', 'int, specifically 3', 'int, specifically 5', 'NoneType'],
+     correct: 0, explanation: '.get() returns the string "3". The default parameter 5 is entirely ignored because the key exists in the environment map.'},
+    {q: 'import os\napi_key = os.environ["ANTHROPIC_API_KEY"]\n\nAssume the key is NOT set. What happens during startup?',
+     opts: ['api_key is set to None', 'api_key is an empty string ""', 'The app crashes immediately with a KeyError', 'It prompts the console for the user to type it in'],
+     correct: 2, explanation: 'Using dictionary bracket notation enforces a strict hard requirement. Missing keys result in a KeyError, causing a fail-fast halt.'},
+    {q: 'import os\nis_debug = bool(os.environ.get("CCP_DEBUG_MODE", ""))\n\nIf the operator sets CCP_DEBUG_MODE="False", what does is_debug evaluate to?',
+     opts: ['False', 'True', 'None', 'It raises a TypeError'],
+     correct: 1, explanation: 'The string "False" is not empty. bool("False") evaluates to True. You must explicitly parse string checks for boolean intent.'},
+    {q: 'import os\ndef get_port(): return int(os.environ.get("DB_PORT", 7687))\n\nIf DB_PORT is set to the string "7474", what happens?',
+     opts: ['It raises a TypeError because you cannot cast a default numeric fallback with a string', 'It returns the string "7474"', 'It returns the integer 7474', 'It returns the integer 7687'],
+     correct: 2, explanation: '.get() grabs the string "7474", which is successfully parsed by int() into the integer 7474, satisfying data contracts.'}
+  ];
+
+  const container = document.getElementById('quizContainer');
+  questions.forEach((q,qi) => {
+    const card = document.createElement('div'); card.className = 'card'; card.style.padding = '1.25rem';
+    let optsHTML = ''; q.opts.forEach((o,oi) => { optsHTML += `<button class="quiz-option" data-q="${qi}" data-o="${oi}">${o}</button>`; });
+    card.innerHTML = `<p style="font-size:.82rem;font-weight:600;color:var(--text-dim);margin-bottom:.75rem;">Gauntlet ${qi+1}</p>
+      <pre><code>${q.q}</code></pre>
+      <div id="qO${qi}">${optsHTML}</div>
+      <div class="quiz-explanation" id="qE${qi}" style="margin-top:.75rem;"><div class="insight emerald"><strong>Correct:</strong> ${q.explanation}</div></div>`;
+    container.appendChild(card);
+  });
+
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('.quiz-option'); if(!btn) return;
+    const qi = +btn.dataset.q, oi = +btn.dataset.o;
+    const opts = document.querySelectorAll(`#qO${qi} .quiz-option`);
+    if(opts[0].classList.contains('disabled')) return;
+    opts.forEach((o,i) => {
+      o.classList.add('disabled');
+      if(i===questions[qi].correct) o.classList.add('correct');
+      else if(i===oi && oi!==questions[qi].correct) o.classList.add('wrong');
+    });
+    document.getElementById(`qE${qi}`).classList.add('show');
+  });
+})();
+
+/* Nav */
+(function(){
+  const links=document.querySelectorAll('.nav-link');
+  const ids=['catastrophe','definition','mechanisms','gauntlet'];
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+100; let active=ids[0];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+    links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));
+  });
+})();
+</script>
+</body>
+</html>

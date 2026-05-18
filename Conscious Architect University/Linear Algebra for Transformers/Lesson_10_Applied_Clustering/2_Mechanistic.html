@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Layer 2 — Mechanistic: Applied Clustering Pipeline</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050505;
+  --surface: #0e0e0e;
+  --surface2: #141414;
+  --surface3: #1b1b1b;
+  --text: #FAFAFA;
+  --muted: #777;
+  --dim: #3a3a3a;
+  --border: #1e1e1e;
+  --border2: #282828;
+  --accent: #E8C46A;
+  --red: #E76F51;
+  --green: #2A9D8F;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Inter', sans-serif;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.65;
+  overflow-x: hidden;
+}
+.page { max-width: 780px; margin: 0 auto; padding: 3.5rem 2rem 10rem; }
+
+/* ── Typography ── */
+.layer-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1.2rem;
+}
+h1 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #fff;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.02em;
+}
+h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #e0e0e0;
+  margin-bottom: 0.8rem;
+}
+.lead {
+  font-size: 1rem;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 1.1rem;
+  max-width: 680px;
+}
+.lead strong { color: #d0d0d0; }
+
+/* ── Computation table ── */
+.comp-table {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  padding: 1.1rem 1.3rem;
+  margin: 1rem 0 1.2rem;
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  color: #ccc;
+  line-height: 1.9;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.comp-table .hl { color: var(--accent); }
+.comp-table .dim { color: var(--muted); }
+
+/* ── Interaction blocks ── */
+.block {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 1.8rem 2rem;
+  margin: 2rem 0;
+}
+.block-label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.block-label.interrupt { color: var(--red); }
+.block-label.gate { color: var(--accent); }
+.block-label.trap { color: var(--red); }
+.block-label.derive { color: var(--green); }
+
+.block-q {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: #f0f0f0;
+  margin-bottom: 1.4rem;
+  line-height: 1.6;
+}
+.block-q .m {
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  color: var(--accent);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 2px;
+  padding: 0.1rem 0.4rem;
+}
+
+/* Multi-component input grid */
+.input-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.input-grid.two { grid-template-columns: 1fr 1fr; }
+.input-grid.one { grid-template-columns: 1fr; max-width: 300px; }
+
+.labeled-input { display: flex; flex-direction: column; gap: 0.3rem; }
+.input-label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+.q-input {
+  background: var(--bg);
+  border: 1.5px solid var(--border2);
+  border-radius: 3px;
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  padding: 0.55rem 0.8rem;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.q-input:focus { outline: none; border-color: var(--accent); }
+.q-input:disabled { opacity: 0.4; }
+
+/* Single inline input row */
+.input-row {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.input-row .q-input { max-width: 240px; }
+
+/* Buttons */
+.btn-commit {
+  background: transparent;
+  border: 1px solid var(--dim);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.83rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 0.55rem 1.3rem;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, background 0.15s;
+}
+.btn-commit:hover:not(:disabled) { border-color: #aaa; background: var(--surface3); }
+.btn-commit:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btn-choice {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: #d0d0d0;
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  padding: 0.75rem 1.1rem;
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.45;
+  display: block;
+  width: 100%;
+  margin-bottom: 0.55rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+.btn-choice:hover:not(:disabled) { border-color: #777; background: var(--surface2); }
+.btn-choice:disabled { cursor: not-allowed; }
+.btn-choice.correct { border-color: var(--green); background: rgba(42,157,143,0.08); color: #d0ede9; }
+.btn-choice.wrong   { border-color: var(--red);   background: rgba(231,111,81,0.07);  color: #ffb3a1; }
+
+/* Feedback */
+.feedback {
+  display: none;
+  margin-top: 1.3rem;
+  padding: 1.1rem 1.3rem;
+  border-radius: 3px;
+  font-size: 0.91rem;
+  line-height: 1.65;
+}
+.feedback.show { display: block; animation: fadein 0.3s ease; }
+.feedback.ok   { background: rgba(42,157,143,0.07);  border-left: 2px solid var(--green); color: #a7ece2; }
+.feedback.err  { background: rgba(231,111,81,0.07);  border-left: 2px solid var(--red);   color: #ffb3a1; }
+.feedback .fb-tag {
+  font-family: var(--mono);
+  font-size: 0.63rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 0.45rem;
+  display: block;
+}
+.feedback.ok  .fb-tag { color: var(--green); }
+.feedback.err .fb-tag { color: var(--red); }
+.feedback strong { color: inherit; font-weight: 600; }
+
+.btn-retry {
+  margin-top: 0.85rem;
+  display: inline-block;
+  background: transparent;
+  border: 1px solid var(--dim);
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  padding: 0.4rem 0.9rem;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-retry:hover { border-color: #888; color: #ccc; }
+
+/* Gated sections */
+.gate {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(14px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  display: none;
+}
+.gate.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  display: block;
+}
+
+/* Bridge / explanation text */
+.explain {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 4px;
+  padding: 1.3rem 1.6rem;
+  margin: 1.5rem 0;
+}
+.explain p {
+  font-size: 0.97rem;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 0.65rem;
+}
+.explain p:last-child { margin-bottom: 0; }
+.explain strong { color: #d4d4d4; }
+.explain .formula {
+  font-family: var(--mono);
+  font-size: 0.87rem;
+  color: var(--accent);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  padding: 0.6rem 1rem;
+  margin: 0.7rem 0;
+  display: block;
+  line-height: 1.7;
+}
+
+/* Divider */
+hr.div { border: none; border-top: 1px solid var(--border); margin: 2.8rem 0; }
+
+/* Gauntlet */
+.gauntlet-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.35rem;
+}
+.gauntlet-sub {
+  font-size: 0.87rem;
+  color: var(--muted);
+  margin-bottom: 2rem;
+}
+.g-block {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 1.6rem 1.8rem;
+  margin-bottom: 1.3rem;
+}
+.g-meta {
+  font-family: var(--mono);
+  font-size: 0.63rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 0.75rem;
+}
+.g-q {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #f0f0f0;
+  margin-bottom: 1.15rem;
+  line-height: 1.55;
+}
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══════════════════════════════════════
+       SPACED RETRIEVAL INTERRUPT
+       No preamble. No context linking to L1.
+  ══════════════════════════════════════ -->
+  <div class="block" id="interrupt-block">
+    <div class="block-label interrupt">Spaced Retrieval Interrupt — Answer before anything unlocks</div>
+    <div class="block-q">
+      The CCP pipeline skips normalization and runs K-Means directly on two raw features: Confrontation Tolerance (range 0–100) and Change Talk Ratio (range 0–1).<br><br>
+      Confrontation Tolerance contributes <span class="m">10,000</span> to the squared Euclidean distance when two clients differ by 100 units. Change Talk Ratio contributes a maximum of <span class="m">1</span>.<br><br>
+      Name the specific pipeline phase that is missing, and state exactly what it would have done to equalize these two dimensions.
+    </div>
+    <div class="input-row">
+      <input type="text" class="q-input" id="interrupt-input" placeholder="Name the phase…" autocomplete="off" spellcheck="false">
+      <button class="btn-commit" id="interrupt-btn" onclick="checkInterrupt()">EXECUTE</button>
+    </div>
+    <div class="feedback" id="interrupt-fb"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       MAIN CONTENT — locked until interrupt
+  ══════════════════════════════════════ -->
+  <div class="gate" id="main-gate">
+
+    <div class="layer-label" style="margin-top:2.5rem;">Lesson 10 · Layer 2 — Mechanistic</div>
+    <h1>The Pipeline Function <span style="font-family:var(--mono);color:var(--accent);">𝒫</span></h1>
+
+    <p class="lead">The Applied Clustering Pipeline is a composite function mapping a raw high-dimensional vector to a discrete cluster label:</p>
+
+    <div class="comp-table"><span class="hl">𝒫 = 𝒜 ∘ 𝒦 ∘ ℛ ∘ 𝒩 ∘ ℱ</span>
+
+<span class="dim">ℱ</span>  Feature Selection     → ℝ¹⁰⁰ to ℝ⁶   (projection onto 6 behavioral axes)
+<span class="dim">𝒩</span>  Z-Score Normalization → ℝ⁶  to ℝ⁶   (mean 0, variance 1 per feature)
+<span class="dim">ℛ</span>  PCA Compression       → ℝ⁶  to ℝᴹ   (top-M eigenvectors of covariance matrix)
+<span class="dim">𝒦</span>  K-Means Clustering    → ℝᴹ  to {1…k} (label + centroid distance)
+<span class="dim">𝒜</span>  Action Injection      → Neo4j write + JIT Compiler constraint load</div>
+
+    <!-- ── GATE 1: Z-Score computation ── -->
+    <div class="block" id="gate1-block">
+      <div class="block-label gate">Prediction Gate 01 — Z-Score Normalization by Hand</div>
+      <div class="block-q">
+        Compute the Z-Score normalized values for two clients on the <strong>Confrontation Tolerance</strong> feature.<br><br>
+        Population statistics: <span class="m">μ = 50</span>, <span class="m">σ = 20</span><br><br>
+        Client X: raw value = <span class="m">90</span><br>
+        Client Y: raw value = <span class="m">10</span><br><br>
+        Formula: <span class="m">z = (x − μ) / σ</span>. Enter both Z-Scores, rounded to one decimal.
+      </div>
+      <div class="input-grid two">
+        <div class="labeled-input">
+          <span class="input-label">Client X — z_X</span>
+          <input type="text" class="q-input" id="zscore-x" placeholder="e.g. 2.0" autocomplete="off">
+        </div>
+        <div class="labeled-input">
+          <span class="input-label">Client Y — z_Y</span>
+          <input type="text" class="q-input" id="zscore-y" placeholder="e.g. −2.0" autocomplete="off">
+        </div>
+      </div>
+      <button class="btn-commit" id="zscore-btn" onclick="checkZScore()">COMMIT BOTH VALUES</button>
+      <div class="feedback" id="zscore-fb"></div>
+    </div>
+
+    <!-- GATE 1 unlocks explanation + trap -->
+    <div class="gate" id="gate1-explain">
+
+      <div class="explain">
+        <p>Correct. Client X: z = (90−50)/20 = <strong>+2.0</strong>. Client Y: z = (10−50)/20 = <strong>−2.0</strong>. They now sit at equal and opposite distances from the population center — the algorithm can distinguish them.</p>
+        <p>The Z-Score formula is not arbitrary. The denominator <strong>σ</strong> is the natural unit of spread for the population. Dividing by it guarantees that a one-unit difference on any normalized feature contributes identically to Euclidean distance. Without it, one axis dominates by a factor proportional to its raw range.</p>
+        <p>Critical: the normalization parameters <strong>μ and σ must be stored</strong> after initial fitting. Every new client entering the system is normalized using the same stored statistics — not re-fit on the current batch. Recomputing on each new client would contaminate the normalization and shift previously assigned Z-Scores.</p>
+      </div>
+
+      <!-- ── MISCONCEPTION TRAP: WCSS vs Silhouette ── -->
+      <div class="block" id="trap-block">
+        <div class="block-label trap">Misconception Trap — Guardian Agent Drift Detection</div>
+        <div class="block-q">
+          The Guardian Agent monitors cluster health weekly. A developer proposes this alert rule:<br><br>
+          <em>"Fire a Concept Drift alert whenever the WCSS drops sharply from the previous week."</em><br><br>
+          Is this a valid drift detection mechanism? Select the answer that correctly diagnoses the problem.
+        </div>
+        <div id="trap-choices">
+          <button class="btn-choice" onclick="answerTrap(this, false)">Yes — a sharp WCSS drop means clients are moving away from centroids, which is precisely the signal of drift.</button>
+          <button class="btn-choice" onclick="answerTrap(this, false)">Yes — WCSS is the primary objective of K-Means, so monitoring it directly monitors clustering health.</button>
+          <button class="btn-choice" onclick="answerTrap(this, true)">No — WCSS always decreases as more data arrives near centroids, regardless of structural validity. The Guardian uses the Silhouette Score because it specifically detects points sitting ambiguously near cluster boundaries — the exact signature of drift.</button>
+        </div>
+        <div class="feedback" id="trap-fb"></div>
+      </div>
+
+    </div><!-- /gate1-explain -->
+
+    <!-- GATE 2: Silhouette drift computation -->
+    <div class="gate" id="gate2">
+
+      <div class="explain">
+        <p><strong>Why Silhouette and not WCSS:</strong> WCSS is an absolute measure. It decreases whenever any point moves closer to its centroid — which happens naturally as more clients settle into behavioral patterns. WCSS tells you nothing about whether a client could plausibly belong to a <em>different</em> cluster instead.</p>
+        <p>Silhouette is a relative measure. It compares each point's cohesion (average distance to members of its own cluster) against its separation (average distance to members of the nearest competing cluster). A falling Silhouette means points are moving toward the boundaries — they're becoming ambiguously assigned. That is the precise mathematical signature of Concept Drift.</p>
+        <p class="formula">Drift alert fires when:  s̄ₜ &lt; 0.40  OR  (s̄_baseline − s̄ₜ) / s̄_baseline &gt; 0.15</p>
+      </div>
+
+      <div class="block" id="gate2-block">
+        <div class="block-label gate">Prediction Gate 02 — Silhouette Drift Check by Hand</div>
+        <div class="block-q">
+          The Guardian Agent's 4-week rolling baseline Silhouette scores are:<br>
+          <span class="m">Week 1: 0.72 &nbsp;·&nbsp; Week 2: 0.71 &nbsp;·&nbsp; Week 3: 0.73 &nbsp;·&nbsp; Week 4: 0.70</span><br><br>
+          This week (Week 5), 50 new clients arrive from a marketing campaign. The weekly Silhouette is <span class="m">0.52</span>.<br><br>
+          Step 1: Compute the 4-week rolling baseline average <span class="m">s̄_baseline</span> (to 3 decimal places).<br>
+          Step 2: Compute the relative drop: <span class="m">(s̄_baseline − 0.52) / s̄_baseline</span> (as a percentage, rounded to 1 decimal place).
+        </div>
+        <div class="input-grid two">
+          <div class="labeled-input">
+            <span class="input-label">s̄_baseline (3 decimal places)</span>
+            <input type="text" class="q-input" id="sil-base" placeholder="e.g. 0.715" autocomplete="off">
+          </div>
+          <div class="labeled-input">
+            <span class="input-label">Relative drop % (1 decimal place)</span>
+            <input type="text" class="q-input" id="sil-drop" placeholder="e.g. 27.3" autocomplete="off">
+          </div>
+        </div>
+        <button class="btn-commit" id="sil-btn" onclick="checkSilhouette()">COMMIT BOTH VALUES</button>
+        <div class="feedback" id="sil-fb"></div>
+      </div>
+
+    </div><!-- /gate2 -->
+
+    <!-- GATE 3: Mastery gate — novel values -->
+    <div class="gate" id="gate3">
+
+      <div class="explain">
+        <p>Correct. Rolling average = (0.72 + 0.71 + 0.73 + 0.70) / 4 = <strong>0.715</strong>. Relative drop = (0.715 − 0.52) / 0.715 = 0.273 = <strong>27.3%</strong>. This exceeds the 15% threshold, so the drift alert fires.</p>
+        <p>But the absolute check: 0.52 > 0.40 — the score has not hit the absolute floor. Investigation reveals the new clients have short interaction histories and cluster near boundaries. The incumbent clients maintain Silhouette > 0.70. Verdict: <strong>demographic influx, not genuine drift</strong>. The centroids are intact. The operator holds them and increases monitoring frequency until the new cohort develops stable behavioral patterns.</p>
+      </div>
+
+      <div class="block" id="gate3-block">
+        <div class="block-label gate">Mastery Gate — Novel Pipeline Scenario</div>
+        <div class="block-q">
+          A 2-feature pipeline processes clients on Emotional Valence (range −1 to +1) and Session Consistency (range 0.01 to 3.5). After Z-Score normalization:<br><br>
+          Population stats: <span class="m">μ_EV = 0.0, σ_EV = 0.4 &nbsp;·&nbsp; μ_SC = 1.0, σ_SC = 0.6</span><br><br>
+          New client Maria: <span class="m">EV = 0.8, SC = 2.2</span><br><br>
+          Compute Maria's Z-Score vector. Enter both values, rounded to 2 decimal places.
+        </div>
+        <div class="input-grid two">
+          <div class="labeled-input">
+            <span class="input-label">z_EV (Emotional Valence)</span>
+            <input type="text" class="q-input" id="mastery-ev" placeholder="e.g. 2.00" autocomplete="off">
+          </div>
+          <div class="labeled-input">
+            <span class="input-label">z_SC (Session Consistency)</span>
+            <input type="text" class="q-input" id="mastery-sc" placeholder="e.g. 2.00" autocomplete="off">
+          </div>
+        </div>
+        <button class="btn-commit" id="mastery-btn" onclick="checkMastery()">COMMIT BOTH VALUES</button>
+        <div class="feedback" id="mastery-fb"></div>
+      </div>
+
+    </div><!-- /gate3 -->
+
+    <!-- GAUNTLET -->
+    <div class="gate" id="gauntlet-gate">
+      <hr class="div">
+      <div class="layer-label" style="margin-bottom:0.4rem;">Mechanistic Gauntlet</div>
+      <div class="gauntlet-title">Pipeline Derivations: 7 Constraints</div>
+      <div class="gauntlet-sub">No scaffolding. No hints. Each question targets one operational mechanic from the pipeline.</div>
+      <div id="gauntlet-container"></div>
+    </div>
+
+  </div><!-- /main-gate -->
+
+</div><!-- /page -->
+
+<script>
+/* ════════════════════════════════════════
+   UTILITY
+════════════════════════════════════════ */
+function unlock(id, callback) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.classList.add('open');
+    setTimeout(() => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (callback) callback();
+    }, 450);
+  }));
+}
+
+function lockInputs(...ids) {
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = true;
+  });
+}
+
+function showFb(id, type, html) {
+  const el = document.getElementById(id);
+  el.className = `feedback show ${type}`;
+  el.innerHTML = html;
+}
+
+/* ════════════════════════════════════════
+   SPACED RETRIEVAL INTERRUPT
+════════════════════════════════════════ */
+function checkInterrupt() {
+  const val = document.getElementById('interrupt-input').value.toLowerCase().trim();
+  if (!val) return;
+  lockInputs('interrupt-input', 'interrupt-btn');
+
+  const correct = val.includes('normaliz') || val.includes('z-score') || val.includes('zscore') || val.includes('z score') || val.includes('scaling') || val.includes('scale');
+  if (correct) {
+    showFb('interrupt-fb', 'ok', `
+      <span class="fb-tag">Memory Retained</span>
+      <strong>Normalization — specifically Z-Score normalization.</strong> It would compute μ and σ for each feature across the population, then transform every raw value to z = (x − μ) / σ. After this transformation, every feature has mean 0 and variance 1. A 100-unit difference on Confrontation Tolerance and a 0.5-unit difference on Change Talk Ratio contribute identically to the Euclidean distance computation. The algorithm can see all features equally.
+    `);
+    setTimeout(() => unlock('main-gate'), 1100);
+  } else {
+    showFb('interrupt-fb', 'err', `
+      <span class="fb-tag">Recall Failure</span>
+      The missing phase is <strong>Normalization</strong>. Without it, features with larger numerical ranges dominate the distance computation. Return to Layer 1 if the mechanism is unclear, then retry.
+      <br><button class="btn-retry" onclick="retryInterrupt()">Retry</button>
+    `);
+  }
+}
+
+function retryInterrupt() {
+  lockInputs(); // no-op
+  document.getElementById('interrupt-input').disabled = false;
+  document.getElementById('interrupt-input').value = '';
+  document.getElementById('interrupt-btn').disabled = false;
+  document.getElementById('interrupt-fb').className = 'feedback';
+}
+
+/* ════════════════════════════════════════
+   GATE 1 — Z-Score Computation
+════════════════════════════════════════ */
+function checkZScore() {
+  const xRaw = document.getElementById('zscore-x').value.trim();
+  const yRaw = document.getElementById('zscore-y').value.trim();
+  if (!xRaw || !yRaw) return;
+  lockInputs('zscore-x', 'zscore-y', 'zscore-btn');
+
+  const x = parseFloat(xRaw);
+  const y = parseFloat(yRaw);
+  // Correct: z_X = (90-50)/20 = 2.0 ; z_Y = (10-50)/20 = -2.0
+  const xOk = Math.abs(x - 2.0) < 0.15;
+  const yOk = Math.abs(y - (-2.0)) < 0.15;
+
+  if (xOk && yOk) {
+    showFb('zscore-fb', 'ok', `
+      <span class="fb-tag">Both Values Correct</span>
+      z_X = (90 − 50) / 20 = <strong>+2.0</strong>. z_Y = (10 − 50) / 20 = <strong>−2.0</strong>. These two clients now sit at equal and opposite positions — 2 standard deviations apart from the center, on opposite sides. After normalization, K-Means can distinguish them clearly on this axis.
+    `);
+    setTimeout(() => unlock('gate1-explain'), 900);
+  } else {
+    // Named misconception feedback
+    let msg = '';
+    if (!xOk && !yOk) {
+      msg = `<strong>Misconception — "Divide the raw value by σ directly."</strong> The formula is z = (x − <em>μ</em>) / σ. You must subtract the mean first. Dividing the raw value by σ skips the centering step and leaves a positional bias — the result would depend on where 0 is on the raw scale, not on how far the value is from the population average.`;
+    } else if (!xOk) {
+      msg = `z_Y is correct, but z_X is wrong. Recheck: z_X = (90 − 50) / 20 = 40 / 20 = <strong>2.0</strong>. Confirm you subtracted μ before dividing.`;
+    } else {
+      msg = `z_X is correct, but z_Y is wrong. Recheck: z_Y = (10 − 50) / 20 = −40 / 20 = <strong>−2.0</strong>. The negative sign is correct — Client Y is below the population mean.`;
+    }
+    showFb('zscore-fb', 'err', `<span class="fb-tag">Computation Error</span>${msg}<br><button class="btn-retry" onclick="retryZScore()">Retry</button>`);
+  }
+}
+
+function retryZScore() {
+  ['zscore-x', 'zscore-y', 'zscore-btn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.disabled = false; if (el.tagName === 'INPUT') el.value = ''; }
+  });
+  document.getElementById('zscore-fb').className = 'feedback';
+}
+
+/* ════════════════════════════════════════
+   MISCONCEPTION TRAP — WCSS vs Silhouette
+════════════════════════════════════════ */
+function answerTrap(btn, correct) {
+  document.querySelectorAll('#trap-choices .btn-choice').forEach(b => b.disabled = true);
+  btn.classList.add(correct ? 'correct' : 'wrong');
+
+  if (correct) {
+    showFb('trap-fb', 'ok', `
+      <span class="fb-tag">Correct — Misconception Identified</span>
+      WCSS decreases whenever points move <em>closer</em> to their centroid — including when entirely new, well-placed clients join. It is an absolute measure. It says nothing about whether a client is near the <em>boundary</em> with a competing cluster. The Silhouette Score compares intra-cluster cohesion against inter-cluster separation. A falling Silhouette means clients are becoming ambiguously placed between clusters — the precise signal of Concept Drift.
+    `);
+    setTimeout(() => unlock('gate2'), 1000);
+  } else {
+    showFb('trap-fb', 'err', `
+      <span class="fb-tag">Misconception — "WCSS monitors K-Means health directly"</span>
+      WCSS is the <em>optimization target</em> of K-Means — it always decreases during training. In production, it also decreases when new clients arrive near existing centroids, even when those centroids are still perfectly valid. A falling WCSS cannot tell you whether assignments are becoming ambiguous. The Silhouette Score can, because it explicitly computes the margin between a point's own cluster and its nearest competing cluster.
+      <br><button class="btn-retry" onclick="retryTrap()">Retry</button>
+    `);
+  }
+}
+
+function retryTrap() {
+  document.querySelectorAll('#trap-choices .btn-choice').forEach(b => {
+    b.disabled = false;
+    b.classList.remove('correct', 'wrong');
+  });
+  document.getElementById('trap-fb').className = 'feedback';
+}
+
+/* ════════════════════════════════════════
+   GATE 2 — Silhouette Drift Computation
+════════════════════════════════════════ */
+function checkSilhouette() {
+  const baseRaw = document.getElementById('sil-base').value.trim();
+  const dropRaw = document.getElementById('sil-drop').value.trim();
+  if (!baseRaw || !dropRaw) return;
+  lockInputs('sil-base', 'sil-drop', 'sil-btn');
+
+  const base = parseFloat(baseRaw);
+  const drop = parseFloat(dropRaw.replace('%', ''));
+  // Correct: (0.72+0.71+0.73+0.70)/4 = 2.86/4 = 0.715; (0.715-0.52)/0.715 = 0.195/0.715 ≈ 0.2727 = 27.3%
+  const baseOk = Math.abs(base - 0.715) < 0.005;
+  const dropOk = Math.abs(drop - 27.3) < 1.0;
+
+  if (baseOk && dropOk) {
+    showFb('sil-fb', 'ok', `
+      <span class="fb-tag">Both Values Correct</span>
+      Baseline = (0.72 + 0.71 + 0.73 + 0.70) / 4 = <strong>0.715</strong>. Relative drop = (0.715 − 0.52) / 0.715 = 0.195 / 0.715 ≈ <strong>27.3%</strong>. This exceeds the 15% threshold, so the Guardian fires a drift alert. The investigation, however, reveals demographic influx — not genuine drift.
+    `);
+    setTimeout(() => unlock('gate3'), 900);
+  } else {
+    let msg = '';
+    if (!baseOk) msg += `Recheck the baseline: (0.72 + 0.71 + 0.73 + 0.70) / 4 = 2.86 / 4 = <strong>0.715</strong>. `;
+    if (!dropOk) msg += `Recheck the drop: (0.715 − 0.52) / 0.715 = 0.195 / 0.715 ≈ <strong>27.3%</strong>.`;
+    showFb('sil-fb', 'err', `<span class="fb-tag">Computation Error</span>${msg}<br><button class="btn-retry" onclick="retrySilhouette()">Retry</button>`);
+  }
+}
+
+function retrySilhouette() {
+  ['sil-base', 'sil-drop', 'sil-btn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.disabled = false; if (el.tagName === 'INPUT') el.value = ''; }
+  });
+  document.getElementById('sil-fb').className = 'feedback';
+}
+
+/* ════════════════════════════════════════
+   MASTERY GATE — Novel Z-Score Values
+   μ_EV=0, σ_EV=0.4, EV=0.8 → z=2.0
+   μ_SC=1.0, σ_SC=0.6, SC=2.2 → z=2.0
+════════════════════════════════════════ */
+function checkMastery() {
+  const evRaw = document.getElementById('mastery-ev').value.trim();
+  const scRaw = document.getElementById('mastery-sc').value.trim();
+  if (!evRaw || !scRaw) return;
+  lockInputs('mastery-ev', 'mastery-sc', 'mastery-btn');
+
+  const ev = parseFloat(evRaw);
+  const sc = parseFloat(scRaw);
+  // z_EV = (0.8-0)/0.4 = 2.0 ; z_SC = (2.2-1.0)/0.6 = 1.2/0.6 = 2.0
+  const evOk = Math.abs(ev - 2.0) < 0.15;
+  const scOk = Math.abs(sc - 2.0) < 0.15;
+
+  if (evOk && scOk) {
+    showFb('mastery-fb', 'ok', `
+      <span class="fb-tag">Mastery Gate Cleared</span>
+      z_EV = (0.8 − 0.0) / 0.4 = <strong>2.0</strong>. z_SC = (2.2 − 1.0) / 0.6 = 1.2 / 0.6 = <strong>2.0</strong>. Maria sits 2 standard deviations above the population mean on both axes. Her normalized vector [2.0, 2.0] positions her in the high-engagement, high-consistency region of the behavioral space.
+    `);
+    setTimeout(() => unlock('gauntlet-gate', renderGauntlet), 900);
+  } else {
+    let msg = '';
+    if (!evOk) msg += `z_EV: (0.8 − 0.0) / 0.4 = 0.8 / 0.4 = <strong>2.0</strong>. `;
+    if (!scOk) msg += `z_SC: (2.2 − 1.0) / 0.6 = 1.2 / 0.6 = <strong>2.0</strong>. `;
+    msg += `Remember: z = (x − μ) / σ. Subtract the mean before dividing.`;
+    showFb('mastery-fb', 'err', `<span class="fb-tag">Computation Error</span>${msg}<br><button class="btn-retry" onclick="retryMastery()">Retry</button>`);
+  }
+}
+
+function retryMastery() {
+  ['mastery-ev', 'mastery-sc', 'mastery-btn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.disabled = false; if (el.tagName === 'INPUT') el.value = ''; }
+  });
+  document.getElementById('mastery-fb').className = 'feedback';
+}
+
+/* ════════════════════════════════════════
+   GAUNTLET DATA — 7 questions from MD
+════════════════════════════════════════ */
+const GAUNTLET = [
+  {
+    label: 'Constraint 01 — Feature Selection',
+    q: 'The feature selection phase ℱ is formally a projection matrix P ∈ {0,1}^(6×100) applied to the raw 100D vector. What structural property of this matrix ensures exactly one feature is selected per output dimension — and none are double-counted?',
+    type: 'text',
+    match: ['one 1', 'one per row', 'single 1', 'exactly one', 'one nonzero', 'one entry'],
+    exp: 'Each row of P has exactly one 1 (and all other entries are 0). This selects precisely one input feature per output position. If a row had two 1s, two features would be summed — creating a composite that loses their individual behavioral meaning. If all entries were 0, the dimension would be zeroed out. The binary structure guarantees clean, non-overlapping feature extraction.',
+    misconception: 'Misconception — "Feature selection just drops columns of data." It is a matrix operation: multiplying the raw vector by P selects and reorders specific dimensions. This formalization matters because it connects feature selection to the same linear algebra infrastructure as PCA and normalization — every step in the pipeline is a matrix operation.'
+  },
+  {
+    label: 'Constraint 02 — Normalization Invariant',
+    q: 'True or False: Z-Score and Min-Max normalization both preserve the relative ordering of clients within any single feature. If Client A has higher Change Talk than Client B before normalization, Client A still has a higher normalized value after either transformation.',
+    type: 'bool',
+    ans: true,
+    exp: 'True. Both transformations are affine functions f(x) = ax + b with a > 0. Affine functions with positive slope are monotonically increasing — they stretch or shift the number line without flipping it. The ordering is completely preserved. This is why normalized clusters retain the same behavioral hierarchy as the raw data: the geometry is reshaped, but no client leapfrogs another within a feature.',
+    misconception: 'Misconception — "Normalization changes which clients are behaviorally extreme." Normalization changes the scale and center of the feature, not its directional structure. The most extreme client remains the most extreme after normalization — they simply express it in different units (standard deviations, or a [0,1] fraction).'
+  },
+  {
+    label: 'Constraint 03 — PCA Variance Retention',
+    q: 'PCA produces eigenvalues λ₁ ≥ λ₂ ≥ ... ≥ λ_d for the covariance matrix. The total variance equals the sum of all eigenvalues. If the 12 eigenvalues from the Mood-State Router PCA are: [4.5, 3.2, 1.4, 0.9, 0.6, 0.4, 0.3, 0.2, 0.2, 0.1, 0.1, 0.1], and you retain M=4 components — what percentage of total variance is retained? Round to the nearest whole number.',
+    type: 'text',
+    match: ['85', '85%', '84', '84%'],
+    exp: 'Total variance = 4.5+3.2+1.4+0.9+0.6+0.4+0.3+0.2+0.2+0.1+0.1+0.1 = 12.0. Retained (top 4) = 4.5+3.2+1.4+0.9 = 10.0. Retention = 10.0/12.0 = 83.3% ≈ 83% (accept 83–85%). The CCP pipeline requires ≥85% — this example is borderline and would warrant adding a 5th component (0.6) to reach 10.6/12.0 = 88.3%.',
+    misconception: 'Misconception — "PCA automatically selects the right number of components." The selection of M is an engineering decision guided by the variance retention threshold (≥85% in the CCP). The algorithm computes all eigenvalues and their cumulative sum; the engineer chooses the cutoff. Getting this wrong in either direction has costs: too few components loses behavioral signal; too many reintroduces dimensionality problems.'
+  },
+  {
+    label: 'Constraint 04 — Stale Normalization Parameters',
+    q: 'The pipeline computes Z-Score parameters (μ, σ) once on the initial 200-client population. Six months later, 300 new clients from a different coaching program (younger demographic, shorter interaction histories) enter the system. These new clients are normalized using the original μ and σ. What specific failure mode does this introduce?',
+    type: 'text',
+    match: ['bias', 'wrong baseline', 'stale', 'wrong mean', 'wrong sigma', 'wrong statistic', 'systematic', 'skew', 'incorrect'],
+    exp: 'Systematic normalization bias. The new clients\' Z-Scores are computed relative to the wrong population baseline. If the new population has a lower average Change Talk Ratio than the original cohort, their Z-Scores will be systematically negative — the system will cluster them disproportionately into low-engagement archetypes, not because of their actual behavior but because of the stale reference statistics. Production pipelines must periodically recompute μ and σ on a rolling window that includes recent data.',
+    misconception: 'Misconception — "Z-Score parameters are universal constants, not population-specific." Z-Score normalization is relative to the population it was fit on. The same raw value produces a different Z-Score if the population mean or standard deviation changes. Treating stored parameters as permanent introduces drift that is invisible in the algorithm\'s output but corrupts the behavioral geometry.'
+  },
+  {
+    label: 'Constraint 05 — Pipeline Composition Order',
+    q: 'True or False: The pipeline composition 𝒫 = 𝒜 ∘ 𝒦 ∘ ℛ ∘ 𝒩 ∘ ℱ is commutative — meaning swapping the order of 𝒩 (Normalization) and ℛ (PCA) produces identical clustering results.',
+    type: 'bool',
+    ans: false,
+    exp: 'False. Normalization must precede PCA. PCA computes the covariance matrix of the input data. If the data is not yet normalized, features with larger numerical ranges contribute disproportionately to the covariance structure — PCA\'s principal components will be dominated by high-range features rather than reflecting the true behavioral variation. Normalizing first ensures that PCA identifies directions of genuine behavioral spread, not directions of scale artifact.',
+    misconception: 'Misconception — "Mathematical operations can be reordered freely in a pipeline." Function composition is not commutative. g∘f ≠ f∘g in general. Each phase in the pipeline assumes its input has been shaped by all prior phases. Normalization assumes raw-scale input; PCA assumes normalized input; K-Means assumes compressed, normalized input. Swapping any two steps violates these assumptions.'
+  },
+  {
+    label: 'Constraint 06 — Action Injection',
+    q: 'The action injection phase 𝒜 writes two values to the client\'s Neo4j graph node, then the JIT Compiler reads four values to construct the coaching prompt. Name the two values written by the clustering phase (𝒦) that 𝒜 injects into Neo4j. (Both required.)',
+    type: 'text',
+    match: ['cluster', 'distance', 'centroid'],
+    exp: 'The K-Means phase outputs two values per client: (1) the cluster label ℓᵢ ∈ {1, 2, 3, 4} — which archetype the client belongs to — and (2) the centroid distance dᵢ = ‖zᵢ − μ_ℓᵢ‖ — how far the client sits from the center of their assigned cluster. The JIT Compiler then combines these with TRAJECTORY and MOOD (from trajectory tracking and the Mood-State Router) to produce the full 4-value constraint that replaces 2,300 tokens of raw context.',
+    misconception: 'Misconception — "The pipeline injects the full normalized vector into Neo4j." Injecting the 6D or 20D normalized vector would not reduce the token overhead at inference time. The intelligence lies in compressing the entire behavioral history into two scalars: which tribe the client belongs to, and how confidently. These two numbers encode everything the JIT Compiler needs to select the correct coaching protocol.'
+  },
+  {
+    label: 'Constraint 07 — PCA and Cluster Separability',
+    q: 'Two behavioral clusters are well-separated in the original 12D normalized feature space — their Silhouette Score is 0.78. After applying PCA with M=4 components (retaining 87% of variance), the Silhouette Score drops to 0.41. What is the most likely structural explanation, and what is the correct diagnostic check?',
+    type: 'text',
+    match: ['separating', 'discarded', 'lost', '5th', 'fifth', 'component', 'axis', 'loading', 'pca merg', 'cluster separat'],
+    exp: 'The two clusters were separated primarily along a principal component that was discarded — likely the 5th component, which explained only 3% of variance but carried the cluster-separating axis. PCA maximizes total variance retained, not cluster separability. The diagnostic check: compute the Silhouette Score before and after PCA. If the drop exceeds 0.10, inspect the loading matrix to identify which features load on the discarded components, and either increase M or preserve the critical axis as a supplementary dimension.',
+    misconception: 'Misconception — "If PCA retains 87% of variance, 87% of clustering information is preserved." Variance and cluster separability are not equivalent. A direction explaining 3% of total variance can be the direction along which two clusters are most separated. PCA has no knowledge of cluster structure — it only sees variance. This is why post-PCA Silhouette validation is mandatory, not optional.'
+  }
+];
+
+/* ════════════════════════════════════════
+   RENDER GAUNTLET
+════════════════════════════════════════ */
+function renderGauntlet() {
+  const container = document.getElementById('gauntlet-container');
+  let html = '';
+  GAUNTLET.forEach((item, i) => {
+    html += `
+      <div class="g-block" id="gb-${i}">
+        <div class="g-meta">${item.label}</div>
+        <div class="g-q">${item.q}</div>
+    `;
+    if (item.type === 'bool') {
+      html += `
+        <div style="display:flex;gap:0.65rem;">
+          <button class="btn-choice" style="width:auto;padding:0.55rem 1.5rem;" onclick="answerBool(${i}, true, this)">True</button>
+          <button class="btn-choice" style="width:auto;padding:0.55rem 1.5rem;" onclick="answerBool(${i}, false, this)">False</button>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="input-row">
+          <input type="text" class="q-input" id="gi-${i}" placeholder="Enter answer…" autocomplete="off" spellcheck="false">
+          <button class="btn-commit" id="gbtn-${i}" onclick="answerText(${i})">LOCK</button>
+        </div>
+      `;
+    }
+    html += `<div class="feedback" id="gfb-${i}"></div></div>`;
+  });
+  container.innerHTML = html;
+
+  GAUNTLET.forEach((item, i) => {
+    if (item.type === 'text') {
+      const inp = document.getElementById(`gi-${i}`);
+      if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') answerText(i); });
+    }
+  });
+}
+
+function answerBool(i, val, btn) {
+  document.querySelectorAll(`#gb-${i} .btn-choice`).forEach(b => b.disabled = true);
+  const item = GAUNTLET[i];
+  const correct = val === item.ans;
+  btn.classList.add(correct ? 'correct' : 'wrong');
+  const fb = document.getElementById(`gfb-${i}`);
+  fb.className = `feedback show ${correct ? 'ok' : 'err'}`;
+  fb.innerHTML = correct
+    ? `<span class="fb-tag">Correct</span>${item.exp}`
+    : `<span class="fb-tag">Misconception</span>${item.misconception}<br><br><strong>Correct reasoning:</strong> ${item.exp}`;
+}
+
+function answerText(i) {
+  const inp = document.getElementById(`gi-${i}`);
+  const btn = document.getElementById(`gbtn-${i}`);
+  const val = (inp?.value || '').toLowerCase().trim();
+  if (!val) return;
+  inp.disabled = true;
+  btn.disabled = true;
+  const item = GAUNTLET[i];
+  const correct = item.match.some(m => val.includes(m));
+  const fb = document.getElementById(`gfb-${i}`);
+  fb.className = `feedback show ${correct ? 'ok' : 'err'}`;
+  fb.innerHTML = correct
+    ? `<span class="fb-tag">Correct</span>${item.exp}`
+    : `<span class="fb-tag">Architecture Flaw</span>${item.misconception}<br><br><strong>Correct reasoning:</strong> ${item.exp}`;
+}
+</script>
+</body>
+</html>

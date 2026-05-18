@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eigen-Everything — Analogy Laboratory</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050505;--surface:#111;--surface2:#1a1a1a;--surface3:#252525;
+  --text:#FAFAFA;--muted:#888;--border:#333;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6;overflow-x:hidden;}
+.container{max-width:820px;margin:0 auto;padding:4rem 2rem 8rem;}
+
+h1{font-weight:700;font-size:2.4rem;line-height:1.1;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-weight:700;font-size:1.5rem;margin-bottom:1rem;color:var(--text);}
+p{margin-bottom:1.5rem;color:var(--muted);font-size:1.05rem;}
+strong{color:#fff;}
+
+/* ── INTERACTION BOX ── */
+.interaction-box{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:2.5rem;margin:2rem 0;position:relative;
+}
+.interaction-header{
+  font-family:var(--mono);font-size:0.72rem;color:var(--accent);
+  text-transform:uppercase;letter-spacing:0.1em;
+  border-bottom:1px solid var(--border);padding-bottom:0.6rem;margin-bottom:1.5rem;
+}
+.question-text{font-size:1.1rem;font-weight:500;margin-bottom:2rem;color:#fff;line-height:1.65;}
+
+/* ── BUTTONS ── */
+.btn{
+  background:var(--text);color:var(--bg);border:none;
+  padding:0.75rem 1.5rem;font-family:var(--sans);font-weight:600;
+  font-size:1rem;border-radius:4px;cursor:pointer;transition:all 0.2s;
+}
+.btn:hover:not(:disabled){transform:translateY(-2px);background:#fff;box-shadow:0 4px 12px rgba(255,255,255,0.08);}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+.btn-outline{background:transparent;border:1px solid var(--muted);color:var(--text);}
+.btn-outline:hover:not(:disabled){background:var(--surface3);border-color:#fff;}
+
+/* ── FEEDBACK ── */
+.feedback{
+  display:none;margin-top:1.8rem;padding:1.4rem;
+  border-radius:4px;font-size:0.95rem;line-height:1.65;
+}
+.feedback.visible{display:block;animation:fadein 0.35s;}
+.feedback.error{background:rgba(231,111,81,0.1);border-left:3px solid var(--red);color:#ffb3a1;}
+.feedback.success{background:rgba(42,157,143,0.1);border-left:3px solid var(--green);color:#a7ece2;}
+.feedback-title{font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;font-weight:600;}
+@keyframes fadein{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── GATED CONTENT ── */
+.gated-content{opacity:0;pointer-events:none;transform:translateY(20px);transition:all 0.5s ease;display:none;}
+.gated-content.unlocked{opacity:1;pointer-events:auto;transform:translateY(0);display:block;}
+
+/* ── TYPE A CANVAS ── */
+#physics-canvas{
+  width:100%;background:#0a0a0a;border:1px solid #2a2a2a;
+  border-radius:4px;cursor:crosshair;display:block;margin-bottom:1rem;
+}
+.canvas-readout{
+  font-family:var(--mono);font-size:0.82rem;color:var(--muted);
+  text-align:center;margin-bottom:1.5rem;height:1.2rem;
+}
+
+/* ── TYPE B GRID ── */
+.type-b-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;}
+.type-b-card{
+  background:var(--bg);border:2px solid var(--border);border-radius:6px;
+  padding:1rem;cursor:pointer;transition:all 0.2s;
+}
+.type-b-card:hover{border-color:var(--accent);}
+.type-b-card.selected{border-color:var(--accent);background:rgba(232,196,106,0.06);}
+.type-b-card canvas{display:block;width:100%;background:#000;border-radius:4px;margin-bottom:0.8rem;}
+.type-b-label{font-family:var(--mono);font-size:0.82rem;color:var(--muted);text-align:center;}
+
+/* ── GAUNTLET ── */
+.gauntlet-wrap{margin-top:4rem;border-top:2px solid var(--border);padding-top:3rem;}
+.gauntlet-label{font-family:var(--mono);font-size:0.72rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;}
+.q-block{background:var(--surface2);padding:1.5rem;border-radius:6px;margin-bottom:1.5rem;border:1px solid var(--border);}
+.q-num{font-family:var(--mono);font-size:0.68rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.5rem;}
+.q-text{font-size:1.05rem;margin-bottom:1.5rem;font-weight:500;color:#fff;line-height:1.6;}
+.input-group{display:flex;gap:1rem;}
+.input-text{
+  background:var(--bg);border:2px solid var(--border);color:#fff;
+  font-family:var(--mono);font-size:1rem;padding:0.6rem 1rem;flex:1;border-radius:4px;
+  transition:border-color 0.2s;
+}
+.input-text:focus{outline:none;border-color:var(--accent);}
+.bool-row{display:flex;gap:1rem;flex-wrap:wrap;}
+
+/* ── DOMAIN TAG ── */
+.domain-tag{
+  display:inline-block;font-family:var(--mono);font-size:0.65rem;
+  text-transform:uppercase;letter-spacing:0.08em;
+  padding:0.2rem 0.5rem;border-radius:2px;margin-bottom:1rem;
+  background:var(--surface3);color:var(--muted);
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div style="font-family:var(--mono);font-size:0.72rem;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.1em;">Lesson 08 · Layer 3 · Analogy / Geometric Engine</div>
+  <h1>Multi-Domain Eigenstructure</h1>
+
+  <p>Every resonant system — physical strings, gaming metas, personality data, cooking chemistry, football tactics, Transformer attention — operates on identical mechanics: transformation matrices amplify along their natural grain. The most amplified direction is the dominant eigenvector. The scale factor is the eigenvalue. This layer makes that principle visceral across six domains.</p>
+
+  <!-- ═══════════════════════════════════════════
+       INTERACTION 1 — TYPE A CANVAS
+       Guitar string: drag puck to suppress Mode 2
+  ═══════════════════════════════════════════ -->
+  <div class="interaction-box" id="trap-1">
+    <div class="interaction-header">Type A Canvas — Acoustic Eigenmode Suppression</div>
+    <div class="domain-tag">🎵 Music / Acoustics Domain</div>
+    <div class="question-text">
+      A 64 cm guitar string has two vibration eigenmodes. <strong>Mode 1 (Fundamental)</strong> vibrates as a single smooth arc — λ₁ = 100 (maximum amplitude). <strong>Mode 2 (1st Harmonic)</strong> vibrates as a double arc with a dead spot — a <em>node</em> — precisely at the string's midpoint, λ₂ = 40.<br><br>
+      <strong>Prediction challenge:</strong> Drag the Pluck Puck to the position along the string where plucking it gives Mode 2 exactly <em>zero</em> eigenvalue contribution — completely suppressing the 1st Harmonic from the vibration. Lock your prediction, then observe the simulation.
+    </div>
+
+    <div style="position:relative;">
+      <canvas id="physics-canvas" width="600" height="200"></canvas>
+    </div>
+    <div class="canvas-readout">Pluck position X: <span id="x-pos">—</span> / 600</div>
+
+    <div style="text-align:center;">
+      <button class="btn" id="lock-t1" onclick="lockPhysics()">Lock Position &amp; Simulate</button>
+    </div>
+    <div class="feedback" id="fb-physics"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       GATE 1 — unlocks after correct Mode 2 prediction
+  ═══════════════════════════════════════════ -->
+  <div class="gated-content" id="gate-1">
+
+    <p>When your input vector has zero projection onto an eigenvector, that eigenmode is completely excluded from the output. The string's physical geometry ensures Mode 2 has zero displacement at its midpoint node — any input there has a zero dot product with Mode 2's vibration pattern. You just demonstrated the most important property of eigenspaces: <strong>zero projection = zero contribution.</strong></p>
+
+    <!-- ═══════════════════════════════════════════
+         INTERACTION 2 — TYPE B CANVAS
+         Big Five scree plot: identify the eigenvalue cliff
+    ═══════════════════════════════════════════ -->
+    <div class="interaction-box">
+      <div class="interaction-header">Type B Canvas — Personality Eigenspectrum (Scree Test)</div>
+      <div class="domain-tag">🧠 Psychology / Big Five Domain</div>
+      <div class="question-text">
+        A psychologist collects 50 behavioral measures from 1,000 participants and runs eigendecomposition on the correlation matrix. The Scree Test asks: where does the eigenspectrum drop sharply from "meaningful structure" into "noise"?<br><br>
+        The real Big Five data produces eigenvalues beginning: <strong>[8.5, 7.2, 5.8, 4.1, 3.6, 1.2, 0.9, …]</strong> — a sharp cliff after the 5th value, which is why there are five personality factors, not fifty.<br><br>
+        <strong>Prediction challenge:</strong> Both graphs below show a scree plot. One graph's eigenspectrum matches the Big Five structure — a clear cliff after 5 meaningful values before the noise floor. Select the correct one before locking.
+      </div>
+
+      <div class="type-b-grid">
+        <div class="type-b-card" id="cardA" onclick="selectCard('A')">
+          <canvas id="canvasA" width="260" height="160"></canvas>
+          <div class="type-b-label">GRAPH A</div>
+        </div>
+        <div class="type-b-card" id="cardB" onclick="selectCard('B')">
+          <canvas id="canvasB" width="260" height="160"></canvas>
+          <div class="type-b-label">GRAPH B</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;">
+        <button class="btn" id="lock-t2" onclick="lockCard()" disabled>Lock Prediction</button>
+      </div>
+      <div class="feedback" id="fb-card"></div>
+    </div>
+
+  </div><!-- /gate-1 -->
+
+  <!-- ═══════════════════════════════════════════
+       GATE 2 — unlocks after correct scree prediction
+       Transfer Protocol Gauntlet
+  ═══════════════════════════════════════════ -->
+  <div class="gated-content" id="gauntlet-content">
+    <div class="gauntlet-wrap">
+      <div class="gauntlet-label">// Transfer Protocol</div>
+      <h2>Cross-Domain Gauntlet</h2>
+      <p style="font-size:0.95rem;">The same eigenstructure appears in every domain below. Each question tests whether you can identify the correct mathematical mapping — eigenvector, eigenvalue, condition number, or spectral property — across six distinct surface domains.</p>
+      <div id="q-container"></div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+/* ═══════════════════════════════════════════════
+   TYPE A — Guitar String Canvas
+═══════════════════════════════════════════════ */
+const cvs = document.getElementById('physics-canvas');
+const ctx = cvs.getContext('2d');
+let puckX = 150;
+let dragging = false;
+let locked = false;
+let simTime = 0;
+let animFrame;
+
+function drawRest() {
+  ctx.clearRect(0, 0, 600, 200);
+  // String endpoints
+  ctx.strokeStyle = '#444'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, 100); ctx.lineTo(600, 100); ctx.stroke();
+  // Node indicator (subtle)
+  ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(300, 30); ctx.lineTo(300, 170); ctx.stroke();
+  ctx.setLineDash([]);
+  // Puck
+  ctx.fillStyle = 'var(--accent)';
+  ctx.beginPath(); ctx.arc(puckX, 100, 11, 0, Math.PI * 2); ctx.fill();
+  document.getElementById('x-pos').textContent = puckX.toFixed(0);
+}
+
+cvs.addEventListener('mousedown', e => {
+  if (locked) return;
+  const r = cvs.getBoundingClientRect();
+  const scaleX = 600 / r.width;
+  const mx = (e.clientX - r.left) * scaleX;
+  if (Math.abs(mx - puckX) < 30) dragging = true;
+});
+cvs.addEventListener('mousemove', e => {
+  if (!dragging || locked) return;
+  const r = cvs.getBoundingClientRect();
+  const scaleX = 600 / r.width;
+  puckX = Math.max(10, Math.min(590, (e.clientX - r.left) * scaleX));
+  drawRest();
+});
+cvs.addEventListener('touchstart', e => {
+  if (locked) return; dragging = true;
+}, { passive: true });
+cvs.addEventListener('touchmove', e => {
+  if (!dragging || locked) return;
+  const r = cvs.getBoundingClientRect();
+  const scaleX = 600 / r.width;
+  puckX = Math.max(10, Math.min(590, (e.touches[0].clientX - r.left) * scaleX));
+  drawRest();
+}, { passive: true });
+cvs.addEventListener('mouseup', () => { dragging = false; });
+cvs.addEventListener('mouseleave', () => { dragging = false; });
+cvs.addEventListener('touchend', () => { dragging = false; });
+
+drawRest();
+
+function lockPhysics() {
+  locked = true;
+  document.getElementById('lock-t1').disabled = true;
+
+  const err = Math.abs(puckX - 300);
+  const isCorrect = err < 18;
+  const fb = document.getElementById('fb-physics');
+  fb.classList.add('visible');
+
+  if (isCorrect) {
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">✓ Node Discovered — Mode 2 Suppressed</div>
+      Correct. At X = 300 (the string's exact midpoint), Mode 2 has a natural node — a point of zero displacement in that eigenvector's spatial pattern. Your input vector has zero dot product with Mode 2's eigenvector at this location. Zero projection → zero contribution. The simulation below shows Mode 1 (fundamental, λ₁ = 100) oscillating cleanly with no Mode 2 harmonic bleed-through. This is the same principle that makes DCoT work: a vector in one eigenspace has zero projection onto an orthogonal eigenspace.`;
+    setTimeout(() => {
+      document.getElementById('gate-1').classList.add('unlocked');
+      drawScreePlots();
+    }, 1600);
+  } else {
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title">✗ Harmonic Bleed-Through</div>
+      You placed the puck at X = ${puckX.toFixed(0)}. This position is off the Mode 2 node, so your input has a non-zero geometric projection onto Mode 2's eigenvector. The string now carries energy in BOTH modes — Mode 1 and Mode 2 vibrate simultaneously. The simulation shows the double-arc interference pattern. Try again: where does Mode 2 have zero displacement?<br><br>
+      <button class="btn btn-outline" style="margin-top:1rem;" onclick="resetPhysics()">Retry</button>`;
+  }
+  animateVibration(isCorrect);
+}
+
+function resetPhysics() {
+  locked = false;
+  cancelAnimationFrame(animFrame);
+  document.getElementById('lock-t1').disabled = false;
+  document.getElementById('fb-physics').className = 'feedback';
+  drawRest();
+}
+
+function animateVibration(isCorrect) {
+  simTime += 0.08;
+  ctx.clearRect(0, 0, 600, 200);
+
+  const amp1 = 38;
+  const err = Math.abs(puckX - 300);
+  const amp2 = isCorrect ? 0 : Math.min((err / 140) * 28, 28);
+
+  // Draw Mode 2 in red (only if non-zero)
+  if (amp2 > 0.5) {
+    ctx.strokeStyle = 'rgba(231,111,81,0.4)'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let x = 0; x <= 600; x += 4) {
+      const y = Math.sin(2 * Math.PI * x / 600) * Math.cos(simTime * 1.55) * amp2;
+      x === 0 ? ctx.moveTo(x, 100 + y) : ctx.lineTo(x, 100 + y);
+    }
+    ctx.stroke();
+  }
+
+  // Draw combined string
+  ctx.strokeStyle = 'var(--text)'; ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let x = 0; x <= 600; x += 3) {
+    const y1 = Math.sin(Math.PI * x / 600) * Math.sin(simTime) * amp1;
+    const y2 = Math.sin(2 * Math.PI * x / 600) * Math.cos(simTime * 1.55) * amp2;
+    x === 0 ? ctx.moveTo(x, 100 + y1 + y2) : ctx.lineTo(x, 100 + y1 + y2);
+  }
+  ctx.stroke();
+
+  // Puck
+  const py1 = Math.sin(Math.PI * puckX / 600) * Math.sin(simTime) * amp1;
+  const py2 = Math.sin(2 * Math.PI * puckX / 600) * Math.cos(simTime * 1.55) * amp2;
+  ctx.fillStyle = 'var(--accent)';
+  ctx.beginPath(); ctx.arc(puckX, 100 + py1 + py2, 9, 0, Math.PI * 2); ctx.fill();
+
+  // Node marker
+  ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(300, 30); ctx.lineTo(300, 170); ctx.stroke();
+  ctx.setLineDash([]);
+
+  animFrame = requestAnimationFrame(() => animateVibration(isCorrect));
+}
+
+/* ═══════════════════════════════════════════════
+   TYPE B — Big Five Scree Plots
+   Graph A: Smooth uniform decay (no cliff — wrong)
+   Graph B: Big Five pattern — cliff after position 5 (correct)
+═══════════════════════════════════════════════ */
+let selectedCard = '';
+
+function selectCard(card) {
+  document.getElementById('cardA').classList.remove('selected');
+  document.getElementById('cardB').classList.remove('selected');
+  document.getElementById('card' + card).classList.add('selected');
+  selectedCard = card;
+  document.getElementById('lock-t2').disabled = false;
+}
+
+function drawScreePlots() {
+  // Graph A: Smooth decay — no visible cliff. Wrong answer (no Big Five structure)
+  drawScree('canvasA', [9.2, 8.0, 6.8, 5.7, 4.8, 4.0, 3.3, 2.7, 2.2, 1.8]);
+  // Graph B: Big Five structure — eigenvalues [8.5, 7.2, 5.8, 4.1, 3.6, 1.2, 0.9, 0.8, 0.6, 0.4]
+  // Cliff after position 5 → correct
+  drawScree('canvasB', [8.5, 7.2, 5.8, 4.1, 3.6, 1.2, 0.9, 0.8, 0.6, 0.4]);
+}
+
+function drawScree(id, vals) {
+  const c = document.getElementById(id);
+  const ct = c.getContext('2d');
+  const W = c.width, H = c.height;
+  const pad = { l: 28, r: 12, t: 16, b: 28 };
+  const maxVal = Math.max(...vals) * 1.1;
+  ct.clearRect(0, 0, W, H);
+
+  // Axes
+  ct.strokeStyle = '#444'; ct.lineWidth = 1;
+  ct.beginPath();
+  ct.moveTo(pad.l, pad.t); ct.lineTo(pad.l, H - pad.b);
+  ct.lineTo(W - pad.r, H - pad.b);
+  ct.stroke();
+
+  // Axis labels
+  ct.fillStyle = '#666'; ct.font = '9px IBM Plex Mono, monospace';
+  ct.fillText('λ', 4, pad.t + 4);
+  ct.fillText('Factor', W / 2 - 16, H - 6);
+
+  // Data points and line
+  const pts = vals.map((v, i) => ({
+    x: pad.l + (i + 0.5) * ((W - pad.l - pad.r) / vals.length),
+    y: H - pad.b - (v / maxVal) * (H - pad.t - pad.b)
+  }));
+
+  ct.strokeStyle = 'var(--accent)'; ct.lineWidth = 2;
+  ct.beginPath();
+  pts.forEach((p, i) => i === 0 ? ct.moveTo(p.x, p.y) : ct.lineTo(p.x, p.y));
+  ct.stroke();
+
+  pts.forEach((p, i) => {
+    ct.fillStyle = i < 5 ? 'var(--accent)' : '#555';
+    ct.beginPath(); ct.arc(p.x, p.y, 4, 0, Math.PI * 2); ct.fill();
+  });
+
+  // Noise floor reference line
+  ct.strokeStyle = '#333'; ct.lineWidth = 1; ct.setLineDash([3, 3]);
+  const noiseY = H - pad.b - (1.0 / maxVal) * (H - pad.t - pad.b);
+  ct.beginPath(); ct.moveTo(pad.l, noiseY); ct.lineTo(W - pad.r, noiseY); ct.stroke();
+  ct.setLineDash([]);
+  ct.fillStyle = '#444'; ct.font = '8px IBM Plex Mono, monospace';
+  ct.fillText('noise', W - pad.r - 28, noiseY - 3);
+}
+
+function lockCard() {
+  document.getElementById('lock-t2').disabled = true;
+  document.getElementById('cardA').onclick = null;
+  document.getElementById('cardB').onclick = null;
+  const fb = document.getElementById('fb-card');
+  fb.classList.add('visible');
+
+  if (selectedCard === 'B') {
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">✓ Eigenstructure Identified</div>
+      Correct. Graph B shows the Big Five eigenspectrum: eigenvalues [8.5, 7.2, 5.8, 4.1, 3.6] above the noise floor, then a sharp cliff to [1.2, 0.9, …]. The cliff at position 5 is the Scree Test result — it identifies exactly 5 factors as real structure and the remaining 45 as measurement noise. This is how the Big Five personality model was <em>discovered</em>: not by psychologists deciding there are five traits, but by the data's eigenstructure revealing 5 eigenvalues that rise clearly above noise. The mathematics dictated the number.`;
+    setTimeout(() => {
+      document.getElementById('gauntlet-content').classList.add('unlocked');
+      renderGauntlet();
+      setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 500);
+    }, 1600);
+  } else {
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title">✗ No Structural Cliff Detected</div>
+      Incorrect. Graph A shows a uniformly decaying spectrum — eigenvalues [9.2, 8.0, 6.8, 5.7, …] with no visible cliff separating signal from noise. This pattern means no clear number of "real" factors exists. The Scree Test fails: you cannot draw a line between meaningful factors and noise. Graph B has the Big Five pattern: eigenvalues drop sharply after position 5, making the boundary between structure and noise unambiguous.<br><br>
+      <button class="btn btn-outline" style="margin-top:1rem;" onclick="resetCard()">Retry</button>`;
+  }
+}
+
+function resetCard() {
+  selectedCard = '';
+  ['cardA', 'cardB'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('selected');
+  });
+  document.getElementById('cardA').onclick = () => selectCard('A');
+  document.getElementById('cardB').onclick = () => selectCard('B');
+  document.getElementById('lock-t2').disabled = true;
+  document.getElementById('fb-card').className = 'feedback';
+}
+
+/* ═══════════════════════════════════════════════
+   GAUNTLET
+   7 questions across all 6 domains from 3_Analogy.md:
+   Gaming, Football, Music, Cooking, CCP/AI, Psychology
+═══════════════════════════════════════════════ */
+const G_DATA = [
+  {
+    domain: "🎮 Gaming Meta",
+    type: "text",
+    q: "In a fighting game, repeated competitive iteration causes all top players to converge toward Rushdown (λ₁ = 3.2). This convergence mirrors the mathematical process of applying a matrix repeatedly until all vectors align with one direction. What is this mathematical process called?",
+    match: "power iter",
+    exp: "Power Iteration. When you repeatedly apply a matrix to any non-zero vector, the output increasingly aligns with the dominant eigenvector. Competitive play IS power iteration: every tournament applies the game's 'transformation matrix' to the pool of strategies, and the dominant eigenvector (the meta) absorbs more of the player population each iteration."
+  },
+  {
+    domain: "🎮 Gaming Meta — Patch Dynamics",
+    type: "bool",
+    q: "A game patch reduces Rushdown's eigenvalue from λ = 3.2 to λ = 1.5 and raises Grapple's eigenvalue from λ = 0.9 to λ = 2.4. Players who mastered only Rushdown are now struggling. True or False: The patch physically rotated the Rushdown eigenvector — it now points in a different strategic direction.",
+    ans: false,
+    exp: "False. The eigenvector (the Rushdown playstyle itself) was not rotated — the strategy still works the same way mechanically. What changed was its eigenvalue: the amplification the game applies to that strategy dropped from 3.2 to 1.5. The DIRECTION survived; the SCALE FACTOR changed. Players who understood eigenvalues (which strategies get amplified) as separate from eigenvectors (what the strategy IS) anticipated this and invested in Grapple."
+  },
+  {
+    domain: "⚽ Football Tactics",
+    type: "text",
+    q: "The Premier League's competitive dynamics give High-press counter-attack λ₁ = 2.8 and Long-ball direct play λ₄ = 0.7. The condition number κ = λ₁/λ₄ = 4.0. What does this condition number concretely mean for a long-ball team competing against a pressing team?",
+    match: "4",
+    exp: "κ = 4.0 means a 4:1 amplification advantage. A long-ball team must be fundamentally 4× better in execution quality just to match a pressing team's results. The condition number IS the competitive gap — it tells you how strongly the environment discriminates between its favored and disfavored strategies. A league with κ = 10 punishes stylistic diversity harshly; a league with κ = 1.5 rewards tactical variety."
+  },
+  {
+    domain: "🎵 Music — Feedback Screech",
+    type: "bool",
+    q: "A microphone placed too close to its speaker causes runaway screech at a specific frequency. The audio loop amplifies that frequency → reproduces it → amplifies again, growing exponentially. True or False: The screech occurs because that frequency's eigenvalue exceeds 1.0 in the feedback loop.",
+    ans: true,
+    exp: "True. An eigenvalue > 1 causes exponential growth under repeated application. The audio feedback loop IS repeated matrix application: each pass through the amplifier-speaker-microphone chain multiplies the amplitude by the loop gain. When loop gain > 1 at any frequency, that frequency's eigenvalue exceeds 1 and grows without bound. The screech IS the dominant eigenvector of the feedback system manifesting as runaway amplification."
+  },
+  {
+    domain: "🍳 Cooking",
+    type: "bool",
+    q: "A heavily reduced tomato sauce has become 'one-note' — intensely savory but flat and dull. The original sauce had flavor eigenvalues [4.5 (umami), 2.0 (sweetness), 0.8 (brightness)]. After heavy reduction, the dominant eigenvalue overwhelms the others. A chef adds vinegar to fix the sauce. In eigenvalue terms, what is the chef doing?",
+    ans: true,
+    // True = "manually increasing λ₂ (brightness) to rebalance the eigenspectrum"
+    // False = "removing λ₁ (umami) by adding a counter-flavor"
+    options: ["Manually increasing λ₂ (brightness) to rebalance the eigenspectrum", "Removing λ₁ (umami) by adding a counter-flavor"],
+    isMC: true,
+    correctIdx: 0,
+    exp: "The chef is increasing λ₂ — injecting energy into the eigenmode that the cooking process suppressed. Adding acid (vinegar) restores brightness: it raises the brightness eigenvalue back toward a perceptible level, rebalancing the eigenspectrum. The sauce was rank-1 (one dominant mode); the vinegar moves it toward a richer multi-dimensional flavor eigenspectrum. A balanced dish has eigenvalues in a narrower range — multiple flavor dimensions contributing perceptibly."
+  },
+  {
+    domain: "🤖 CCP / HeadKV",
+    type: "text",
+    q: "After Voice DNA fine-tuning, HeadKV analysis finds Head 7 has spectral entropy 0.08 and Head 3 has spectral entropy 0.85. The CCP has limited VRAM. Which head gets full-precision KV cache protection — and what eigenspectrum property justifies that decision?",
+    match: "head 7",
+    exp: "Head 7 gets full-precision protection. Its spectral entropy of 0.08 indicates a highly concentrated eigenspectrum — one dominant eigenvalue, all others near zero. This is the signature of a focused retriever: it carries unique, non-redundant information from a specific token pathway. Compressing it would destroy that information pathway. Head 3's entropy of 0.85 indicates a flat eigenspectrum — broad integration, high redundancy. Its information exists across multiple heads and can be reconstructed from neighbors. Safe to quantize to 4-bit."
+  },
+  {
+    domain: "🧠 Psychology — PCA Connection",
+    type: "text",
+    q: "Factor analysis and PCA are used in completely different fields (psychology vs. machine learning) but are mathematically identical operations. In both cases, the principal components and the personality factors ARE the same mathematical objects computed from the same kind of matrix. What are these mathematical objects called?",
+    match: "eigenvector",
+    exp: "Eigenvectors of the covariance (or correlation) matrix. PCA decomposes the data's covariance matrix into its eigenspectrum. The principal components ARE the eigenvectors, ranked by their eigenvalues. Personality factors ARE the eigenvectors of the behavioral correlation matrix, ranked by variance explained. The operations are not analogically similar — they are the same computation applied to different data matrices. This is why Lesson 9 (Clustering/PCA) builds directly on Lesson 8: PCA is eigendecomposition, nothing more."
+  }
+];
+
+function renderGauntlet() {
+  const container = document.getElementById('q-container');
+  let html = '';
+  G_DATA.forEach((item, idx) => {
+    html += `<div class="q-block" id="gq-${idx}">
+      <div class="q-num"><span style="color:var(--accent)">${item.domain}</span> · Drill ${String(idx + 1).padStart(2, '0')}</div>
+      <div class="q-text">${item.q}</div>`;
+
+    if (item.isMC) {
+      // Multiple choice
+      item.options.forEach((opt, oi) => {
+        html += `<div style="margin-bottom:0.6rem;"><button class="btn btn-outline" style="text-align:left;width:100%;white-space:normal;height:auto;padding:0.7rem 1rem;" onclick="answerMC(${idx}, ${oi}, this)">${opt}</button></div>`;
+      });
+    } else if (item.type === 'bool') {
+      html += `<div class="bool-row">
+        <button class="btn btn-outline" onclick="answerBool(${idx}, true, this)">True</button>
+        <button class="btn btn-outline" onclick="answerBool(${idx}, false, this)">False</button>
+      </div>`;
+    } else {
+      html += `<div class="input-group">
+        <input type="text" id="gInput-${idx}" class="input-text" placeholder="Type primary keyword…">
+        <button class="btn" onclick="answerText(${idx}, this)">Lock</button>
+      </div>`;
+    }
+
+    html += `<div class="feedback" id="gfb-${idx}"></div></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function showGFeedback(idx, correct) {
+  const block = document.getElementById(`gq-${idx}`);
+  block.querySelectorAll('button').forEach(b => b.disabled = true);
+  const fb = document.getElementById(`gfb-${idx}`);
+  fb.classList.add('visible', correct ? 'success' : 'error');
+  fb.innerHTML = `<div class="feedback-title">${correct ? '✓ Correct' : '✗ Incorrect'}</div>${G_DATA[idx].exp}`;
+}
+
+function answerBool(idx, val, btn) {
+  showGFeedback(idx, val === G_DATA[idx].ans);
+}
+
+function answerMC(idx, optIdx, btn) {
+  showGFeedback(idx, optIdx === G_DATA[idx].correctIdx);
+}
+
+function answerText(idx, btn) {
+  const input = document.getElementById(`gInput-${idx}`);
+  const val = input.value.toLowerCase().trim();
+  if (!val) return;
+  input.disabled = true; btn.disabled = true;
+  showGFeedback(idx, val.includes(G_DATA[idx].match));
+}
+</script>
+</body>
+</html>

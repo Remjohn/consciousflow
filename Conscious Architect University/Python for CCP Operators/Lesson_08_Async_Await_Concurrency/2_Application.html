@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 08 - Application Layer (Blueprint Reader)</title>
+  <style>
+    :root {
+      --bg: #030a12;
+      --bg-elevated: #0a141f;
+      --panel: rgba(5, 12, 20, 0.95);
+      --line: rgba(86,197,255,0.15);
+      --text: #e2eaf2;
+      --muted: #82a8c7;
+      --accent: #56c5ff;
+      --accent-glow: rgba(86,197,255,0.15);
+      --warning: #ff7a18;
+      --good: #2ecc71;
+      --bad: #ff5c73;
+      --font-ui: "Space Grotesk", Arial, sans-serif;
+      --font-body: "DM Sans", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: var(--font-body);
+      line-height: 1.6;
+      background: var(--bg);
+      background-image: 
+        linear-gradient(rgba(86,197,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(86,197,255,0.03) 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
+
+    .shell {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 40px;
+    }
+
+    .card {
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--bg-elevated);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      padding: 24px;
+      overflow: hidden;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      font: 700 0.75rem/1.2 var(--font-ui);
+      margin-bottom: 12px;
+    }
+
+    h1, h2, h3 {
+      font-family: var(--font-ui);
+      margin: 0 0 12px;
+      line-height: 1.1;
+    }
+
+    h1 { font-size: 2.2rem; margin-bottom: 1rem; color: #fff;}
+    h2 { font-size: 1.5rem; color: #fff; }
+    h3 { font-size: 1rem; color: var(--accent); }
+    p { margin: 0 0 16px; color: var(--muted); }
+
+    .tree-nav {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .tree-nav li {
+      margin-bottom: 8px;
+    }
+
+    .tree-link {
+      display: flex;
+      align-items: center;
+      padding: 10px 14px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: var(--muted);
+      text-decoration: none;
+      font: 600 0.85rem var(--font-mono);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tree-link:hover {
+      background: rgba(86,197,255,0.05);
+      color: var(--text);
+    }
+
+    .tree-link.active {
+      background: var(--accent-glow);
+      border-color: rgba(86,197,255,0.4);
+      color: var(--accent);
+    }
+
+    .blueprint-panel {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .blueprint-panel.active {
+      display: block;
+    }
+
+    .code-container {
+      background: #02060a;
+      border: 1px solid rgba(86,197,255,0.2);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .code-header {
+      background: rgba(86,197,255,0.08);
+      border-bottom: 1px solid rgba(86,197,255,0.2);
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font: 400 0.8rem var(--font-mono);
+      color: var(--accent);
+    }
+
+    .code-content {
+      padding: 20px;
+      font: 400 0.88rem/1.6 var(--font-mono);
+      color: #cbd5e1;
+      overflow-x: auto;
+    }
+
+    .hl-c { color: #475569; font-style: italic; }
+    .hl-k { color: var(--accent); }
+    .hl-s { color: #facc15; }
+    .hl-f { color: #fb923c; }
+    .hl-line { background: rgba(255, 122, 24, 0.15); display: inline-block; width: 100%; border-left: 3px solid var(--warning); padding-left: 8px;}
+
+    .inspector {
+      background: rgba(255,122,24,0.05);
+      border: 1px dashed rgba(255,122,24,0.4);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .inspector-title {
+      color: var(--warning);
+      font: 700 0.85rem var(--font-mono);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    .btn {
+      display: inline-block;
+      border: 0;
+      cursor: pointer;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font: 700 0.9rem/1 var(--font-ui);
+      transition: all 0.2s;
+      background: var(--accent);
+      color: #000;
+    }
+
+    .btn:hover { background: #3ab0ff; }
+    
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .btn-secondary:hover { background: rgba(255,255,255,0.05); }
+
+    .choices {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .choice {
+      width: 100%;
+      text-align: left;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: #02060a;
+      color: var(--muted);
+      font: 400 0.95rem/1.5 var(--font-body);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .choice.selected {
+      border-color: var(--warning);
+      color: var(--text);
+      background: rgba(255,122,24,0.1);
+    }
+
+    .feedback {
+      display: none;
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,0.5);
+    }
+
+    .feedback.show { display: block; }
+    .feedback.good { border-left: 4px solid var(--good); }
+    .feedback.bad { border-left: 4px solid var(--bad); }
+
+    .hidden { display: none; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    
+    <aside class="sidebar">
+      <div class="card">
+        <p class="eyebrow">Lesson 08 - Application Layer</p>
+        <h1>CCP Architect Blueprints</h1>
+        <p>The abstract factory from Layer 1 is now real. You are reading actual CCP production code.</p>
+        
+        <ul class="tree-nav">
+          <li>
+            <a class="tree-link active" onclick="activateTab('fastapi', this)">
+              <span>📄 main.py (FastAPI Websocket)</span>
+            </a>
+          </li>
+          <li>
+            <a class="tree-link" onclick="activateTab('pipecat', this)">
+              <span>📄 harness.py (Subprocess Ext)</span>
+            </a>
+          </li>
+          <li>
+            <a class="tree-link" onclick="activateTab('dspy', this)">
+              <span>📄 module.py (DSPy Async)</span>
+            </a>
+          </li>
+          <li>
+            <a class="tree-link" onclick="activateTab('gauntlet', this)">
+              <span>⭐ Application Gauntlet</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="content">
+      
+      <!-- FASTAPI WEBSOCKET -->
+      <section id="fastapi" class="blueprint-panel active">
+        <div class="card">
+          <h2>The Router Edge</h2>
+          <p>This is where client TCP connections are handled. FastAPI automatically routes the request and gives you the `websocket` object. Your job is to orchestrate the loop without dying.</p>
+
+          <div class="code-container">
+            <div class="code-header">
+              <span>ccp_backend/routers/audio.py</span>
+              <span>Python 3.12</span>
+            </div>
+            <div class="code-content">
+<span class="hl-k">from</span> fastapi <span class="hl-k">import</span> APIRouter, WebSocket, WebSocketDisconnect
+<span class="hl-k">from</span> services.agent <span class="hl-k">import</span> run_coaching_session
+
+router = APIRouter()
+
+<span class="hl-k">@router.websocket</span>(<span class="hl-s">"/ws/coach/{session_id}"</span>)
+<span class="hl-k">async def</span> <span class="hl-f">websocket_endpoint</span>(websocket: WebSocket, session_id: <span class="hl-k">str</span>):
+    <span class="hl-k">await</span> websocket.accept()
+    <span class="hl-k">try</span>:
+        <span class="hl-c"># Enter the indefinite bidirectional stream</span>
+        <span class="hl-k">while True</span>:
+            <span class="hl-line">data = <span class="hl-k">await</span> websocket.receive_text()</span>
+            response = <span class="hl-k">await</span> run_coaching_session(session_id, data)
+            <span class="hl-k">await</span> websocket.send_text(response)
+    <span class="hl-k">except</span> WebSocketDisconnect:
+        clean_up_session(session_id)
+            </div>
+          </div>
+
+          <div class="inspector">
+            <div class="inspector-title">Defect Prediction: The Clean-Up</div>
+            <p>Look at the very last line: <code>clean_up_session(session_id)</code>. Assume `clean_up_session` is a database write operation that saves standard metrics to Neo4j, taking ~200ms.</p>
+            <p>Why is this line an architectural defect?</p>
+            
+            <div class="choices" data-group="bp1">
+              <button class="choice" onclick="selectChoice('bp1', 'A', this)">It is not wrapped in a try/except block.</button>
+              <button class="choice" onclick="selectChoice('bp1', 'B', this)">It is a synchronous database call executing inside the async event loop without being offloaded or awaited, freezing the FastAPI server for 200ms.</button>
+              <button class="choice" onclick="selectChoice('bp1', 'C', this)">It needs to be awaited, because all functions in FastAPI must be awaited.</button>
+            </div>
+
+            <div class="actions">
+              <button class="btn" onclick="submitBlueprint('bp1', 'B')">Execute Trace</button>
+            </div>
+
+            <div id="bp1-feedback" class="feedback"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PIPECAT HARNESS -->
+      <section id="pipecat" class="blueprint-panel">
+        <div class="card">
+          <h2>Pipecat Harness Shell Escapes</h2>
+          <p>Sometimes you must leave Python entirely. Audio processing via `ffmpeg` requires spawning a separate system process. You cannot let Python wait for the C++ binary.</p>
+
+          <div class="code-container">
+            <div class="code-header">
+              <span>ccp_backend/audio/pipecat.py</span>
+              <span>Python 3.12</span>
+            </div>
+            <div class="code-content">
+<span class="hl-k">import</span> asyncio
+
+<span class="hl-k">async def</span> <span class="hl-f">convert_webm_to_wav</span>(input_path: <span class="hl-k">str</span>, output_path: <span class="hl-k">str</span>):
+    <span class="hl-c"># Spawn a completely independent OS process</span>
+    process = <span class="hl-k">await</span> asyncio.create_subprocess_exec(
+        <span class="hl-s">'ffmpeg'</span>, <span class="hl-s">'-i'</span>, input_path, <span class="hl-s">'-ar'</span>, <span class="hl-s">'16000'</span>, output_path,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+
+    <span class="hl-c"># We do not block here. The Eventloop yields completely.</span>
+    <span class="hl-line">stdout, stderr = <span class="hl-k">await</span> process.communicate()</span>
+
+    <span class="hl-k">if</span> process.returncode != <span class="hl-k">0</span>:
+        <span class="hl-k">raise</span> Exception(f<span class="hl-s">"ffmpeg failed: {stderr.decode()}"</span>)
+            </div>
+          </div>
+
+          <div class="inspector">
+            <div class="inspector-title">Defect Prediction: Process Control</div>
+            <p>What would happen if the Architect used <code>os.system("ffmpeg ...")</code> instead of <code>asyncio.create_subprocess_exec</code>?</p>
+            
+            <div class="choices" data-group="bp2">
+              <button class="choice" onclick="selectChoice('bp2', 'A', this)">It would run faster because os.system avoids Python's async overhead natively.</button>
+              <button class="choice" onclick="selectChoice('bp2', 'B', this)">It would work exactly the same, it's just older syntax.</button>
+              <button class="choice" onclick="selectChoice('bp2', 'C', this)">os.system is synchronous. The Python thread would completely freeze until the ffmpeg binary finished executing, starving the Event Loop.</button>
+            </div>
+
+            <div class="actions">
+              <button class="btn" onclick="submitBlueprint('bp2', 'C')">Execute Trace</button>
+            </div>
+
+            <div id="bp2-feedback" class="feedback"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DSPY ASYNC -->
+      <section id="dspy" class="blueprint-panel">
+        <div class="card">
+          <h2>DSPy Async Abstractions</h2>
+          <p>DSPy modules typically run synchronously. But when making 100 simultaneous LLM inferences against OpenAI, we must use the Async abstraction layer.</p>
+
+          <div class="code-container">
+            <div class="code-header">
+              <span>ccp_backend/intelligence/rag.py</span>
+              <span>Python 3.12</span>
+            </div>
+            <div class="code-content">
+<span class="hl-k">import</span> dspy
+<span class="hl-k">import</span> asyncio
+
+<span class="hl-k">async def</span> <span class="hl-f">evaluate_candidates</span>(questions: <span class="hl-k">list</span>[<span class="hl-k">str</span>]):
+    module = dspy.AsyncPredict(<span class="hl-s">"question -> answer"</span>)
+    
+    <span class="hl-c"># We create the coroutines, but do not await them yet</span>
+    tasks = [module(question=q) <span class="hl-k">for</span> q <span class="hl-k">in</span> questions]
+    
+    <span class="hl-c"># We gather them to execute concurrently via the Event Loop</span>
+    <span class="hl-line">results = <span class="hl-k">await</span> asyncio.gather(*tasks)</span>
+    
+    <span class="hl-k">return</span> results
+            </div>
+          </div>
+
+          <div class="inspector">
+            <div class="inspector-title">Defect Prediction: Gather vs Loop</div>
+            <p>If we replaced `asyncio.gather` with a standard `for` loop that awaits each task sequentially:</p>
+            <pre style="background:rgba(0,0,0,0.5); padding:10px; border-radius:4px; font-size:0.8rem;">results = []<br>for t in tasks:<br>    results.append(await t)</pre>
+            <p>Are we still starving the Event Loop?</p>
+            
+            <div class="choices" data-group="bp3">
+              <button class="choice" onclick="selectChoice('bp3', 'A', this)">No. The loop is properly yielding to the Event Loop, so the server won't crash. However, the LLM calls happen sequentially instead of in parallel, taking 100x longer to finish this specific function.</button>
+              <button class="choice" onclick="selectChoice('bp3', 'B', this)">Yes. Awaiting in a for-loop blocks the entire Python process from handling other websocket users.</button>
+            </div>
+
+            <div class="actions">
+              <button class="btn" onclick="submitBlueprint('bp3', 'A')">Execute Trace</button>
+            </div>
+
+            <div id="bp3-feedback" class="feedback"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GAUNTLET -->
+      <section id="gauntlet" class="blueprint-panel">
+        <div class="card">
+          <h2>Application Gauntlet</h2>
+          <p>Match the CCP technology to the correct Async integration requirement.</p>
+
+          <div style="display:flex; flex-direction:column; gap:16px;">
+            <div style="background:#02060a; padding:16px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
+               <p style="color:#fff; margin-bottom:8px; font-weight:700;">1. FastAPI Websockets `while True:` Loop</p>
+               <input id="ans1" type="text" placeholder="Requires what keyword before receive_text()?" style="width:100%">
+            </div>
+            <div style="background:#02060a; padding:16px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
+               <p style="color:#fff; margin-bottom:8px; font-weight:700;">2. Neo4j Database Writes in Background</p>
+               <input id="ans2" type="text" placeholder="How do you dispatch without blocking the caller?" style="width:100%">
+            </div>
+            <div style="background:#02060a; padding:16px; border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
+               <p style="color:#fff; margin-bottom:8px; font-weight:700;">3. DSPy Parallel Execution</p>
+               <input id="ans3" type="text" placeholder="What asyncio function executes a list of tasks concurrently?" style="width:100%">
+            </div>
+          </div>
+          
+          <div class="actions" style="margin-top:20px;">
+             <button class="btn" onclick="checkGauntlet()">Complete Application Layer</button>
+          </div>
+
+          <div id="gauntlet-fb" class="feedback"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    const selections = {};
+
+    function activateTab(id, el) {
+      document.querySelectorAll('.tree-link').forEach(l => l.classList.remove('active'));
+      el.classList.add('active');
+      document.querySelectorAll('.blueprint-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function selectChoice(group, value, el) {
+      selections[group] = value;
+      document.querySelectorAll(`[data-group="${group}"] .choice`).forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    function showFeedback(id, type, head, body) {
+      const fb = document.getElementById(id);
+      fb.className = 'feedback show ' + type;
+      fb.innerHTML = `<h3 style="color: ${type === 'good' ? '#2ecc71' : '#ff5c73'}; margin-bottom:6px;">${head}</h3><p style="margin:0;">${body}</p>`;
+    }
+
+    function submitBlueprint(group, correct) {
+      if(!selections[group]) return;
+      const pass = selections[group] === correct;
+      let body = '';
+      if(group === 'bp1') body = pass ? "Exactly. Synchronous DB drivers (like basic neo4j) inside async functions will lock the CPU. It belongs in a ThreadPool or requires an async neo4j driver." : "Incorrect. Try/except has nothing to do with thread starvation.";
+      if(group === 'bp2') body = pass ? "Correct. `os.system` pauses the Python execution thread while it waits for the OS to return. `asyncio.create_subprocess_exec` registers the OS completely externally." : "Incorrect. Faster execution does not prevent event loop starvation during the wait.";
+      if(group === 'bp3') body = pass ? "Correct. `await` yields to the Event Loop. The server handles other websocket clients perfectly fine. But the LLM calls wait for each other, destroying the local speed optimization." : "Incorrect. `await` ALWAYS yields to the Event Loop, protecting the server. The problem is purely localized sequence.";
+      
+      showFeedback(group + '-feedback', pass?'good':'bad', pass?"Trace Confirmed":"Defect Missed", body);
+    }
+
+    function checkGauntlet() {
+      const a1 = document.getElementById('ans1').value.toLowerCase();
+      const a2 = document.getElementById('ans2').value.toLowerCase();
+      const a3 = document.getElementById('ans3').value.toLowerCase();
+
+      let score = 0;
+      if (a1.includes('await')) score++;
+      if (a2.includes('create_task') || a2.includes('gather') || a2.includes('backgroundtask')) score++;
+      if (a3.includes('gather')) score++;
+
+      if (score >= 2) {
+        showFeedback('gauntlet-fb', 'good', "Application Layer Complete", "You have mapped the abstract event loop principles to the concrete engineering interfaces of FastAPI, Neo4j, and DSPy.");
+      } else {
+        showFeedback('gauntlet-fb', 'bad', "Application Failed", "Review the code snippets carefully. Identify `await`, `create_task`, and `gather`.");
+      }
+    }
+  </script>
+</body>
+</html>

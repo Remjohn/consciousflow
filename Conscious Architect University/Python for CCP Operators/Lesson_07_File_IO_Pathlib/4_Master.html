@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 07 - Master Layer</title>
+  <style>
+    :root {
+      --bg: #03070a;
+      --panel: rgba(12, 18, 25, 0.95);
+      --line: rgba(255,255,255,0.08);
+      --text: #e7eef5;
+      --muted: #89a1b2;
+      --accent: #ff5c73;
+      --good: #2ecc71;
+      --gold: #ffd166;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--text);
+      font-family: Consolas, Monaco, "Courier New", monospace; line-height: 1.6;
+      background: var(--bg);
+    }
+    .hud { position: fixed; top: 0; left: 0; right: 0; padding: 18px 24px; background: #000; border-bottom: 1px solid var(--accent); display: flex; justify-content: space-between; align-items: center; z-index: 100; box-shadow: 0 4px 20px rgba(255,92,115,0.15); }
+    .hud-title { color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+    .timer { font-size: 1.5rem; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+    .timer.urgent { color: var(--accent); animation: pulse 1s infinite alternate; }
+    .shell { max-width: 900px; margin: 90px auto 80px; padding: 0 18px; }
+    
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .section-title { color: var(--gold); text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.9rem; margin: 0 0 16px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+    h2 { font-size: 1.2rem; margin: 0 0 12px; color: #fff; font-family: Georgia, serif; }
+    p { margin: 0 0 16px; font-family: Georgia, serif; font-size: 1.05rem; }
+    
+    .code-block { background: #000; padding: 16px; border-radius: 8px; font-size: 0.9rem; color: #56c5ff; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 16px; white-space: pre-wrap; word-break: break-all; }
+    textarea { width: 100%; min-height: 120px; padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: #03070a; color: var(--good); font-family: Consolas, monospace; font-size: 0.95rem; resize: vertical; margin-bottom: 16px; transition: border-color 0.2s; }
+    textarea:focus { outline: none; border-color: var(--accent); }
+    
+    .triage-grid { display: grid; gap: 16px; margin-bottom: 16px; }
+    .triage-opts { display: flex; gap: 8px; }
+    .triage-btn { flex: 1; padding: 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: var(--muted); cursor: pointer; text-align: center; font-family: Consolas, monospace; transition: all 0.2s; }
+    .triage-btn.selected { border-color: var(--accent); color: #fff; background: rgba(255,92,115,0.1); }
+    
+    .submit-bar { position: fixed; bottom: 0; left: 0; right: 0; padding: 20px; background: #000; border-top: 1px solid var(--line); text-align: center; z-index: 100; }
+    .btn-submit { border: 0; cursor: pointer; padding: 16px 32px; border-radius: 999px; background: var(--accent); color: white; font-weight: 700; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.1em; transition: opacity 0.2s; font-family: Consolas, monospace;}
+    .btn-submit:hover { opacity: 0.9; }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    .locked-screen { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+    .locked-screen.show { display: flex; }
+    .score-display { font-size: 4rem; color: var(--gold); margin-bottom: 20px; }
+    .analysis-report { max-width: 600px; text-align: left; background: #0d1218; padding: 24px; border-radius: 12px; border: 1px solid var(--line); overflow-y: auto; max-height: 50vh; }
+    .report-item { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); font-family: Georgia, serif;}
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-family: Consolas, monospace; font-weight: 700; margin-bottom: 8px;}
+    .badge-good { background: rgba(46,204,113,0.15); color: var(--good); border: 1px solid rgba(46,204,113,0.3); }
+    .badge-bad { background: rgba(255,92,115,0.15); color: var(--accent); border: 1px solid rgba(255,92,115,0.3); }
+    
+    @keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
+  </style>
+</head>
+<body>
+  
+  <div class="hud">
+    <div class="hud-title">Terminal Assessment: File I/O Constraints</div>
+    <div id="timer" class="timer">12:00</div>
+  </div>
+
+  <main class="shell" id="exam-form">
+    
+    <div class="card">
+      <h2 style="color:var(--accent);">WARNING: LIVE ENVIRONMENT</h2>
+      <p>You have 12 minutes to specify contracts, triage hallucinated logs, and justify the Orchestration architecture. This evaluates structural mastery, not syntax execution.</p>
+    </div>
+
+    <!-- Section 1 -->
+    <div class="card">
+      <div class="section-title">Section 1: Contract Specification (60 Points)</div>
+      <h2>Construct Voice DNA Workspace Payload</h2>
+      <p>The Pi Agentic Harness requires a Pydantic schema to validate the compilation workspace. It must contain: `id` (string), `workspace_root` (absolute Path), `volatile` (bool), and `options` (optional dict). The path MUST be absolute. If it is relative, the validator must throw a ValueError using `.is_absolute()`.</p>
+      <textarea id="q1" placeholder="Write the raw Python Pydantic BaseModel here..."></textarea>
+    </div>
+
+    <!-- Section 2 -->
+    <div class="card">
+      <div class="section-title">Section 2: Defect Triage (60 Points)</div>
+      <p>Classify the defect state of these 4 agent-generated File I/O operations.</p>
+      
+      <div class="code-block">def create_isolated_task(alias: str):
+    new_task = Path("outputs") / alias
+    new_task.mkdir() # Crash risk if 'outputs' doesn't exist
+    with new_task.joinpath("log.txt").open("a") as f:
+        f.write("Task Started.")</div>
+      <div class="triage-grid" id="t1-opts">
+        <div class="triage-opts">
+          <div class="triage-btn" onclick="selTriage('t1', 'correct', this)">✅ Correct</div>
+          <div class="triage-btn" onclick="selTriage('t1', 'omission', this)">🔴 Omission</div>
+          <div class="triage-btn" onclick="selTriage('t1', 'hallucination', this)">🟡 Hallucination</div>
+          <div class="triage-btn" onclick="selTriage('t1', 'misapplication', this)">🔵 Misapplication</div>
+        </div>
+      </div>
+
+      <div class="code-block">def purge_memory_logs(db: Path):
+    if db.exists():
+        for log in db.rglob("*.jsonl"):
+            log.unlink()</div>
+      <div class="triage-grid" id="t2-opts">
+        <div class="triage-opts">
+          <div class="triage-btn" onclick="selTriage('t2', 'correct', this)">✅ Correct</div>
+          <div class="triage-btn" onclick="selTriage('t2', 'omission', this)">🔴 Omission</div>
+          <div class="triage-btn" onclick="selTriage('t2', 'hallucination', this)">🟡 Hallucination</div>
+          <div class="triage-btn" onclick="selTriage('t2', 'misapplication', this)">🔵 Misapplication</div>
+        </div>
+      </div>
+
+      <div class="code-block">def load_llm_instructions(module: str) -> str:
+    path_target = f"instructions/{module}.md"
+    payload = open(path_target, "r").read() # Wait, no with block?
+    return payload</div>
+      <div class="triage-grid" id="t3-opts">
+        <div class="triage-opts">
+          <div class="triage-btn" onclick="selTriage('t3', 'correct', this)">✅ Correct</div>
+          <div class="triage-btn" onclick="selTriage('t3', 'omission', this)">🔴 Omission</div>
+          <div class="triage-btn" onclick="selTriage('t3', 'hallucination', this)">🟡 Hallucination</div>
+          <div class="triage-btn" onclick="selTriage('t3', 'misapplication', this)">🔵 Misapplication</div>
+        </div>
+      </div>
+
+      <div class="code-block">def save_state(state: dict, workspace: Path):
+    target = workspace / "checkpoint.json"
+    target.resolve().create_file(state) # Wait, what is create_file()?</div>
+      <div class="triage-grid" id="t4-opts">
+        <div class="triage-opts">
+          <div class="triage-btn" onclick="selTriage('t4', 'correct', this)">✅ Correct</div>
+          <div class="triage-btn" onclick="selTriage('t4', 'omission', this)">🔴 Omission</div>
+          <div class="triage-btn" onclick="selTriage('t4', 'hallucination', this)">🟡 Hallucination</div>
+          <div class="triage-btn" onclick="selTriage('t4', 'misapplication', this)">🔵 Misapplication</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3 -->
+    <div class="card">
+      <div class="section-title">Section 3: Architectural Reasoning (40 Points)</div>
+      <h2>The Supervisor Doctrine</h2>
+      <p>Why does the CCP rigidly enforce `pathlib.Path` objects when piping instructions down to the Pi Subprocess Execution layer instead of raw strings like `sys_path + '/logs'`?</p>
+      <textarea id="q3" placeholder="Because..."></textarea>
+    </div>
+
+    <!-- Section 4 -->
+    <div class="card" style="border-color: rgba(255,122,24,0.4);">
+      <div class="section-title" style="color: #ff7a18;">Section 4: Feynman Compression (40 Points)</div>
+      <h2>The Core Sandboxing Mechanism</h2>
+      <p>Explain in your own words why `Pathlib` and `with` context boundaries are critical. You must include: [1] the Pi Harness / Robot Arm, [2] stopping infinite open file handles, and [3] the Chassis deterministic boundary.</p>
+      <textarea id="q4" placeholder="Your architectural evaluation..."></textarea>
+    </div>
+
+  </main>
+
+  <div class="submit-bar">
+    <button id="submitBtn" class="btn-submit" onclick="submitExam()">Lock Architecture Commands</button>
+  </div>
+
+  <div id="lockedScreen" class="locked-screen">
+    <div class="hud-title" style="margin-bottom: 20px;">Execution Terminated</div>
+    <div id="finalScore" class="score-display">0 / 200</div>
+    <div id="analysisReport" class="analysis-report"></div>
+  </div>
+
+  <script>
+    let timeLeft = 12 * 60; // 12 minutes
+    const timerEl = document.getElementById('timer');
+    const triageData = { t1: null, t2: null, t3: null, t4: null };
+    let examActive = true;
+
+    const countdown = setInterval(() => {
+      if(!examActive) return;
+      timeLeft--;
+      const m = Math.floor(timeLeft / 60);
+      const s = timeLeft % 60;
+      timerEl.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+      
+      if(timeLeft <= 60) {
+        timerEl.classList.add('urgent');
+      }
+      
+      if(timeLeft <= 0) {
+        clearInterval(countdown);
+        submitExam(true); // Force submit
+      }
+    }, 1000);
+
+    function selTriage(q, value, el) {
+      if(!examActive) return;
+      triageData[q] = value;
+      const opts = document.getElementById(`${q}-opts`).querySelectorAll('.triage-btn');
+      opts.forEach(b => b.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    function containsAny(value, options) {
+      if(!value) return false;
+      return options.some(opt => value.toLowerCase().includes(opt.toLowerCase()));
+    }
+
+    function submitExam(auto = false) {
+      if(!examActive) return;
+      examActive = false;
+      clearInterval(countdown);
+      
+      let baseScore = 0;
+      const report = document.getElementById('analysisReport');
+      report.innerHTML = '';
+      
+      const q1 = document.getElementById('q1').value;
+      const q3 = document.getElementById('q3').value;
+      const q4 = document.getElementById('q4').value;
+      
+      const addReport = (title, points, max, msg, isGood) => {
+        baseScore += points;
+        report.innerHTML += `
+          <div class="report-item">
+            <div class="badge ${isGood ? 'badge-good' : 'badge-bad'}">${points}/${max} PTS</div>
+            <h3 style="margin:0 0 8px;font-size:1rem;color:#fff">${title}</h3>
+            <p style="color:#b7c7d4;font-size:0.9rem;margin:0;">${msg}</p>
+          </div>
+        `;
+      };
+
+      // Q1 Check
+      let q1Score = 0;
+      let q1Msg = [];
+      if(containsAny(q1, ['baseModel'])) q1Score += 15; else q1Msg.push("Missed BaseModel class definition.");
+      if(containsAny(q1, ['Path'])) q1Score += 15; else q1Msg.push("Failed to enforce Path typing.");
+      if(containsAny(q1, ['field_validator', '@field_validator'])) q1Score += 15; else q1Msg.push("Missed field_validator declaration.");
+      if(containsAny(q1, ['is_absolute()', 'is_absolute'])) q1Score += 15; else q1Msg.push("Omitted explicit is_absolute() structural verify.");
+      addReport('Contract Specification', q1Score, 60, q1Score === 60 ? "Perfect validation architecture." : 'Defects: ' + q1Msg.join(' '), q1Score >= 45);
+
+      // Triage Checks
+      let tScore = 0;
+      let tMissed = [];
+      if(triageData.t1 === 'omission') tScore += 15; else tMissed.push("T1 was an Omission (missing parents=True).");
+      if(triageData.t2 === 'correct') tScore += 15; else tMissed.push("T2 was Correct (.unlink() is perfect).");
+      if(triageData.t3 === 'misapplication') tScore += 15; else tMissed.push("T3 was Misapplication (using open w/o with).");
+      if(triageData.t4 === 'hallucination') tScore += 15; else tMissed.push("T4 was Hallucination (create_file does not exist).");
+      addReport('Defect Triage', tScore, 60, tScore === 60 ? "Forensic logic is absolute." : tMissed.join(' '), tScore >= 45);
+
+      // Q3 Check
+      let q3Score = 0;
+      if(containsAny(q3, ['os', 'linux', 'windows', 'docker', 'dimension', 'absolute', 'relative'])) {
+        q3Score = 40;
+        addReport('Architectural Reasoning', 40, 40, 'Identified OS-level divergence and path resolution risk correctly.', true);
+      } else {
+        q3Score = 10;
+        addReport('Architectural Reasoning', 10, 40, 'Failed to explicitly link raw strings to OS-level environment or Docker traversal issues.', false);
+      }
+
+      // Q4 Check (Feynman)
+      let q4Score = 0;
+      let fHits = 0;
+      let fMsg = [];
+      if(containsAny(q4, ['pi', 'agentic', 'harness', 'robot arm'])) fHits++; else fMsg.push("Missing Robot Arm reference.");
+      if(containsAny(q4, ['file handle', 'open file', 'descriptor', 'memory leak', 'asphyxiate', 'close'])) fHits++; else fMsg.push("Missing file descriptor locking risk.");
+      if(containsAny(q4, ['chassis', 'orchestrator', 'fastapi', 'os'])) fHits++; else fMsg.push("Missing Chassis boundary concept.");
+      
+      if(fHits === 3) {
+        q4Score = 40;
+        addReport('Feynman Checkpoint', 40, 40, 'Architectural mastery confirmed.', true);
+      } else if (fHits === 2) {
+        q4Score = 20;
+        addReport('Feynman Checkpoint', 20, 40, 'Partial mapping. ' + fMsg.join(' '), false);
+      } else {
+        q4Score = 0;
+        addReport('Feynman Checkpoint', 0, 40, 'Catastrophic failure to map structural constraints.', false);
+      }
+
+      document.getElementById('finalScore').textContent = `${baseScore} / 200`;
+      if(baseScore >= 160) {
+        document.getElementById('finalScore').style.color = 'var(--good)';
+      }
+      
+      document.getElementById('lockedScreen').classList.add('show');
+    }
+  </script>
+</body>
+</html>

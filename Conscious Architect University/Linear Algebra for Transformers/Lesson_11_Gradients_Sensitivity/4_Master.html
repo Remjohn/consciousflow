@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 11 — Master / Capstone</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0b0e;--fg:#d4d2cc;--muted:#555860;--accent:#6e7a8a;
+  --accent-dim:#3e4550;--error:#b8503e;--success:#4e8e5e;
+  --card:#111318;--border:#1c1e25;--input-bg:#0d0e12;
+}
+html{font-size:16px;scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;color:var(--fg);background:var(--bg);min-height:100vh;line-height:1.7;overflow-x:hidden}
+/* Timer HUD */
+#timer-hud{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:rgba(10,11,14,.92);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--border);
+  padding:12px 24px;display:flex;justify-content:space-between;align-items:center;
+}
+#timer-hud .hud-left{font-family:'Space Mono',monospace;font-size:.78rem;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+#timer-hud .hud-right{display:flex;align-items:center;gap:16px}
+#timer-display{font-family:'Space Mono',monospace;font-size:1.1rem;color:var(--accent);letter-spacing:.06em;min-width:70px;text-align:right}
+#timer-display.warning{color:var(--error)}
+#hud-submit{
+  font-family:'Space Mono',monospace;font-size:.72rem;letter-spacing:.05em;
+  background:none;border:1px solid var(--accent-dim);color:var(--accent);
+  padding:7px 18px;border-radius:3px;cursor:pointer;text-transform:uppercase;transition:all .2s;
+}
+#hud-submit:hover:not(:disabled){border-color:var(--accent)}
+#hud-submit:disabled{opacity:.25;cursor:default}
+/* Main */
+#app{position:relative;z-index:1;max-width:660px;margin:0 auto;padding:80px 20px 40px}
+.q-block{margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid var(--border)}
+.q-num{font-family:'Space Mono',monospace;font-size:.72rem;color:var(--muted);letter-spacing:.05em;margin-bottom:6px}
+.q-text{font-size:.95rem;line-height:1.65;margin-bottom:10px}
+.q-text code{font-family:'Space Mono',monospace;font-size:.85rem;color:var(--accent);background:rgba(110,122,138,.07);padding:2px 5px;border-radius:3px}
+.q-text strong{font-weight:700;color:var(--fg)}
+/* Boolean */
+.bool-row{display:flex;gap:10px;margin-top:6px}
+.bool-btn{
+  font-family:'Space Mono',monospace;font-size:.85rem;
+  background:var(--input-bg);border:1px solid var(--border);border-radius:3px;
+  color:var(--fg);padding:9px 22px;cursor:pointer;transition:all .2s;
+}
+.bool-btn:hover:not(:disabled){border-color:var(--accent-dim)}
+.bool-btn:disabled{cursor:default}
+.bool-btn.sel{border-color:var(--accent);background:rgba(110,122,138,.08)}
+.bool-btn.sel.ok{border-color:var(--success);color:var(--success);background:rgba(78,142,94,.06)}
+.bool-btn.sel.no{border-color:var(--error);color:var(--error);background:rgba(184,80,62,.06)}
+/* Input */
+.q-input{
+  font-family:'Space Mono',monospace;font-size:.88rem;
+  background:var(--input-bg);border:1px solid var(--border);border-radius:3px;
+  color:var(--fg);padding:9px 12px;outline:none;transition:border-color .2s;width:100%;max-width:300px;
+}
+.q-input:focus{border-color:var(--accent-dim)}
+.q-input.locked{opacity:.6;pointer-events:none}
+.q-input.ok{border-color:var(--success)}
+.q-input.no{border-color:var(--error)}
+/* Textarea */
+.q-textarea{
+  font-family:'DM Sans',sans-serif;font-size:.92rem;
+  background:var(--input-bg);border:1px solid var(--border);border-radius:3px;
+  color:var(--fg);padding:10px 12px;outline:none;transition:border-color .2s;
+  width:100%;min-height:90px;resize:vertical;line-height:1.6;
+}
+.q-textarea:focus{border-color:var(--accent-dim)}
+.q-textarea.locked{opacity:.6;pointer-events:none}
+.q-textarea.ok{border-color:var(--success)}
+.q-textarea.no{border-color:var(--error)}
+/* Submit area */
+.submit-area{text-align:center;padding:30px 0 20px}
+.submit-btn{
+  font-family:'Space Mono',monospace;font-size:.8rem;letter-spacing:.06em;
+  background:none;border:1px solid var(--accent);color:var(--accent);
+  padding:12px 40px;border-radius:4px;cursor:pointer;transition:all .25s;text-transform:uppercase;
+}
+.submit-btn:hover{background:rgba(110,122,138,.08)}
+.submit-btn:disabled{opacity:.2;cursor:default}
+/* Results */
+#results{display:none;padding:20px 0 40px}
+.res-total{text-align:center;padding:24px 0;margin-bottom:24px;border-bottom:1px solid var(--border)}
+.res-total .score{font-family:'Space Mono',monospace;font-size:2.6rem;font-weight:700}
+.res-total .score.pass{color:var(--success)}
+.res-total .score.fail{color:var(--error)}
+.res-total .label{font-family:'Space Mono',monospace;font-size:.78rem;color:var(--muted);letter-spacing:.05em;margin-top:2px}
+.res-total .verdict{font-family:'Space Mono',monospace;font-size:.85rem;margin-top:8px;letter-spacing:.04em}
+.res-total .verdict.pass{color:var(--success)}
+.res-total .verdict.fail{color:var(--error)}
+.res-row{display:flex;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px solid rgba(28,30,37,.5)}
+.res-row:last-child{border-bottom:none}
+.res-qnum{font-family:'Space Mono',monospace;font-size:.72rem;color:var(--muted);min-width:40px;padding-top:3px}
+.res-pts{font-family:'Space Mono',monospace;font-size:.82rem;min-width:50px;text-align:right;padding-top:3px}
+.res-pts.full{color:var(--success)}
+.res-pts.partial{color:var(--accent)}
+.res-pts.zero{color:var(--error)}
+.res-detail{font-size:.82rem;color:var(--muted);line-height:1.5;flex:1}
+.res-detail .kw-found{color:var(--success)}
+.res-detail .kw-missing{color:var(--error)}
+.feynman-section{margin-top:20px;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:4px}
+.feynman-section h3{font-family:'Space Mono',monospace;font-size:.82rem;color:var(--accent);margin-bottom:10px;letter-spacing:.04em;text-transform:uppercase}
+.feynman-kw{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px}
+.feynman-kw span{font-family:'Space Mono',monospace;font-size:.78rem}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+#results.show{display:block;animation:fadeIn .4s ease forwards}
+@media(max-width:500px){
+  #app{padding:72px 14px 30px}
+  #timer-hud{padding:10px 14px}
+  #timer-display{font-size:.95rem}
+  .q-input{max-width:100%}
+  .res-row{flex-wrap:wrap}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;transition-duration:0s!important}}
+</style>
+</head>
+<body>
+
+<div id="timer-hud">
+  <div class="hud-left">Lesson 11 &mdash; Capstone</div>
+  <div class="hud-right">
+    <div id="timer-display">10:00</div>
+    <button id="hud-submit" onclick="submitExam()">Submit</button>
+  </div>
+</div>
+
+<div id="app">
+
+<!-- Q1: Boolean -->
+<div class="q-block" id="qb1">
+  <div class="q-num">Q1 / 13 &middot; 12 pts</div>
+  <div class="q-text">True or False: The gradient of a function with 3 input variables is a single number.</div>
+  <div class="bool-row" data-q="1">
+    <button class="bool-btn" onclick="selBool(1,'t',this)">True</button>
+    <button class="bool-btn" onclick="selBool(1,'f',this)">False</button>
+  </div>
+</div>
+
+<!-- Q2: Computation -->
+<div class="q-block" id="qb2">
+  <div class="q-num">Q2 / 13 &middot; 12 pts</div>
+  <div class="q-text">Compute the gradient of <code>f(x, y) = x&sup2; + 4y&sup2;</code> at point <strong>(3, 1)</strong>.</div>
+  <input type="text" class="q-input" id="qi2" placeholder="your answer" autocomplete="off">
+</div>
+
+<!-- Q3: Boolean -->
+<div class="q-block" id="qb3">
+  <div class="q-num">Q3 / 13 &middot; 12 pts</div>
+  <div class="q-text">True or False: If the gradient is zero at a point, that point is always a local minimum of the function.</div>
+  <div class="bool-row" data-q="3">
+    <button class="bool-btn" onclick="selBool(3,'t',this)">True</button>
+    <button class="bool-btn" onclick="selBool(3,'f',this)">False</button>
+  </div>
+</div>
+
+<!-- Q4: Computation -->
+<div class="q-block" id="qb4">
+  <div class="q-num">Q4 / 13 &middot; 12 pts</div>
+  <div class="q-text">Apply the chain rule: <code>f(u) = u&sup2;</code>, <code>g(x) = 5x + 3</code>. Compute <code>f&prime;(g(2)) &middot; g&prime;(2)</code>.</div>
+  <input type="text" class="q-input" id="qi4" placeholder="your answer" autocomplete="off">
+</div>
+
+<!-- Q5: Short text -->
+<div class="q-block" id="qb5">
+  <div class="q-num">Q5 / 13 &middot; 12 pts</div>
+  <div class="q-text">In one sentence: why does the backward pass through a linear layer use <code>W<sup>T</sup></code> instead of <code>W</code>?</div>
+  <textarea class="q-textarea" id="qi5" placeholder="your answer"></textarea>
+</div>
+
+<!-- Q6: Computation (THE TRAP) -->
+<div class="q-block" id="qb6">
+  <div class="q-num">Q6 / 13 &middot; 12 pts</div>
+  <div class="q-text">Compute <code>&part;L/&part;x = W<sup>T</sup> &middot; (&part;L/&part;z)</code>. Enter each component.</div>
+  <div style="font-family:'Space Mono',monospace;font-size:.85rem;color:var(--fg);background:var(--input-bg);border:1px solid var(--border);border-radius:3px;padding:12px 14px;margin:8px 0 12px;white-space:pre;line-height:1.8">W = | 1   2 |
+     | 3   0 |
+
+∂L/∂z = | 2 |
+         | 1 |</div>
+  <div style="display:flex;gap:14px;flex-wrap:wrap">
+    <div><span style="font-family:'Space Mono',monospace;font-size:.78rem;color:var(--muted)">Component 1 =</span> <input type="text" class="q-input" id="qi6a" placeholder="?" autocomplete="off" style="width:100px"></div>
+    <div><span style="font-family:'Space Mono',monospace;font-size:.78rem;color:var(--muted)">Component 2 =</span> <input type="text" class="q-input" id="qi6b" placeholder="?" autocomplete="off" style="width:100px"></div>
+  </div>
+</div>
+
+<!-- Q7: Computation -->
+<div class="q-block" id="qb7">
+  <div class="q-num">Q7 / 13 &middot; 12 pts</div>
+  <div class="q-text">LoRA training: <code>||&nabla;<sub>A</sub>L|| = 0.05</code>, <code>||&nabla;<sub>B</sub>L|| = 0.005</code>, <code>&eta;<sub>base</sub> = 0.0008</code>. Compute the corrected <code>&eta;<sub>A</sub></code>.</div>
+  <input type="text" class="q-input" id="qi7" placeholder="your answer" autocomplete="off">
+</div>
+
+<!-- Q8: Boolean -->
+<div class="q-block" id="qb8">
+  <div class="q-num">Q8 / 13 &middot; 12 pts</div>
+  <div class="q-text">True or False: Hessian eigenvalues <code>[8.2, 0.02, &minus;1.3]</code> indicate a local minimum.</div>
+  <div class="bool-row" data-q="8">
+    <button class="bool-btn" onclick="selBool(8,'t',this)">True</button>
+    <button class="bool-btn" onclick="selBool(8,'f',this)">False</button>
+  </div>
+</div>
+
+<!-- Q9: Short text -->
+<div class="q-block" id="qb9">
+  <div class="q-num">Q9 / 13 &middot; 12 pts</div>
+  <div class="q-text">In one sentence: what specific problem do residual connections solve for gradient flow in deep networks?</div>
+  <textarea class="q-textarea" id="qi9" placeholder="your answer"></textarea>
+</div>
+
+<!-- Q10: Boolean -->
+<div class="q-block" id="qb10">
+  <div class="q-num">Q10 / 13 &middot; 12 pts</div>
+  <div class="q-text">True or False: During gradient descent, the model can determine whether a deeper valley exists approximately 100 steps ahead by examining the current gradient.</div>
+  <div class="bool-row" data-q="10">
+    <button class="bool-btn" onclick="selBool(10,'t',this)">True</button>
+    <button class="bool-btn" onclick="selBool(10,'f',this)">False</button>
+  </div>
+</div>
+
+<!-- Q11: Short text -->
+<div class="q-block" id="qb11">
+  <div class="q-num">Q11 / 13 &middot; 12 pts</div>
+  <div class="q-text">In one sentence: what does the WAAD gradient from Paper #40 reveal about token positions?</div>
+  <textarea class="q-textarea" id="qi11" placeholder="your answer"></textarea>
+</div>
+
+<!-- Q12: Short text -->
+<div class="q-block" id="qb12">
+  <div class="q-num">Q12 / 13 &middot; 12 pts</div>
+  <div class="q-text">In one sentence: why does ALLoRA use different learning rates for the A and B matrices in LoRA?</div>
+  <textarea class="q-textarea" id="qi12" placeholder="your answer"></textarea>
+</div>
+
+<!-- Q13: Feynman Compression -->
+<div class="q-block" id="qb13">
+  <div class="q-num">Q13 / 13 &middot; 56 pts &middot; Feynman Compression</div>
+  <div class="q-text">Explain gradient descent in your own words. Your explanation should cover the core mechanism clearly enough that someone unfamiliar with calculus could understand the principle.</div>
+  <textarea class="q-textarea" id="qi13" placeholder="your explanation" style="min-height:140px"></textarea>
+</div>
+
+<!-- Submit -->
+<div class="submit-area">
+  <button class="submit-btn" id="main-submit" onclick="submitExam()">Submit Exam</button>
+</div>
+
+<!-- Results -->
+<div id="results"></div>
+
+</div>
+
+<script>
+/* ============================================================
+   STATE
+   ============================================================ */
+const boolState={};
+let submitted=false;
+let timerSeconds=600;
+let timerInterval=null;
+
+/* ============================================================
+   TIMER
+   ============================================================ */
+function startTimer(){
+  updateTimerDisplay();
+  timerInterval=setInterval(()=>{
+    timerSeconds--;
+    updateTimerDisplay();
+    if(timerSeconds<=0){
+      clearInterval(timerInterval);
+      submitExam();
+    }
+  },1000);
+}
+
+function updateTimerDisplay(){
+  const m=Math.floor(Math.max(0,timerSeconds)/60);
+  const s=Math.max(0,timerSeconds)%60;
+  const el=document.getElementById('timer-display');
+  el.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  if(timerSeconds<=60) el.classList.add('warning');
+  else el.classList.remove('warning');
+}
+
+/* ============================================================
+   BOOL SELECTION
+   ============================================================ */
+function selBool(q,val,btn){
+  if(submitted)return;
+  boolState[q]=val;
+  const row=btn.parentElement;
+  row.querySelectorAll('.bool-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+/* ============================================================
+   VECTOR PARSER
+   ============================================================ */
+function parseVec(s){
+  if(!s||!s.trim())return null;
+  let c=s.trim().replace(/[\[\]\(\)\{\}\<\>]/g,'');
+  let parts=c.split(/[,\s]+/).filter(x=>x);
+  if(parts.length===0)return null;
+  let nums=parts.map(Number);
+  if(nums.some(isNaN))return null;
+  return nums;
+}
+function vecMatch(a,b,tol){
+  tol=tol||0.15;
+  if(!a||!b||a.length!==b.length)return false;
+  return a.every((v,i)=>Math.abs(v-b[i])<tol);
+}
+
+/* ============================================================
+   TEXT GRADING HELPERS
+   ============================================================ */
+function hasAny(text,words){return words.some(w=>text.toLowerCase().includes(w.toLowerCase()))}
+function hasAll(text,words){return words.every(w=>text.toLowerCase().includes(w.toLowerCase()))}
+function hasPhrase(text,phrases){return phrases.some(p=>text.toLowerCase().includes(p.toLowerCase()))}
+function hasAllPhrases(text,phrases){return phrases.every(p=>text.toLowerCase().includes(p.toLowerCase()))}
+
+/* ============================================================
+   SUBMIT & GRADE
+   ============================================================ */
+function submitExam(){
+  if(submitted)return;
+  submitted=true;
+  clearInterval(timerInterval);
+  document.getElementById('hud-submit').disabled=true;
+  document.getElementById('main-submit').disabled=true;
+
+  const scores=[];
+  const details=[];
+
+  // Q1: Boolean — gradient is scalar → FALSE
+  {
+    const ans=boolState[1];
+    const ok=ans==='f';
+    scores.push(ok?12:0);
+    details.push(ok?'Correct.':'Incorrect. The gradient of a 3-variable function is a 3-component vector, not a single number.');
+  }
+
+  // Q2: Computation — gradient of x²+4y² at (3,1) → [6, 8]
+  {
+    const el=document.getElementById('qi2');
+    el.classList.add('locked');
+    const v=parseVec(el.value);
+    const ok=vecMatch(v,[6,8]);
+    el.classList.add(ok?'ok':'no');
+    scores.push(ok?12:0);
+    details.push(ok?'Correct. [6, 8].':'Incorrect. ∂f/∂x=2x=6, ∂f/∂y=8y=8. Gradient = [6, 8].');
+  }
+
+  // Q3: Boolean — zero gradient = always minimum → FALSE
+  {
+    const ans=boolState[3];
+    const ok=ans==='f';
+    scores.push(ok?12:0);
+    details.push(ok?'Correct.':'Incorrect. Zero gradient also occurs at saddle points (and maxima), not only minima.');
+  }
+
+  // Q4: Computation — chain rule: f'(g(2))·g'(2) = 26·5 = 130
+  {
+    const el=document.getElementById('qi4');
+    el.classList.add('locked');
+    const v=parseFloat(el.value);
+    const ok=!isNaN(v)&&Math.abs(v-130)<0.5;
+    el.classList.add(ok?'ok':'no');
+    scores.push(ok?12:0);
+    details.push(ok?'Correct. 130.':'Incorrect. g(2)=13, f\'(13)=2(13)=26, g\'(2)=5. Product = 26×5 = 130.');
+  }
+
+  // Q5: Short text — why W^T
+  {
+    const el=document.getElementById('qi5');
+    el.classList.add('locked');
+    const t=el.value;
+    let pts=0;
+    if(hasAny(t,['transpose'])||(hasAll(t,['reverse','direction']))||(hasAll(t,['reverse','backward']))) pts=12;
+    else if(hasAny(t,['transpose','reverse','backward'])) pts=6;
+    else pts=0;
+    el.classList.add(pts===12?'ok':pts>0?'':'no');
+    scores.push(pts);
+    details.push(pts===12?'Full credit.':pts>0?'Partial credit — the explanation references the key concept but lacks precision.':'No credit — answer does not identify why the transpose is used.');
+  }
+
+  // Q6: Computation — W^T·(∂L/∂z) = [[1,3],[2,0]]·[2,1] = [5, 4]
+  {
+    const ea=document.getElementById('qi6a');
+    const eb=document.getElementById('qi6b');
+    ea.classList.add('locked');eb.classList.add('locked');
+    const a=parseFloat(ea.value), b=parseFloat(eb.value);
+    const aOk=!isNaN(a)&&Math.abs(a-5)<0.2;
+    const bOk=!isNaN(b)&&Math.abs(b-4)<0.2;
+    const ok=aOk&&bOk;
+    ea.classList.add(aOk?'ok':'no');
+    eb.classList.add(bOk?'ok':'no');
+    scores.push(ok?12:0);
+    const trapHit=!isNaN(a)&&Math.abs(a-4)<0.2&&!isNaN(b)&&Math.abs(b-6)<0.2;
+    if(trapHit&&!ok) details.push('Incorrect. You computed W·(∂L/∂z) = [4, 6] — the forward matrix, not its transpose. W^T = [[1,3],[2,0]]. W^T·[2,1] = [5, 4].');
+    else if(!ok) details.push('Incorrect. W^T = [[1,3],[2,0]]. W^T·[2,1]^T = [1(2)+3(1), 2(2)+0(1)] = [5, 4].');
+    else details.push('Correct. [5, 4].');
+  }
+
+  // Q7: Computation — LoRA: ratio=10, ηA=0.00008
+  {
+    const el=document.getElementById('qi7');
+    el.classList.add('locked');
+    const v=parseFloat(el.value);
+    const ok=!isNaN(v)&&Math.abs(v-0.00008)<0.000005;
+    el.classList.add(ok?'ok':'no');
+    scores.push(ok?12:0);
+    details.push(ok?'Correct. 0.00008.':'Incorrect. Ratio = 0.05/0.005 = 10. Corrected ηA = 0.0008/10 = 0.00008.');
+  }
+
+  // Q8: Boolean — Hessian eigenvalues → saddle (not minimum) → FALSE
+  {
+    const ans=boolState[8];
+    const ok=ans==='f';
+    scores.push(ok?12:0);
+    details.push(ok?'Correct.':'Incorrect. The negative eigenvalue (−1.3) makes this a saddle point, not a minimum.');
+  }
+
+  // Q9: Short text — residual connections solve vanishing gradients
+  {
+    const el=document.getElementById('qi9');
+    el.classList.add('locked');
+    const t=el.value;
+    let pts=0;
+    if(hasAny(t,['vanishing gradient','gradient vanishing','gradient decay','gradient shrink'])||
+       (hasAll(t,['vanishing','gradient']))||
+       (hasAll(t,['gradient','flow'])&&hasAny(t,['direct','bypass','highway','unattenuated']))) pts=12;
+    else if(hasAny(t,['vanishing','residual','gradient flow','gradient path'])) pts=6;
+    else pts=0;
+    el.classList.add(pts===12?'ok':pts>0?'':'no');
+    scores.push(pts);
+    details.push(pts===12?'Full credit.':pts>0?'Partial credit — references the right area but lacks specificity.':'No credit.');
+  }
+
+  // Q10: Boolean — gradient sees future → FALSE
+  {
+    const ans=boolState[10];
+    const ok=ans==='f';
+    scores.push(ok?12:0);
+    details.push(ok?'Correct.':'Incorrect. The gradient is strictly local — it contains zero information about terrain beyond the immediate neighborhood.');
+  }
+
+  // Q11: Short text — WAAD gradient reveals sensitivity at token positions
+  {
+    const el=document.getElementById('qi11');
+    el.classList.add('locked');
+    const t=el.value;
+    let pts=0;
+    if((hasAny(t,['sensitivity','sensitive','responsive'])&&hasAny(t,['position','where','when','timing','token']))||
+       hasAny(t,['sensitive token','sensitivity at','sensitivity of'])) pts=12;
+    else if(hasAny(t,['sensitivity','attention','WAAD','position','token'])) pts=6;
+    else pts=0;
+    el.classList.add(pts===12?'ok':pts>0?'':'no');
+    scores.push(pts);
+    details.push(pts===12?'Full credit.':pts>0?'Partial credit.':'No credit.');
+  }
+
+  // Q12: Short text — ALLoRA asymmetric because gradient magnitudes differ
+  {
+    const el=document.getElementById('qi12');
+    el.classList.add('locked');
+    const t=el.value;
+    let pts=0;
+    if((hasAny(t,['unequal','asymmetric','different'])&&hasAll(t,['gradient',('magnitude'||'norm'||'size')]))||
+       (hasAny(t,['unequal','asymmetric','different'])&&hasAny(t,['gradient magnitude','gradient norm','gradient size','larger gradient','smaller gradient']))) pts=12;
+    else if(hasAny(t,['asymmetric','unequal','different','gradient magnitude'])) pts=6;
+    else pts=0;
+    el.classList.add(pts===12?'ok':pts>0?'':'no');
+    scores.push(pts);
+    details.push(pts===12?'Full credit.':pts>0?'Partial credit.':'No credit.');
+  }
+
+  // Q13: Feynman Compression — 56 pts
+  {
+    const el=document.getElementById('qi13');
+    el.classList.add('locked');
+    const t=el.value;
+    const kw1=/\bvector\b/i.test(t);
+    const kw2=/\b(opposite|reverse|downhill)\b/i.test(t);
+    const kw3=/\b(learning rate|step size)\b/i.test(t);
+    const minLen=t.trim().length>=100;
+    let found=0;
+    if(kw1)found++;if(kw2)found++;if(kw3)found++;
+    let pts=0;
+    if(found===3&&minLen)pts=56;
+    else if(found===2&&minLen)pts=40;
+    else if(found===1&&minLen)pts=20;
+    else pts=0;
+    if(!minLen&&found>0)pts=0;
+    el.classList.add(pts>=40?'ok':pts>0?'':'no');
+    scores.push(pts);
+
+    let kwHtml='<div class="feynman-kw">';
+    kwHtml+='<span>'+(kw1?'<span class="kw-found">\u2713 "vector"</span>':'<span class="kw-missing">\u2717 "vector"</span>')+'</span>';
+    kwHtml+='<span>'+(kw2?'<span class="kw-found">\u2713 "opposite / reverse / downhill"</span>':'<span class="kw-missing">\u2717 "opposite / reverse / downhill"</span>')+'</span>';
+    kwHtml+='<span>'+(kw3?'<span class="kw-found">\u2713 "learning rate / step size"</span>':'<span class="kw-missing">\u2717 "learning rate / step size"</span>')+'</span>';
+    kwHtml+='</div>';
+    if(!minLen) kwHtml+='<div style="font-family:\'Space Mono\',monospace;font-size:.78rem;color:var(--error);margin-top:6px">Explanation too short (minimum 100 characters — yours: '+t.trim().length+')</div>';
+
+    const missing=[];
+    if(!kw1)missing.push('"vector"');
+    if(!kw2)missing.push('"opposite/reverse/downhill"');
+    if(!kw3)missing.push('"learning rate/step size"');
+    const missStr=missing.length>0?' Missing structural element'+(missing.length>1?'s':'')+': '+missing.join(', ')+'.':'';
+
+    details.push(kwHtml+(found===3&&minLen?'All structural keywords present.':missStr));
+  }
+
+  // Render results
+  renderResults(scores,details);
+}
+
+/* ============================================================
+   RENDER RESULTS
+   ============================================================ */
+function renderResults(scores,details){
+  const total=scores.reduce((a,b)=>a+b,0);
+  const pass=total>=160;
+  const el=document.getElementById('results');
+
+  let html='<div class="res-total">';
+  html+='<div class="score '+(pass?'pass':'fail')+'">'+total+' / 200</div>';
+  html+='<div class="label">Total Score</div>';
+  html+='<div class="verdict '+(pass?'pass':'fail')+'">'+(pass?'PASS — Threshold 160/200 met':'FAIL — Below 160/200 threshold')+'</div>';
+  html+='</div>';
+
+  scores.forEach((s,i)=>{
+    const qNum=i+1;
+    const isFeynman=qNum===13;
+    const cls=s===12||s===56?'full':s>0?'partial':'zero';
+    const label=isFeynman?(s+' / 56'):(s+' / 12');
+    html+='<div class="res-row">';
+    html+='<div class="res-qnum">Q'+qNum+'</div>';
+    html+='<div class="res-pts '+cls+'">'+label+'</div>';
+    html+='<div class="res-detail">'+(isFeynman?'<div class="feynman-section"><h3>Feynman Compression</h3>'+details[i]+'</div>':details[i])+'</div>';
+    html+='</div>';
+  });
+
+  el.innerHTML=html;
+  el.classList.add('show');
+  el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ============================================================
+   KEYBOARD
+   ============================================================ */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&submitted)return;
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+startTimer();
+</script>
+</body>
+</html>

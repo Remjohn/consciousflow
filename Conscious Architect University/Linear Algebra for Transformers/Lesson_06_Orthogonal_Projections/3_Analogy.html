@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orthogonal Projections — Analogy Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{--bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;--border:#27272a;--border-light:#3f3f46;--text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;--amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);--teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);--rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);--emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);--violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);}
+*{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1.2;min-width:320px;}
+.visual-col{flex:1;min-width:280px;}
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+.insight.emerald{border-color:var(--emerald);background:var(--emerald-glow);}.insight.emerald strong{color:var(--emerald);}
+.tab-btn{padding:.6rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-dim);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.85rem;transition:all .2s;}
+.tab-btn:hover{color:var(--text);border-color:var(--border-light);}
+.tab-btn.active{background:var(--amber-glow);color:var(--amber);border-color:var(--amber);}
+.domain-content{display:none;}.domain-content.active{display:block;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+.puzzle-card{border:1px solid var(--border);background:var(--bg-card);border-radius:8px;margin-bottom:.75rem;overflow:hidden;}
+.puzzle-header{padding:1rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:600;background:var(--bg-elevated);}
+.puzzle-header:hover{background:rgba(255,255,255,0.05);}
+.puzzle-body{padding:0 1rem;max-height:0;overflow:hidden;transition:all .3s;color:var(--text-muted);font-size:.9rem;line-height:1.6;}
+.puzzle-card.open .puzzle-body{padding:1rem;max-height:500px;}
+.puzzle-card.open .puzzle-icon{transform:rotate(180deg);}
+.puzzle-icon{transition:transform .3s;}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.scroll-hint{animation:bounce 2s ease infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+@media(max-width:768px){.section{padding:5rem 1rem 3rem;}.flex-layout{flex-direction:column-reverse!important;}.canvas-wrap{min-height:300px!important;}.nav-links{display:none;}}
+</style>
+</head>
+<body>
+<nav class="nav-bar"><div class="nav-inner">
+  <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">PROJECTIONS</span>
+  <div class="nav-links">
+    <a href="#domains" class="nav-link active" data-section="domains">6 Domains</a>
+    <a href="#crossdomain" class="nav-link" data-section="crossdomain">Cross-Domain</a>
+    <a href="#puzzles" class="nav-link" data-section="puzzles">Logic Puzzles</a>
+    <a href="#builder" class="nav-link" data-section="builder">Builder</a>
+  </div>
+</div></nav>
+
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 06 — ANALOGY LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Orthogonal Projections<br><span style="color:var(--text-muted);font-weight:300;">Extracting Signal from Noise</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      Scouting playmakers, passing persuasion checks, isolating bass frequencies, correcting spice levels, measuring narcissism, and subtracting sycophancy — all the same shadow operation.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: 6 Domain System -->
+<section id="domains" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — UNIVERSAL MAPPING</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">The 6-Domain System</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.5rem;">
+      <button class="tab-btn active" data-target="sports"><i class="fas fa-futbol"></i> Scouting</button>
+      <button class="tab-btn" data-target="gaming"><i class="fas fa-gamepad"></i> Stat Check</button>
+      <button class="tab-btn" data-target="music"><i class="fas fa-headphones"></i> Spectrum</button>
+      <button class="tab-btn" data-target="cooking"><i class="fas fa-pepper-hot"></i> Flavor</button>
+      <button class="tab-btn" data-target="psych"><i class="fas fa-brain"></i> Therapy</button>
+      <button class="tab-btn" data-target="ai"><i class="fas fa-robot"></i> Steering</button>
+    </div>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <div id="sports" class="domain-content active">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Skill Isolation via Projection</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:.75rem;font-size:.9rem;">
+            Player A = (6, 9, 3, 7, 8) on [Spd, Vis, Tack, Sta, Drib].<br>
+            Playmaker Direction B = (0, 0.8, 0, 0, 0.6).
+          </p>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:.75rem;font-family:'JetBrains Mono';font-size:.78rem;margin-bottom:.75rem;line-height:1.8;">
+            <span style="color:var(--amber);">Shadow</span> = proj_B(A) → high magnitude<br>
+            Player A casts a massive shadow onto "Playmaker"<br>
+            <span style="color:var(--rose);">Residual</span> = (6, 0, 3, 7, 0)<br>
+            Vis & Drib zeroed → pure physical/defensive output
+          </div>
+          <div class="insight"><strong>Break:</strong> Stamina dictates how LONG playmaker skills work. Stats aren't truly orthogonal — fatigue creates cross-contamination.</div>
+        </div>
+        <div id="gaming" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">The Invisible Stat Check</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:.75rem;font-size:.9rem;">
+            Character = (STR=18, DEX=12, INT=8, CHA=15).<br>
+            Persuasion Direction = heavy CHA, light INT, zero STR.
+          </p>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:.75rem;font-family:'JetBrains Mono';font-size:.78rem;margin-bottom:.75rem;line-height:1.8;">
+            <span style="color:var(--emerald);">Rogue passes</span> → large projection onto Persuasion<br>
+            <span style="color:var(--rose);">Barbarian fails</span> → power lives in the residual<br>
+            Not weak — just <strong>orthogonal</strong> to this check
+          </div>
+          <div class="insight"><strong>Break:</strong> CRPGs layer dice rolls (RNG) on top. A "natural 20" overrides the projection determinism.</div>
+        </div>
+        <div id="music" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Spectral Feature Extraction</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:.75rem;font-size:.9rem;">
+            Master waveform = entangled vocals + bass + drums + synths.<br>
+            Target: isolate sub-bass (20Hz–60Hz).
+          </p>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:.75rem;font-family:'JetBrains Mono';font-size:.78rem;margin-bottom:.75rem;line-height:1.8;">
+            <span style="color:var(--amber);">Project</span> onto low-freq basis = bass energy readout<br>
+            <span style="color:var(--rose);">Subtract</span> the projection = EQ cut (bass removed)<br>
+            <span style="color:var(--emerald);">Residual</span> = vocals + hi-hats, untouched
+          </div>
+          <div class="insight"><strong>Break:</strong> Phase interactions in audio. Cutting bass can alter kick drum harmonics. Not perfectly orthogonal in psychoacoustics.</div>
+        </div>
+        <div id="cooking" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Flavor Isolation & Counteraction</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:.75rem;font-size:.9rem;">
+            Chili = (Salt, Sweet, Acid, Umami, Heat).<br>
+            Problem: overwhelmingly spicy.
+          </p>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:.75rem;font-family:'JetBrains Mono';font-size:.78rem;margin-bottom:.75rem;line-height:1.8;">
+            <span style="color:var(--amber);">Palate projects</span> → isolates Heat component<br>
+            Can't subtract capsaicin molecules!<br>
+            <span style="color:var(--teal);">Add orthogonal components</span> → sugar, lime, dairy<br>
+            Changes relative angle, not literal subtraction
+          </div>
+          <div class="insight"><strong>Break:</strong> Cooking only allows ADDITION. You can never achieve the clean geometric residual of un-spicing — only mask via context shift.</div>
+        </div>
+        <div id="psych" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Trait Distillation</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:.75rem;font-size:.9rem;">
+            Client dialogue = [Career Stress, Marital Anxiety, Core Narcissism, Financial Fear].<br>
+            Goal: measure Narcissism only.
+          </p>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:.75rem;font-family:'JetBrains Mono';font-size:.78rem;margin-bottom:.75rem;line-height:1.8;">
+            <span style="color:var(--amber);">Project</span> 20-min dialogue onto Narcissism axis<br>
+            Long shadow → trigger boundary-setting protocol<br>
+            <span style="color:var(--emerald);">Residual</span> = career stress + financial fear<br>
+            Address AFTER handling narcissistic behavior
+          </div>
+          <div class="insight"><strong>Break:</strong> Psychological traits are co-morbid. Financial Fear may CAUSE the narcissism. Treating them as orthogonal risks missing systemic trauma.</div>
+        </div>
+        <div id="ai" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Sycophancy Subtraction</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:.75rem;font-size:.9rem;">
+            CCV agent must never sound sycophantic.<br>
+            Pre-computed Sycophancy Direction S exists in embedding space.
+          </p>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:.75rem;font-family:'JetBrains Mono';font-size:.78rem;margin-bottom:.75rem;line-height:1.8;">
+            <span style="color:var(--amber);">Intercept</span> hidden state h before decoding<br>
+            <span style="color:var(--rose);">proj_S(h)</span> → sycophancy magnitude (high!)<br>
+            <span style="color:var(--emerald);">h_new = h − proj_S(h)</span><br>
+            "You are a genius!" → "<span style="color:var(--teal);">That is a highly effective strategy.</span>"
+          </div>
+          <div class="insight"><strong>Break:</strong> Concept vectors are learned approximations. Too-aggressive subtraction strips politeness too — collateral damage in high-D meaning space.</div>
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:420px;">
+          <canvas id="domainCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: Cross-Domain -->
+<section id="crossdomain" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:.5rem;">02 — FIDELITY SPECTRUM</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Cross-Domain Comparison</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin-bottom:1.5rem;">
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--emerald);"><h4 style="color:var(--emerald);margin-bottom:.5rem;">🤖 AI & 🎵 Audio</h4><p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;"><strong style="color:var(--text);">Exact match.</strong> Transformer hidden states and audio spectra combine linearly. Projection isolates, subtract removes — surgical precision.</p></div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--amber);"><h4 style="color:var(--amber);margin-bottom:.5rem;">⚽ Scouting & 🎮 Gaming</h4><p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;"><strong style="color:var(--text);">Good fit.</strong> Stat vectors project cleanly, but physiology (fatigue) and RNG (dice) add non-linear noise the model ignores.</p></div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--rose);"><h4 style="color:var(--rose);margin-bottom:.5rem;">🧠 Therapy & 🍳 Cooking</h4><p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;"><strong style="color:var(--text);">Partial.</strong> Traits are co-morbid, not orthogonal. Cooking only allows addition, never subtraction. The model captures structure but misses emergent dynamics.</p></div>
+    </div>
+    <div class="insight">
+      <strong>Analogy Failures:</strong> (1) "Projection = dimension loss" — activation steering projects 768D → 768D, rank collapses but dimensions stay. (2) "Shadow changes with perspective" — mathematical projection is always 90°, no sun angle.
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: Logic Puzzles -->
+<section id="puzzles" class="section">
+  <div class="section-inner" style="max-width:800px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">03 — REASONING TRAPS</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Logic Puzzles</h2>
+    <div class="puzzle-card"><div class="puzzle-header"><span>1. The Idempotency Test</span><i class="fas fa-chevron-down puzzle-icon"></i></div><div class="puzzle-body"><p style="margin-bottom:.75rem;"><strong>Setup:</strong> Project V onto "Formality" → get F. A colleague projects F onto "Formality" again. What happens?</p><div class="insight emerald"><strong style="color:var(--emerald);">F stays exactly F.</strong> The shadow is already flat against the wall. Re-projecting a vector that already lives on the target line changes nothing. The scaling factor evaluates to exactly 1. This is idempotency: P² = P.</div></div></div>
+    <div class="puzzle-card"><div class="puzzle-header"><span>2. Zero Shadow</span><i class="fas fa-chevron-down puzzle-icon"></i></div><div class="puzzle-body"><p style="margin-bottom:.75rem;"><strong>Setup:</strong> Project "Apple" embedding onto "Tax Law" direction. Projection magnitude ≈ 0.</p><div class="insight" style="border-color:var(--teal);background:var(--teal-glow);"><strong style="color:var(--teal);">They are orthogonal (90°).</strong> Zero projection means zero shared features. "Apple" and "Tax Law" live in completely independent regions of embedding space. Their dot product is zero — geometrically perpendicular in 768D.</div></div></div>
+    <div class="puzzle-card"><div class="puzzle-header"><span>3. The Subtraction Trap</span><i class="fas fa-chevron-down puzzle-icon"></i></div><div class="puzzle-body"><p style="margin-bottom:.75rem;"><strong>Setup:</strong> Instead of subtracting the Anger projection, you accidentally ADD it: h_new = h + proj_Anger(h).</p><div class="insight" style="border-color:var(--rose);background:var(--rose-glow);"><strong style="color:var(--rose);">You doubled the anger.</strong> The Anger component is now 2× without touching any other semantic information. The agent replies with hyper-amplified rage while maintaining perfect topic coherence. Every other concept survives — only anger is doubled.</div></div></div>
+    <div class="puzzle-card"><div class="puzzle-header"><span>4. The Residual Check</span><i class="fas fa-chevron-down puzzle-icon"></i></div><div class="puzzle-body"><p style="margin-bottom:.75rem;"><strong>Setup:</strong> After subtracting the Toxic projection, take dot(Residual, Toxic_Direction).</p><div class="insight" style="border-color:var(--violet);background:var(--violet-glow);"><strong style="color:var(--violet);">Exactly 0.</strong> The residual is mathematically guaranteed to be orthogonal to the projection target. Any non-zero result means your math is wrong. This is the defining property of orthogonal projection.</div></div></div>
+  </div>
+</section>
+
+<!-- Section 4: Builder -->
+<section id="builder" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">04 — KINESTHETIC TASK</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Build-Your-Own Projection</h2>
+    <div style="background:var(--bg-elevated);border:1px dashed var(--amber);border-radius:12px;padding:2rem;">
+      <p style="color:var(--text-muted);font-size:.95rem;line-height:1.7;margin-bottom:1.5rem;">Choose a domain with multi-variable states. Define a target direction, execute the projection, and describe the residual.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;">
+        <div><label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Entangled Context</label><input type="text" placeholder="e.g. Essay grading, startup evaluation..." style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';"></div>
+        <div><label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Target Direction</label><input type="text" placeholder="e.g. Grammatical correctness" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';"></div>
+        <div><label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Projection Result</label><input type="text" placeholder="What does the shadow measure?" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';"></div>
+      </div>
+      <div style="margin-top:1rem;"><label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">The Residual — What's left after the target is removed?</label><textarea rows="2" placeholder="Describe the orthogonal remainder..." style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';resize:vertical;"></textarea></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:1rem;"><button class="btn" style="background:var(--amber);color:#000;"><i class="fas fa-save"></i> Save Framework</button></div>
+    </div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);margin-top:2rem;">
+  <p style="max-width:600px;margin:0 auto 1rem;line-height:1.5;"><strong>Compression:</strong> Orthogonal projection extracts a specific signal from a sea of noise. Shadow = measured trait. Residual = everything else. Neural networks focus attention on critical subspaces, and Architects surgically measure, add, or subtract behaviors with geometric precision.</p>
+  Interactive Visual Learning — Lesson 06: Orthogonal Projections Analogy Layer
+</footer>
+
+<script>
+const DPR=window.devicePixelRatio||1;
+(function(){const c=document.getElementById('heroCanvas');let W,H,ctx;
+function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+resize();window.addEventListener('resize',resize);let t=0;
+function draw(){ctx.clearRect(0,0,W,H);const cx=W/2,cy=H/2;
+  for(let i=0;i<8;i++){const a=t*0.003+i*Math.PI/4;const r=80+i*25;
+    const px=cx+Math.cos(a)*r*0.5,py=cy+Math.sin(a)*r*0.5;
+    const projX=cx+Math.cos(0)*((px-cx)*Math.cos(0)+(py-cy)*Math.sin(0));
+    const projY=cy+Math.sin(0)*((px-cx)*Math.cos(0)+(py-cy)*Math.sin(0));
+    ctx.strokeStyle='rgba(20,184,166,0.04)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(projX,cy);ctx.stroke();ctx.setLineDash([]);
+    ctx.beginPath();ctx.arc(px,py,2,0,Math.PI*2);ctx.fillStyle='rgba(245,158,11,0.08)';ctx.fill();
+    ctx.beginPath();ctx.arc(projX,cy,2,0,Math.PI*2);ctx.fillStyle='rgba(16,185,129,0.08)';ctx.fill();}
+  t++;requestAnimationFrame(draw);}draw();})();
+
+/* Domain Canvas */
+(function(){
+  const canvas=document.getElementById('domainCanvas');
+  let domain='sports';
+  const cfgs={
+    sports:{a:[6,9,3,7,8],b:[0,.8,0,0,.6],labels:['Spd','Vis','Tack','Sta','Drib'],concept:'Playmaker'},
+    gaming:{a:[18,12,8,15],b:[0,0,.3,1],labels:['STR','DEX','INT','CHA'],concept:'Persuasion'},
+    music:{a:[3,6,8,4,2],b:[1,.8,0,0,0],labels:['Sub','Low','Mid','Hi','Air'],concept:'Bass Energy'},
+    cooking:{a:[5,2,4,6,9],b:[0,0,0,0,1],labels:['Salt','Sweet','Acid','Umami','Heat'],concept:'Spiciness'},
+    psych:{a:[7,8,6,5],b:[0,0,1,0],labels:['Career','Marital','Narciss','Finance'],concept:'Narcissism'},
+    ai:{a:[5,3,7,6],b:[.2,.1,.1,1],labels:['Intent','Topic','Grammar','Syco'],concept:'Sycophancy'}
+  };
+
+  function draw(){
+    const p=canvas.parentElement,r=p.getBoundingClientRect();
+    canvas.width=r.width*DPR;canvas.height=r.height*DPR;canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';
+    const ctx=canvas.getContext('2d');ctx.scale(DPR,DPR);
+    const w=r.width,h=r.height;ctx.clearRect(0,0,w,h);
+    const cfg=cfgs[domain];const n=cfg.a.length;
+
+    // Compute projection
+    const dot=cfg.a.reduce((s,v,i)=>s+v*cfg.b[i],0);
+    const bNorm=cfg.b.reduce((s,v)=>s+v*v,0);
+    const scalar=bNorm>0?dot/bNorm:0;
+    const proj=cfg.b.map(v=>scalar*v);
+    const resid=cfg.a.map((v,i)=>v-proj[i]);
+
+    // Radar chart
+    const cx=w/2,cy=h*0.42;
+    const maxVal=Math.max(...cfg.a)*1.3;
+    const radius=Math.min(w,h)*0.28;
+
+    // Grid
+    for(let ring=1;ring<=4;ring++){const r2=radius*ring/4;
+      ctx.beginPath();for(let i=0;i<=n;i++){const a=Math.PI*2*i/n-Math.PI/2;ctx.lineTo(cx+Math.cos(a)*r2,cy+Math.sin(a)*r2);}ctx.closePath();
+      ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;ctx.stroke();}
+    // Spokes
+    for(let i=0;i<n;i++){const a=Math.PI*2*i/n-Math.PI/2;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a)*radius,cy+Math.sin(a)*radius);ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.stroke();
+      ctx.font='9px Space Grotesk';ctx.fillStyle='#52525b';ctx.textAlign='center';
+      ctx.fillText(cfg.labels[i],cx+Math.cos(a)*(radius+16),cy+Math.sin(a)*(radius+16)+3);}
+
+    // Original (amber)
+    ctx.beginPath();
+    cfg.a.forEach((v,i)=>{const a=Math.PI*2*i/n-Math.PI/2;const r2=radius*v/maxVal;ctx.lineTo(cx+Math.cos(a)*r2,cy+Math.sin(a)*r2);});
+    ctx.closePath();ctx.fillStyle='rgba(245,158,11,0.1)';ctx.fill();ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;ctx.stroke();
+
+    // Projection (emerald)
+    ctx.beginPath();
+    proj.forEach((v,i)=>{const a=Math.PI*2*i/n-Math.PI/2;const r2=radius*Math.abs(v)/maxVal;ctx.lineTo(cx+Math.cos(a)*r2,cy+Math.sin(a)*r2);});
+    ctx.closePath();ctx.fillStyle='rgba(16,185,129,0.1)';ctx.fill();ctx.strokeStyle='#10b981';ctx.lineWidth=1.5;ctx.stroke();
+
+    // Residual (rose, dashed)
+    ctx.beginPath();
+    resid.forEach((v,i)=>{const a=Math.PI*2*i/n-Math.PI/2;const r2=radius*Math.abs(v)/maxVal;ctx.lineTo(cx+Math.cos(a)*r2,cy+Math.sin(a)*r2);});
+    ctx.closePath();ctx.strokeStyle='#f43f5e88';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.stroke();ctx.setLineDash([]);
+
+    // Legend
+    const ly=h*0.82;
+    [[cfg.concept+' (shadow)','#10b981'],[`Original (${n}D)`,'#f59e0b'],['Residual (⊥)','#f43f5e']].forEach(([l,c],i)=>{
+      const lx=w*0.15+i*(w*0.27);
+      ctx.fillStyle=c;ctx.beginPath();ctx.arc(lx,ly,4,0,Math.PI*2);ctx.fill();
+      ctx.font='10px DM Sans';ctx.fillStyle='#a1a1aa';ctx.textAlign='left';ctx.fillText(l,lx+10,ly+3);
+    });
+
+    // Scalar readout
+    ctx.font='600 11px JetBrains Mono';ctx.fillStyle='#10b981';ctx.textAlign='center';
+    ctx.fillText(`Projection scalar: ${scalar.toFixed(2)}`,w/2,h*0.92);
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      domain=btn.dataset.target;
+      document.querySelectorAll('.domain-content').forEach(c=>c.classList.remove('active'));
+      document.getElementById(domain).classList.add('active');
+      draw();
+    });
+  });
+  draw();window.addEventListener('resize',draw);
+})();
+
+document.querySelectorAll('.puzzle-header').forEach(hdr=>{hdr.addEventListener('click',()=>{const c=hdr.parentElement;const o=c.classList.contains('open');document.querySelectorAll('.puzzle-card').forEach(p=>p.classList.remove('open'));if(!o)c.classList.add('open');});});
+(function(){const links=document.querySelectorAll('.nav-link');const ids=['domains','crossdomain','puzzles','builder'];window.addEventListener('scroll',()=>{const y=window.scrollY+100;let active=ids[0];ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));});})();
+</script>
+</body>
+</html>

@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distance Metrics — Mechanistic Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.min.js" defer></script>
+<style>
+:root {
+  --bg: #07080a;
+  --surface: #0f1114;
+  --surface2: #161920;
+  --surface3: #1e2229;
+  --text: #e8eaf0;
+  --muted: #6b7280;
+  --border: #242830;
+  --accent: #7dd3c0;
+  --accent2: #f0a05a;
+  --red: #e05c6a;
+  --green: #5bc49a;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Syne', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+.container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 5rem 2rem 10rem;
+}
+
+/* — Typography — */
+.lesson-tag {
+  font-size: 0.68rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  margin-bottom: 1.2rem;
+}
+
+h1 {
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: 3rem;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.6rem;
+  color: #fff;
+}
+
+.subtitle {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 3rem;
+  letter-spacing: 0.04em;
+}
+
+h2 {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 1.35rem;
+  color: #fff;
+  margin: 3rem 0 1rem;
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--accent2);
+  margin: 2rem 0 0.75rem;
+}
+
+p {
+  font-size: 0.9rem;
+  color: #a0a8b8;
+  margin-bottom: 1.2rem;
+  line-height: 1.8;
+}
+
+strong { color: var(--text); font-weight: 500; }
+
+.section-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 3rem 0;
+}
+
+/* — Math blocks — */
+.math-block {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 1.2rem 1.5rem;
+  margin: 1.2rem 0;
+  overflow-x: auto;
+}
+
+.math-block .label {
+  font-size: 0.65rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.5rem;
+}
+
+.inline-code {
+  font-family: var(--mono);
+  background: var(--surface2);
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  color: var(--accent2);
+  font-size: 0.85em;
+}
+
+/* — Pipeline block — */
+.pipeline {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  font-size: 0.78rem;
+  color: var(--accent);
+  line-height: 2;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* — Interaction boxes — */
+.interact {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2rem 2.5rem;
+  margin: 2.5rem 0;
+  position: relative;
+}
+
+.interact::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  border-radius: 6px 6px 0 0;
+}
+
+.interact.alert::before {
+  background: linear-gradient(90deg, var(--red), transparent);
+}
+
+.interact-tag {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  margin-bottom: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.interact-tag.alert { color: var(--red); }
+
+.interact-tag::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.q-text {
+  font-size: 0.95rem;
+  color: #d0d6e8;
+  margin-bottom: 1.8rem;
+  line-height: 1.75;
+  font-family: var(--sans);
+  font-weight: 400;
+}
+
+.input-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.text-in {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  padding: 0.65rem 1rem;
+  flex: 1;
+  border-radius: 4px;
+  transition: border-color 0.2s;
+}
+
+.text-in:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.text-in:disabled { opacity: 0.5; }
+
+.btn {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  padding: 0.65rem 1.4rem;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) { background: #a0ede0; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 0.55rem 1.2rem;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 0.82rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-ghost:hover { border-color: var(--text); color: var(--text); }
+
+/* — Feedback — */
+.feedback {
+  display: none;
+  margin-top: 1.5rem;
+  padding: 1.2rem 1.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+.feedback.show { display: block; animation: rise 0.3s ease; }
+.feedback.ok { background: rgba(91,196,154,0.08); border-left: 2px solid var(--green); color: #9ee8c5; }
+.feedback.fail { background: rgba(224,92,106,0.08); border-left: 2px solid var(--red); color: #f0a0ac; }
+
+.fb-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* — Gated — */
+.gated {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(16px);
+  transition: all 0.5s ease;
+  display: none;
+}
+
+.gated.on {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  display: block;
+}
+
+/* — Info cards (metrics, steps, invariants) — */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+@media (max-width: 600px) { .card-grid { grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.2rem;
+}
+
+.card-num {
+  font-size: 0.62rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+}
+
+.card-title {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.card-body {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* — Step list — */
+.step-list { margin: 1rem 0; }
+.step {
+  display: flex;
+  gap: 1.2rem;
+  margin-bottom: 1.5rem;
+  align-items: flex-start;
+}
+
+.step-num {
+  min-width: 2rem;
+  height: 2rem;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: var(--accent);
+  font-weight: 600;
+  margin-top: 0.1rem;
+}
+
+.step-content { flex: 1; }
+.step-title { font-family: var(--sans); font-weight: 700; font-size: 0.92rem; color: var(--text); margin-bottom: 0.4rem; }
+.step-body { font-size: 0.82rem; color: var(--muted); line-height: 1.65; }
+
+/* — Gauntlet — */
+.gauntlet-wrap {
+  margin-top: 4rem;
+  border-top: 1px solid var(--border);
+  padding-top: 3rem;
+}
+
+.drill {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.5rem;
+  margin-bottom: 1.2rem;
+}
+
+.drill-num {
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.7rem;
+}
+
+.drill-q {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  color: var(--text);
+  margin-bottom: 1.2rem;
+  line-height: 1.65;
+  font-weight: 400;
+}
+
+.bool-row { display: flex; gap: 0.75rem; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="lesson-tag">Lesson 09 · Mechanistic Layer</div>
+  <h1>Distance Metrics &amp; Clustering</h1>
+  <div class="subtitle">Algorithms, Derivations &amp; Mechanics</div>
+
+  <!-- ── SPACED RETRIEVAL INTERRUPT ── -->
+  <div class="interact alert" id="interrupt-box">
+    <div class="interact-tag alert"><i class="fa fa-memory"></i> Spaced Retrieval — Layer 6 (Projection)</div>
+    <div class="q-text">
+      The CBCS extracts 90-dimensional LIWC-22 behavioral vectors from Telegram.
+      In 90 dimensions, the Curse of Dimensionality destroys K-Means' discriminative power entirely.<br><br>
+      What specific algorithmic operation must run directly <strong>before</strong> clustering to compress these vectors into a tight 20D space while preserving 85% of variance?
+      <em>(Give the acronym.)</em>
+    </div>
+    <div class="input-row">
+      <input type="text" id="i-input" class="text-in" placeholder="Type acronym…">
+      <button class="btn" id="i-btn" onclick="checkInterrupt()">Execute</button>
+    </div>
+    <div class="feedback" id="fb-interrupt"></div>
+  </div>
+
+  <!-- ── CORE CONTENT (gated) ── -->
+  <div class="gated" id="core-content">
+
+    <!-- §1 Formal Definitions -->
+    <h2>§1 — Formal Definitions</h2>
+
+    <p>A <strong>distance metric</strong> \(d(\mathbf{a}, \mathbf{b})\) maps two vectors in \(\mathbb{R}^n\) to a non-negative real and must satisfy four axioms: non-negativity, identity of indiscernibles, symmetry, and the triangle inequality.</p>
+
+    <h3>Euclidean Distance (L2 Norm)</h3>
+    <div class="math-block">
+      <div class="label">Definition</div>
+      \[ d_E(\mathbf{a}, \mathbf{b}) = \|\mathbf{a} - \mathbf{b}\|_2 = \sqrt{\sum_{i=1}^{n}(a_i - b_i)^2} \]
+    </div>
+
+    <h3>Manhattan Distance (L1 Norm)</h3>
+    <div class="math-block">
+      <div class="label">Definition</div>
+      \[ d_M(\mathbf{a}, \mathbf{b}) = \|\mathbf{a} - \mathbf{b}\|_1 = \sum_{i=1}^{n}|a_i - b_i| \]
+    </div>
+
+    <h3>Cosine Distance</h3>
+    <div class="math-block">
+      <div class="label">Definition</div>
+      \[ d_C(\mathbf{a}, \mathbf{b}) = 1 - \frac{\mathbf{a} \cdot \mathbf{b}}{\|\mathbf{a}\|_2 \cdot \|\mathbf{b}\|_2} \]
+    </div>
+    <p>Cosine Similarity (the fraction itself) ranges over \([-1, 1]\). Cosine Distance is \(1 - \text{similarity}\), ranging over \([0, 2]\).</p>
+
+    <h3>K-Means Objective (WCSS)</h3>
+    <p>K-Means partitions \(\mathcal{X} = \{\mathbf{x}_1, \dots, \mathbf{x}_N\}\) into \(k\) disjoint clusters by minimizing the Within-Cluster Sum of Squares:</p>
+    <div class="math-block">
+      <div class="label">Objective</div>
+      \[ J = \sum_{j=1}^{k} \sum_{\mathbf{x} \in C_j} \|\mathbf{x} - \boldsymbol{\mu}_j\|^2, \quad \boldsymbol{\mu}_j = \frac{1}{|C_j|}\sum_{\mathbf{x} \in C_j}\mathbf{x} \]
+    </div>
+
+    <h3>Silhouette Score</h3>
+    <div class="math-block">
+      <div class="label">Definition</div>
+      \[ s(\mathbf{x}_i) = \frac{b(\mathbf{x}_i) - a(\mathbf{x}_i)}{\max(a(\mathbf{x}_i),\, b(\mathbf{x}_i))} \]
+    </div>
+    <p>
+      \(a(\mathbf{x}_i)\) = mean intra-cluster distance. \(b(\mathbf{x}_i)\) = mean distance to nearest other cluster.<br>
+      Score near <strong>+1</strong> → well-clustered. Near <strong>0</strong> → on a boundary. Near <strong>−1</strong> → misclassified.
+    </p>
+
+    <hr class="section-divider">
+
+    <!-- §2 Derivations -->
+    <h2>§2 — Derivation: Why the Formulas Exist</h2>
+
+    <h3>Why Euclidean Distance Uses Squared Differences</h3>
+    <p>The structure of \(d_E = \sqrt{\sum(a_i - b_i)^2}\) emerges from the Pythagorean theorem generalized to \(n\) dimensions. Squaring ensures negative and positive differences do not cancel—a gap of \(-4\) is equally "far" as \(+4\). The square root converts accumulated squared units back to the original scale. Each additional dimension adds one more leg to a hyper-Pythagorean triangle.</p>
+
+    <h3>Why the Centroid Is the Mean — First-Principles Derivation</h3>
+    <p>To find the centroid \(\boldsymbol{\mu}_j\) that minimizes WCSS for a fixed cluster \(C_j\), take the partial derivative of \(J\) with respect to \(\mu_i\) and set it to zero:</p>
+    <div class="math-block">
+      <div class="label">Derivation</div>
+      \[
+        \frac{\partial f}{\partial \mu_i} = \sum_{\mathbf{x} \in C_j} -2(x_i - \mu_i) = 0
+        \;\Rightarrow\;
+        \mu_i = \frac{1}{|C_j|}\sum_{\mathbf{x} \in C_j} x_i
+      \]
+    </div>
+    <p>Applying this across all \(n\) dimensions yields \(\boldsymbol{\mu}_j = \frac{1}{|C_j|}\sum \mathbf{x}\). Any other choice—median, mode, weighted point—yields a strictly higher \(J\). The mean is the unique least-squares optimal anchor.</p>
+
+    <h3>Why Cosine Similarity Normalizes the Dot Product</h3>
+    <p>The numerator \(\mathbf{a} \cdot \mathbf{b} = \sum a_i b_i\) measures directional overlap but is magnitude-dependent—doubling \(\mathbf{a}\) doubles the dot product without changing the angle. Dividing by both norms strips magnitude entirely, isolating the angular component. The result equals \(\cos(\theta)\), a direct consequence of \(\mathbf{a} \cdot \mathbf{b} = \|\mathbf{a}\|\cdot\|\mathbf{b}\|\cdot\cos(\theta)\).</p>
+
+    <hr class="section-divider">
+
+    <!-- §3 Algorithm Steps -->
+    <h2>§3 — Operational Mechanics: Step-by-Step</h2>
+
+    <div class="step-list">
+      <div class="step">
+        <div class="step-num">0</div>
+        <div class="step-content">
+          <div class="step-title">Initialization — K-Means++ Protocol</div>
+          <div class="step-body">Select \(\boldsymbol{\mu}_1\) uniformly at random from \(\mathcal{X}\). For each subsequent centroid, compute \(D(\mathbf{x})\) = distance to nearest existing centroid; select next centroid with probability proportional to \(D(\mathbf{x})^2\). Points far from all existing centroids are exponentially more likely to be chosen, guaranteeing well-spread initial placements.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Distance Matrix Computation</div>
+          <div class="step-body">Construct an \(N \times k\) matrix \(\mathbf{D}\) where \(D_{ij} = d(\mathbf{x}_i, \boldsymbol{\mu}_j)\). Total operations: \(N \times k \times n\) multiplications. On a GPU all \(N \times k\) pairs are computed simultaneously in a single parallelized matrix operation.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Cluster Assignment (Argmin)</div>
+          <div class="step-body">\(\text{assignment}(i) = \arg\min_{j} D_{ij}\). Each point belongs to exactly one cluster. Ties broken arbitrarily. This is a hard (binary) assignment—no probabilistic weights.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Centroid Recomputation (Mean)</div>
+          <div class="step-body">\(\boldsymbol{\mu}_j^{(\text{new})} = \frac{1}{|C_j|}\sum_{\mathbf{x} \in C_j}\mathbf{x}\). A linear combination with uniform weights. The centroid shifts toward the true geometric center of its current membership.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">Convergence Check</div>
+          <div class="step-body">Compare \(\boldsymbol{\mu}_j^{(\text{new})}\) with \(\boldsymbol{\mu}_j^{(\text{old})}\) for all \(j\). If no centroid has moved beyond tolerance \(\epsilon\), terminate. Otherwise return to Step 1.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MECHANISTIC PREDICTION ── -->
+    <div class="interact" id="mech-box">
+      <div class="interact-tag"><i class="fa fa-flask"></i> Mechanistic Prediction — The Perfection Trap</div>
+      <div class="q-text">
+        A dataset has exactly \(N = 500\) unique clients. The algorithm is parametrized to discover \(K = 500\) distinct clusters.<br><br>
+        If the pipeline finishes execution mathematically, exactly what value will the final WCSS (\(J\)) score resolve to?
+      </div>
+      <div class="input-row">
+        <input type="text" id="m-input" class="text-in" placeholder="Precise numerical value…">
+        <button class="btn" id="m-btn" onclick="checkMech()">Lock Prediction</button>
+      </div>
+      <div class="feedback" id="fb-mech"></div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- §4 Dimensional Behavior -->
+    <h2>§4 — Structural &amp; Dimensional Behavior</h2>
+
+    <h3>Low Dimensions (2D / 3D)</h3>
+    <p>In \(\mathbb{R}^2\), clusters are visualizable as Voronoi regions on a scatter plot—roughly circular under Euclidean distance. In \(\mathbb{R}^3\), Voronoi regions become polyhedral volumes. Spatial judgment degrades, but boundaries remain flat hyperplanes.</p>
+
+    <h3>High-Dimensional Spaces — Critical for AI</h3>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-num">Phenomenon 01</div>
+        <div class="card-title">Concentration of Measure</div>
+        <div class="card-body">All pairwise distances converge toward a constant. \(\frac{d_{\max}-d_{\min}}{d_{\min}} \to 0\) as \(n \to \infty\). Raw Euclidean becomes a weaker discriminative signal.</div>
+      </div>
+      <div class="card">
+        <div class="card-num">Phenomenon 02</div>
+        <div class="card-title">Near-Orthogonality</div>
+        <div class="card-body">In \(\mathbb{R}^{768}\), random vectors are almost certainly nearly perpendicular. Cosine distance becomes critical—it measures the small angular deviations that carry semantic information.</div>
+      </div>
+      <div class="card">
+        <div class="card-num">Phenomenon 03</div>
+        <div class="card-title">Feature Dominance</div>
+        <div class="card-body">Un-normalized features with different scales cause the algorithm to ignore low-range dimensions entirely. Z-Score normalization (\(z = (x-\mu)/\sigma\)) equalizes geometric contribution.</div>
+      </div>
+      <div class="card">
+        <div class="card-num">Phenomenon 04</div>
+        <div class="card-title">Curse of Dimensionality</div>
+        <div class="card-body">Space volume grows exponentially; data becomes exponentially sparse. PCA projection before clustering is required to compress the feature space to its most informative principal components.</div>
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- §5 Linear Algebra Connections -->
+    <h2>§5 — Connection to the Linear Algebra System</h2>
+    <p>K-Means is the assembly line where all prior linear algebra tools converge:</p>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-num">Lesson 1</div>
+        <div class="card-title">Vectors</div>
+        <div class="card-body">Every data point and centroid is a vector in \(\mathbb{R}^n\). The entire algorithm operates exclusively on vectors.</div>
+      </div>
+      <div class="card">
+        <div class="card-num">Lesson 2</div>
+        <div class="card-title">Dot Product</div>
+        <div class="card-body">Cosine Similarity is the normalized dot product. It appears explicitly in the numerator of the Cosine formula.</div>
+      </div>
+      <div class="card">
+        <div class="card-num">Lesson 3</div>
+        <div class="card-title">Linear Combinations</div>
+        <div class="card-body">\(\boldsymbol{\mu}_j = \frac{1}{|C_j|}\sum \mathbf{x}\) is a linear combination with uniform coefficients—the most fundamental linear combination.</div>
+      </div>
+      <div class="card">
+        <div class="card-num">Lesson 4</div>
+        <div class="card-title">Linear Transformations</div>
+        <div class="card-body">Z-Score normalization is a linear transformation: subtract the mean vector, divide by the std vector. It is a linear map that reorganizes feature-space geometry.</div>
+      </div>
+      <div class="card">
+        <div class="card-num">Lesson 6</div>
+        <div class="card-title">Projections (PCA)</div>
+        <div class="card-body">PCA projects high-dimensional data onto an orthogonal basis of principal components—the least-squares optimal projection applied to the entire dataset simultaneously.</div>
+      </div>
+      <div class="card">
+        <div class="card-num">Lesson 3</div>
+        <div class="card-title">Spans &amp; Subspaces</div>
+        <div class="card-body">The centroid always lies within the convex hull of its cluster's points. It cannot escape the subspace generated by its members.</div>
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- §6 Transformer / AI Mapping -->
+    <h2>§6 — Transformer / AI Mapping</h2>
+
+    <h3>1. Embeddings and Distance in Feature Space</h3>
+    <p>In a Transformer, every token is mapped to \(\mathbf{e} \in \mathbb{R}^{768}\) via the embedding layer. Clustering over embeddings groups tokens by semantic similarity. The CRAL Research Engine pre-clusters 10,000 article embeddings into 50 centroids, enabling the retrieval pipeline to search only the nearest cluster instead of the full index—transforming \(O(N)\) search into \(O(k + N/k)\).</p>
+
+    <h3>2. Attention Mechanism and Distance Metrics</h3>
+    <p>Self-attention computes \(\text{Attention}(Q,K,V) = \text{Softmax}(QK^\top / \sqrt{d_k})V\). The \(QK^\top\) term is an un-normalized similarity score related to Euclidean distance via \(\|\mathbf{q}-\mathbf{k}\|^2 = \|\mathbf{q}\|^2 + \|\mathbf{k}\|^2 - 2\mathbf{q}\cdot\mathbf{k}\). Attention is therefore a continuous, differentiable nearest-neighbor assignment—the same fundamental operation as K-Means' assignment step, but with soft (probabilistic) rather than hard (binary) weights.</p>
+
+    <h3>3. Linear Projections and Feature Space Engineering</h3>
+    <p>The \(W_Q, W_K, W_V\) matrices are learned linear projections that transform raw embeddings into specialized distance-computation spaces—directly analogous to feature engineering before clustering. Badly trained projection matrices produce geometrically valid but semantically useless groupings.</p>
+
+    <h3>4. CBCS Pipeline</h3>
+    <div class="pipeline">Telegram Voice Note → Whisper STT → LIWC-22 Feature Extraction → 90-D Vector
+→ Z-Score Normalization → PCA (90D → 20D) → K-Means Assignment
+→ Cluster Label Written to Neo4j → JIT Compiler Reads Label as Constraint</div>
+    <p>The JIT Skill Compiler receives <span class="inline-code">CLUSTER_ID = 2, CENTROID = [0.8, -0.4, 0.2, ...], DISTANCE_TO_CENTROID = 0.31</span>—reducing prompt payload by ~2,300 tokens while eliminating hallucination risk.</p>
+
+    <h3>5. Finetuning, Activation Steering, and Cluster Drift</h3>
+    <p>When the CCP fine-tunes Qwen-3.5 via LoRA, weight updates shift the embedding space, making pre-computed cluster centroids stale. The clustering pipeline must re-execute on the new embedding space. The Guardian Agent monitors this via the Silhouette Score—a drop below 0.40 triggers a Concept Drift alert and flags the operator for re-clustering.</p>
+
+    <hr class="section-divider">
+
+    <!-- §7 Worked Examples -->
+    <h2>§7 — Deep Worked Examples</h2>
+
+    <h3>Example 1: Full CBCS Clustering Pipeline (4D)</h3>
+    <p>Four CCP clients, four Z-scored LIWC-22 features:</p>
+    <div class="math-block">
+      <div class="label">Data</div>
+      \(\mathbf{x}_1 = [1.2,\,-0.5,\,0.8,\,-0.3]\) &nbsp;·&nbsp;
+      \(\mathbf{x}_2 = [1.0,\,-0.8,\,0.9,\,-0.1]\)<br>
+      \(\mathbf{x}_3 = [-0.9,\,1.5,\,-0.4,\,1.2]\) &nbsp;·&nbsp;
+      \(\mathbf{x}_4 = [-0.7,\,1.3,\,-0.6,\,0.9]\)
+    </div>
+    <p>K-Means++ with \(k=2\): \(\boldsymbol{\mu}_1 = \mathbf{x}_1\), \(\boldsymbol{\mu}_2 = \mathbf{x}_3\) (maximally distant).</p>
+    <p><strong>Iteration 1 — Assign:</strong> \(d(\mathbf{x}_1, \boldsymbol{\mu}_1)=0\), \(d(\mathbf{x}_1, \boldsymbol{\mu}_2)\approx 3.48\) → \(C_1\). \(d(\mathbf{x}_2, \boldsymbol{\mu}_1)\approx 0.42\) → \(C_1\). \(d(\mathbf{x}_3, \boldsymbol{\mu}_2)=0\) → \(C_2\). \(d(\mathbf{x}_4, \boldsymbol{\mu}_2)\approx 0.46\) → \(C_2\).</p>
+    <p><strong>Iteration 1 — Recompute:</strong></p>
+    <div class="math-block">
+      \(\boldsymbol{\mu}_1 = [1.1,\,-0.65,\,0.85,\,-0.2]\)<br>
+      \(\boldsymbol{\mu}_2 = [-0.8,\,1.4,\,-0.5,\,1.05]\)
+    </div>
+    <p><strong>Iteration 2:</strong> Identical assignment → convergence. <em>Cluster 1 = "Analytical Processors" → Socratic protocol. Cluster 2 = "Emotional Connectors" → Empathetic Validation protocol.</em></p>
+
+    <h3>Example 2: Silhouette Score Computation</h3>
+    <div class="math-block">
+      <div class="label">For x₁ in C₁</div>
+      \[
+        a(\mathbf{x}_1) \approx 0.42, \quad b(\mathbf{x}_1) \approx 3.29
+        \quad\Rightarrow\quad
+        s(\mathbf{x}_1) = \frac{3.29 - 0.42}{3.29} \approx 0.87
+      \]
+    </div>
+    <p>An excellent score. An average Silhouette above 0.70 indicates strong cluster structure. Dropping below 0.40 fires a Concept Drift alert.</p>
+
+    <hr class="section-divider">
+
+    <!-- §8 Edge Cases -->
+    <h2>§8 — Edge Case Analysis</h2>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-num">Edge 01</div>
+        <div class="card-title">WCSS = 0 (k = N)</div>
+        <div class="card-body">Every point is its own centroid. Mathematically perfect, operationally useless—no generalization, no archetype discovery.</div>
+      </div>
+      <div class="card">
+        <div class="card-num">Edge 02</div>
+        <div class="card-title">WCSS Maximal (k = 1)</div>
+        <div class="card-body">Single centroid = global mean. \(J\) equals total dataset variance. Worst possible clustering—everything in one undifferentiated mass.</div>
+      </div>
+      <div class="card">
+        <div class="card-num">Edge 03</div>
+        <div class="card-title">Convergence to Local Minima</div>
+        <div class="card-body">K-Means converges, but not necessarily to the global minimum of \(J\). K-Means++ mitigates this; running multiple seeds and selecting the best result is standard practice.</div>
+      </div>
+      <div class="card">
+        <div class="card-num">Edge 04</div>
+        <div class="card-title">Degenerate / Empty Clusters</div>
+        <div class="card-body">If no point is closest to \(\boldsymbol{\mu}_j\), the cluster is empty and the mean is undefined. Implementations re-seed the orphaned centroid from the highest-variance cluster.</div>
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- §9 Invariants -->
+    <h2>§9 — Invariants / Core Laws</h2>
+
+    <div class="step-list">
+      <div class="step">
+        <div class="step-num">I</div>
+        <div class="step-content">
+          <div class="step-title">Monotonic Convergence of J</div>
+          <div class="step-body">WCSS is non-increasing across iterations. Both sub-steps independently minimize the same convex objective. Since \(J\) has a finite lower bound of zero and decreases monotonically, the algorithm terminates in finite steps.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">II</div>
+        <div class="step-content">
+          <div class="step-title">Hard Assignment Partition</div>
+          <div class="step-body">\(\{C_1, \dots, C_k\}\) form a disjoint partition: \(C_i \cap C_j = \emptyset\) for \(i \neq j\), and \(\bigcup C_j = \mathcal{X}\). No point unassigned; no point double-assigned.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">III</div>
+        <div class="step-content">
+          <div class="step-title">Centroid Within Convex Hull</div>
+          <div class="step-body">The centroid \(\boldsymbol{\mu}_j\) always lies within the convex hull of its cluster's points. It is a convex combination (coefficients sum to 1, all non-negative) and cannot escape the geometric boundary defined by its members.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">IV</div>
+        <div class="step-content">
+          <div class="step-title">Symmetry of Euclidean Distance</div>
+          <div class="step-body">\(d_E(\mathbf{a},\mathbf{b}) = d_E(\mathbf{b},\mathbf{a})\) always. Follows from \((a_i - b_i)^2 = (b_i - a_i)^2\) for all \(i\). The distance matrix \(\mathbf{D}\) is consistent regardless of computation order.</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- §10 Analogy -->
+    <h2>§10 — Minimal Analogy Support</h2>
+    <p><strong>The Postal Sorting Facility.</strong> A postal center receives millions of packages. Each package has a destination ZIP code (a multi-component vector). The facility runs K-Means: defines \(k\) distribution hubs (centroids), assigns every package to the nearest hub by geographic distance, then periodically adjusts hub locations to minimize total delivery distance. Without clustering, every package needs individual routing. With clustering, packages are assigned in bulk to regional hubs and each hub handles last-mile routing independently. Total computational load drops by orders of magnitude—the same principle that allows the CCP to pre-route 500 clients via 4 behavioral archetypes instead of running 500 individual AI inference sessions.</p>
+
+    <!-- ── GAUNTLET (gated) ── -->
+    <div class="gated" id="gauntlet-wrap">
+      <div class="gauntlet-wrap">
+        <h2>Mathematical Protocol Gauntlet</h2>
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:2rem;">Rapid-fire numeric mechanics. Lock your answers.</p>
+        <div id="drills"></div>
+      </div>
+    </div>
+
+  </div><!-- /core-content -->
+
+</div>
+
+<script>
+/* ── Interrupt ── */
+function checkInterrupt() {
+  const val = document.getElementById('i-input').value.toLowerCase().trim();
+  if (!val) return;
+  document.getElementById('i-input').disabled = true;
+  document.getElementById('i-btn').disabled = true;
+  const fb = document.getElementById('fb-interrupt');
+  fb.classList.add('show');
+
+  if (val.includes('pca')) {
+    fb.className = 'feedback show ok';
+    fb.innerHTML = `<div class="fb-label">Memory Retained</div>Correct. Principal Component Analysis projects the 90D LIWC-22 vectors onto the optimal 20D orthogonal sub-space, safely restoring the ability to discriminate distances before K-Means clustering.`;
+    setTimeout(() => { document.getElementById('core-content').classList.add('on'); }, 900);
+  } else {
+    fb.className = 'feedback show fail';
+    fb.innerHTML = `<div class="fb-label">Recall Failure</div>Incorrect. The required operation is <strong>PCA</strong>. Without dimensionality reduction before K-Means, the Curse of Dimensionality collapses clustering performance entirely. Proceeding anyway.`;
+    setTimeout(() => { document.getElementById('core-content').classList.add('on'); }, 2000);
+  }
+}
+
+/* ── Mechanistic Prediction ── */
+function checkMech() {
+  const val = document.getElementById('m-input').value.toLowerCase().trim();
+  if (!val) return;
+  document.getElementById('m-input').disabled = true;
+  document.getElementById('m-btn').disabled = true;
+  const fb = document.getElementById('fb-mech');
+  fb.classList.add('show');
+
+  if (val === '0' || val === 'zero') {
+    fb.className = 'feedback show ok';
+    fb.innerHTML = `<div class="fb-label">Computational Certainty</div>Correct. When \(K=N\), every data point receives its own private centroid. Distance from each point to its centroid is precisely 0, so \(J = 0\). The math executes perfectly—but the architectural generalization utility is entirely destroyed via drastic overfitting.`;
+    setTimeout(() => {
+      document.getElementById('gauntlet-wrap').classList.add('on');
+      renderGauntlet();
+      setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 400);
+    }, 1200);
+  } else {
+    fb.className = 'feedback show fail';
+    fb.innerHTML = `<div class="fb-label">Logic Failure</div>Incorrect. When \(K=N\) every point is its own cluster center. Each point's distance to its centroid is 0. Therefore \(J = 0\).<br><br><button class="btn-ghost" onclick="resetMech()" style="margin-top:0.8rem;">Retry</button>`;
+  }
+}
+
+function resetMech() {
+  const inp = document.getElementById('m-input');
+  inp.disabled = false; inp.value = '';
+  document.getElementById('m-btn').disabled = false;
+  const fb = document.getElementById('fb-mech');
+  fb.className = 'feedback';
+}
+
+/* ── Gauntlet Data ── */
+const DRILLS = [
+  {
+    type: 'text',
+    q: 'The Silhouette Score ranges from −1.0 to 1.0. A score approaching 0 indicates the data point sits exactly on the geometric ____ between two rivaling centroids.',
+    match: 'bound',
+    exp: 'Boundary. The point is perfectly equidistant from two clusters—operating entirely ambiguously between them.'
+  },
+  {
+    type: 'text',
+    q: 'If raw scalar magnitude dominates the distance variance (e.g. Message Counts vs Semantic Intimacy Ratings on [0,1]), you must pre-apply ____-Score Normalization to equalize dimensions.',
+    match: 'z',
+    exp: 'Z-Score normalization rescales each dimension to zero mean and unit variance, permitting unbiased geometric evaluation without volume interference.'
+  },
+  {
+    type: 'bool',
+    q: 'True or False: The centroid coordinate produced by solving the WCSS directly maps to an actual, pre-existing database record.',
+    ans: false,
+    exp: 'False. The centroid is an algorithmic ghost—a conceptual arithmetic average practically never occupied by any real user vector entity.'
+  },
+  {
+    type: 'text',
+    q: 'What explicit mathematical operation guarantees K-Means++ avoids disastrously clumped random initial centroid placements?',
+    match: 'probab',
+    exp: 'Probabilistic proportional spacing. Initial placements heavily favor points mathematically distant from all existing centroids, rather than flat random selection.'
+  },
+  {
+    type: 'text',
+    q: 'By taking the partial derivative of the WCSS equation and setting it to zero, the formula for the cluster centroid mandates computing the arithmetic ____.',
+    match: 'mean',
+    exp: 'Mean (arithmetic average). Only the geometric mean precisely minimizes the sum of squared Euclidean distances—it is the unique least-squares optimal anchor.'
+  },
+  {
+    type: 'bool',
+    q: 'True or False: If K-Means converges on the exact first iteration, this universally proves the dataset harbors zero internal cluster structure.',
+    ans: false,
+    exp: 'False. It primarily implies the initialization seed points were lucky enough to land precisely on the true mathematical cluster centers by happenstance.'
+  },
+  {
+    type: 'text',
+    q: 'The Sovereign CCP pipeline uses Silhouette Score to validate behavioral archetype assignments. Falling below 0.40 triggers the Guardian Agent to detect the phenomenon known as Concept ____.',
+    match: 'drift',
+    exp: 'Concept Drift. A low score implies historical behavior models are decomposing over time—requiring re-clustering on the current embedding space.'
+  }
+];
+
+function renderGauntlet() {
+  const container = document.getElementById('drills');
+  let html = '';
+  DRILLS.forEach((d, i) => {
+    html += `<div class="drill" id="drill-${i}">
+      <div class="drill-num">Drill ${String(i+1).padStart(2,'0')}</div>
+      <div class="drill-q">${d.q}</div>`;
+
+    if (d.type === 'bool') {
+      html += `<div class="bool-row">
+        <button class="btn" onclick="answerBool(${i}, true, this)">True</button>
+        <button class="btn-ghost" onclick="answerBool(${i}, false, this)">False</button>
+      </div>`;
+    } else {
+      html += `<div class="input-row" style="margin-bottom:0;">
+        <input type="text" id="di-${i}" class="text-in" placeholder="Type keyword…">
+        <button class="btn" onclick="answerText(${i}, this)">Lock</button>
+      </div>`;
+    }
+
+    html += `<div class="feedback" id="dfb-${i}"></div></div>`;
+  });
+  container.innerHTML = html;
+
+  // Re-render MathJax for new content
+  if (window.MathJax) MathJax.typesetPromise([container]);
+}
+
+function answerBool(i, val, btn) {
+  document.getElementById(`drill-${i}`).querySelectorAll('button').forEach(b => b.style.pointerEvents = 'none');
+  const fb = document.getElementById(`dfb-${i}`);
+  const correct = val === DRILLS[i].ans;
+  fb.className = `feedback show ${correct ? 'ok' : 'fail'}`;
+  fb.innerHTML = `<div class="fb-label">${correct ? 'Correct' : 'Incorrect'}</div>${DRILLS[i].exp}`;
+}
+
+function answerText(i, btn) {
+  const inp = document.getElementById(`di-${i}`);
+  const val = inp.value.toLowerCase().trim();
+  if (!val) return;
+  inp.disabled = true; btn.disabled = true;
+  const fb = document.getElementById(`dfb-${i}`);
+  const correct = val.includes(DRILLS[i].match);
+  fb.className = `feedback show ${correct ? 'ok' : 'fail'}`;
+  fb.innerHTML = `<div class="fb-label">${correct ? 'Correct' : 'Incorrect'}</div>${DRILLS[i].exp}`;
+}
+</script>
+</body>
+</html>

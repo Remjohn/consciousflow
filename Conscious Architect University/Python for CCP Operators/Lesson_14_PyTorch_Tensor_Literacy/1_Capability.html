@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 14 - Capability Layer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #09090b;
+      --panel: rgba(19, 19, 22, 0.88);
+      --panel-2: rgba(26, 26, 31, 0.92);
+      --line: rgba(255,255,255,0.08);
+      --text: #fafafa;
+      --muted: #a1a1aa;
+      --accent: #f59e0b; /* Amber */
+      --accent-glow: rgba(245,158,11,0.12);
+      --accent-2: #14b8a6; /* Teal */
+      --good: #10b981; /* Emerald */
+      --good-glow: rgba(16,185,129,0.12);
+      --bad: #f43f5e; /* Rose */
+      --bad-glow: rgba(244,63,94,0.12);
+      --violet: #8b5cf6;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      line-height: 1.6;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(20,184,166,0.08), transparent 22%),
+        radial-gradient(circle at 82% 14%, rgba(245,158,11,0.06), transparent 24%),
+        linear-gradient(180deg, #09090b 0%, #0c0c0f 48%, #09090b 100%);
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3 {
+      font-family: 'Space Grotesk', sans-serif;
+      margin: 0 0 14px;
+      line-height: 1.08;
+      font-weight: 700;
+    }
+
+    .progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: rgba(255,255,255,0.05);
+      z-index: 50;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #f59e0b, #10b981, #14b8a6);
+      transition: width 0.35s ease;
+    }
+
+    .shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 42px 18px 80px;
+    }
+
+    .stage {
+      display: none;
+      animation: fadeUp 0.45s ease;
+    }
+
+    .stage.active { display: block; }
+
+    .hero, .card {
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 26px 56px rgba(0,0,0,0.24);
+      overflow: hidden;
+    }
+
+    .hero { padding: 42px 32px; text-align: center; }
+    .card { padding: 26px; margin-top: 24px; }
+
+    .eyebrow {
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      font: 700 0.8rem/1.2 'Space Grotesk', sans-serif;
+      margin-bottom: 16px;
+    }
+
+    .section-count {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font: 700 0.75rem/1.2 'Space Grotesk', sans-serif;
+      margin-bottom: 10px;
+    }
+
+    h1 { font-size: clamp(2.5rem, 5vw, 4rem); letter-spacing: -0.03em; }
+    h2 { font-size: clamp(1.4rem, 2.8vw, 2rem); }
+    h3 { font-size: 1.15rem; color: var(--accent-2); }
+    p { margin: 0 0 16px; color: var(--muted); font-size: 1.05rem; }
+
+    .lede {
+      max-width: 48rem;
+      font-size: 1.2rem;
+      color: #d1d5db;
+      margin: 0 auto 24px;
+    }
+
+    .divider {
+      height: 1px;
+      margin: 32px auto;
+      max-width: 200px;
+      background: linear-gradient(90deg, transparent, rgba(245,158,11,0.5), transparent);
+    }
+
+    .grid-2 {
+      display: grid;
+      gap: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+
+    .mini-card {
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--panel-2);
+      padding: 20px;
+      text-align: left;
+    }
+
+    .mini-title {
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.85rem/1.2 'Space Grotesk', sans-serif;
+      margin-bottom: 12px;
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9em;
+      color: var(--accent);
+      background: var(--accent-glow);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    code.block {
+      display: block;
+      padding: 16px;
+      background: #0d0d10;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88rem;
+      color: #d1d5db;
+      margin-bottom: 16px;
+      white-space: pre-wrap;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      padding: 14px 24px;
+      border-radius: 8px;
+      font: 700 0.95rem/1 'Space Grotesk', sans-serif;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover { transform: translateY(-2px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+    
+    .btn-primary:hover { background: #fbbf24; }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .btn-secondary:hover { background: rgba(255,255,255,0.05); }
+
+    .visual-wrap {
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: #0d0d10;
+      padding: 18px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 260px;
+      position: relative;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .choices {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .choice {
+      width: 100%;
+      text-align: left;
+      padding: 16px 20px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: var(--panel-2);
+      color: var(--text);
+      font: 500 0.95rem/1.45 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .choice:hover { border-color: rgba(255,255,255,0.3); }
+
+    .choice.selected {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .locked {
+      margin-top: 12px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.76rem/1.2 'Space Grotesk', sans-serif;
+    }
+
+    .feedback {
+      display: none;
+      margin-top: 18px;
+      padding: 18px 20px;
+      border-radius: 8px;
+      border-left: 3px solid transparent;
+      background: var(--panel-2);
+      animation: fadeUp 0.3s ease;
+    }
+
+    .feedback.show { display: block; }
+    .feedback.good { border-color: var(--good); background: var(--good-glow); }
+    .feedback.bad { border-color: var(--bad); background: var(--bad-glow); }
+
+    .feedback h3 { color: inherit; margin-bottom: 8px; font-size: 1.1rem; }
+    .feedback p { margin: 0; color: var(--text-muted); font-size: 0.95rem; }
+
+    .gauntlet-grid {
+      display: grid;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .q-card {
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--panel-2);
+      transition: border-color 0.3s;
+    }
+
+    .q-card.correct { border-color: var(--good); }
+    .q-card.wrong { border-color: var(--bad); }
+
+    .q-card label {
+      display: block;
+      margin-bottom: 12px;
+      color: var(--text);
+      font: 600 0.95rem/1.4 'DM Sans', sans-serif;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: #0d0d10;
+      color: var(--text);
+      font: 400 0.95rem/1.45 'JetBrains Mono', monospace;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .hidden { display: none; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 820px) {
+      .shell { padding: 30px 14px 60px; }
+      .hero, .card { padding: 20px; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; text-align: center; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true">
+    <div id="progressFill" class="progress-fill"></div>
+  </div>
+
+  <main class="shell">
+    <!-- STAGE 0: HERO & SCENARIO -->
+    <section id="stage-0" class="stage active">
+      <div class="hero">
+        <canvas id="heroCanvas" style="position:absolute; inset:0; z-index:0; pointer-events:none;"></canvas>
+        <div style="position:relative; z-index:1;">
+          <p class="eyebrow">Lesson 14 - Capability Layer</p>
+          <h1>PyTorch Tensor Literacy</h1>
+          <p class="lede">Without PyTorch tensor literacy, you stare at a RuntimeError and see gibberish. You cannot command the agent to fix the pipeline because you lack the vocabulary to describe the failure.</p>
+          <div class="divider"></div>
+          <div class="grid-2" style="margin-top: 32px;">
+            <div class="mini-card">
+              <p class="mini-title">The Failure Scenario</p>
+              <p style="font-size:0.95rem;">A high-stakes client is generating tokens. A specialized Voice DNA LoRA adapter is dynamically swapped in. Boom: <span class="mono">RuntimeError: size mismatch</span>. The system crashes. Because no agent checked the <span class="mono">.shape</span> of the embedding layer prior to attempting the matrix merge.</p>
+            </div>
+            <div class="mini-card">
+              <p class="mini-title">The Factory Floor</p>
+              <p style="font-size:0.95rem;">PyTorch is the set of <strong>calipers, safety goggles, and high-precision scales</strong> used strictly within the Laser Cutter department. It grants you the architectural force multiplier of Material Inspection to strictly reject model manipulation faults.</p>
+            </div>
+          </div>
+          <div class="actions" style="justify-content:center; margin-top:32px;">
+            <button class="btn btn-primary" onclick="goToStage(1)">Enter the Factory Floor</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 1: TENSOR SHAPE -->
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="section-count">Gate 1 of 3</p>
+        <h2>Verifying the Raw Material</h2>
+        <p>An agent writes the following code to inspect a trigger activation state encoded as a tensor inside a custom PyTorch module used for analyzing the client context.</p>
+        <code class="block">import torch
+
+# The JIT compiler extracts the trigger embedding state
+trigger_embedding: torch.Tensor = model.get_trigger_state("confrontation")
+
+# The agent logs the shape of the tensor before manipulation
+embedding_dimensions = trigger_embedding.shape</code>
+        <div class="grid-2">
+          <div class="visual-wrap">
+            <canvas id="shapeCanvas"></canvas>
+          </div>
+          <div>
+            <p style="color:var(--text); font-weight:500;">If <span class="mono">trigger_embedding</span> represents a single word mapped into a 1024-dimensional semantic space, what is the expected output of <span class="mono">trigger_embedding.shape</span>?</p>
+            <div class="choices" data-group="s1">
+              <button class="choice" data-value="A" onclick="selectChoice('s1','A',this)">1024 (as a standard Python integer)</button>
+              <button class="choice" data-value="B" onclick="selectChoice('s1','B',this)">torch.Size([1024])</button>
+              <button class="choice" data-value="C" onclick="selectChoice('s1','C',this)">A 1D Python list containing 1024 floats</button>
+              <button class="choice" data-value="D" onclick="selectChoice('s1','D',this)">torch.Size([1024, 1024])</button>
+            </div>
+            <div id="s1-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions">
+              <button id="s1-submit" class="btn btn-primary" onclick="submitChoice('s1','B',s1Feedback, () => triggerShapeReveal())">Lock prediction</button>
+            </div>
+            <div id="s1-feedback" class="feedback"></div>
+            <div id="s1-next" class="actions hidden">
+              <button class="btn btn-secondary" onclick="goToStage(2)">Next sequence</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 2: REQUIRES_GRAD -->
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="section-count">Gate 2 of 3</p>
+        <h2>Inspecting the Safety Lock</h2>
+        <p>Before applying a Voice DNA LoRA adapter during a live coaching session, the agent runs a diagnostic script.</p>
+        <code class="block"># Iterating through the base model's millions of parameters
+frozen_parameter_count: int = 0
+
+for name, param in base_model.named_parameters():
+    if param.requires_grad == False:
+        frozen_parameter_count += 1
+        
+print(f"Locked parameters: {frozen_parameter_count}")</code>
+        <div class="grid-2">
+          <div class="visual-wrap">
+            <canvas id="gradCanvas"></canvas>
+          </div>
+          <div>
+            <p style="color:var(--text); font-weight:500;">Does a Sovereign Architect want the vast majority of <span class="mono">param.requires_grad</span> to be True or False on the <span class="mono">base_model</span> during a LoRA injection sequence?</p>
+            <div class="choices" data-group="s2">
+              <button class="choice" data-value="A" onclick="selectChoice('s2','A',this)">True — The model needs to learn from the new coaching context.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('s2','B',this)">False — The core parameters must remain strictly frozen during adapter integration.</button>
+              <button class="choice" data-value="C" onclick="selectChoice('s2','C',this)">It doesn't matter as long as the LoRA adapter is mathematically orthogonal.</button>
+            </div>
+            <div id="s2-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions">
+              <button id="s2-submit" class="btn btn-primary" onclick="submitChoice('s2','B',s2Feedback, () => triggerGradReveal())">Lock prediction</button>
+            </div>
+            <div id="s2-feedback" class="feedback"></div>
+            <div id="s2-next" class="actions hidden">
+              <button class="btn btn-secondary" onclick="goToStage(3)">Next sequence</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 3: EVAL MODE -->
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="section-count">Gate 3 of 3</p>
+        <h2>The Deterministic Switch</h2>
+        <p>A Pi harness subprocess executes a script to bring the model online for the active coaching session.</p>
+        <code class="block"># The model is loaded into GPU memory
+coaching_model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3.5-7B")
+
+# The crucial state switch
+coaching_model.eval()
+
+# Ready to accept client websocket streams
+status: str = "ONLINE"</code>
+        <div class="grid-2">
+          <div class="visual-wrap">
+            <canvas id="evalCanvas"></canvas>
+          </div>
+          <div>
+            <p style="color:var(--text); font-weight:500;">If the agent hallucinates and completely forgets to write the <span class="mono">coaching_model.eval()</span> line, does the script crash?</p>
+            <div class="choices" data-group="s3">
+              <button class="choice" data-value="A" onclick="selectChoice('s3','A',this)">Yes, FastAPI will reject the inference request.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('s3','B',this)">Yes, PyTorch will throw a RuntimeError when generating tokens.</button>
+              <button class="choice" data-value="C" onclick="selectChoice('s3','C',this)">No. It executes smoothly but silently produces erratic, probabilistic hallucination loops.</button>
+              <button class="choice" data-value="D" onclick="selectChoice('s3','D',this)">No, evaluating mode is only required for training loss calculation.</button>
+            </div>
+            <div id="s3-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions">
+              <button id="s3-submit" class="btn btn-primary" onclick="submitChoice('s3','C',s3Feedback, () => triggerEvalReveal())">Lock prediction</button>
+            </div>
+            <div id="s3-feedback" class="feedback"></div>
+            <div id="s3-next" class="actions hidden">
+              <button class="btn btn-secondary" onclick="goToStage(4)">Proceed to Consequence Map</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 4: CONSEQUENCE MAP -->
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="eyebrow">Integration</p>
+        <h2>The Consequence Map</h2>
+        <p style="margin-bottom:24px;">When PyTorch commands are generated incorrectly by agents and you lack the literacy to catch them, the failures skip the normal software boundaries and directly crash the hardware or corrupt the intelligence layer.</p>
+        
+        <div class="grid-2" style="grid-template-columns: 1fr;">
+          <div class="mini-card" style="border-left: 4px solid var(--bad);">
+            <h3 style="color:var(--bad);">1. The Shape Mismatch (OOM / Matrix Failure)</h3>
+            <p><strong>Cause:</strong> Attempting to multiply a <span class="mono">[1024x1]</span> LoRA onto a <span class="mono">[1x768]</span> embedding.</p>
+            <p style="margin:0; font-size:0.95rem;"><strong>Consequence:</strong> Pi Subprocess crashes violently. Because GPU operations bypass normal Python safety, this often triggers a CUDA Out-Of-Memory (OOM) panic, locking up the physical hardware.</p>
+          </div>
+          
+          <div class="mini-card" style="border-left: 4px solid var(--accent);">
+            <h3 style="color:var(--accent);">2. The Dropout Stochasticity (Missing .eval)</h3>
+            <p><strong>Cause:</strong> Leaving model in default <span class="mono">.train()</span> mode during generation.</p>
+            <p style="margin:0; font-size:0.95rem;"><strong>Consequence:</strong> Silent failure. Dropout networks artificially turn off random neurons. Outputs become jittery and hopelessly unpredictable, violating the strict determinism required by sovereign orchestration.</p>
+          </div>
+          
+          <div class="mini-card" style="border-left: 4px solid var(--violet);">
+            <h3 style="color:var(--violet);">3. The Unfrozen Memory (requires_grad=True)</h3>
+            <p><strong>Cause:</strong> Backpropagating a few-shot dataset without freezing base weights.</p>
+            <p style="margin:0; font-size:0.95rem;"><strong>Consequence:</strong> Catastrophic forgetting. The fundamental language representation inside the large matrix is permanently distorted. You have mutated the foundational intelligence stack.</p>
+          </div>
+        </div>
+        
+        <div class="actions" style="margin-top:32px;">
+          <button class="btn btn-primary" onclick="goToStage(5)">Enter the Capability Gauntlet</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 5: GAUNTLET -->
+    <section id="stage-5" class="stage">
+      <div class="card">
+        <p class="eyebrow">Terminal Verification</p>
+        <h2>Tensor Flow Capability Gauntlet</h2>
+        <p>Test your architectural intuition. Read these isolated agent-generated PyTorch snippets and predict the outcome. Do not focus on syntax—focus on the structural truth of what is happening on the Factory Floor.</p>
+        
+        <div class="gauntlet-grid" id="gauntletGrid">
+          <!-- Q1 -->
+          <div class="q-card" id="q1-card">
+            <label>1. Output of `torch.tensor([0.5, 0.9, -0.1]).shape`?</label>
+            <input type="text" id="g1" placeholder="e.g. torch.Size([...])">
+          </div>
+          <!-- Q2 -->
+          <div class="q-card" id="q2-card">
+            <label>2. `torch.ones(1, 512) + torch.ones(1, 768)`. What happens?</label>
+            <input type="text" id="g2" placeholder="e.g. 1280 or crash">
+          </div>
+          <!-- Q3 -->
+          <div class="q-card" id="q3-card">
+            <label>3. You load an SLM via `from_pretrained` and call `model.train()`. Will responses be stable?</label>
+            <input type="text" id="g3" placeholder="Yes or No">
+          </div>
+          <!-- Q4 -->
+          <div class="q-card" id="q4-card">
+            <label>4. If `base_model.weight.requires_grad` is True during LoRA tuning, what is modified?</label>
+            <input type="text" id="g4" placeholder="Base model or adapter?">
+          </div>
+          <!-- Q5 -->
+          <div class="q-card" id="q5-card">
+            <label>5. For `w = torch.randn(8, 1024)`, what is `w.shape[1]`?</label>
+            <input type="text" id="g5" placeholder="Integer">
+          </div>
+          <!-- Q6 -->
+          <div class="q-card" id="q6-card">
+            <label>6. `PeftModel.from_pretrained(...)` followed by `model.eval()`. Is this production ready?</label>
+            <input type="text" id="g6" placeholder="Yes or No">
+          </div>
+          <!-- Q7 -->
+          <div class="q-card" id="q7-card">
+            <label>7. If a model needs a 2D tensor, what shape does `[[104, 553, 9021]]` provide?</label>
+            <input type="text" id="g7" placeholder="e.g. torch.Size([...])">
+          </div>
+        </div>
+        
+        <div class="actions">
+          <button class="btn btn-primary" onclick="gradeGauntlet()">Submit Matrix Inspection</button>
+        </div>
+        <div id="gauntlet-feedback" class="feedback"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const totalStages = 6;
+    const selections = {};
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach((stage) => stage.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      initCanvasesForStage(index);
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = 'feedback show ' + type;
+      box.innerHTML = `<h3 style="color:var(--${type==='good'?'good':'bad'})">${title}</h3><p>${body}</p>`;
+    }
+
+    function selectChoice(groupId, value, element) {
+      if (document.querySelector('[data-group="' + groupId + '"]').dataset.locked === 'true') return;
+      selections[groupId] = value;
+      document.querySelectorAll('[data-group="' + groupId + '"] .choice').forEach((button) => button.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    const s1Feedback = {
+      good: {
+        title: 'Correct — Architecture Revealed',
+        body: 'The .shape property is the ultimate truth-teller in PyTorch. It returns torch.Size([1024]). If you try to pass this to a routing matrix expecting 768, the platform instantly crashes. Reading .shape predicts crashes before they happen.'
+      },
+      bad: {
+        title: 'Mismatch Detected',
+        body: 'PyTorch does not return standard Python lengths. It returns a torch.Size object defining every dimension of the mathematical space. It is a strict geometric envelope, not just a row count.'
+      }
+    };
+
+    const s2Feedback = {
+      good: {
+        title: 'Correct — Infrastructure Frozen',
+        body: 'You unequivocally want requires_grad to be False for the base architecture. You are bolting on a small adapter; you do not want the optimizer permanently corrupting the foundational intelligence of your billion-parameter model.'
+      },
+      bad: {
+        title: 'Catastrophic Forgetting Authorized',
+        body: 'If requires_grad is True, the gradient optimizer will begin overwriting the base model weights. You have authorized the corruption of your core intelligence infrastructure instead of just training the LoRA adapter.'
+      }
+    };
+
+    const s3Feedback = {
+      good: {
+        title: 'Correct — Silent Probabilistic Failure',
+        body: 'PyTorch will execute code in .train() mode without error. But dropout layers—designed to randomly deactivate neurons to prevent overfitting—will remain active. The exact same prompt will probabilistically generate different responses. Sovereign determinism is completely shattered.'
+      },
+      bad: {
+        title: 'False Assumption of Safety',
+        body: 'PyTorch does not protect you from running training graphs during inference. It executes silently. Without .eval(), nodes randomly power down, and the model hallucinates non-deterministically. Do not rely on crashes to warn you.'
+      }
+    };
+
+    function submitChoice(groupId, correct, feedbackPack, revealFn) {
+      const selected = selections[groupId];
+      if (!selected) {
+        showFeedback(groupId + '-feedback', 'bad', 'Inspection Required', 'Commit to a specific answer before executing the process.');
+        return;
+      }
+      document.querySelector('[data-group="' + groupId + '"]').dataset.locked = 'true';
+      document.getElementById(groupId + '-submit').disabled = true;
+      document.getElementById(groupId + '-lock').classList.remove('hidden');
+      
+      const isCorrect = selected === correct;
+      const payload = isCorrect ? feedbackPack.good : feedbackPack.bad;
+      showFeedback(groupId + '-feedback', isCorrect ? 'good' : 'bad', payload.title, payload.body);
+      document.getElementById(groupId + '-next').classList.remove('hidden');
+      
+      if(revealFn) revealFn(isCorrect);
+    }
+
+    function containsAny(value, options) {
+      return options.some((option) => value.includes(option));
+    }
+
+    function gradeGauntlet() {
+      const answers = {
+        g1: ['[3]', 'size([3])'],
+        g2: ['crash', 'error', 'mismatch', 'fail', 'runtimeerror'],
+        g3: ['no', 'false', 'unstable', 'erratic'],
+        g4: ['base', 'base model', 'foundational', 'core'],
+        g5: ['1024'],
+        g6: ['yes', 'true', 'ready'],
+        g7: ['[1, 3]', 'size([1, 3])', '1,3']
+      };
+      
+      let score = 0;
+      Object.entries(answers).forEach(([id, keywords]) => {
+        const val = document.getElementById(id).value.trim().toLowerCase();
+        const card = document.getElementById(id + '-card');
+        if (val && containsAny(val, keywords)) {
+          score += 1;
+          card.className = 'q-card correct';
+        } else {
+          card.className = 'q-card wrong';
+        }
+      });
+
+      if (score >= 6) {
+        showFeedback('gauntlet-feedback', 'good', `Inspection Cleared: ${score}/7`, 'Your vocabulary for matrix states holds firm. You are reading the raw numbers not as code, but as rigorous architectural constraints on the factory floor.');
+      } else {
+        showFeedback('gauntlet-feedback', 'bad', `Inspection Failed: ${score}/7`, 'You are missing critical checks. A Sovereign Architect must be capable of preemptively vetoing agentic scripts when shapes clash, layers compute randomly, or base memory is unlocked.');
+      }
+    }
+
+    // Canvas Visualization Logic
+    const DPR = window.devicePixelRatio || 1;
+    function setupCanvas(id) {
+      const c = document.getElementById(id);
+      if(!c) return null;
+      const p = c.parentElement, r = p.getBoundingClientRect();
+      c.width = r.width * DPR; 
+      c.height = r.height * DPR;
+      const ctx = c.getContext('2d');
+      ctx.scale(DPR, DPR);
+      return { ctx, w: r.width, h: r.height, canvas: c };
+    }
+
+    let shapeAnim, gradAnim, evalAnim, heroAnim;
+
+    function initCanvasesForStage(index) {
+      if(index === 0 && !heroAnim) startHero();
+      if(index === 1 && !shapeAnim) startShape();
+      if(index === 2 && !gradAnim) startGrad();
+      if(index === 3 && !evalAnim) startEval();
+    }
+
+    // Hero Canvas (Abstract Tensors)
+    function startHero() {
+      const s = setupCanvas('heroCanvas');
+      if(!s) return;
+      let t = 0;
+      function draw() {
+        s.ctx.clearRect(0,0,s.w,s.h);
+        s.ctx.lineWidth = 1;
+        // Draw floating tensor grids
+        for(let i=0; i<3; i++) {
+          const depth = (Math.sin(t*0.01 + i) + 1)/2;
+          const x = s.w * 0.2 + i * s.w*0.3 + Math.cos(t*0.02)*20;
+          const y = s.h * 0.5 + Math.sin(t*0.015 + i*2)*40;
+          const sz = 30 + depth*20;
+          
+          s.ctx.strokeStyle = `rgba(20, 184, 166, ${0.1 + depth*0.2})`;
+          s.ctx.fillStyle = `rgba(20, 184, 166, ${0.02})`;
+          
+          // Draw 3x3 plane
+          for(let r=0; r<3; r++){
+            for(let c=0; c<3; c++){
+              s.ctx.strokeRect(x + c*sz - r*sz*0.3, y + r*sz*0.5, sz, sz);
+              if(Math.random() > 0.98) {
+                s.ctx.fillRect(x + c*sz - r*sz*0.3, y + r*sz*0.5, sz, sz);
+              }
+            }
+          }
+        }
+        t++;
+        heroAnim = requestAnimationFrame(draw);
+      }
+      draw();
+    }
+
+    // Gate 1: Shape Match
+    let shapeState = 'idle';
+    function triggerShapeReveal() { shapeState = 'revealed'; }
+    function startShape() {
+      const s = setupCanvas('shapeCanvas');
+      if(!s) return;
+      function draw() {
+        s.ctx.clearRect(0,0,s.w,s.h);
+        s.ctx.fillStyle = '#1a1a1f';
+        s.ctx.fillRect(40, 40, s.w-80, 40);
+        
+        s.ctx.fillStyle = '#f59e0b';
+        s.ctx.font = '12px JetBrains Mono';
+        s.ctx.textAlign = 'center';
+        
+        if (shapeState === 'idle') {
+          s.ctx.fillText("Hidden Semantic Space", s.w/2, 65);
+          s.ctx.fillStyle = "rgba(255,255,255,0.4)";
+          s.ctx.fillText("Awaiting .shape inspection...", s.w/2, s.h/2);
+        } else {
+          // Revealed 1024 slots
+          s.ctx.fillStyle = 'rgba(245,158,11,0.2)';
+          for(let i=0; i<30; i++) {
+            s.ctx.fillRect(45 + i*((s.w-90)/30), 45, ((s.w-90)/30)-2, 30);
+          }
+          s.ctx.fillStyle = '#10b981';
+          s.ctx.font = 'bold 16px Space Grotesk';
+          s.ctx.fillText("torch.Size([1024])", s.w/2, s.h/2 + 20);
+          
+          s.ctx.strokeStyle = '#10b981';
+          s.ctx.beginPath(); s.ctx.moveTo(40, 95); s.ctx.lineTo(40, 105);
+          s.ctx.lineTo(s.w-40, 105); s.ctx.lineTo(s.w-40, 95); s.ctx.stroke();
+          s.ctx.fillText("1024 Dimensions", s.w/2, 125);
+        }
+        shapeAnim = requestAnimationFrame(draw);
+      }
+      draw();
+    }
+
+    // Gate 2: Grad Lock
+    let gradState = 'idle';
+    function triggerGradReveal() { gradState = 'revealed'; }
+    function startGrad() {
+      const s = setupCanvas('gradCanvas');
+      if(!s) return;
+      let t=0;
+      function draw() {
+        s.ctx.clearRect(0,0,s.w,s.h);
+        const cx = s.w/2;
+        
+        // Base Model Box
+        s.ctx.fillStyle = 'rgba(255,255,255,0.05)';
+        s.ctx.strokeStyle = gradState === 'revealed' ? '#14b8a6' : '#f43f5e';
+        s.ctx.lineWidth = 2;
+        s.ctx.fillRect(cx - 80, 40, 160, 100);
+        s.ctx.strokeRect(cx - 80, 40, 160, 100);
+        
+        s.ctx.fillStyle = '#fff';
+        s.ctx.textAlign = 'center';
+        s.ctx.font = '14px Space Grotesk';
+        s.ctx.fillText("Qwen Base Weights", cx, 70);
+        
+        if (gradState === 'idle') {
+          s.ctx.fillStyle = '#f43f5e';
+          s.ctx.font = '12px JetBrains Mono';
+          s.ctx.fillText("requires_grad = True", cx, 110);
+          
+          // Danger particles
+          if(Math.floor(t)%10 === 0) {
+            s.ctx.fillStyle = 'rgba(244,63,94,0.5)';
+            s.ctx.beginPath();
+            s.ctx.arc(cx + (Math.random()-0.5)*140, 90 + (Math.random()-0.5)*80, Math.random()*3, 0, Math.PI*2);
+            s.ctx.fill();
+          }
+          s.ctx.fillStyle = "rgba(255,255,255,0.4)";
+          s.ctx.fillText("Optimizer modifying base...", cx, s.h-30);
+        } else {
+          s.ctx.fillStyle = '#14b8a6';
+          s.ctx.font = 'bold 12px JetBrains Mono';
+          s.ctx.fillText("requires_grad = False", cx, 110);
+          
+          // Lock symbol
+          s.ctx.strokeStyle = '#14b8a6';
+          s.ctx.lineWidth=3;
+          s.ctx.strokeRect(cx-10, 15, 20, 15);
+          s.ctx.beginPath(); s.ctx.arc(cx, 15, 6, Math.PI, 0); s.ctx.stroke();
+          
+          s.ctx.fillStyle = "#10b981";
+          s.ctx.fillText("Base weights perfectly locked.", cx, s.h-30);
+        }
+        t++;
+        gradAnim = requestAnimationFrame(draw);
+      }
+      draw();
+    }
+
+    // Gate 3: Eval Mode
+    let evalState = 'idle';
+    function triggerEvalReveal() { evalState = 'revealed'; }
+    function startEval() {
+      const s = setupCanvas('evalCanvas');
+      if(!s) return;
+      let t=0;
+      function draw() {
+        s.ctx.clearRect(0,0,s.w,s.h);
+        const y = 80;
+        
+        s.ctx.font = '12px JetBrains Mono';
+        s.ctx.textAlign = 'center';
+        
+        if (evalState === 'idle') {
+          s.ctx.fillStyle = "rgba(255,255,255,0.4)";
+          s.ctx.fillText("Mode: .train() (Default)", s.w/2, 30);
+          // Nodes turning on and off randomly (Dropout)
+          for(let i=0; i<8; i++) {
+             const active = Math.random() > 0.3;
+             s.ctx.fillStyle = active ? '#f59e0b' : '#1e1e24';
+             s.ctx.beginPath(); s.ctx.arc(40 + i*((s.w-80)/7), y, 10, 0, Math.PI*2); s.ctx.fill();
+             if(active) { s.ctx.strokeStyle='#f59e0b'; s.ctx.stroke(); }
+          }
+          s.ctx.fillStyle = "#f43f5e";
+          s.ctx.fillText("Dropout injecting entropy (Hallucination)", s.w/2, 140);
+        } else {
+          s.ctx.fillStyle = '#10b981';
+          s.ctx.fillText("Mode: .eval() (Locked)", s.w/2, 30);
+          // All nodes firing 
+          for(let i=0; i<8; i++) {
+             s.ctx.fillStyle = '#14b8a6';
+             s.ctx.beginPath(); s.ctx.arc(40 + i*((s.w-80)/7), y, 10, 0, Math.PI*2); s.ctx.fill();
+             
+             // Steady beam
+             s.ctx.fillStyle = 'rgba(20,184,166,0.2)';
+             s.ctx.fillRect(38 + i*((s.w-80)/7), y+10, 4, 30);
+          }
+          s.ctx.fillStyle = "#10b981";
+          s.ctx.fillText("Deterministic Inference Active", s.w/2, 140);
+        }
+        t++;
+        
+        // Slower refresh for the dropout strobe effect
+        setTimeout(() => { evalAnim = requestAnimationFrame(draw); }, 80);
+      }
+      draw();
+    }
+
+    // Initialize Hero on load
+    window.onload = () => { initCanvasesForStage(0); };
+  </script>
+</body>
+</html>

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 01 - Capability Layer</title>
+  <style>
+    :root {
+      --bg: #08111a;
+      --panel: rgba(12, 20, 30, 0.88);
+      --panel-2: rgba(21, 31, 43, 0.92);
+      --line: rgba(255,255,255,0.08);
+      --text: #f3f7fb;
+      --muted: #9ab0c2;
+      --accent: #ff7a18;
+      --accent-2: #56c5ff;
+      --good: #2ecc71;
+      --bad: #ff5c73;
+      --gold: #ffd166;
+      --violet: #8f7cff;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--text);
+      font-family: Georgia, "Times New Roman", serif; line-height: 1.6;
+      background: radial-gradient(circle at 15% 10%, rgba(86,197,255,0.18), transparent 22%),
+                  radial-gradient(circle at 82% 14%, rgba(255,122,24,0.16), transparent 24%),
+                  linear-gradient(180deg, #071018 0%, #08111a 48%, #09131c 100%);
+    }
+    .progress { position: fixed; top: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.05); z-index: 50; }
+    .progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, #ff7a18, #ffd166, #56c5ff); transition: width 0.35s ease; }
+    .shell { max-width: 1120px; margin: 0 auto; padding: 42px 18px 80px; }
+    .stage { display: none; animation: fadeUp 0.45s ease; }
+    .stage.active { display: block; }
+    .hero, .card {
+      border-radius: 26px; border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015)),
+                  linear-gradient(135deg, rgba(143,124,255,0.08), transparent 40%);
+      box-shadow: 0 26px 56px rgba(0,0,0,0.24); overflow: hidden;
+    }
+    .hero { padding: 28px; }
+    .card { padding: 22px; margin-top: 18px; }
+    .eyebrow { color: var(--gold); text-transform: uppercase; letter-spacing: 0.2em; font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif; margin-bottom: 12px; }
+    .section-count { color: #89a1b2; text-transform: uppercase; letter-spacing: 0.12em; font: 700 0.75rem/1.2 Arial, Helvetica, sans-serif; margin-bottom: 10px; }
+    h1, h2, h3 { margin: 0 0 14px; line-height: 1.08; font-weight: 500; }
+    h1 { font-size: clamp(2.5rem, 5vw, 4.8rem); }
+    h2 { font-size: clamp(1.55rem, 2.8vw, 2.35rem); }
+    h3 { font-size: 1.08rem; }
+    p { margin: 0 0 14px; }
+    .lede { max-width: 54rem; font-size: 1.12rem; color: #d9e4ec; }
+    .divider { height: 1px; margin: 24px 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent); }
+    .hero-grid, .grid-2 { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mini-card { border-radius: 18px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); padding: 16px; }
+    .mini-title { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font: 700 0.78rem/1.2 Arial, Helvetica, sans-serif; margin-bottom: 8px; }
+    .mono { font-family: Consolas, Monaco, "Courier New", monospace; font-size: 0.95rem; }
+    .code-block { background: #071018; padding: 16px; border-radius: 12px; font-family: Consolas, monospace; font-size: 0.9rem; color: #56c5ff; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 16px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+    .btn { border: 0; cursor: pointer; padding: 14px 18px; border-radius: 999px; font: 700 0.94rem/1 Arial, Helvetica, sans-serif; transition: transform 0.18s ease, opacity 0.18s ease; }
+    .btn-primary { background: linear-gradient(90deg, #ff7a18, #ff994d); color: white; }
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.15); }
+    .choices { display: grid; gap: 12px; margin-top: 16px; }
+    .choice { width: 100%; text-align: left; padding: 16px 18px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); color: #e7eef5; font: 400 1rem/1.45 Arial, Helvetica, sans-serif; cursor: pointer; transition: border-color 0.18s ease, background 0.18s ease; }
+    .choice.selected { border-color: rgba(255,122,24,0.78); background: rgba(255,122,24,0.08); }
+    .locked { margin-top: 12px; color: #ffd7a6; text-transform: uppercase; letter-spacing: 0.08em; font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif; }
+    .feedback { display: none; margin-top: 18px; padding: 18px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255,255,255,0.04); }
+    .feedback.show { display: block; }
+    .feedback.good { border-color: rgba(46,204,113,0.38); }
+    .feedback.bad { border-color: rgba(255,92,115,0.38); }
+    .hidden { display: none; }
+    input[type="text"], textarea { width: 100%; padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.03); color: var(--text); font: 400 1rem/1.45 Arial, Helvetica, sans-serif; }
+    .gauntlet-grid { display: grid; gap: 14px; margin-top: 18px; }
+    .q-card { padding: 16px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
+    .q-card label { display: block; margin-bottom: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif; }
+    .final-box { margin-top: 18px; padding: 22px; border-radius: 20px; border: 1px solid rgba(86,197,255,0.28); background: linear-gradient(180deg, rgba(86,197,255,0.08), rgba(255,255,255,0.02)); }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true"><div id="progressFill" class="progress-fill"></div></div>
+  <main class="shell">
+    <section id="stage-0" class="stage active">
+      <div class="hero">
+        <p class="eyebrow">Lesson 01 - Capability Layer</p>
+        <h1>A variable is a bucket. A type is its immutable law.</h1>
+        <div class="divider"></div>
+        <p class="lede">Before you write complex Agentic logic, you must control the raw materials. In Python, variables are dynamic ghosts. If you do not lock them down with Type Hints, the CCP Factory Floor will collapse under hallucinated data.</p>
+        <div class="hero-grid">
+          <div class="mini-card">
+            <p class="mini-title">The Crisis Point</p>
+            <p>An agent was tasked to return a <span class="mono">trigger_count</span>. It returned the string <span class="mono">"Three"</span> instead of the integer <span class="mono">3</span>. The math engine crashed. The client received an error instead of life-saving context.</p>
+          </div>
+          <div class="mini-card">
+            <p class="mini-title">What This Layer Does</p>
+            <p>You will not code. You will read Agent-generated logic and predict the catastrophic failure caused by weak types. A locked commit is required before the defect is revealed.</p>
+          </div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="goToStage(1)">Enter the Factory Floor</button></div>
+      </div>
+    </section>
+
+    <!-- Stage 1 -->
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="section-count">Prediction Gate 1 of 3</p>
+        <h2>Dynamic Assignment Vulnerability</h2>
+        <p>You assign a variable to hold the coaching session ID. Later, the DSPy agent dynamically overwrites it.</p>
+        <div class="grid-2">
+          <div class="code-block">session_id = 9482<br># [2 seconds later, agent intervenes]<br>session_id = "URGENT_PANIC_9482"</div>
+          <div>
+            <div class="choices" data-group="p1">
+              <button class="choice" data-value="A" onclick="selectChoice('p1','A',this)">Python strictly rejects the change because it was initialized as an integer.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('p1','B',this)">Python silently overwrites it and changes the data type to a string.</button>
+              <button class="choice" data-value="C" onclick="selectChoice('p1','C',this)">The system crashes immediately with a ValueError.</button>
+            </div>
+            <div id="p1-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions"><button id="p1-submit" class="btn btn-primary" onclick="submitChoice('p1','B',p1Feedback)">Lock prediction</button></div>
+            <div id="p1-feedback" class="feedback"></div>
+            <div id="p1-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(2)">Next scenario</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stage 2 -->
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="section-count">Prediction Gate 2 of 3</p>
+        <h2>The Type Hint Defense</h2>
+        <p>To fix the vulnerability, you add a Type Hint to explicitly instruct the agent. What does this code actually execute in raw Python?</p>
+        <div class="grid-2">
+          <div class="code-block">session_id: int = 9482<br>session_id = "URGENT_PANIC"</div>
+          <div>
+            <div class="choices" data-group="p2">
+              <button class="choice" data-value="A" onclick="selectChoice('p2','A',this)">Python crashes immediately with a TypeMismatchError.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('p2','B',this)">Python converts the string to an integer automatically.</button>
+              <button class="choice" data-value="C" onclick="selectChoice('p2','C',this)">Python completely ignores the hint at runtime and overwrites it anyway.</button>
+            </div>
+            <div id="p2-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions"><button id="p2-submit" class="btn btn-primary" onclick="submitChoice('p2','C',p2Feedback)">Lock prediction</button></div>
+            <div id="p2-feedback" class="feedback"></div>
+            <div id="p2-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(3)">Next scenario</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stage 3 -->
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="section-count">Prediction Gate 3 of 3</p>
+        <h2>Applying the QA Inspector (Pydantic)</h2>
+        <p>If Python ignores type hints natively, why do we use them? Because another system—The QA Department (Pydantic)—reads the hints and enforces them before logic runs.</p>
+        <div class="grid-2">
+          <div class="code-block">from pydantic import BaseModel<br><br>class CoachingState(BaseModel):<br>    session_id: int<br><br>state = CoachingState(session_id="URGENT")</div>
+          <div>
+            <div class="choices" data-group="p3">
+              <button class="choice" data-value="A" onclick="selectChoice('p3','A',this)">Pydantic forcefully traps the error and throws a ValidationError.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('p3','B',this)">Pydantic falls back to dynamic typing and permits the string.</button>
+              <button class="choice" data-value="C" onclick="selectChoice('p3','C',this)">FastAPI ignores Pydantic and executes anyway.</button>
+            </div>
+            <div id="p3-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions"><button id="p3-submit" class="btn btn-primary" onclick="submitChoice('p3','A',p3Feedback)">Lock prediction</button></div>
+            <div id="p3-feedback" class="feedback"></div>
+            <div id="p3-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(4)">Continue to mastery gate</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stage 4 -->
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="eyebrow">Mastery Gate</p>
+        <h2>Compress the mechanism</h2>
+        <p>Explain why Sovereign Architects use Type Hints even though Python ignores them at runtime. Use the words "QA" or "Pydantic" and "blueprint".</p>
+        <textarea id="masteryText" placeholder="We use type hints because..."></textarea>
+        <div class="actions"><button class="btn btn-primary" onclick="submitMastery()">Lock response</button></div>
+        <div id="mastery-feedback" class="feedback"></div>
+        <div id="mastery-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(5)">Enter the 7-question gauntlet</button></div>
+      </div>
+    </section>
+
+    <!-- Stage 5 Gauntlet -->
+    <section id="stage-5" class="stage">
+      <div class="card">
+        <p class="eyebrow">Capability Gauntlet</p>
+        <h2>Seven rapid checks</h2>
+        <div class="gauntlet-grid">
+          <div class="q-card"><label>1. What data type should represent 'active_session_count'?</label><input id="g1" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label>2. What data type should represent 'client_name'?</label><input id="g2" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label>3. What data type should represent an array of 'triggers'?</label><input id="g3" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label>4. What data type should represent 'is_payment_valid'?</label><input id="g4" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label>5. What data type should represent an 'anxiety_score' of 3.4?</label><input id="g5" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label>6. What natively stops a Python variable from changing types?</label><input id="g6" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label>7. What library does the CCP use to physically enforce Type Hints?</label><input id="g7" type="text" placeholder="Short answer"></div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="gradeGauntlet()">Submit gauntlet</button></div>
+        <div id="gauntlet-feedback" class="feedback"></div>
+        <div id="final-box" class="final-box hidden"><p class="eyebrow" style="margin-bottom:10px;">Layer 1 Complete</p></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const totalStages = 6;
+    const selections = {};
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = 'feedback show ' + type;
+      box.innerHTML = '<h3>' + title + '</h3><p>' + body + '</p>';
+    }
+
+    function selectChoice(groupId, value, element) {
+      if (document.querySelector(`[data-group="${groupId}"]`).dataset.locked === 'true') return;
+      selections[groupId] = value;
+      document.querySelectorAll(`[data-group="${groupId}"] .choice`).forEach(b => b.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function submitChoice(groupId, correct, feedbackPack) {
+      const selected = selections[groupId];
+      if (!selected) {
+        showFeedback(groupId + '-feedback', 'bad', 'Prediction required', 'Commit to an answer before the reveal.');
+        return;
+      }
+      document.querySelector(`[data-group="${groupId}"]`).dataset.locked = 'true';
+      document.getElementById(groupId + '-submit').disabled = true;
+      document.getElementById(groupId + '-lock').classList.remove('hidden');
+      
+      const isCorrect = selected === correct;
+      const payload = isCorrect ? feedbackPack.good : feedbackPack.bad;
+      showFeedback(groupId + '-feedback', isCorrect ? 'good' : 'bad', payload.title, payload.body);
+      document.getElementById(groupId + '-next').classList.remove('hidden');
+    }
+
+    const p1Feedback = {
+      good: { title: 'Correct: Python is dynamically typed.', body: 'Because variables are just buckets without locked labels, Python silently overwrites the integer with a string. The next mathematical algorithm to touch session_id crashes instantly.' },
+      bad: { title: 'Misconception exposed: expecting safety.', body: 'Python does not natively protect you. It is dynamically typed. It will silently let an agent overwrite mission-critical IDs with hallucinated strings.' }
+    };
+
+    const p2Feedback = {
+      good: { title: 'Correct: Python ignores hints at runtime.', body: 'Type hints in pure Python are just *suggestions*. They do not stop the code from executing the overwrite. The ghost still moves freely.' },
+      bad: { title: 'Misconception exposed: assuming hints enforce themselves.', body: 'This is the most dangerous illusion. A type hint natively does absolutely nothing at runtime in Python. It is purely cosmetic documentation unless an external orchestrator reads it.' }
+    };
+
+    const p3Feedback = {
+      good: { title: 'Correct: Pydantic is the physical enforcer.', body: 'Pydantic reads the type hint (the blueprint) and acts as the QA Inspector. If the string "URGENT" enters an `int` mold, Pydantic halts the thread and throws aValidationError immediately.' },
+      bad: { title: 'Misconception: passive data flow.', body: 'Pydantic is militant. It does not allow the code to proceed if the validation fails. It throws a fatal error—protecting the database from corrupted states.' }
+    };
+
+    function containsAny(value, options) {
+      return options.some(opt => value.includes(opt));
+    }
+
+    function submitMastery() {
+      const value = document.getElementById('masteryText').value.trim().toLowerCase();
+      const checks = [containsAny(value, ['qa', 'pydantic']), containsAny(value, ['blueprint'])];
+      document.getElementById('masteryText').disabled = true;
+      if (checks.filter(Boolean).length === 2) {
+        showFeedback('mastery-feedback', 'good', 'Gate passed', 'Correct. Python ignores hints, but Pydantic uses them as the structural blueprint for QA inspection to enforce safety constraints.');
+        document.getElementById('mastery-next').classList.remove('hidden');
+      } else {
+        showFeedback('mastery-feedback', 'bad', 'Gate failed', 'Missing load-bearing keywords (Pydantic/QA or blueprint). Try again to crystallize the operational purpose.');
+        document.getElementById('masteryText').disabled = false;
+      }
+    }
+
+    function gradeGauntlet() {
+      const answers = { g1: ['int'], g2: ['str', 'string'], g3: ['list'], g4: ['bool', 'boolean'], g5: ['float'], g6: ['nothing', 'none'], g7: ['pydantic'] };
+      let score = 0;
+      Object.entries(answers).forEach(([id, kws]) => {
+        const val = document.getElementById(id).value.trim().toLowerCase();
+        if (val && containsAny(val, kws)) score++;
+      });
+      if (score >= 5) {
+        showFeedback('gauntlet-feedback', 'good', `Cleared: ${score}/7`, 'Your categorical recognition is solid. Move to Layer 2 to see this operate in production.');
+        document.getElementById('final-box').classList.remove('hidden');
+      } else {
+        showFeedback('gauntlet-feedback', 'bad', `Failed: ${score}/7`, 'Review the basic classifications (int, str, bool, list, float) and the architectural constraints.');
+      }
+    }
+  </script>
+</body>
+</html>

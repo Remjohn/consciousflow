@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Layer 4 — Master Capstone: Distance Metrics & Clustering</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050505;
+  --surface: #0f0f0f;
+  --surface2: #161616;
+  --surface3: #1e1e1e;
+  --text: #FAFAFA;
+  --muted: #777;
+  --dim: #444;
+  --border: #222;
+  --border2: #2e2e2e;
+  --accent: #E8C46A;
+  --red: #E76F51;
+  --green: #2A9D8F;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Inter', sans-serif;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.65;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ── HUD ── */
+#hud {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: rgba(5,5,5,0.97);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 2rem;
+  gap: 1rem;
+}
+#hud-timer {
+  font-family: var(--mono);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.04em;
+  min-width: 5ch;
+}
+#hud-timer.warning { color: var(--accent); }
+#hud-timer.critical { color: var(--red); }
+#hud-score {
+  font-family: var(--mono);
+  font-size: 1rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+#hud-progress {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--dim);
+  letter-spacing: 0.08em;
+}
+
+/* ── Layout ── */
+.page { max-width: 780px; margin: 0 auto; padding: 3rem 2rem 8rem; }
+
+/* ── Intro ── */
+#intro { }
+.intro-label {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--red);
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+.intro-title {
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  color: #fff;
+}
+.intro-body {
+  color: var(--muted);
+  font-size: 1.05rem;
+  margin-bottom: 1rem;
+  max-width: 640px;
+}
+.intro-body strong { color: #ccc; }
+.rule-block {
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  padding: 1.4rem 1.6rem;
+  margin: 2rem 0;
+  border-radius: 4px;
+}
+.rule-block p {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.8;
+  margin-bottom: 0.4rem;
+}
+.rule-block p:last-child { margin-bottom: 0; }
+.rule-block span { color: var(--accent); }
+.btn-start {
+  margin-top: 2rem;
+  background: var(--red);
+  color: #000;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: none;
+  padding: 0.9rem 2.2rem;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.btn-start:hover { background: #fff; transform: translateY(-2px); }
+
+/* ── Exam ── */
+#exam { display: none; }
+
+.q-wrap {
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  border-radius: 4px;
+  padding: 1.8rem 2rem;
+  margin-bottom: 1.6rem;
+  transition: opacity 0.25s;
+}
+.q-wrap.locked { opacity: 0.45; pointer-events: none; }
+
+.q-meta {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.q-num {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--red);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.q-pts {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--dim);
+  letter-spacing: 0.1em;
+}
+
+.q-text {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #f0f0f0;
+  margin-bottom: 1.4rem;
+  line-height: 1.55;
+}
+
+/* Text input */
+.q-input {
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg);
+  border: 1.5px solid var(--border2);
+  border-radius: 3px;
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 1rem;
+  padding: 0.6rem 0.9rem;
+  display: block;
+  margin-bottom: 0.9rem;
+  transition: border-color 0.15s;
+}
+.q-input:focus { outline: none; border-color: var(--accent); }
+.q-input:disabled { opacity: 0.5; }
+
+/* Button row */
+.q-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+.btn-commit {
+  background: transparent;
+  border: 1px solid var(--dim);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.55rem 1.3rem;
+  border-radius: 3px;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: border-color 0.15s, background 0.15s;
+}
+.btn-commit:hover:not(:disabled) { border-color: #fff; background: var(--surface3); }
+.btn-commit:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-bool {
+  background: transparent;
+  border: 1px solid var(--dim);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.55rem 1.5rem;
+  border-radius: 3px;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: border-color 0.15s, background 0.15s;
+}
+.btn-bool:hover:not(:disabled) { border-color: #fff; background: var(--surface3); }
+.btn-bool:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── Feynman Terminal ── */
+#feynman-section {
+  display: none;
+  margin-top: 3.5rem;
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  border-radius: 4px;
+  padding: 2rem;
+}
+.feynman-label {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 1.2rem;
+}
+.feynman-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 0.6rem;
+}
+.feynman-prompt {
+  font-size: 0.95rem;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+  border-left: 2px solid var(--dim);
+  padding-left: 1rem;
+}
+.feynman-prompt strong { color: #ddd; }
+.feynman-textarea {
+  width: 100%;
+  min-height: 180px;
+  background: var(--bg);
+  border: 1.5px solid var(--border2);
+  border-radius: 3px;
+  color: var(--accent);
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.6;
+  padding: 1rem 1.1rem;
+  resize: vertical;
+  margin-bottom: 1rem;
+  transition: border-color 0.15s;
+}
+.feynman-textarea:focus { outline: none; border-color: var(--accent); }
+.feynman-textarea:disabled { opacity: 0.5; }
+.btn-feynman {
+  background: var(--accent);
+  color: #000;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: none;
+  padding: 0.75rem 1.8rem;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.btn-feynman:hover:not(:disabled) { background: #fff; transform: translateY(-2px); }
+.btn-feynman:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Results ── */
+#results-section {
+  display: none;
+  margin-top: 3.5rem;
+}
+.result-header {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 1.2rem;
+  color: var(--muted);
+}
+.result-verdict {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 0.5rem;
+}
+.result-verdict.pass { color: var(--green); }
+.result-verdict.fail { color: var(--red); }
+.result-score {
+  font-family: var(--mono);
+  font-size: 1.2rem;
+  color: var(--muted);
+  margin-bottom: 2rem;
+}
+.result-breakdown {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 1.6rem 1.8rem;
+  margin-bottom: 2rem;
+}
+.breakdown-title {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 1.2rem;
+}
+.breakdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--border);
+  gap: 1rem;
+}
+.breakdown-item:last-child { border-bottom: none; }
+.bi-q { font-size: 0.88rem; color: #bbb; flex: 1; line-height: 1.4; }
+.bi-result {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.bi-result.correct { color: var(--green); }
+.bi-result.incorrect { color: var(--red); }
+.bi-result.partial { color: var(--accent); }
+
+.misconception-box {
+  background: rgba(231,111,81,0.07);
+  border-left: 2px solid var(--red);
+  padding: 0.7rem 1rem;
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+  color: #ffb3a1;
+  line-height: 1.55;
+}
+
+.feynman-result {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 1.6rem 1.8rem;
+  margin-bottom: 2rem;
+}
+.feynman-result-title {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 1rem;
+}
+.keyword-row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.kw-tag {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 2px;
+  letter-spacing: 0.06em;
+}
+.kw-tag.found { background: rgba(42,157,143,0.15); color: var(--green); border: 1px solid rgba(42,157,143,0.3); }
+.kw-tag.missing { background: rgba(231,111,81,0.1); color: var(--red); border: 1px solid rgba(231,111,81,0.25); }
+.feynman-feedback {
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+.feynman-feedback strong { color: #ddd; }
+
+.result-directive {
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  border-radius: 4px;
+  padding: 1.4rem 1.8rem;
+}
+.directive-label {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.6rem;
+}
+.directive-text {
+  font-size: 0.95rem;
+  color: #bbb;
+  line-height: 1.6;
+}
+
+/* ── Fatal overlay (time expiry) ── */
+#overlay-expired {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(5,5,5,0.97);
+  z-index: 9999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+}
+#overlay-expired h2 {
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 1rem;
+}
+#overlay-expired p {
+  font-size: 1rem;
+  color: var(--muted);
+  max-width: 500px;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+.btn-expired {
+  background: var(--red);
+  color: #000;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: none;
+  padding: 0.8rem 2rem;
+  border-radius: 3px;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<!-- TIME EXPIRY OVERLAY -->
+<div id="overlay-expired">
+  <h2>[ TIME EXPIRED ]</h2>
+  <p>The 10-minute window closed. All unanswered questions have been auto-submitted. Review your results below to identify which mechanisms remain below mastery threshold.</p>
+  <button class="btn-expired" onclick="closeExpiredOverlay()">REVIEW RESULTS</button>
+</div>
+
+<!-- STICKY HUD -->
+<div id="hud" style="display:none;">
+  <div id="hud-timer">10:00</div>
+  <div id="hud-score">SCORE: <span id="score-display">0</span> / 200</div>
+  <div id="hud-progress">Q <span id="q-answered">0</span> / 12</div>
+</div>
+
+<div class="page">
+
+  <!-- ── INTRO ── -->
+  <div id="intro">
+    <div class="intro-label">Layer 4 — Capstone Assessment</div>
+    <h1 class="intro-title">Distance Metrics &amp; Clustering<br>Master Integration</h1>
+    <p class="intro-body">
+      This is the terminal evaluation. There are no diagrams, no scaffolding, no reference summaries.
+      If you require a visual to answer, the mechanism has not been internalized — only the visual has been learned.
+    </p>
+    <p class="intro-body">
+      The exam integrates all prior layers: distance metric architecture, K-Means mechanics,
+      Silhouette Score logic, PCA dependency, the Curse of Dimensionality, and the
+      Transformer attention / K-Means clustering duality.
+    </p>
+
+    <div class="rule-block">
+      <p><span>Duration:</span> 10 minutes. Auto-submission on expiry.</p>
+      <p><span>Questions:</span> 12 + 1 Feynman Compression terminal.</p>
+      <p><span>Format:</span> Boolean commitment, short-answer recall, targeted computation.</p>
+      <p><span>Passing threshold:</span> 160 / 200.</p>
+      <p><span>Feynman terminal:</span> Open text, 50 pts, graded on 3 structural keywords.</p>
+      <p><span>Feedback:</span> Full misconception-keyed breakdown delivered after submission.</p>
+    </div>
+
+    <button class="btn-start" onclick="initExam()">BEGIN EXAM</button>
+  </div>
+
+  <!-- ── EXAM BODY ── -->
+  <div id="exam">
+    <div id="questions-container"></div>
+    <div id="feynman-section">
+      <div class="feynman-label">Terminal — Feynman Compression [50 pts]</div>
+      <div class="feynman-title">Soft Clustering vs. Rigid Clustering: The Duality</div>
+      <p class="feynman-prompt">
+        Explain precisely how the Transformer Multi-Head Attention dot product operates as a
+        <strong>"soft clustering"</strong> mechanism contrasted against how K-Means in the CCP CBCS operates as
+        <strong>"rigid clustering"</strong>. Your answer must demonstrate mechanistic understanding of how
+        <strong>distance</strong> is computed in each system, why one produces
+        <strong>continuous</strong> probabilistic membership and the other produces hard binary assignment,
+        and what makes the CCP's pre-computed cluster labels a form of prompt-level
+        <strong>dimensionality</strong> reduction.
+      </p>
+      <textarea
+        id="feynman-input"
+        class="feynman-textarea"
+        placeholder="Begin compression. Minimum structural requirement: explain the role of distance in both systems, what makes one continuous and one rigid, and how pre-computed cluster labels reduce dimensionality at inference time."
+      ></textarea>
+      <button class="btn-feynman" id="btn-feynman-submit" onclick="submitFeynman()">COMPILE SYNTHESIS</button>
+    </div>
+  </div>
+
+  <!-- ── RESULTS ── -->
+  <div id="results-section">
+    <div class="result-header">Assessment Complete — Full Breakdown</div>
+    <div id="verdict-display"></div>
+    <div id="breakdown-display"></div>
+    <div id="feynman-result-display"></div>
+    <div id="directive-display"></div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+/* ════════════════════════════════════════════════
+   DATA
+════════════════════════════════════════════════ */
+const QUESTIONS = [
+  {
+    id: 0,
+    type: 'bool',
+    pts: 10,
+    text: 'True or False: Euclidean Distance is disproportionately inflated by variables with larger scalar ranges (e.g., 0–1000 vs. 0–1), making normalization a prerequisite before running K-Means on mixed-scale features.',
+    options: ['True', 'False'],
+    ans: 0, // True
+    misconception: null,
+    wrongMisconception: 'Misconception — "Scale is irrelevant to distance." Euclidean computes straight-line gap using raw magnitudes. A dimension spanning 0–1000 overwhelms one spanning 0–1 by three orders of magnitude — the algorithm functionally ignores the small-scale dimension entirely. Normalization restores dimensional parity.'
+  },
+  {
+    id: 1,
+    type: 'bool',
+    pts: 10,
+    text: 'True or False: Cosine Distance equals zero when two vectors are proportionally identical in their dimensional ratios — regardless of how different their absolute magnitudes are.',
+    options: ['True', 'False'],
+    ans: 0, // True
+    misconception: null,
+    wrongMisconception: 'Misconception — "Distance must account for magnitude." Cosine Distance divides out both magnitudes via the dot product formula: 1 − (a·b / ‖a‖·‖b‖). Two vectors at (2,1) and (200,100) share the same directional angle → cosine = 0. The metric is purely angular. Magnitude is destroyed by design.'
+  },
+  {
+    id: 2,
+    type: 'bool',
+    pts: 10,
+    text: 'True or False: In K-Means++, the first centroid is chosen randomly; subsequent centroids are chosen with probability strictly proportional to squared distance from the nearest already-chosen centroid.',
+    options: ['True', 'False'],
+    ans: 0, // True
+    misconception: null,
+    wrongMisconception: 'Misconception — "K-Means++ places all centroids randomly like standard K-Means." Only the first centroid is random. Every subsequent centroid is probabilistically biased toward maximally distant points (proportional to d²). This guarantees geographic spread across the data, dramatically reducing the chance of a clumped initialization.'
+  },
+  {
+    id: 3,
+    type: 'bool',
+    pts: 10,
+    text: 'True or False: A Silhouette Score of exactly 0 for a given data point means that point sits equidistant between its assigned cluster centroid and the nearest rival cluster centroid.',
+    options: ['True', 'False'],
+    ans: 0, // True
+    misconception: null,
+    wrongMisconception: 'Misconception — "A score of 0 means the point is unclassifiable or invalid." A score of 0 means b(i) = a(i): the average intra-cluster distance equals the minimum inter-cluster distance. The point sits precisely on the geometric boundary between two clusters — a valid but ambiguous classification state.'
+  },
+  {
+    id: 4,
+    type: 'bool',
+    pts: 10,
+    text: 'True or False: When K = N (every data point becomes its own cluster), the K-Means WCSS objective function J reaches exactly 0 — while simultaneously providing zero actionable intelligence.',
+    options: ['True', 'False'],
+    ans: 0, // True
+    misconception: null,
+    wrongMisconception: 'Misconception — "Minimizing WCSS always improves model quality." WCSS is bounded below by 0 and always decreases as K increases. At K = N, every point is its own centroid and all squared distances vanish. A perfect WCSS of 0 with K = N is a mathematical tautology — not a discovery.'
+  },
+  {
+    id: 5,
+    type: 'bool',
+    pts: 10,
+    text: 'True or False: The Transformer Softmax attention mechanism is correctly described as "soft clustering" because every token receives a continuous fractional weight toward every other token — rather than a single hard binary assignment.',
+    options: ['True', 'False'],
+    ans: 0, // True
+    misconception: null,
+    wrongMisconception: 'Misconception — "Attention routing is binary: attended or not attended." Softmax converts raw dot-product distance scores into a probability distribution summing to 1.0. Each token "belongs" to every other token proportionally. K-Means is the hard limit of this — collapsing the probability distribution into a one-hot assignment vector (weight = 1.0 for one centroid, 0.0 for all others).'
+  },
+  {
+    id: 6,
+    type: 'text',
+    pts: 15,
+    text: 'When K = 1 in a K-Means run, the single centroid resolves precisely to the ________ of the entire dataset.',
+    match: 'mean',
+    alsoAccept: ['average', 'arithmetic mean'],
+    misconception: null,
+    wrongMisconception: 'Misconception — "The centroid converges to the median or mode." The centroid update rule is μ = (1/|C|) Σxᵢ — the arithmetic mean. This is the unique minimizer of the sum of squared Euclidean distances. At K = 1, every point is in one cluster, so the single centroid is the dataset\'s global mean.'
+  },
+  {
+    id: 7,
+    type: 'text',
+    pts: 15,
+    text: 'The phenomenon where all pairwise Euclidean distances converge toward a meaningless constant as dimensionality approaches infinity — destroying the discriminative power of distance metrics — is called the Curse of ________.',
+    match: 'dimension',
+    alsoAccept: ['dimensionality'],
+    misconception: null,
+    wrongMisconception: 'Misconception — "More dimensions always provide more information." In high-dimensional spaces, the ratio of nearest-to-farthest neighbor distances approaches 1:1. Every point becomes approximately equidistant from every other point. This is why the CCP mandates PCA compression from 90D → 20D before running K-Means: to restore the geometric separation the algorithm requires to function.'
+  },
+  {
+    id: 8,
+    type: 'text',
+    pts: 15,
+    text: 'Which specific dimensionality reduction operation must be executed on the CCP\'s 90-dimensional LIWC-22 feature vectors BEFORE they can be clustered with K-Means using Euclidean or Cosine distance?',
+    match: 'pca',
+    alsoAccept: ['principal component analysis'],
+    misconception: null,
+    wrongMisconception: 'Misconception — "K-Means can be applied directly to raw high-dimensional vectors." In 90D space, the Curse of Dimensionality eliminates meaningful distance discrimination. PCA (Principal Component Analysis) compresses the 90D space to ~20D while preserving 85%+ of variance, restoring the geometric contrast K-Means needs to produce behaviorally meaningful archetypes.'
+  },
+  {
+    id: 9,
+    type: 'text',
+    pts: 15,
+    text: 'In the CRAL semantic search engine, the system first computes distance from the incoming query to K cluster ________, then restricts search to the single nearest cluster — achieving sub-linear O(N) retrieval.',
+    match: 'centroid',
+    alsoAccept: ['centroids'],
+    misconception: null,
+    wrongMisconception: 'Misconception — "Semantic search must compare the query to every stored document." K-Means pre-clusters all documents around K centroids. Nearest-centroid lookup is O(K), not O(N). Only members of the winning cluster are then searched. This is the architectural intelligence of the CRAL engine — distance-based routing replaces brute-force scan.'
+  },
+  {
+    id: 10,
+    type: 'text',
+    pts: 15,
+    text: 'When generating CCP behavioral archetypes, the pipeline uses Cosine Distance rather than Euclidean Distance because the operational question is about shared behavioral ________ patterns — not about absolute messaging volume.',
+    match: 'ratio',
+    alsoAccept: ['proportional', 'proportionality', 'direction', 'directional', 'pattern', 'angular'],
+    misconception: null,
+    wrongMisconception: 'Misconception — "Cosine and Euclidean distance always agree on similarity rankings." They explicitly measure incompatible properties. Clients A(2,1) and B(200,100) share identical directional ratios (2:1) → Cosine distance = 0 (identical patterns). But Euclidean distance ≈ 221.4 (entirely different positions). For the CCP, behavioral style is directional. Volume is irrelevant to archetype assignment.'
+  },
+  {
+    id: 11,
+    type: 'text',
+    pts: 15,
+    text: 'The K-Means algorithm is guaranteed to terminate because its objective function J decreases ________ with every iteration and is bounded below by zero.',
+    match: 'monoton',
+    alsoAccept: ['monotonically', 'monotone', 'monotonic'],
+    misconception: null,
+    wrongMisconception: 'Misconception — "K-Means might loop forever without a stopping condition." The WCSS objective J cannot increase between iterations. Each assignment step minimizes J given fixed centroids; each recomputation step minimizes J given fixed assignments. Because J is non-negative and strictly non-increasing, it must terminate at a local minimum. Convergence is mathematically guaranteed.'
+  }
+];
+
+/* ════════════════════════════════════════════════
+   FEYNMAN GRADING SPEC
+   Three structural keywords — each must be substantively present
+════════════════════════════════════════════════ */
+const FEYNMAN_KEYWORDS = [
+  {
+    key: 'continuous',
+    label: 'CONTINUOUS MEMBERSHIP',
+    check: (v) => v.includes('continuous') || v.includes('probability') || v.includes('probabilistic') || v.includes('fractional') || v.includes('soft'),
+    pts: 17,
+    missingNote: 'Missing: the explanation of continuous/probabilistic membership. Softmax distributes fractional weights summing to 1.0 — every token "belongs" to all others to varying degrees simultaneously. This is the defining feature that makes attention "soft" clustering.'
+  },
+  {
+    key: 'rigid / hard assignment',
+    label: 'RIGID ASSIGNMENT',
+    check: (v) => v.includes('rigid') || v.includes('hard') || v.includes('binary') || v.includes('one-hot') || v.includes('single centroid') || v.includes('exactly one'),
+    pts: 17,
+    missingNote: 'Missing: the explanation of rigid/hard assignment. K-Means forces each point to exactly one centroid with weight 1.0; all others receive 0.0. This is the binary hard limit of the soft attention distribution — the same operation, collapsed to a one-hot vector.'
+  },
+  {
+    key: 'distance / dimensionality reduction',
+    label: 'DISTANCE + DIM REDUCTION',
+    check: (v) => (v.includes('distance') || v.includes('dot product') || v.includes('similarity')) && (v.includes('dimension') || v.includes('token') || v.includes('prompt') || v.includes('compress') || v.includes('4 number') || v.includes('cluster label')),
+    pts: 16,
+    missingNote: 'Missing: the mechanistic link between distance computation and prompt-level dimensionality reduction. The CCP pre-computes cluster membership (a distance operation) off-chain and injects 4 hard numbers into the prompt instead of 2,300 tokens — reducing dimensionality at the inference boundary, not inside the model.'
+  }
+];
+
+/* ════════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════════ */
+let timerInterval = null;
+let secondsLeft = 600;
+let examRunning = false;
+let answers = {}; // { qId: { given, correct, pts_earned } }
+let feynmanAnswer = null;
+let feynmanScore = 0;
+let feynmanKeywords = [];
+let examScore = 0;
+let answeredCount = 0;
+let feynmanSubmitted = false;
+
+/* ════════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════════ */
+function initExam() {
+  document.getElementById('intro').style.display = 'none';
+  document.getElementById('exam').style.display = 'block';
+  document.getElementById('hud').style.display = 'flex';
+  buildQuestions();
+  startTimer();
+  examRunning = true;
+}
+
+function buildQuestions() {
+  const container = document.getElementById('questions-container');
+  let html = '';
+  QUESTIONS.forEach((q, i) => {
+    html += `<div class="q-wrap" id="qwrap-${q.id}">`;
+    html += `<div class="q-meta"><span class="q-num">Q${String(i+1).padStart(2,'0')}</span><span class="q-pts">[${q.pts} pts]</span></div>`;
+    html += `<div class="q-text">${q.text}</div>`;
+    if (q.type === 'bool') {
+      html += `<div class="q-actions">`;
+      q.options.forEach((opt, oi) => {
+        html += `<button class="btn-bool" id="btnbool-${q.id}-${oi}" onclick="commitBool(${q.id}, ${oi})">${opt}</button>`;
+      });
+      html += `</div>`;
+    } else {
+      html += `<input type="text" class="q-input" id="qinput-${q.id}" placeholder="Enter answer…" autocomplete="off" spellcheck="false">`;
+      html += `<div class="q-actions"><button class="btn-commit" id="btncommit-${q.id}" onclick="commitText(${q.id})">COMMIT</button></div>`;
+    }
+    html += `</div>`;
+  });
+  container.innerHTML = html;
+
+  // Enter key submits text
+  QUESTIONS.forEach(q => {
+    if (q.type === 'text') {
+      const inp = document.getElementById(`qinput-${q.id}`);
+      if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') commitText(q.id); });
+    }
+  });
+}
+
+/* ════════════════════════════════════════════════
+   TIMER
+════════════════════════════════════════════════ */
+function startTimer() {
+  const el = document.getElementById('hud-timer');
+  timerInterval = setInterval(() => {
+    secondsLeft--;
+    const m = Math.floor(secondsLeft / 60);
+    const s = secondsLeft % 60;
+    el.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+    el.className = secondsLeft < 60 ? 'critical' : secondsLeft < 180 ? 'warning' : '';
+    if (secondsLeft <= 0) {
+      clearInterval(timerInterval);
+      el.textContent = '0:00';
+      examRunning = false;
+      onTimeExpired();
+    }
+  }, 1000);
+}
+
+function onTimeExpired() {
+  // Lock all unanswered questions with blank answers
+  QUESTIONS.forEach(q => {
+    if (!answers[q.id]) {
+      answers[q.id] = { given: null, correct: false, pts_earned: 0 };
+      lockQuestion(q.id);
+    }
+  });
+  if (!feynmanSubmitted) {
+    lockFeynman();
+  }
+  document.getElementById('overlay-expired').style.display = 'flex';
+}
+
+function closeExpiredOverlay() {
+  document.getElementById('overlay-expired').style.display = 'none';
+  if (!feynmanSubmitted) {
+    const rawText = document.getElementById('feynman-input')?.value || '';
+    gradeFeynman(rawText);
+  }
+  showResults();
+}
+
+/* ════════════════════════════════════════════════
+   ANSWER COMMITS
+════════════════════════════════════════════════ */
+function commitBool(qId, selectedIdx) {
+  const q = QUESTIONS.find(x => x.id === qId);
+  if (!q || answers[qId]) return;
+  const correct = selectedIdx === q.ans;
+  const pts = correct ? q.pts : 0;
+  answers[qId] = { given: q.options[selectedIdx], correct, pts_earned: pts };
+  if (correct) {
+    examScore += pts;
+    updateScoreDisplay();
+  }
+  answeredCount++;
+  updateProgressDisplay();
+  lockQuestion(qId);
+  checkAllAnswered();
+}
+
+function commitText(qId) {
+  const q = QUESTIONS.find(x => x.id === qId);
+  if (!q || answers[qId]) return;
+  const inp = document.getElementById(`qinput-${qId}`);
+  const val = (inp?.value || '').toLowerCase().trim();
+  if (!val) return;
+  const correct = checkTextAnswer(q, val);
+  const pts = correct ? q.pts : 0;
+  answers[qId] = { given: inp.value.trim(), correct, pts_earned: pts };
+  if (correct) {
+    examScore += pts;
+    updateScoreDisplay();
+  }
+  answeredCount++;
+  updateProgressDisplay();
+  lockQuestion(qId);
+  checkAllAnswered();
+}
+
+function checkTextAnswer(q, val) {
+  if (val.includes(q.match)) return true;
+  if (q.alsoAccept) {
+    for (const a of q.alsoAccept) {
+      if (val.includes(a.toLowerCase())) return true;
+    }
+  }
+  return false;
+}
+
+function lockQuestion(qId) {
+  const wrap = document.getElementById(`qwrap-${qId}`);
+  if (wrap) wrap.classList.add('locked');
+  const inp = document.getElementById(`qinput-${qId}`);
+  if (inp) inp.disabled = true;
+  const btn = document.getElementById(`btncommit-${qId}`);
+  if (btn) btn.disabled = true;
+  for (let i = 0; i < 2; i++) {
+    const b = document.getElementById(`btnbool-${qId}-${i}`);
+    if (b) b.disabled = true;
+  }
+}
+
+function lockFeynman() {
+  const ta = document.getElementById('feynman-input');
+  if (ta) ta.disabled = true;
+  const btn = document.getElementById('btn-feynman-submit');
+  if (btn) btn.disabled = true;
+}
+
+/* ════════════════════════════════════════════════
+   FLOW
+════════════════════════════════════════════════ */
+function updateScoreDisplay() {
+  document.getElementById('score-display').textContent = examScore;
+}
+function updateProgressDisplay() {
+  document.getElementById('q-answered').textContent = answeredCount;
+}
+
+function checkAllAnswered() {
+  if (answeredCount === QUESTIONS.length) {
+    // Reveal Feynman terminal
+    const fSection = document.getElementById('feynman-section');
+    fSection.style.display = 'block';
+    setTimeout(() => fSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+  }
+}
+
+function submitFeynman() {
+  if (feynmanSubmitted) return;
+  const raw = document.getElementById('feynman-input').value;
+  gradeFeynman(raw);
+  lockFeynman();
+  feynmanSubmitted = true;
+  clearInterval(timerInterval);
+  examRunning = false;
+  showResults();
+}
+
+/* ════════════════════════════════════════════════
+   FEYNMAN GRADING
+════════════════════════════════════════════════ */
+function gradeFeynman(raw) {
+  feynmanAnswer = raw;
+  const val = raw.toLowerCase();
+  feynmanScore = 0;
+  feynmanKeywords = [];
+  const minLength = raw.trim().length >= 80;
+
+  FEYNMAN_KEYWORDS.forEach(kw => {
+    const found = minLength && kw.check(val);
+    feynmanKeywords.push({ ...kw, found });
+    if (found) feynmanScore += kw.pts;
+  });
+
+  examScore += feynmanScore;
+  updateScoreDisplay();
+}
+
+/* ════════════════════════════════════════════════
+   RESULTS
+════════════════════════════════════════════════ */
+function showResults() {
+  document.getElementById('exam').style.display = 'none';
+  document.getElementById('feynman-section').style.display = 'none';
+  document.getElementById('results-section').style.display = 'block';
+  document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const passed = examScore >= 160;
+
+  // Verdict
+  const verdictEl = document.getElementById('verdict-display');
+  verdictEl.innerHTML = `
+    <div class="result-verdict ${passed ? 'pass' : 'fail'}">${passed ? '[ OPERATION: SUCCESS ]' : '[ OPERATION: FAILED ]'}</div>
+    <div class="result-score">${examScore} / 200 &nbsp;·&nbsp; Threshold: 160 / 200</div>
+  `;
+
+  // Question breakdown
+  let breakdownHTML = `<div class="result-breakdown"><div class="breakdown-title">Question Breakdown</div>`;
+  QUESTIONS.forEach((q, i) => {
+    const a = answers[q.id];
+    const correct = a?.correct;
+    const given = a?.given ?? '—';
+    const pts = a?.pts_earned ?? 0;
+    breakdownHTML += `
+      <div class="breakdown-item">
+        <div class="bi-q">
+          <div><strong>Q${String(i+1).padStart(2,'0')}.</strong> ${q.text.substring(0,90)}…</div>
+          <div style="font-family:var(--mono);font-size:0.78rem;color:var(--dim);margin-top:0.25rem;">Your answer: "${given}"</div>
+          ${!correct && q.wrongMisconception ? `<div class="misconception-box">${q.wrongMisconception}</div>` : ''}
+        </div>
+        <div class="bi-result ${correct ? 'correct' : 'incorrect'}">${correct ? '+' + pts : '0'} / ${q.pts}</div>
+      </div>
+    `;
+  });
+  breakdownHTML += `</div>`;
+  document.getElementById('breakdown-display').innerHTML = breakdownHTML;
+
+  // Feynman result
+  let fHTML = `<div class="feynman-result"><div class="feynman-result-title">Feynman Compression — ${feynmanScore} / 50</div>`;
+  fHTML += `<div class="keyword-row">`;
+  feynmanKeywords.forEach(kw => {
+    fHTML += `<span class="kw-tag ${kw.found ? 'found' : 'missing'}">${kw.found ? '✓' : '✗'} ${kw.label}</span>`;
+  });
+  fHTML += `</div>`;
+  const missingKws = feynmanKeywords.filter(k => !k.found);
+  if (missingKws.length > 0) {
+    fHTML += `<div class="feynman-feedback">`;
+    missingKws.forEach(kw => {
+      fHTML += `<p style="margin-bottom:0.6rem;"><strong>Missing structural element — ${kw.label}:</strong> ${kw.missingNote}</p>`;
+    });
+    fHTML += `</div>`;
+  } else {
+    fHTML += `<div class="feynman-feedback"><strong style="color:var(--green);">All three structural elements present.</strong> The duality between continuous probabilistic membership and rigid hard assignment — grounded in distance computation — has been correctly compressed.</div>`;
+  }
+  fHTML += `</div>`;
+  document.getElementById('feynman-result-display').innerHTML = fHTML;
+
+  // Directive
+  let directive = '';
+  if (passed) {
+    directive = `Score ${examScore}/200 clears the 160pt threshold. You have demonstrated mechanistic integration of distance metric selection, K-Means convergence guarantees, Silhouette boundary logic, PCA dependency, and the Transformer clustering duality. The geometry of intelligence is no longer abstract — it is a navigable operational system.`;
+  } else {
+    const missingPts = 160 - examScore;
+    const weakQuestions = QUESTIONS.filter(q => !answers[q.id]?.correct).map(q => q.id + 1);
+    directive = `Score ${examScore}/200 falls ${missingPts} points below the 160pt threshold. Return to the Mechanistic Layer for questions: ${weakQuestions.join(', ')}. The misconception notes above identify the exact wrong model active in each failure. Do not re-read the material — return to Layer 2 and execute the derivations by hand.`;
+  }
+
+  document.getElementById('directive-display').innerHTML = `
+    <div class="result-directive">
+      <div class="directive-label">Operational Directive</div>
+      <div class="directive-text">${directive}</div>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>

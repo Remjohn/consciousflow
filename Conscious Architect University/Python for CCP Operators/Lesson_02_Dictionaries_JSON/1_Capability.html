@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 02: Dictionaries & JSON — Capability Layer</title>
+    <style>
+        :root {
+            --bg-base: #0f111a;
+            --bg-panel: #1a1d27;
+            --bg-accent: #262a3b;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-primary: #3b82f6;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-danger: #ef4444;
+            --border-dim: #334155;
+            --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            margin-top: 2rem;
+            color: #ffffff;
+        }
+
+        h1 { font-size: 2.2rem; border-bottom: 1px solid var(--border-dim); padding-bottom: 0.5rem; }
+        h2 { font-size: 1.5rem; color: var(--accent-primary); }
+
+        p { margin-bottom: 1.2rem; }
+        
+        .hook-container {
+            background-color: #000;
+            border: 1px solid var(--border-dim);
+            border-radius: 8px;
+            padding: 1.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            margin: 2rem 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hook-log {
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .hook-crash {
+            color: var(--accent-danger);
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .code-block {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-dim);
+            border-radius: 6px;
+            padding: 1.2rem;
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+        }
+
+        .prediction-gate {
+            background-color: var(--bg-accent);
+            border-left: 4px solid var(--accent-warning);
+            padding: 1.5rem;
+            border-radius: 4px;
+            margin: 2rem 0;
+        }
+
+        .prediction-gate h3 {
+            margin-top: 0;
+            color: var(--accent-warning);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .prediction-input {
+            width: 100%;
+            background-color: var(--bg-base);
+            border: 1px solid var(--border-dim);
+            color: var(--text-main);
+            padding: 0.8rem;
+            font-family: var(--font-mono);
+            border-radius: 4px;
+            margin: 1rem 0;
+            font-size: 1rem;
+        }
+
+        .prediction-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .btn {
+            background-color: var(--accent-primary);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover { background-color: #2563eb; }
+        .btn:disabled { background-color: var(--border-dim); cursor: not-allowed; color: var(--text-muted); }
+
+        .reveal-box {
+            display: none;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--accent-success);
+            border-radius: 4px;
+        }
+
+        .reveal-box.show {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .factory-metaphor {
+            display: flex;
+            gap: 2rem;
+            margin: 2rem 0;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background-color: var(--bg-panel);
+            border-radius: 8px;
+        }
+
+        .factory-item {
+            text-align: center;
+            padding: 1.5rem;
+            border: 2px dashed var(--border-dim);
+            border-radius: 8px;
+            width: 200px;
+        }
+
+        .factory-item.cabinet { border-color: var(--accent-primary); border-style: solid; }
+        .factory-item.crate { border-color: var(--accent-warning); border-style: solid; }
+
+        .factory-arrow {
+            color: var(--text-muted);
+            font-size: 2rem;
+        }
+
+        .callout {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid var(--accent-primary);
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <h1>Lesson 02: Dictionaries & JSON — Capability Layer</h1>
+
+    <h2>1. THE CCP FAILURE SCENARIO (OPENING HOOK)</h2>
+    <p>You are monitoring a live Pipecat WebSocket connection. The client has just shared a deep vulnerability. The base model processes the transcript and returns a payload. Instead of an immediate, resonant response, the session goes dead.</p>
+    
+    <div class="hook-container">
+        <div class="hook-log">[14:02:41] INFO: WebSocket connection established for client CL-042</div>
+        <div class="hook-log">[14:02:45] INFO: LLM generation complete. Payload received.</div>
+        <div class="hook-log">[14:02:45] ERROR: Unpacking payload for QA validation...</div>
+        <div class="hook-crash">json.decoder.JSONDecodeError: Expecting ',' delimiter: line 4 column 15 (char 64)</div>
+        <div class="hook-log" style="color: var(--text-muted); margin-top: 1rem;">Process exited with status 1. Session closed.</div>
+    </div>
+
+    <p>The LLM reasoned perfectly. It chose the correct trigger. It generated the perfect script. But when it sent the output back to the Chassis, it missed a single comma in its JSON string. The system crashed. The session aborted.</p>
+    <div class="callout">
+        <strong>👉 If you do not understand dictionaries and JSON, your entire perspective of the CCP is trapped at the level of raw text.</strong> The platform sees structured, serialized key-value pairs. When this mechanism fails, the factory halts.
+    </div>
+
+    <h2>2. THE ARCHITECTURAL DEFINITION</h2>
+    <p>When the DSPy Machinist asks the LLM for a coaching script, it sends a serialized string. When it gets the answer back, it must unpack that string into a strict machine-readable structure.</p>
+
+    <div class="factory-metaphor">
+        <div class="factory-item cabinet">
+            <h3 style="color: var(--accent-primary)">Dictionary</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted)">The Labeled Filing Cabinet. Organizes items by specific named keys.</p>
+        </div>
+        <div class="factory-arrow">➔<br><span style="font-size:0.8rem">json.dumps()</span></div>
+        <div class="factory-item crate">
+            <h3 style="color: var(--accent-warning)">JSON</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted)">The Shipping Crate. Flat string representation used for network transit.</p>
+        </div>
+    </div>
+
+    <h2>3. THE MINIMAL CODE READING</h2>
+
+    <!-- Gated Block 1 -->
+    <div class="code-block">
+<span style="color: #c678dd">session_state</span>: dict = {
+    <span style="color: #98c379">"coach_id"</span>: <span style="color: #98c379">"JP-001"</span>,
+    <span style="color: #98c379">"client_id"</span>: <span style="color: #98c379">"CL-042"</span>,
+    <span style="color: #98c379">"trigger_active"</span>: <span style="color: #d19a66">True</span>,
+    <span style="color: #98c379">"cbcs_score"</span>: <span style="color: #d19a66">0.88</span>
+}
+<span style="color: #56b6c2">print</span>(session_state[<span style="color: #98c379">"cbcs_score"</span>] + <span style="color: #d19a66">0.1</span>)
+    </div>
+
+    <div class="prediction-gate" id="gate-1">
+        <h3>🔒 PREDICTION GATE 1</h3>
+        <p>If the JIT Compiler executes the print statement, what is the exact output?</p>
+        <input type="text" class="prediction-input" id="input-1" placeholder="Type exact output here...">
+        <button class="btn" onclick="checkGate1()">Lock Prediction</button>
+        <div class="reveal-box" id="reveal-1">
+            <strong>Reveal:</strong> The output is <code>0.98</code>. The Python dictionary safely extracted the floating point <code>0.88</code> bound to the key <code>"cbcs_score"</code>.
+        </div>
+    </div>
+
+    <!-- Gated Block 2 -->
+    <div class="code-block">
+<span style="color: #c678dd">import</span> json
+
+raw_llm_output: str = <span style="color: #98c379">'{"script": "Hello", "intent_fired": false}'</span>
+parsed_data: dict = json.loads(raw_llm_output)
+    </div>
+
+    <div class="prediction-gate" id="gate-2">
+        <h3>🔒 PREDICTION GATE 2</h3>
+        <p>What is the Python <strong>type</strong> of the value returned by <code>parsed_data["intent_fired"]</code>?</p>
+        <input type="text" class="prediction-input" id="input-2" placeholder="e.g. str, int, list...">
+        <button class="btn" onclick="checkGate2()">Lock Prediction</button>
+        <div class="reveal-box" id="reveal-2">
+            <strong>Reveal:</strong> <code>bool</code>. The <code>json.loads()</code> workstation translates the raw JSON vocabulary (lowercase <code>false</code>) directly into Python's native type capability (capitalized <code>False</code> boolean).
+        </div>
+    </div>
+
+    <h2>4. THE CONSEQUENCE MAP</h2>
+    <ul>
+        <li><strong>The Pydantic ValidationError:</strong> If a dictionary is missing a required key, Pydantic throws a ValidationError. The session aborts before state corruption.</li>
+        <li><strong>The JSONDecodeError:</strong> LLM returns unescaped quotes or trailing commas. <code>json.loads()</code> fails. DSPy must retry.</li>
+        <li><strong>The Silent Key Masking:</strong> Using <code>.get()</code> defensively but failing to handle the resulting <code>None</code> leads to poisoned graph memory.</li>
+    </ul>
+
+    <h2>5. CAPABILITY GAUNTLET</h2>
+    
+    <div class="prediction-gate" id="gauntlet">
+        <h3>⚡ RAPID FIRE PREDICTION</h3>
+        <p>Code: <code>config: dict = {"model": "qwen"}</code><br>Action: <code>print(config["timeout"])</code></p>
+        <input type="text" class="prediction-input" id="input-g1" placeholder="What does this output/do?">
+        <button class="btn" onclick="checkGauntlet()">Lock Prediction</button>
+        <div class="reveal-box" id="reveal-g1">
+            <strong>Reveal:</strong> It throws a <code>KeyError: 'timeout'</code>. Directly accessing a missing label instantly crashes the operation, protecting the pipeline. Contrast with <code>config.get("timeout", 30)</code> which safely returns 30.
+        </div>
+    </div>
+
+    <div class="callout" style="border-color: var(--accent-success); background-color: rgba(16, 185, 129, 0.1);">
+        <strong>Next Step: Layer 2 — Application.</strong> You've seen the fundamental capability. Now we place it directly into the DSPy and Pydantic production artifacts.
+    </div>
+
+    <script>
+        function checkGate1() {
+            const input = document.getElementById('input-1');
+            const btn = input.nextElementSibling;
+            input.disabled = true;
+            btn.disabled = true;
+            document.getElementById('reveal-1').classList.add('show');
+        }
+
+        function checkGate2() {
+            const input = document.getElementById('input-2');
+            const btn = input.nextElementSibling;
+            input.disabled = true;
+            btn.disabled = true;
+            document.getElementById('reveal-2').classList.add('show');
+        }
+
+        function checkGauntlet() {
+            const input = document.getElementById('input-g1');
+            const btn = input.nextElementSibling;
+            input.disabled = true;
+            btn.disabled = true;
+            document.getElementById('reveal-g1').classList.add('show');
+        }
+    </script>
+</body>
+</html>

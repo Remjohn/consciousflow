@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 16 — Neo4j & Graph Queries — Master Capstone</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* TERMINAL GRADE EMULATOR THEME */
+:root {
+  --bg: #050505; --surface: #0a0a0a; --surface2: #111111; 
+  --text: #e0e0e0; --muted: #777777; --border: #1a1a1a;
+  --accent: #00ffcc; /* neon cyan/green */
+  --red: #ff3333; --green: #33ff66; --yellow: #ffcc00; --blue: #33ccff;
+  --mono: 'IBM Plex Mono', monospace; --sans: 'Inter', sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--mono); line-height: 1.6; overflow-x: hidden; }
+
+/* CRT Scanline Effect Overlay */
+body::before {
+  content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 999; background-size: 100% 2px, 3px 100%; pointer-events: none; opacity: 0.85;
+}
+
+.terminal-header { background: #000; border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--accent); }
+.term-time { color: var(--red); font-weight: bold; animation: pulse 2s infinite; }
+
+.container { max-width: 850px; margin: 0 auto; padding: 3rem 2rem 8rem; }
+
+h1 { font-size: 1.75rem; text-transform: uppercase; margin-bottom: 2rem; color: #fff; letter-spacing: 0.05em; font-weight: 700; border-bottom: 2px solid var(--accent); padding-bottom: 0.5rem; display: inline-block; }
+h2 { font-size: 1.25rem; margin: 2.5rem 0 1rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; }
+h3 { font-size: 0.9rem; color: var(--yellow); text-transform: uppercase; margin: 2.5rem 0 0.8rem; }
+p { margin-bottom: 1.2rem; font-family: var(--sans); font-size: 0.95rem; line-height: 1.7; color: #ccc; }
+p strong { color: #fff; font-family: var(--mono); font-weight: 600; }
+ul { margin-left: 1.5rem; margin-bottom: 1.5rem; font-family: var(--sans); font-size: 0.9rem; color: #bbb; }
+li { margin-bottom: 0.5rem; }
+
+code { background: rgba(0,255,204,0.1); color: var(--accent); padding: 0.15rem 0.35rem; border-radius: 3px; font-size: 0.9em; }
+
+.sys-prompt { color: var(--accent); margin-right: 0.5rem; font-weight: bold; user-select: none; }
+.sys-line { margin-bottom: 0.5rem; display: flex; align-items: flex-start; }
+.sys-txt { flex: 1; }
+
+.alert-box { border: 1px solid var(--red); background: rgba(255,51,51,0.05); padding: 1.5rem; margin: 2rem 0; color: #ff9999; font-family: var(--sans); font-size: 0.9rem; }
+.alert-title { font-family: var(--mono); font-weight: bold; color: var(--red); text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.1em; font-size: 0.8rem; }
+
+/* — Code Blocks — */
+.code-block { background: #000; border: 1px solid #333; border-radius: 4px; padding: 1.25rem 1.5rem; margin: 1.5rem 0; font-size: 0.82rem; overflow-x: auto; color: #e4e4e4; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); }
+.code-block .kw { color: #ff7b72; } 
+.code-block .fn { color: #d2a8ff; } 
+.code-block .str { color: #a5d6ff; } 
+.code-block .comment { color: #8b949e; font-style: italic; }
+
+/* — Interactive UI — */
+.input-area { margin: 1.5rem 0; background: #000; border: 1px solid var(--border); padding: 1.5rem; }
+.term-input { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--accent); color: var(--accent); font-family: var(--mono); font-size: 0.9rem; padding: 0.5rem 0; outline: none; margin-bottom: 1rem; caret-color: var(--accent); }
+.term-input::placeholder { color: rgba(0,255,204,0.3); }
+
+.btn { background: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 0.6rem 1.2rem; font-family: var(--mono); font-size: 0.8rem; text-transform: uppercase; cursor: pointer; transition: all 0.2s; letter-spacing: 0.05em; font-weight: bold; outline: none; }
+.btn:hover:not(:disabled) { background: var(--accent); color: #000; }
+.btn:disabled { opacity: 0.3; border-color: var(--muted); color: var(--muted); cursor: not-allowed; }
+
+.triage-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-top: 1rem; }
+.t-btn { background: #000; border: 1px solid #333; color: #fff; padding: 0.8rem; font-family: var(--sans); font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem; }
+.t-btn:hover { border-color: #666; background: #111; }
+.t-btn.selected-t { border-color: var(--accent); background: rgba(0,255,204,0.1); }
+.t-btn.selected-f { border-color: var(--red); background: rgba(255,51,51,0.1); }
+
+.feedback { display: none; margin-top: 1rem; padding: 1rem; border-left: 2px solid; font-size: 0.85rem; background: #000; animation: fadein 0.3s; }
+.feedback.visible { display: block; }
+.f-title { text-transform: uppercase; font-size: 0.7rem; font-weight: bold; letter-spacing: 0.1em; margin-bottom: 0.4rem; }
+
+.gate { display: none; opacity: 0; transform: translateY(10px); transition: all 0.4s; padding-top: 2rem; border-top: 1px solid #222; margin-top: 3rem; }
+.gate.unlocked { display: block; opacity: 1; transform: translateY(0); }
+
+@keyframes pulse { 0% { opacity:1; } 50% { opacity:0.3; } 100% { opacity:1; } }
+@keyframes fadein { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Glitch text specific to terminal */
+.glitch { position: relative; color: var(--text); }
+.glitch::before, .glitch::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); }
+.glitch::before { left: 2px; text-shadow: -1px 0 red; clip: rect(24px, 550px, 90px, 0); animation: glitch-anim-2 3s infinite linear alternate-reverse; }
+.glitch::after { left: -2px; text-shadow: -1px 0 blue; clip: rect(85px, 550px, 140px, 0); animation: glitch-anim 2.5s infinite linear alternate-reverse; }
+@keyframes glitch-anim { 0% { clip: rect(4px, 9999px, 86px, 0); } 20% { clip: rect(62px, 9999px, 81px, 0); } 40% { clip: rect(85px, 9999px, 35px, 0); } 60% { clip: rect(104px, 9999px, 62px, 0); } 80% { clip: rect(13px, 9999px, 66px, 0); } 100% { clip: rect(31px, 9999px, 16px, 0); } }
+@keyframes glitch-anim-2 { 0% { clip: rect(65px, 9999px, 100px, 0); } 20% { clip: rect(14px, 9999px, 4px, 0); } 40% { clip: rect(85px, 9999px, 88px, 0); } 60% { clip: rect(10px, 9999px, 12px, 0); } 80% { clip: rect(76px, 9999px, 65px, 0); } 100% { clip: rect(2px, 9999px, 16px, 0); } }
+</style>
+</head>
+<body>
+
+<div class="terminal-header">
+  <div><span class="sys-prompt" style="color:#fff;">ROOT@CCP_ARCHITECTUI:~</span> CAPSTONE_16.EXE</div>
+  <div class="term-time" id="timer">T-MINUS 12:00</div>
+</div>
+
+<div class="container">
+
+  <h1 class="glitch" data-text="MASTER CAPSTONE ASSESSMENT">MASTER CAPSTONE ASSESSMENT</h1>
+  
+  <div class="sys-line">
+    <span class="sys-prompt">$</span>
+    <span class="sys-txt" style="color:var(--muted);">INITIATING GRAPH QUERY EVALUATION PROTOCOL.</span>
+  </div>
+
+  <div class="alert-box">
+    <div class="alert-title">Attention Sovereign Architect</div>
+    This is the terminal capstone for Neo4j and Graph Queries. You are not writing boilerplate. You are commanding the systemic memory layer of the entire platform structure. Ensure you understand how to navigate, extract, and strictly validate multidimensional contextual mappings originating from the Context Premise Engine.
+  </div>
+
+  <!-- SECTION 1 -->
+  <h2>[SEC.1] CONTRACT SPECIFICATION</h2>
+  <p>Translate natural-language specs into immutable, sovereign programmatic constraints executing against Graph Database artifacts.</p>
+
+  <div class="input-area" id="box-1">
+    <h3>Spec 1.1: The Context Edge Invariant</h3>
+    <p style="font-size:0.85rem;color:#999;font-family:var(--sans);">"The CCP needs a Pydantic structure to rigorously ingest the result of a Cypher query mapping a `Coach` to their active `CA11_Rule` constraints. The alias must be 5 chars (e.g. 'JP-00'). Rules array must contain literal strings: 'escalate', 'mirror', or 'challenge'. UNIX timestamp integer must be positive. Boolean active flag."</p>
+    <div class="sys-line"><span class="sys-prompt">></span><span class="sys-txt" style="color:var(--accent);">Evaluate criteria mentally. Do you understand the strict <code>BaseModel</code>, <code>Literal</code>, and <code>Field(...)</code> mappings required?</span></div>
+    <br>
+    <button class="btn" onclick="lockMental(1)">CONFIRM MENTAL ALIGNMENT</button>
+    <div class="feedback" id="fb-mental-1" style="border-color:var(--accent);">
+      <div class="f-title" style="color:var(--accent);">Expected Architecture</div>
+      <div class="code-block" style="background:#050505;margin:0.5rem 0;">
+        <span class="kw">class</span> <span class="fn">ActiveRulesContext</span>(BaseModel):<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;model_config = ConfigDict(strict=<span class="kw">True</span>)<br><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;coach_alias: <span class="kw">str</span> = Field(..., min_length=5, max_length=5)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;rules: <span class="kw">list</span>[Literal[<span class="str">'escalate'</span>, <span class="str">'mirror'</span>, <span class="str">'challenge'</span>]]<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;established_at: <span class="kw">int</span> = Field(..., gt=0)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;active: <span class="kw">bool</span>
+      </div>
+      <span style="color:var(--muted);font-size:0.75rem;">If your mental model lacked `ConfigDict(strict=True)` or `Literal` array bounding, dock yourself 10 points.</span>
+    </div>
+  </div>
+
+
+  <!-- SECTION 2 (Unlocked by mental confirmation) -->
+  <div class="gate" id="sec-2">
+    <h2>[SEC.2] DEFECT TRIAGE</h2>
+    <p>Review PRs traversing the Pi Loop. Identify anomalies, execution misapplications, and structural violations. Classify each artifact block.</p>
+    <p style="font-size:0.75rem;color:var(--yellow);font-family:var(--sans);">CLASSIFICATIONS: [ ✅ Correct | 🔴 Omission | 🟡 Hallucination | 🔵 Misapplication ]</p>
+
+    <!-- Triage 1 -->
+    <div class="input-area" id="triage-1">
+      <h3>Artifact 2.1: Graph Subprocess Mutation</h3>
+<div class="code-block">
+<span class="comment"># Generated by Agent Task Executor</span>
+<span class="kw">import</span> subprocess
+
+<span class="kw">async def</span> <span class="fn">terminate_client_context</span>(client_id: <span class="kw">str</span>):
+    mutation_query = <span class="str">f"MATCH (c:Client {{id: '{client_id}'}}) DETACH DELETE c"</span>
+    cmd = [<span class="str">"python"</span>, <span class="str">"graph_modifier.py"</span>, <span class="str">"--query"</span>, mutation_query]
+    
+    result = subprocess.run(cmd, timeout=30, capture_output=<span class="kw">True</span>, text=<span class="kw">True</span>)
+    <span class="kw">return</span> result.stdout
+</div>
+      <div class="sys-line"><span class="sys-prompt">></span><span class="sys-txt">CLASSIFY ARTIFACT 2.1:</span></div>
+      <div class="triage-grid">
+        <button class="t-btn" onclick="submitTriage(1, 'correct', this)">✅ Correct implementation</button>
+        <button class="t-btn" onclick="submitTriage(1, 'omission', this)">🔴 Omission</button>
+        <button class="t-btn" onclick="submitTriage(1, 'hallucination', this)">🟡 Hallucination</button>
+        <button class="t-btn" onclick="submitTriage(1, 'misapplication', this)">🔵 Misapplication (Security)</button>
+      </div>
+      <div class="feedback" id="fb-tr-1"></div>
+    </div>
+
+    <!-- Triage 2 -->
+    <div class="gate" id="gate-tr-2">
+    <div class="input-area" id="triage-2">
+      <h3>Artifact 2.2: Extracting Edge Telemetry</h3>
+<div class="code-block">
+<span class="kw">class</span> <span class="fn">SessionMetrics</span>(BaseModel):
+    session_id: <span class="kw">str</span>
+    score: <span class="kw">float</span>
+
+<span class="kw">async def</span> <span class="fn">fetch_data</span>(driver, sid: <span class="kw">str</span>) -> SessionMetrics:
+    query = <span class="str">"MATCH (s:Session {id: $session_id}) RETURN s"</span>
+    <span class="kw">async with</span> driver.session() <span class="kw">as</span> session:
+        result = <span class="kw">await</span> session.run(query, session_id=sid)
+        data = <span class="kw">await</span> result.single()
+        <span class="kw">return</span> SessionMetrics(**data)
+</div>
+      <div class="sys-line"><span class="sys-prompt">></span><span class="sys-txt">CLASSIFY ARTIFACT 2.2:</span></div>
+      <div class="triage-grid">
+        <button class="t-btn" onclick="submitTriage(2, 'correct', this)">✅ Correct implementation</button>
+        <button class="t-btn" onclick="submitTriage(2, 'omission', this)">🔴 Omission (Projection)</button>
+        <button class="t-btn" onclick="submitTriage(2, 'hallucination', this)">🟡 Hallucination</button>
+        <button class="t-btn" onclick="submitTriage(2, 'misapplication', this)">🔵 Misapplication</button>
+      </div>
+      <div class="feedback" id="fb-tr-2"></div>
+    </div>
+    </div>
+
+    <!-- Triage 3 -->
+    <div class="gate" id="gate-tr-3">
+    <div class="input-area" id="triage-3">
+      <h3>Artifact 2.4: Sub-Agent State Logging</h3>
+<div class="code-block">
+<span class="comment"># Agent generated logic logging its own execution loop</span>
+<span class="kw">async def</span> <span class="fn">log_agent_thought</span>(driver, thought: <span class="kw">str</span>):
+    <span class="kw">async with</span> driver.session() <span class="kw">as</span> s:
+        <span class="kw">await</span> s.run(<span class="str">"CREATE (t:ThoughtLog {content: $txt})"</span>, txt=thought)
+</div>
+      <div class="sys-line"><span class="sys-prompt">></span><span class="sys-txt">CLASSIFY ARTIFACT 2.4:</span></div>
+      <div class="triage-grid">
+        <button class="t-btn" onclick="submitTriage(3, 'correct', this)">✅ Correct implementation</button>
+        <button class="t-btn" onclick="submitTriage(3, 'omission', this)">🔴 Omission</button>
+        <button class="t-btn" onclick="submitTriage(3, 'hallucination', this)">🟡 Hallucination (Graph Isolation)</button>
+        <button class="t-btn" onclick="submitTriage(3, 'misapplication', this)">🔵 Misapplication</button>
+      </div>
+      <div class="feedback" id="fb-tr-3"></div>
+    </div>
+    </div>
+
+  </div> <!-- /sec 2 -->
+
+
+  <!-- SECTION 3 (Unlocked by Triage completion) -->
+  <div class="gate" id="sec-3">
+    <h2>[SEC.3] ARCHITECTURAL REASONING</h2>
+    <div class="input-area">
+      <div class="sys-line"><span class="sys-prompt">Q1.</span><span class="sys-txt">Why does the Conscious Coaching Platform strictly forbid an agent-controlled LLM execution environment (The Laser Cutter) from possessing a live, dedicated network connection pipe allowing it to dynamically write its own Cypher query strings and execute them against Neo4j on the fly?</span></div>
+      <input type="text" id="reason-inp" class="term-input" placeholder="Enter architectural reasoning keyword...">
+      <button class="btn" id="r-btn" onclick="submitReasoning()">SUBMIT REASONING PARSER</button>
+      <div class="feedback" id="fb-reason"></div>
+    </div>
+  </div>
+
+
+  <!-- SECTION 4 (Unlocked by Reasoning completion) -->
+  <div class="gate" id="sec-4">
+    <hr style="border:none;border-top:1px dashed #333;margin:3rem 0;">
+    <h2 style="color:var(--red);" class="glitch" data-text="[SEC.4] FEYNMAN COMPRESSION">[SEC.4] FEYNMAN COMPRESSION</h2>
+    <div class="sys-line"><span class="sys-prompt">></span><span class="sys-txt" style="color:#aaa;">Explain why utilizing strictly enforced Neo4j Cypher Queries mapped across python data layers is critical for sovereign control. Your explanation MUST include the active synthesis of: <code style="color:var(--accent);">Context Premise Engine</code>, <code style="color:var(--accent);">zero-history hallucination</code>, and <code style="color:var(--accent);">QA Department</code>.</span></div>
+    
+    <div style="background:#050505; border:1px solid #222; padding: 1.5rem; margin-top:2rem; font-family:var(--sans); font-size:0.9rem; color:#888;">
+      To command sovereign capabilities over a probabilistic language model, an Architect must absolutely control the environment within which the model thinks. Without the <strong>Context Premise Engine</strong>, every session interaction constitutes an ephemeral void resulting in <strong>zero-history hallucination</strong> where agents desperately invent conflicting historical continuity on the fly based solely on statistical probabilities. By leveraging Cypher, we mathematically map deep psychological progression trajectories using hard relational edges tracking from Client States straight into CA11 rulesets. These explicit relationship paths are immediately extracted by the Chassis and hurled directly into the immutable checkpoint structures of the <strong>QA Department</strong>, thereby ensuring the LLM is forcibly grounded using verified, rigid schematic memories that it cannot bypass nor manipulate.
+    </div>
+
+    <div style="text-align:center;margin-top:4rem;">
+      <button class="btn" style="background:var(--accent);color:#000;" onclick="this.innerText='TERMINAL ENCRYPTION COMPLETE. GRADE LOGGED.';this.disabled=true;">TERMINATE ASSESSMENT & DEPLOY</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* TIMER LOGIC */
+let time = 12 * 60;
+setInterval(() => {
+  if(time <= 0) return;
+  time--;
+  const m = Math.floor(time / 60).toString().padStart(2, '0');
+  const s = (time % 60).toString().padStart(2, '0');
+  document.getElementById('timer').innerText = `T-MINUS ${m}:${s}`;
+  if(time < 60) document.getElementById('timer').style.color = 'var(--red)';
+}, 1000);
+
+
+/* SEC 1 */
+function lockMental(id) {
+  event.target.disabled = true;
+  const fb = document.getElementById(`fb-mental-${id}`);
+  fb.classList.add('visible');
+  document.getElementById('sec-2').classList.add('unlocked');
+}
+
+/* SEC 2 TRIAGE LOGIC */
+const TRIAGE_ANSWERS = [
+  { val: 'misapplication',
+    exp: `<strong>🔵 Misapplication (Chassis Security).</strong> You NEVER string-format parameters <code>f"MATCH ({client_id})"</code> directly into raw cypher commands originating from an agentic workspace, risking catastrophic injection attacks. The script must accept parameterized arguments.`
+  },
+  { val: 'omission',
+    exp: `<strong>🔴 Omission (Projection Fault).</strong> You cannot pass a complex organic Neo4j internal Node (<code>RETURN s</code>) into a QA gate expecting raw string primitives. The cypher query MUST project its aliased properties returning <code>RETURN s.id as session_id, s.score as score</code>.`
+  },
+  { val: 'hallucination',
+    exp: `<strong>🟡 Hallucination (Graph Isolation Dictum).</strong> The agent creates an orphaned, disconnected node possessing zero relationship edges to the operational Session. It is functionally invisible graph debris. The query MUST include a <code>MATCH</code> to an active parent node and securely define <code>CREATE (p)-[:SPAWNED_THOUGHT]->(t:ThoughtLog)</code>.`
+  }
+];
+
+function submitTriage(num, sel, btn) {
+  const container = document.getElementById(`triage-${num}`);
+  container.querySelectorAll('.t-btn').forEach(b => b.disabled = true);
+  
+  const fb = document.getElementById(`fb-tr-${num}`);
+  fb.classList.add('visible');
+  
+  const ans = TRIAGE_ANSWERS[num-1];
+  if(sel === ans.val) {
+    btn.classList.add('selected-t');
+    fb.style.borderColor = 'var(--accent)';
+    fb.innerHTML = `<div class="f-title" style="color:var(--accent);">ANOMALY IDENTIFIED accurately</div>${ans.exp}`;
+    if (num < 3) {
+      document.getElementById(`gate-tr-${num+1}`).classList.add('unlocked');
+    } else {
+      document.getElementById('sec-3').classList.add('unlocked');
+    }
+  } else {
+    btn.classList.add('selected-f');
+    fb.style.borderColor = 'var(--red)';
+    fb.innerHTML = `<div class="f-title" style="color:var(--red);">INCORRECT CLASSIFICATION</div>${ans.exp} <br><br><em>SYSTEM WARNING: Architect failed anomaly detection.</em>`;
+    setTimeout(() => {
+      container.querySelectorAll('.t-btn').forEach(b => { b.disabled = false; b.classList.remove('selected-f'); });
+      fb.classList.remove('visible');
+    }, 4000);
+  }
+}
+
+/* SEC 3 REASONING */
+function submitReasoning() {
+  const inp = document.getElementById('reason-inp');
+  const val = inp.value.toLowerCase();
+  if(!val.trim()) return;
+  
+  const fb = document.getElementById('fb-reason');
+  fb.classList.add('visible');
+  
+  const valid = val.includes('deterministic') || val.includes('immutable') || val.includes('hallucin') || val.includes('corrupt') || val.includes('sovereign');
+  
+  if (valid) {
+    inp.disabled = true; document.getElementById('r-btn').disabled = true;
+    fb.style.borderColor = 'var(--accent)';
+    fb.innerHTML = `<div class="f-title" style="color:var(--accent);">REASONING ACCEPTED</div>
+    <span style="color:#aaa;">An LLM is a probabilistic, non-deterministic pattern matcher. It does not natively internalize relational schemas. If granted live manipulation clearance without programmatic QA middle-wrappers, it will inevitably hallucinate node properties, sever active foundational edges, and irreversibly corrupt the Context Matrix. Immutable sovereign authority must remain in the Python Chassis.</span>`;
+    document.getElementById('sec-4').classList.add('unlocked');
+  } else {
+    fb.style.borderColor = 'var(--red)';
+    fb.innerHTML = `<div class="f-title" style="color:var(--red);">REASONING REJECTED</div>
+    <span style="color:#ff9999;">The parser demands explicit architectural mapping related to deterministic safety, hallucination avoidance, or memory corruption. Refine your entry.</span>`;
+    setTimeout(() => { fb.classList.remove('visible'); }, 3000);
+  }
+}
+</script>
+
+</body>
+</html>

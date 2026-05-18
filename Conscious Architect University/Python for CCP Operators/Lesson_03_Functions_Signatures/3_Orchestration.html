@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 03 - Functions & Signatures: Orchestration Layer</title>
+  <style>
+    :root {
+      --bg: #08111a;
+      --panel: rgba(12, 20, 30, 0.88);
+      --line: rgba(255,255,255,0.08);
+      --text: #f3f7fb;
+      --muted: #9ab0c2;
+      --accent: #8f7cff;
+      --accent-alt: #56c5ff;
+      --good: #2ecc71;
+      --bad: #ff5c73;
+      --gold: #ffd166;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+      background: #08111a;
+      overflow-x: hidden;
+    }
+
+    .bg-mesh {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: -1;
+      background:
+        radial-gradient(circle at 10% 20%, rgba(143,124,255,0.08), transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(86,197,255,0.08), transparent 40%);
+    }
+
+    .progress {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: rgba(255,255,255,0.05);
+      z-index: 50;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #56c5ff, #8f7cff, #ff7a18);
+      transition: width 0.35s ease;
+    }
+
+    .shell {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 42px 18px 80px;
+    }
+
+    .eyebrow {
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 12px;
+    }
+
+    h1, h2, h3 { margin: 0 0 14px; line-height: 1.1; font-weight: 500; }
+    h1 { font-size: clamp(2.5rem, 5vw, 4rem); }
+    h2 { font-size: clamp(1.5rem, 2.5vw, 2.2rem); }
+    h3 { font-size: 1.1rem; }
+    p { margin: 0 0 14px; }
+
+    .card {
+      border-radius: 26px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      padding: 30px;
+      margin-bottom: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+
+    .hero {
+      background: linear-gradient(135deg, rgba(143,124,255,0.08), transparent 40%);
+    }
+
+    /* Tabs Architecture */
+    .domain-tabs {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .domain-tab {
+      padding: 14px;
+      text-align: center;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--muted);
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .domain-tab:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+    .domain-tab.active {
+      background: rgba(143,124,255,0.15);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .domain-content {
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+    .domain-content.active { display: block; }
+
+    .grid-2 {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+    }
+    
+    .grid-equal {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    pre {
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: #050e16;
+      padding: 16px;
+      margin: 0;
+      overflow-x: auto;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .kw { color: #56c5ff; }
+    .type { color: #ff7a18; }
+    .str { color: #2ecc71; }
+    .comment { color: #89a1b2; font-style: italic; }
+
+    /* Scenario Accordion */
+    .scenario-list { display: flex; flex-direction: column; gap: 12px; }
+    .scenario-card {
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+      padding: 16px;
+    }
+    .scenario-card h3 { color: var(--gold); font-family: Arial; font-size: 0.9rem; margin-bottom: 8px; text-transform: uppercase; }
+    
+    .choices { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+    .choice {
+      padding: 12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+      font-family: Arial;
+      font-size: 0.9rem;
+      transition: 0.2s;
+    }
+    .choice:hover { background: rgba(255,255,255,0.08); }
+    .choice.selected { border-color: var(--accent); background: rgba(143,124,255,0.1); }
+
+    .feedback {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+      display: none;
+      font-family: Arial;
+      font-size: 0.9rem;
+    }
+    .feedback.show { display: block; }
+    .feedback.good { border-color: var(--good); background: rgba(46,204,113,0.05); }
+    .feedback.bad { border-color: var(--bad); background: rgba(255,92,115,0.05); }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      padding: 14px 20px;
+      border-radius: 999px;
+      font: 700 0.9rem/1 Arial, Helvetica, sans-serif;
+      transition: 0.2s;
+      margin-top: 10px;
+    }
+    .btn-primary { background: linear-gradient(90deg, #8f7cff, #56c5ff); color: white; }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: #050e16;
+      color: var(--text);
+      font-family: Consolas, monospace;
+      font-size: 14px;
+      resize: vertical;
+    }
+    textarea:focus { outline: none; border-color: var(--accent); }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @media (max-width: 900px) {
+      .domain-tabs { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .grid-2, .grid-equal { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-mesh"></div>
+  <div class="progress"><div id="progressFill" class="progress-fill" style="width: 25%;"></div></div>
+
+  <main class="shell">
+    <section class="card hero">
+      <p class="eyebrow">Lesson 03 - Orchestration Layer</p>
+      <h1>The 6-Domain System</h1>
+      <p class="lede" style="font-family:Arial">The true power of the Sovereign Architect is recognizing the identical structural shape across wildly different technical domains. A signature in FastAPI serves the exact same boundary function as a constraint in the Memory Engine.</p>
+    </section>
+
+    <!-- The 6 Domains -->
+    <section class="card">
+      <p class="eyebrow">Cross-Context Transfer</p>
+      <h2>Select a domain to inspect its signature behavior</h2>
+      
+      <div class="domain-tabs">
+        <div class="domain-tab active" onclick="switchDomain(this, 'd-chassis')">
+          <span>⚙️</span> Chassis (FastAPI)
+        </div>
+        <div class="domain-tab" onclick="switchDomain(this, 'd-qa')">
+          <span>🛡️</span> QA Dept (Pydantic)
+        </div>
+        <div class="domain-tab" onclick="switchDomain(this, 'd-machinist')">
+          <span>🧠</span> Machinist (DSPy)
+        </div>
+        <div class="domain-tab" onclick="switchDomain(this, 'd-arm')">
+          <span>🦾</span> Robot Arm
+        </div>
+        <div class="domain-tab" onclick="switchDomain(this, 'd-memory')">
+          <span>💾</span> Memory Engine
+        </div>
+        <div class="domain-tab" onclick="switchDomain(this, 'd-skill')">
+          <span>⚡</span> Skill Compiler
+        </div>
+      </div>
+
+      <!-- Chassis -->
+      <div id="d-chassis" class="domain-content active">
+        <div class="grid-2">
+          <div>
+            <h3>Chassis (FastAPI Router)</h3>
+            <p>The entry point. Ensures external reality (HTTP requests) conforms to system expectations before interacting with deeper logic.</p>
+<pre>
+<span class="kw">@app.post</span>(<span class="str">"/ingest"</span>)
+<span class="kw">def</span> route_payload(data: <span class="type">dict</span>) -> <span class="type">dict</span>:
+    <span class="comment"># Blocks all non-JSON requests at the door</span>
+    <span class="kw">return</span> process(data)
+</pre>
+          </div>
+          <div class="scenario-list">
+            <div class="scenario-card">
+              <h3>What if we remove this signature?</h3>
+              <p>Someone hits `/ingest` with an MP4 video file.</p>
+              <div class="choices" id="c-chassis" data-locked="false">
+                <button class="choice" onclick="answerDomain('c-chassis', false, this)">FastAPI converts the video to a string.</button>
+                <button class="choice" onclick="answerDomain('c-chassis', true, this)">The base Python logic executes against garbage data, corrupting the pipeline.</button>
+              </div>
+              <div class="feedback" id="fb-chassis"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QA Dept -->
+      <div id="d-qa" class="domain-content">
+        <div class="grid-2">
+          <div>
+            <h3>QA Dept (Pydantic Validation)</h3>
+            <p>The gatekeeper. Enforces the exact internal shape of data that the pipeline requires.</p>
+<pre>
+<span class="kw">class</span> AnalysisSchema(BaseModel):
+    threat_level: <span class="type">int</span>
+    description: <span class="type">str</span>
+</pre>
+          </div>
+          <div class="scenario-list">
+            <div class="scenario-card">
+              <h3>What if we remove this signature?</h3>
+              <p>The LLM decides to output `threat_level: "High"` instead of `5`.</p>
+              <div class="choices" id="c-qa" data-locked="false">
+                <button class="choice" onclick="answerDomain('c-qa', false, this)">The system accepts "High" as a valid integer substitution.</button>
+                <button class="choice" onclick="answerDomain('c-qa', true, this)">The QA layer fails the object, blocking the hallucination from entering the DB.</button>
+              </div>
+              <div class="feedback" id="fb-qa"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Machinist -->
+      <div id="d-machinist" class="domain-content">
+        <div class="grid-2">
+          <div>
+            <h3>Machinist (DSPy LLM Boundaries)</h3>
+            <p>The executor. Replaces fragile prompt engineering with rigid structural contracts.</p>
+<pre>
+<span class="kw">class</span> GenerateSummary(dspy.Signature):
+    text = dspy.InputField()
+    summary = dspy.OutputField()
+</pre>
+          </div>
+          <div class="scenario-list">
+            <div class="scenario-card">
+              <h3>What if we remove this signature?</h3>
+              <p>We use a custom, untyped prompt instead.</p>
+              <div class="choices" id="c-machinist" data-locked="false">
+                <button class="choice" onclick="answerDomain('c-machinist', true, this)">The execution becomes non-deterministic, varying wildly on every run.</button>
+                <button class="choice" onclick="answerDomain('c-machinist', false, this)">DSPy automatically infers the correct prompt configuration.</button>
+              </div>
+              <div class="feedback" id="fb-machinist"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Robot Arm -->
+      <div id="d-arm" class="domain-content">
+        <div class="grid-2">
+          <div>
+            <h3>Robot Arm (Subprocess / Tools)</h3>
+            <p>Physical action. A function that runs a script or API but yields nothing.</p>
+<pre>
+<span class="kw">def</span> trigger_webhook(url: <span class="type">str</span>) -> <span class="type">None</span>:
+    <span class="comment"># Fires network request. Leaves no trace.</span>
+    requests.post(url)
+</pre>
+          </div>
+          <div class="scenario-list">
+            <div class="scenario-card">
+              <h3>What if we remove this signature?</h3>
+              <p>Another developer tries to catch a response from this function.</p>
+              <div class="choices" id="c-arm" data-locked="false">
+                <button class="choice" onclick="answerDomain('c-arm', true, this)">They will catch a silent 'None' object, potentially crashing their downstream logic.</button>
+                <button class="choice" onclick="answerDomain('c-arm', false, this)">Python fabricates a response payload automatically.</button>
+              </div>
+              <div class="feedback" id="fb-arm"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Memory Engine -->
+      <div id="d-memory" class="domain-content">
+        <div class="grid-2">
+          <div>
+            <h3>Memory Engine (Neo4j / Graph)</h3>
+            <p>State persistence. The function signature defends the permanent graph architecture.</p>
+<pre>
+<span class="kw">def</span> store_node(node_id: <span class="type">str</span>, properties: <span class="type">dict</span>) -> <span class="type">bool</span>:
+    <span class="comment"># Ingestion logic</span>
+    <span class="kw">return</span> <span class="type">True</span>
+</pre>
+          </div>
+          <div class="scenario-list">
+            <div class="scenario-card">
+              <h3>What if we remove this signature?</h3>
+              <p>A poorly formatted integer ID is passed into Neo4j.</p>
+              <div class="choices" id="c-memory" data-locked="false">
+                <button class="choice" onclick="answerDomain('c-memory', true, this)">The graph accepts it, creating a permanently unqueryable ghost node.</button>
+                <button class="choice" onclick="answerDomain('c-memory', false, this)">The graph engine self-corrects the type.</button>
+              </div>
+              <div class="feedback" id="fb-memory"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skill Compiler -->
+      <div id="d-skill" class="domain-content">
+        <div class="grid-2">
+          <div>
+            <h3>Skill Compiler (JIT Execution)</h3>
+            <p>The highest abstract logic. Compiling code structurally requires explicit contracts.</p>
+<pre>
+<span class="kw">def</span> generate_skill_code(objective: <span class="type">str</span>) -> <span class="type">str</span>:
+    <span class="comment"># Generates Python code</span>
+    <span class="kw">return</span> compiled_string
+</pre>
+          </div>
+          <div class="scenario-list">
+            <div class="scenario-card">
+              <h3>What if we remove this signature?</h3>
+              <p>The system accidentally returns a compiled functional object instead of a string.</p>
+              <div class="choices" id="c-skill" data-locked="false">
+                <button class="choice" onclick="answerDomain('c-skill', false, this)">The compiler runs the object smoothly.</button>
+                <button class="choice" onclick="answerDomain('c-skill', true, this)">The system crashes, incapable of reading an executable as a text string.</button>
+              </div>
+              <div class="feedback" id="fb-skill"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Build-Your-Own -->
+    <section class="card" id="build-station">
+      <p class="eyebrow">Capstone Construction</p>
+      <h2>Architect the Broadcaster</h2>
+      <p style="font-family:Arial">You need to write the signature for the Redis Pub/Sub state broadcaster. It requires a `channel_name` (string) and a `message_payload` (dictionary). It performs a transmission and returns absolutely nothing.</p>
+      
+      <p style="font-family:Arial; margin-top:20px;">Use precise syntax in the box below:</p>
+      <textarea id="architect-code" placeholder="def broadcast_state..."></textarea>
+      
+      <button class="btn btn-primary" onclick="verifyBuild()" style="margin-top:10px;">Run Compiler Validation</button>
+      <div id="build-feedback" class="feedback"></div>
+
+      <div id="final-box" class="feedback hidden" style="border-color:var(--good); background:rgba(46,204,113,0.05); margin-top:20px;">
+        <p class="eyebrow" style="margin-bottom:10px; color:var(--good);">Layer 3 Complete</p>
+        <p style="font-family:Arial">You have commanded signatures across the entire multi-agent hierarchy. You are ready for the Master Assessment.</p>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script>
+    let domainsCleared = 0;
+
+    function setProgress(pct) {
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function switchDomain(element, domainId) {
+      document.querySelectorAll('.domain-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.domain-content').forEach(c => c.classList.remove('active'));
+      
+      element.classList.add('active');
+      document.getElementById(domainId).classList.add('active');
+    }
+
+    function answerDomain(domainId, isCorrect, btnElement) {
+      const container = document.getElementById(domainId);
+      if (container.dataset.locked === 'true') return;
+
+      container.querySelectorAll('.choice').forEach(b => b.classList.remove('selected'));
+      btnElement.classList.add('selected');
+
+      const fb = document.getElementById('fb-' + domainId.split('-')[1]);
+      
+      if (isCorrect) {
+        container.dataset.locked = 'true';
+        fb.className = 'feedback show good';
+        fb.innerHTML = '<strong>Structural hit confirmed.</strong> You recognize the failure consequence in this specific CCP node.';
+        domainsCleared++;
+        if (domainsCleared >= 6) {
+           setProgress(75);
+           document.getElementById('build-station').scrollIntoView({ behavior: 'smooth' });
+        }
+      } else {
+        fb.className = 'feedback show bad';
+        fb.innerHTML = '<strong>Simulation Failure.</strong> You are applying implicit reasoning. Rely strictly on the mechanical boundary behavior.';
+      }
+    }
+
+    function verifyBuild() {
+      const code = document.getElementById('architect-code').value.trim().toLowerCase();
+      const fb = document.getElementById('build-feedback');
+
+      const hasDef = code.includes('def ');
+      const hasStr = code.includes(': str');
+      const hasDict = code.includes(': dict');
+      const hasNone = code.includes('-> none');
+
+      if (hasDef && hasStr && hasDict && hasNone) {
+        fb.className = 'feedback show good hidden';
+        document.getElementById('architect-code').disabled = true;
+        document.getElementById('final-box').classList.remove('hidden');
+        setProgress(100);
+      } else {
+        fb.className = 'feedback show bad';
+        fb.innerHTML = '<strong>Compilation Error.</strong><br>Check your syntax against the specifications:<br>1. Did you define the function?<br>2. Is the channel specifically a string?<br>3. Is the payload specifically a dict?<br>4. Is the return type explicitly declared as None?';
+      }
+    }
+  </script>
+</body>
+</html>

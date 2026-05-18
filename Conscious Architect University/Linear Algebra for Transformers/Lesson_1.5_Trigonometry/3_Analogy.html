@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trigonometry — Analogy & Domains Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1.2;min-width:320px;}
+.visual-col{flex:1;min-width:280px;}
+
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+
+/* Tabs */
+.domain-tabs{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.5rem;}
+.tab-btn{padding:.6rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-dim);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.85rem;transition:all .2s;}
+.tab-btn:hover{color:var(--text);border-color:var(--border-light);}
+.tab-btn.active{background:var(--amber-glow);color:var(--amber);border-color:var(--amber);}
+
+.domain-content{display:none;}
+.domain-content.active{display:block;animation:fadeIn 0.3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+
+/* Puzzle accordion */
+.puzzle-card{border:1px solid var(--border);background:var(--bg-card);border-radius:8px;margin-bottom:.75rem;overflow:hidden;}
+.puzzle-header{padding:1rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:600;color:var(--text);background:var(--bg-elevated);}
+.puzzle-header:hover{background:rgba(255,255,255,0.05);}
+.puzzle-body{padding:0 1rem;max-height:0;overflow:hidden;transition:all 0.3s ease;color:var(--text-muted);font-size:.9rem;line-height:1.6;}
+.puzzle-card.open .puzzle-body{padding:1rem;max-height:500px;}
+.puzzle-card.open .puzzle-icon{transform:rotate(180deg);}
+.puzzle-icon{transition:transform 0.3s;}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text-muted);color:var(--text);}
+.btn-outline.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow);}
+
+.scroll-hint{animation:bounce 2s ease infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column-reverse!important;}
+  .canvas-wrap{min-height:300px!important;}
+  .nav-links{display:none;} /* Simplify nav on mobile */
+}
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">TRIGONOMETRY</span>
+    <div class="nav-links">
+      <a href="#domains" class="nav-link active" data-section="domains">6 Domains</a>
+      <a href="#crossdomain" class="nav-link" data-section="crossdomain">Cross-Domain</a>
+      <a href="#puzzles" class="nav-link" data-section="puzzles">Logic Puzzles</a>
+      <a href="#builder" class="nav-link" data-section="builder">Builder Task</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 1.5 — ANALOGY LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Trigonometry<br><span style="color:var(--text-muted);font-weight:300;">The Multi-Domain Master</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      Watch the exact same cosine function perfectly map RPG synergy, acoustic phase cancellation, football tactics, and flavor profiles.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: The 6-Domain Analogy System -->
+<section id="domains" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — UNIVERSAL MAPPING</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">The 6-Domain System</h2>
+    
+    <div class="domain-tabs">
+      <button class="tab-btn active" data-target="game"><i class="fas fa-gamepad"></i> Gaming</button>
+      <button class="tab-btn" data-target="sports"><i class="fas fa-futbol"></i> Sports</button>
+      <button class="tab-btn" data-target="music"><i class="fas fa-headphones"></i> Music</button>
+      <button class="tab-btn" data-target="ai"><i class="fas fa-brain"></i> AI / Semantic</button>
+      <button class="tab-btn" data-target="cooking"><i class="fas fa-utensils"></i> Cooking</button>
+      <button class="tab-btn" data-target="psych"><i class="fas fa-users"></i> Psychology</button>
+    </div>
+
+    <div class="flex-layout">
+      <!-- Read Col -->
+      <div class="reading-col">
+        <!-- GAMING -->
+        <div id="game" class="domain-content active">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">RPG Strategy / Synergies</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            Min-maxing in RPGs is an exercise in computing Cosine alignment between distinct statistical inputs. The vector is your character stat spread.
+          </p>
+          <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1.5rem;font-size:.92rem;">
+            <li style="margin-bottom:.5rem;"><strong>High Alignment (cos ≈ +1):</strong> Tank absorbs damage + Sniper outputs damage from behind. Intent vectors point parallel. Clean synergy.</li>
+            <li style="margin-bottom:.5rem;"><strong>Zero Alignment (cos ≈ 0):</strong> Physical DPS Barbarian buffed with +5000% Mana Regen. Massive magnitude vector, but mathematically orthogonal to the physical attack axis. Completely useless.</li>
+            <li><strong>Negative Alignment (cos ≈ -1):</strong> Casting Fire Damage over time, then casting an Ice freeze spell. They melt/shatter each other physically, operating at exactly 180°.</li>
+          </ul>
+          <div class="insight">
+            If you stack ten passive bonuses that don't share underlying directional alignment, their raw mathematical magnitude means nothing due to orthogonal drag.
+          </div>
+        </div>
+
+        <!-- SPORTS -->
+        <div id="sports" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Football Tactics</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            Managers are constantly unifing the individual running vectors of eleven divergent players. The tactical coordination rating is the Cosine operation.
+          </p>
+          <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1.5rem;font-size:.92rem;">
+            <li style="margin-bottom:.5rem;"><strong>Coordination:</strong> Midfielder passes a through-ball accurately tracking the exact trajectory of the run. Angle mapping approaches zero (Cosine ≈ 1).</li>
+            <li style="margin-bottom:.5rem;"><strong>Orthogonal Waste:</strong> Winger stands idle on the sideline while ball traffic is highly congested centrally. Winger holds huge potential magnitude (speed) but zero tactical alignment with the play direction.</li>
+            <li><strong>Opposing Actions:</strong> Center-backs step up to trap offside, while the full-back drops backward to chase a runner. Negative cosine structurally breaks the offside trap.</li>
+          </ul>
+        </div>
+
+        <!-- MUSIC -->
+        <div id="music" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Acoustic Phase Alignment</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            A Digital Audio Workspace maps trigonometric reality directly onto a monitor. The Cosine operation is harmonic tuning and phase offset.
+          </p>
+          <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1.5rem;font-size:.92rem;">
+            <li style="margin-bottom:.5rem;"><strong>Harmony (cos = 1):</strong> Two perfectly tuned identical oscillators. 0° offset. They reinforce and amplify massively.</li>
+            <li style="margin-bottom:.5rem;"><strong>Cancellation (cos = -1):</strong> One oscillator is inverted 180° out of phase. They collide mathematically and physically delete each other, generating total audio silence.</li>
+            <li><strong>Independence (cos = 0):</strong> Sub-bass plays at 40Hz; acoustic guitar plays at 2000Hz. Totally separate orthogonal grids. They mix beautifully without mud.</li>
+          </ul>
+        </div>
+
+        <!-- AI -->
+        <div id="ai" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">AI Semantic Retrieval (RAG)</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            Locating coaching premises inside the CCP demands robust semantic geometry to filter out raw length (verbosity) and catch pure directional intent.
+          </p>
+          <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1.5rem;font-size:.92rem;">
+            <li style="margin-bottom:.5rem;"><strong>Relevance (cos 0.941):</strong> "Manager belittles me" mapped directly to [Hostile Corporate Feedback]. Vectors align tightly.</li>
+            <li style="margin-bottom:.5rem;"><strong>Mismatch (cos 0.101):</strong> Same user query matched with [Optimize SQL Queries]. Both mention "coding", but geometric trajectory is completely divergent. Rejected.</li>
+            <li><strong>Tracking:</strong> Modeling tracks conversation progress across 4,000 words using periodic Positional Encoding waves instead of counting word-by-word loops.</li>
+          </ul>
+        </div>
+
+        <!-- COOKING -->
+        <div id="cooking" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Culinary Balance</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            Building a perfectly balanced menu requires implicit understanding of trajectory scaling in flavor spaces. 
+          </p>
+          <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1.5rem;font-size:.92rem;">
+            <li style="margin-bottom:.5rem;"><strong>Runaway Magnitude (cos ≈ 1):</strong> Adding more butter to an already rich Hollandaise sauce. The fat vector grows linearly on the same axis; the sauce becomes monotonously overwhelming.</li>
+            <li style="margin-bottom:.5rem;"><strong>Orthogonal Cut (cos ≈ 0):</strong> Adding fresh Lemon Meyer zest to the heavy Hollandaise. Acid is an independent grid axis. It cuts effortlessly across the fat, expanding flavor laterally without mud.</li>
+            <li><strong>Interference:</strong> Overwhelming delicate vegetable broth with burnt peppercorns. Bitter vector violently masks sweet vegetable axes physically on the palate.</li>
+          </ul>
+        </div>
+
+        <!-- PSYCH -->
+        <div id="psych" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Psychometric Group Mechanics</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            Understanding social structure requires evaluating massive behavioral trajectories mathematically rather than vaguely emotionally via Big Five grids.
+          </p>
+          <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1.5rem;font-size:.92rem;">
+            <li style="margin-bottom:.5rem;"><strong>Similarity:</strong> Two massively extraverted, low-neuroticism individuals bond. Their psychological "clocks" tick at identical frequencies natively.</li>
+            <li style="margin-bottom:.5rem;"><strong>Independence (Orthogonal):</strong> Disordered High-Openness artist paired with rigid High-Conscientiousness accountant. They occupy 90° separated axes. They speak non-intersecting operational languages.</li>
+            <li><strong>Conflict:</strong> A pathologically Agreeable mediator vs a virulently Disagreeable antagonist. Vector metrics sit at absolute -1.0. Every instinct violently repulses the other.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Vis Col -->
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:450px;">
+          <canvas id="domainCanvas"></canvas>
+        </div>
+        <p id="canvasCaption" style="font-size:.78rem;color:var(--text-dim);text-align:center;margin-top:.75rem;padding:0 .5rem;">
+          Select a domain tab to see its structural mapping.
+        </p>
+        <div style="display:flex;justify-content:center;gap:.5rem;margin-top:.75rem;" id="simToggles">
+          <button class="btn btn-outline btn-sm active" data-mode="pos">+1.0 Alignment</button>
+          <button class="btn btn-outline btn-sm" data-mode="zero">0.0 Orthogonal</button>
+          <button class="btn btn-outline btn-sm" data-mode="neg">-1.0 Opposition</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: Cross-Domain Architecture -->
+<section id="crossdomain" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:.5rem;">02 — THE PHASE BREAK</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Cross-Domain Comparison</h2>
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:2rem;">
+      <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1.5rem;">
+        Structural abstractions never survive full contact with reality without breaking upon the edges of domain interaction formats. Consider how <strong>Cosine = 0.0</strong> uniquely manifests:
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:1.5rem;">
+        <div style="flex:1;min-width:250px;">
+          <h4 style="color:var(--teal);margin-bottom:.5rem;font-size:1.1rem;">In AI (Neural Networks)</h4>
+          <p style="font-size:.9rem;color:var(--text-dim);line-height:1.6;">
+            A cosine similarity of 0.0 implies <strong>pristine un-tangled independence</strong>. The two contextual premises have zero dimensional interaction. The model cleanly ignores the irrelevant token and moves on harmlessly.
+          </p>
+        </div>
+        <div style="flex:1;min-width:250px;">
+          <h4 style="color:var(--rose);margin-bottom:.5rem;font-size:1.1rem;">In Physics (Audio/Oceanography)</h4>
+          <p style="font-size:.9rem;color:var(--text-dim);line-height:1.6;">
+            A math mapping of poor phase alignment (Cosine -1.0) doesn't just "ignore" data. It propagates linearly through rigid space and <strong>physically exerts localized air pressure to forcibly delete the opposing frequency permanently</strong>. Physics actively destroys the mismatch.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: Logic Puzzles -->
+<section id="puzzles" class="section">
+  <div class="section-inner" style="max-width:800px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">03 — REASONING TRAPS</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Logic Puzzles & Fallacies</h2>
+    
+    <div class="puzzle-card">
+      <div class="puzzle-header">
+        <span>1. The Maximum Volume Trap</span>
+        <i class="fas fa-chevron-down puzzle-icon"></i>
+      </div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Query:</strong> User A inputs "Code Error" (small vector). User B inputs a massive 5-page essay on the identical "Code Error" (giant vector). In pure Cosine Similarity indexing, which query returns more accurately?</p>
+        <div class="insight">
+          <strong>Resolution:</strong> They function entirely identically. Cosine forcibly strips away the massive length of User B's essay, normalizing both to the unit circle. It reads only the semantic angle, which is identical.
+        </div>
+      </div>
+    </div>
+
+    <div class="puzzle-card">
+      <div class="puzzle-header">
+        <span>2. The Phase-Shift Hallucination</span>
+        <i class="fas fa-chevron-down puzzle-icon"></i>
+      </div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Query:</strong> An engineer accidentally deletes the Sine function from Positional Encoding, replacing it with completely redundant Cosine sequences. Can the Transformer still determine sequence order?</p>
+        <div class="insight">
+          <strong>Resolution:</strong> Structural collapse. You cannot determine a unique orbital orbital position from a solely one-dimensional shadow (horizontal cos projection). Both cos and sin are mandatory to locate the exact 2D rotation matrix offset without symmetrical coordinate confusion.
+        </div>
+      </div>
+    </div>
+
+    <div class="puzzle-card">
+      <div class="puzzle-header">
+        <span>3. The Orthogonal Noise Paradox</span>
+        <i class="fas fa-chevron-down puzzle-icon"></i>
+      </div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Query:</strong> You query a database for "Hostile corporate engineering" aiming for cosine ≥ 0.90. It fails (0 targets). Changing tact, you instruct it to fetch any premise scoring perfectly 0.0 (orthogonal). What happens?</p>
+        <div class="insight" style="border-color:var(--rose);background:var(--rose-glow);">
+          <strong style="color:var(--rose);">Resolution:</strong> It fetches millions of items of total semantic white noise. A premise about "Proper Baking Flour" scores 0.0 against corporate engineering. 0.0 means unanchored irrelevance, not a hidden "inverse" match.
+        </div>
+      </div>
+    </div>
+
+    <div class="puzzle-card">
+      <div class="puzzle-header">
+        <span>4. The "Similarity Implies Quality" Break</span>
+        <i class="fas fa-chevron-down puzzle-icon"></i>
+      </div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Query:</strong> A developer assumes a result ranking 0.98 Cosine is objectively "the highest quality answer." Provide a scenario where 0.98 is structurally catastrophic to system health.</p>
+        <div class="insight">
+          <strong>Resolution:</strong> The user input is violently hostile rage. Returning a 0.98 match fetches flawlessly aligned, entirely destructive rage context. Alignment only guarantees geometric trajectory map compliance, not objective therapeutic superiority.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Section 4: Build Your Own Analogy -->
+<section id="builder" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">04 — KINESTHETIC TASK</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Build-Your-Own Analogy Framework</h2>
+    
+    <div style="background:var(--bg-elevated);border:1px dashed var(--amber);border-radius:12px;padding:2rem;">
+      <p style="color:var(--text-muted);font-size:.95rem;line-height:1.7;margin-bottom:1.5rem;">
+        Construct your own domain mapping. Assign variables to the orthogonal axes, and visualize what trigonometric collision (-1.0) means in your isolated system.
+      </p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:1rem;">
+        <div>
+          <label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">System Domain</label>
+          <input type="text" placeholder="e.g., Combustion Engine, Market Macro-cycles" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';">
+        </div>
+        <div>
+          <label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Axis X (Cosine) Concept</label>
+          <input type="text" placeholder="e.g., Piston Downstroke, Inflation Rate" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';">
+        </div>
+        <div>
+          <label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Axis Y (Sine) Concept</label>
+          <input type="text" placeholder="e.g., Exhaust Valve Timing, Wage Stagnation" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';">
+        </div>
+      </div>
+      <div style="margin-top:1rem;">
+        <label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Define the Phase Break (-1.0 Collision State)</label>
+        <textarea rows="3" placeholder="What physical/economic chaos results when the cycle falls to exactly 180 degrees out of phase?" style="width:100%;padding:.8rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';resize:vertical;"></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:1rem;">
+        <button class="btn btn-amber"><i class="fas fa-save"></i> Render Formalism</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem 4rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);margin-top:2rem;">
+  <p style="max-width:600px;margin:0 auto 1.5rem;line-height:1.6;">
+    <strong>Compression Layer:</strong> Cosine Similarity calculates brutal explicit truth comparing alignment regardless of volume, while alternating trigonometric frequencies rigidly stamp continuous mathematical architecture into unanchored static sequences.
+  </p>
+  Interactive Visual Learning — Trigonometry: The Analogy Layer
+</footer>
+
+<script>
+/* Utils */
+const DPR = window.devicePixelRatio || 1;
+function setupCanvas(c){
+  const p=c.parentElement,r=p.getBoundingClientRect();
+  c.width=r.width*DPR;c.height=r.height*DPR;
+  c.style.width=r.width+'px';c.style.height=r.height+'px';
+  const ctx=c.getContext('2d');ctx.scale(DPR,DPR);
+  return{ctx,w:r.width,h:r.height};
+}
+
+/* Hero Canvas */
+(function(){
+  const c=document.getElementById('heroCanvas');
+  let W,H,ctx;
+  function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+  resize();window.addEventListener('resize',resize);
+  let t=0;
+  function draw(){ctx.clearRect(0,0,W,H);
+    for(let i=0;i<6;i++){ctx.beginPath();
+      // Hexagon rotating
+      const cx=W/2, cy=H/2;
+      const radius=Math.min(W,H)*0.3 + Math.sin(t*0.01 + i)*30;
+      const rot=t*0.005 + (i*Math.PI/3);
+      for(let v=0;v<6;v++){
+        const a=rot+v*Math.PI/3;
+        const x=cx+Math.cos(a)*radius, y=cy+Math.sin(a)*radius;
+        v===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      ctx.closePath();
+      ctx.strokeStyle=`rgba(245,158,11,${0.08 - i*0.01})`;ctx.lineWidth=1.5;ctx.stroke();
+    }
+    t++;requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* Domains Canvas System */
+(function(){
+  const canvas=document.getElementById('domainCanvas');
+  let currentDomain='game';
+  let currentMode='pos';
+  let animT=0;
+  let cachedW=0, cachedH=0, cachedCtx=null;
+
+  function resizeCanvas(){
+    const p=canvas.parentElement, r=p.getBoundingClientRect();
+    canvas.width=r.width*DPR; canvas.height=r.height*DPR;
+    canvas.style.width=r.width+'px'; canvas.style.height=r.height+'px';
+    cachedW=r.width; cachedH=r.height;
+    cachedCtx=canvas.getContext('2d'); cachedCtx.scale(DPR,DPR);
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  function draw(){
+    const ctx=cachedCtx, w=cachedW, h=cachedH;
+    if(!ctx) return;
+    ctx.save(); ctx.setTransform(DPR,0,0,DPR,0,0);
+    ctx.clearRect(0,0,w,h);
+    const cx=w*0.5, cy=h*0.5, R=Math.min(w,h)*0.35;
+
+    ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(cx-R*1.2,cy);ctx.lineTo(cx+R*1.2,cy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,cy-R*1.2);ctx.lineTo(cx,cy+R*1.2);ctx.stroke();
+    ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+
+    let angA, angB, colorA='#f59e0b', colorB='#14b8a6', labelA='', labelB='', axisX='', axisY='';
+
+    switch(currentDomain){
+      case 'game':
+        axisX='Physical Output'; axisY='Magic/Mana';
+        labelA='Tank/Sniper Intent';
+        if(currentMode==='pos'){angA=0;angB=0.1;labelB='Sniper DPS';}
+        else if(currentMode==='zero'){angA=0;angB=-Math.PI/2;labelB='+5000% Mana Spell';}
+        else{angA=0;angB=Math.PI;labelB='Ice Freeze vs FireBurn';}
+        break;
+      case 'sports':
+        axisX='Offensive Forward Axis'; axisY='Lateral Field Drift';
+        labelA='Striker Vector';
+        if(currentMode==='pos'){angA=-0.2;angB=-0.2;labelB='Through Ball Pass';}
+        else if(currentMode==='zero'){angA=0;angB=-Math.PI/2;labelB='Idle Winger Call';}
+        else{angA=-0.5;angB=Math.PI-0.5;labelB='Stray Full-back Trap Break';}
+        break;
+      case 'music':
+        axisX='Phase Space'; axisY='Amplitude';
+        labelA='Oscillator 1 (440Hz)';
+        if(currentMode==='pos'){angA=-Math.PI/4;angB=-Math.PI/4;labelB='Oscillator 2 (Reinforcement)';}
+        else if(currentMode==='zero'){angA=0;angB=-Math.PI/2;labelB='40Hz Sub vs 2kHz Acoustic';}
+        else{angA=-Math.PI/4;angB=(3*Math.PI/4);labelB='Osc Invert Phase (Cancellation)';}
+        break;
+      case 'ai':
+        axisX='Semantic Axis: Anxiety/Stress'; axisY='Semantic Axis: Code/Tech';
+        labelA='User: "Hostile Boss"';
+        if(currentMode==='pos'){angA=-0.1;angB=-0.15;labelB='[Navigating Feedback Context]';}
+        else if(currentMode==='zero'){angA=-0.1;angB=-Math.PI/2;labelB='[Optimize SQL Coding]';}
+        else{angA=0;angB=Math.PI;labelB='[Toxic Enabler Content - Flagger]';}
+        break;
+      case 'cooking':
+        axisX='Fat / Richness'; axisY='Acid / Sour';
+        labelA='Hollandaise Sauce Base';
+        if(currentMode==='pos'){angA=0;angB=0;labelB='Adding Butter (Monotony)';}
+        else if(currentMode==='zero'){angA=0;angB=-Math.PI/2;labelB='Meyer Lemon Zest (Balance)';}
+        else{angA=0;angB=Math.PI;labelB='Burnt Peppercorns (Masking)';}
+        break;
+      case 'psych':
+        axisX='Extraversion/Openness'; axisY='Conscientiousness';
+        labelA='Person Alpha';
+        if(currentMode==='pos'){angA=-0.3;angB=-0.3;labelB='Person Beta (Synched)';}
+        else if(currentMode==='zero'){angA=0;angB=-Math.PI/2;labelB='Wild Artist / Rigid Accountant';}
+        else{angA=0;angB=Math.PI;labelB='Pathological Agree vs Disagree';}
+        break;
+    }
+
+    let bobB=0;
+    if(currentMode==='zero') bobB=Math.sin(animT)*0.02;
+    if(currentMode==='neg') bobB=(Math.sin(animT*3)*0.05);
+    angB += bobB;
+
+    ctx.font='10px DM Sans';ctx.fillStyle='#52525b';
+    ctx.textAlign='left';ctx.fillText(axisX,cx+R+10,cy+4);
+    ctx.textAlign='center';ctx.fillText(axisY,cx,cy-R-10);
+
+    function drawVec(ang,c,label,magOffset){
+      magOffset=magOffset||1.0;
+      const tx=cx+Math.cos(ang)*(R*magOffset), ty=cy+Math.sin(ang)*(R*magOffset);
+      ctx.save();ctx.shadowColor=c;ctx.shadowBlur=8;ctx.strokeStyle=c;ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(tx,ty);ctx.stroke();ctx.restore();
+      const hl=12;
+      ctx.beginPath();ctx.moveTo(tx,ty);
+      ctx.lineTo(tx-hl*Math.cos(ang-0.35),ty-hl*Math.sin(ang-0.35));
+      ctx.lineTo(tx-hl*Math.cos(ang+0.35),ty-hl*Math.sin(ang+0.35));
+      ctx.fillStyle=c;ctx.fill();
+      ctx.font='600 11px Space Grotesk';ctx.fillStyle=c;ctx.textAlign='left';
+      ctx.fillText(label,tx+10,ty-5);
+    }
+
+    drawVec(angA, colorA, labelA, 1.0);
+    drawVec(angB, colorB, labelB, currentMode==='pos'?0.85:0.95);
+
+    let cos=0;
+    if(currentMode==='pos')cos=1.0;if(currentMode==='zero')cos=0.0;if(currentMode==='neg')cos=-1.0;
+    ctx.font='700 16px Space Grotesk';ctx.fillStyle=cos>0?'#10b981':cos===0?'#f59e0b':'#f43f5e';
+    ctx.textAlign='left';ctx.fillText('Cos(\u03B8) \u2248 '+cos.toFixed(1),cx-R-20,cy-R+20);
+
+    ctx.restore();
+    animT+=0.05;
+    requestAnimationFrame(draw);
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentDomain=btn.dataset.target;
+      document.querySelectorAll('.domain-content').forEach(c=>c.classList.remove('active'));
+      document.getElementById(currentDomain).classList.add('active');
+    });
+  });
+
+  document.querySelectorAll('#simToggles .btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('#simToggles .btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentMode=btn.dataset.mode;
+    });
+  });
+
+  draw();
+})();
+
+/* Puzzles */
+(function(){
+  document.querySelectorAll('.puzzle-header').forEach(hdr=>{
+    hdr.addEventListener('click',()=>{
+      const c=hdr.parentElement;
+      const isOpen=c.classList.contains('open');
+      document.querySelectorAll('.puzzle-card').forEach(p=>p.classList.remove('open'));
+      if(!isOpen) c.classList.add('open');
+    });
+  });
+})();
+
+/* Scroll logic */
+(function(){
+  const links=document.querySelectorAll('.nav-link');
+  const ids=['domains','crossdomain','puzzles','builder'];
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+100;let active=ids[0];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+    links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));
+  });
+})();
+</script>
+</body>
+</html>

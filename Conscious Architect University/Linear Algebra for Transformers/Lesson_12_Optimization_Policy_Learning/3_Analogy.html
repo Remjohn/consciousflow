@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 12 - Analogy Layer</title>
+  <style>
+    :root {
+      --bg: #071117;
+      --bg-2: #0b1720;
+      --panel: rgba(12, 20, 28, 0.82);
+      --panel-2: rgba(18, 28, 39, 0.9);
+      --line: rgba(255, 255, 255, 0.08);
+      --text: #f5f7fa;
+      --muted: #9eb0bd;
+      --accent: #ff7a18;
+      --accent-2: #ffd166;
+      --good: #27c281;
+      --bad: #ff5d73;
+      --blue: #56c5ff;
+      --violet: #8f7cff;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(86,197,255,0.18), transparent 24%),
+        radial-gradient(circle at 85% 18%, rgba(255,122,24,0.16), transparent 26%),
+        linear-gradient(180deg, #061018 0%, #09141c 40%, #071117 100%);
+      line-height: 1.6;
+    }
+
+    .progress {
+      position: fixed;
+      inset: 0 0 auto 0;
+      height: 4px;
+      background: rgba(255,255,255,0.05);
+      z-index: 30;
+    }
+
+    .progress-fill {
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, #ff7a18, #ffd166, #56c5ff);
+      transition: width 0.35s ease;
+    }
+
+    .shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 42px 18px 80px;
+    }
+
+    .stage {
+      display: none;
+      animation: fadeUp 0.4s ease;
+    }
+
+    .stage.active { display: block; }
+
+    .hero {
+      padding: 28px;
+      border-radius: 28px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01)),
+        radial-gradient(circle at top right, rgba(143,124,255,0.14), transparent 28%);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.26);
+      overflow: hidden;
+    }
+
+    .eyebrow {
+      color: var(--accent-2);
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 12px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 14px;
+      line-height: 1.08;
+      font-weight: 500;
+    }
+
+    h1 { font-size: clamp(2.4rem, 5vw, 4.6rem); }
+    h2 { font-size: clamp(1.6rem, 2.8vw, 2.5rem); }
+    h3 { font-size: 1.08rem; }
+    p { margin: 0 0 14px; }
+
+    .lede {
+      max-width: 52rem;
+      font-size: 1.12rem;
+      color: #d9e3ea;
+    }
+
+    .divider {
+      height: 1px;
+      margin: 24px 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
+    }
+
+    .card {
+      margin-top: 20px;
+      padding: 24px;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+      box-shadow: 0 20px 44px rgba(0, 0, 0, 0.22);
+    }
+
+    .section-count {
+      color: #87a0af;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 10px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 122, 24, 0.12);
+      color: #ffd7a6;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.73rem/1 Arial, Helvetica, sans-serif;
+      margin-bottom: 14px;
+    }
+
+    .grid-2,
+    .grid-3 {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .mono {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.95rem;
+    }
+
+    .data-block {
+      padding: 16px 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.035);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      padding: 14px 18px;
+      border-radius: 999px;
+      font: 700 0.94rem/1 Arial, Helvetica, sans-serif;
+      transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: linear-gradient(90deg, #ff7a18, #ff9447);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.16);
+    }
+
+    .visual-card {
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+      padding: 16px;
+    }
+
+    .visual-choice {
+      cursor: pointer;
+      transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
+    }
+
+    .visual-choice:hover { transform: translateY(-2px); }
+    .visual-choice.selected {
+      border-color: rgba(255, 209, 102, 0.82);
+      background: linear-gradient(180deg, rgba(255,209,102,0.1), rgba(255,255,255,0.02));
+    }
+
+    .visual-choice.correct {
+      border-color: rgba(39,194,129,0.65);
+      box-shadow: 0 0 0 1px rgba(39,194,129,0.2) inset;
+    }
+
+    .visual-choice.wrong {
+      border-color: rgba(255,93,115,0.55);
+      box-shadow: 0 0 0 1px rgba(255,93,115,0.16) inset;
+    }
+
+    .mini-title {
+      font: 700 0.8rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .canvas-wrap {
+      border-radius: 20px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(6, 16, 24, 0.55);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(6,16,24,0.96), rgba(11,23,32,0.96));
+    }
+
+    .feedback {
+      display: none;
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .feedback.show { display: block; }
+    .feedback.good { border-color: rgba(39,194,129,0.38); }
+    .feedback.bad { border-color: rgba(255,93,115,0.38); }
+
+    .locked {
+      margin-top: 12px;
+      color: #ffd7a6;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif;
+    }
+
+    .hidden { display: none; }
+
+    .pipeline-bank,
+    .pipeline-slots {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .pipeline-bank { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .pipeline-slots { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+    .chip,
+    .slot {
+      min-height: 74px;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px dashed rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.02);
+      font: 600 0.9rem/1.35 Arial, Helvetica, sans-serif;
+    }
+
+    .chip {
+      cursor: pointer;
+      border-style: solid;
+      transition: transform 0.18s ease, border-color 0.18s ease;
+    }
+
+    .chip:hover { transform: translateY(-1px); }
+    .chip.used { opacity: 0.45; cursor: not-allowed; }
+    .slot.filled {
+      border-style: solid;
+      border-color: rgba(255, 209, 102, 0.5);
+      color: #fff3cf;
+      background: rgba(255, 209, 102, 0.08);
+    }
+
+    textarea,
+    input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+    }
+
+    textarea:focus,
+    input[type="text"]:focus {
+      border-color: rgba(255,122,24,0.55);
+      box-shadow: 0 0 0 4px rgba(255,122,24,0.12);
+    }
+
+    .question-grid {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .q-card {
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .q-card label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif;
+    }
+
+    .final-box {
+      margin-top: 18px;
+      padding: 22px;
+      border-radius: 20px;
+      border: 1px solid rgba(86,197,255,0.3);
+      background: linear-gradient(180deg, rgba(86,197,255,0.08), rgba(255,255,255,0.02));
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 800px) {
+      .grid-2, .grid-3, .pipeline-bank, .pipeline-slots { grid-template-columns: 1fr; }
+      .shell { padding: 30px 14px 60px; }
+      .hero, .card { padding: 18px; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true">
+    <div id="progressFill" class="progress-fill"></div>
+  </div>
+
+  <main class="shell">
+    <section id="stage-0" class="stage active">
+      <div class="hero">
+        <p class="eyebrow">Lesson 12 - Analogy / Visual Layer</p>
+        <h1>Same machinery. Different worlds.</h1>
+        <div class="divider"></div>
+        <p class="lede">This layer hides the original transformer surface and asks you to recognize the structure underneath: multiple options, reward, relative comparison, bounded updating, and identity-preserving drift control.</p>
+        <div class="grid-3" style="margin-top:22px;">
+          <div class="data-block">
+            <p class="mini-title">Domains in play</p>
+            <p>Gaming meta shifts, football tactics, music mixing, cooking, therapy, and the CCP pipeline.</p>
+          </div>
+          <div class="data-block">
+            <p class="mini-title">Rule of this layer</p>
+            <p>Predict first. Lock it. Then the visual resolves. No live answer scaffolding.</p>
+          </div>
+          <div class="data-block">
+            <p class="mini-title">What counts as success</p>
+            <p>You spot the shared structure without being told the mapping in advance.</p>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="goToStage(1)">Begin transfer challenge</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="section-count">Transfer Challenge</p>
+        <h2>Festival mix strategy</h2>
+        <p>A producer tests four mix profiles for a live electronic set. The current usage split is equal: 25% each. The listener panel returns scores of <span class="mono">6.5, 8.2, 5.0, 7.3</span>. Which next-week profile distribution best reflects a clipped update rather than a reckless overreaction?</p>
+        <div class="grid-3" id="mixChoices">
+          <div class="visual-card visual-choice" data-choice="A" onclick="selectMixChoice('A', this)">
+            <p class="mini-title">Option A</p>
+            <div class="canvas-wrap"><canvas id="mixA" width="300" height="220"></canvas></div>
+            <p class="mono" style="margin-top:10px;">10 / 55 / 10 / 25</p>
+          </div>
+          <div class="visual-card visual-choice" data-choice="B" onclick="selectMixChoice('B', this)">
+            <p class="mini-title">Option B</p>
+            <div class="canvas-wrap"><canvas id="mixB" width="300" height="220"></canvas></div>
+            <p class="mono" style="margin-top:10px;">0 / 100 / 0 / 0</p>
+          </div>
+          <div class="visual-card visual-choice" data-choice="C" onclick="selectMixChoice('C', this)">
+            <p class="mini-title">Option C</p>
+            <div class="canvas-wrap"><canvas id="mixC" width="300" height="220"></canvas></div>
+            <p class="mono" style="margin-top:10px;">25 / 25 / 25 / 25</p>
+          </div>
+        </div>
+        <div id="mix-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions">
+          <button id="mix-submit" class="btn btn-primary" onclick="submitMixChoice()">Lock prediction</button>
+        </div>
+        <div id="mix-feedback" class="feedback"></div>
+        <div id="mix-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(2)">Proceed to visual prediction gate</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="section-count">Visual Prediction Gate</p>
+        <h2>Where does the strategy distribution land?</h2>
+        <p>In a tournament game, four builds started at equal usage. Their weekend win rates were 60%, 20%, 80%, and 40%. Click one of the four vertical lanes below to predict which build should become the dominant share after bounded updating. Your click places a locked marker only. The actual distribution appears after submission.</p>
+        <div class="canvas-wrap">
+          <canvas id="predictionCanvas" width="600" height="320"></canvas>
+        </div>
+        <div class="grid-2" style="margin-top:16px;">
+          <div class="data-block">
+            <p class="mini-title">Current state</p>
+            <p>All builds start at <span class="mono">25%</span> usage.</p>
+          </div>
+          <div class="data-block">
+            <p class="mini-title">Weekend results</p>
+            <p class="mono">Build 1 = 60%, Build 2 = 20%, Build 3 = 80%, Build 4 = 40%</p>
+          </div>
+        </div>
+        <div id="canvas-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions">
+          <button id="canvas-submit" class="btn btn-primary" onclick="submitCanvasPrediction()">Reveal actual shift</button>
+        </div>
+        <div id="canvas-feedback" class="feedback"></div>
+        <div id="canvas-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(3)">Proceed to pipeline construction</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="section-count">Pipeline Construction</p>
+        <h2>Assemble the hidden optimization loop</h2>
+        <p>A chef is refining a signature ramen over weekly tastings. Build the correct five-step pipeline from the parts below. The goal is not culinary trivia. It is the optimization structure.</p>
+        <div class="pipeline-bank" id="pipelineBank">
+          <div class="chip" data-step="generate" onclick="placePipelineStep(this)">Generate four broth variants</div>
+          <div class="chip" data-step="score" onclick="placePipelineStep(this)">Panel scores depth, balance, aroma, and texture</div>
+          <div class="chip" data-step="normalize" onclick="placePipelineStep(this)">Compare each broth to the group average</div>
+          <div class="chip" data-step="clip" onclick="placePipelineStep(this)">Limit recipe drift to 20% per week</div>
+          <div class="chip" data-step="update" onclick="placePipelineStep(this)">Increase tonkotsu emphasis where results justify it</div>
+          <div class="chip" data-step="hack" onclick="placePipelineStep(this)">Maximize salt only because intensity scores well</div>
+        </div>
+        <div class="pipeline-slots" id="pipelineSlots">
+          <div class="slot" data-index="0">Step 1</div>
+          <div class="slot" data-index="1">Step 2</div>
+          <div class="slot" data-index="2">Step 3</div>
+          <div class="slot" data-index="3">Step 4</div>
+          <div class="slot" data-index="4">Step 5</div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-secondary" onclick="resetPipeline()">Reset slots</button>
+          <button class="btn btn-primary" onclick="submitPipeline()">Lock pipeline</button>
+        </div>
+        <div id="pipeline-feedback" class="feedback"></div>
+        <div id="pipeline-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(4)">Proceed to analogy design gate</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="section-count">Analogy Design Gate</p>
+        <h2>Build your own mapping</h2>
+        <p>Pick any iterative domain and compress the structure. Your answer must define the generated options, the reward, the clipping rule, and the reward-hacking risk.</p>
+        <textarea id="designText" placeholder="Domain: ... G = ... Reward: ... Clipping means ... Reward hacking would be ..."></textarea>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="submitDesignGate()">Lock response</button>
+        </div>
+        <div id="design-feedback" class="feedback"></div>
+        <div id="design-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(5)">Enter transfer gauntlet</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-5" class="stage">
+      <div class="card">
+        <p class="eyebrow">Transfer Gauntlet</p>
+        <h2>Seven structure checks without visuals</h2>
+        <p>The visuals are gone. The structure should remain.</p>
+        <div class="question-grid">
+          <div class="q-card">
+            <label for="g1">1. What makes DPO the minimal-compute end of the spectrum?</label>
+            <input id="g1" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g2">2. Why is a one-shot domain bad for GRPO?</label>
+            <input id="g2" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g3">3. In music, what is the Loudness War an example of?</label>
+            <input id="g3" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g4">4. What does clipping preserve in the football analogy besides stability?</label>
+            <input id="g4" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g5">5. Why can one reward function produce different specialized heads than another?</label>
+            <input id="g5" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g6">6. When does the framework break because the reward is unknowable?</label>
+            <input id="g6" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g7">7. What unifies ramen, therapy, mixing, and gaming here?</label>
+            <input id="g7" type="text" placeholder="Short answer">
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="gradeGauntlet()">Submit gauntlet</button>
+        </div>
+        <div id="gauntlet-feedback" class="feedback"></div>
+        <div id="final-box" class="final-box hidden">
+          <div class="badge">Layer 3 complete</div>
+          <p id="final-text"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const totalStages = 6;
+    let selectedMixChoice = null;
+    let selectedLane = null;
+    let pipelineOrder = [];
+    const correctPipeline = ['generate', 'score', 'normalize', 'clip', 'update'];
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach((stage) => stage.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (index === 2) drawPredictionCanvas(false);
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = 'feedback show ' + type;
+      box.innerHTML = '<h3>' + title + '</h3><p>' + body + '</p>';
+    }
+
+    function drawSmallBars(canvasId, values, colors) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '#08131b';
+      ctx.fillRect(0, 0, w, h);
+      const baseY = h - 28;
+      const barW = 42;
+      const gap = 20;
+      values.forEach((value, i) => {
+        const x = 34 + i * (barW + gap);
+        const barH = value * 1.6;
+        ctx.fillStyle = colors[i];
+        ctx.fillRect(x, baseY - barH, barW, barH);
+        ctx.fillStyle = 'rgba(255,255,255,0.75)';
+        ctx.font = '12px Arial';
+        ctx.fillText('M' + (i + 1), x + 10, baseY + 16);
+        ctx.fillText(String(value), x + 8, baseY - barH - 8);
+      });
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.beginPath();
+      ctx.moveTo(24, baseY + 0.5);
+      ctx.lineTo(w - 18, baseY + 0.5);
+      ctx.stroke();
+    }
+
+    const barColors = ['#56c5ff', '#ffd166', '#8f7cff', '#27c281'];
+    drawSmallBars('mixA', [10, 55, 10, 25], barColors);
+    drawSmallBars('mixB', [0, 100, 0, 0], barColors);
+    drawSmallBars('mixC', [25, 25, 25, 25], barColors);
+
+    function selectMixChoice(choice, element) {
+      if (document.getElementById('mixChoices').dataset.locked === 'true') return;
+      selectedMixChoice = choice;
+      document.querySelectorAll('#mixChoices .visual-choice').forEach((card) => card.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function submitMixChoice() {
+      if (!selectedMixChoice) {
+        showFeedback('mix-feedback', 'bad', 'Prediction required', 'Choose one visual state before the actual update is revealed.');
+        return;
+      }
+      document.getElementById('mixChoices').dataset.locked = 'true';
+      document.getElementById('mix-submit').disabled = true;
+      document.getElementById('mix-lock').classList.remove('hidden');
+      const correct = 'A';
+      document.querySelectorAll('#mixChoices .visual-choice').forEach((card) => {
+        if (card.dataset.choice === correct) card.classList.add('correct');
+        if (card.dataset.choice === selectedMixChoice && selectedMixChoice !== correct) card.classList.add('wrong');
+      });
+      if (selectedMixChoice === correct) {
+        showFeedback('mix-feedback', 'good', 'Correct: bounded adaptation, not total collapse.', 'Option A increases the strongest mix, keeps the second-strongest alive, reduces the weak mixes, and preserves diversity. Option B is catastrophic overshooting. Option C ignores the reward signal entirely.');
+      } else {
+        showFeedback('mix-feedback', 'bad', 'Misconception exposed: either overreaction or paralysis.', 'A clipped optimizer does not jump to 100% on one good variant, and it does not keep everything flat after evidence arrives. It shifts the distribution while preserving optionality.');
+      }
+      document.getElementById('mix-next').classList.remove('hidden');
+    }
+
+    function drawPredictionCanvas(reveal) {
+      const canvas = document.getElementById('predictionCanvas');
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '#08131b';
+      ctx.fillRect(0, 0, w, h);
+
+      const lanes = [
+        { x: 80, label: 'B1', color: '#56c5ff' },
+        { x: 210, label: 'B2', color: '#ffd166' },
+        { x: 340, label: 'B3', color: '#8f7cff' },
+        { x: 470, label: 'B4', color: '#27c281' }
+      ];
+      const baseY = 272;
+      const currentH = 80;
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      for (let y = 60; y <= baseY; y += 42) {
+        ctx.beginPath();
+        ctx.moveTo(48, y);
+        ctx.lineTo(560, y);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      ctx.font = '12px Arial';
+      ctx.fillText('Click a lane to predict the dominant post-update build', 50, 28);
+
+      lanes.forEach((lane, idx) => {
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
+        ctx.fillRect(lane.x, baseY - currentH, 56, currentH);
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.fillText(lane.label, lane.x + 16, baseY + 18);
+        ctx.fillText('25%', lane.x + 12, baseY - currentH - 8);
+        if (selectedLane === idx) {
+          ctx.strokeStyle = '#ffb366';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(lane.x - 6, baseY - 180, 68, 190);
+          ctx.beginPath();
+          ctx.arc(lane.x + 28, baseY - 130, 8, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffb366';
+          ctx.fill();
+        }
+      });
+
+      if (reveal) {
+        const actual = [15, 5, 60, 20];
+        actual.forEach((value, idx) => {
+          const lane = lanes[idx];
+          const hBar = value * 3;
+          ctx.fillStyle = lane.color;
+          ctx.fillRect(lane.x, baseY - hBar, 56, hBar);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(value + '%', lane.x + 8, baseY - hBar - 10);
+        });
+      }
+    }
+
+    document.getElementById('predictionCanvas').addEventListener('click', (event) => {
+      if (document.getElementById('predictionCanvas').dataset.locked === 'true') return;
+      const rect = event.target.getBoundingClientRect();
+      const x = (event.clientX - rect.left) * (event.target.width / rect.width);
+      const lanes = [80, 210, 340, 470];
+      let hit = null;
+      lanes.forEach((laneX, idx) => {
+        if (x >= laneX && x <= laneX + 56) hit = idx;
+      });
+      if (hit !== null) {
+        selectedLane = hit;
+        drawPredictionCanvas(false);
+      }
+    });
+
+    function submitCanvasPrediction() {
+      if (selectedLane === null) {
+        showFeedback('canvas-feedback', 'bad', 'Prediction required', 'Click one build lane before the actual distribution resolves.');
+        return;
+      }
+      document.getElementById('predictionCanvas').dataset.locked = 'true';
+      document.getElementById('canvas-submit').disabled = true;
+      document.getElementById('canvas-lock').classList.remove('hidden');
+      drawPredictionCanvas(true);
+      if (selectedLane === 2) {
+        showFeedback('canvas-feedback', 'good', 'Correct: Build 3 should dominate the shift.', 'The highest reward belongs to Build 3, so the bounded update should tilt most strongly toward it. The reveal keeps other builds alive because clipping preserves strategic diversity.');
+      } else {
+        showFeedback('canvas-feedback', 'bad', 'Misconception exposed: you tracked the wrong performer.', 'Build 3 has the strongest advantage. The optimizer should move toward it most strongly, while still keeping a distribution rather than collapsing to one totalizing choice.');
+      }
+      document.getElementById('canvas-next').classList.remove('hidden');
+    }
+
+    function placePipelineStep(element) {
+      if (element.classList.contains('used')) return;
+      if (pipelineOrder.length >= 5) return;
+      const step = element.dataset.step;
+      pipelineOrder.push(step);
+      element.classList.add('used');
+      const slot = document.querySelector('.slot[data-index="' + (pipelineOrder.length - 1) + '"]');
+      slot.textContent = element.textContent;
+      slot.classList.add('filled');
+      slot.dataset.step = step;
+    }
+
+    function resetPipeline() {
+      pipelineOrder = [];
+      document.querySelectorAll('#pipelineBank .chip').forEach((chip) => chip.classList.remove('used'));
+      document.querySelectorAll('#pipelineSlots .slot').forEach((slot, idx) => {
+        slot.textContent = 'Step ' + (idx + 1);
+        slot.className = 'slot';
+        delete slot.dataset.step;
+      });
+    }
+
+    function submitPipeline() {
+      if (pipelineOrder.length !== 5) {
+        showFeedback('pipeline-feedback', 'bad', 'Pipeline incomplete', 'Fill all five slots before you lock the sequence.');
+        return;
+      }
+      const correct = correctPipeline.every((step, idx) => pipelineOrder[idx] === step);
+      if (correct) {
+        showFeedback('pipeline-feedback', 'good', 'Correct sequence', 'You rebuilt the hidden loop: generate options, score them, compare them relative to the group, clip the change, then update. The salt-maximization card is reward hacking, not part of the healthy pipeline.');
+        document.getElementById('pipeline-next').classList.remove('hidden');
+      } else {
+        showFeedback('pipeline-feedback', 'bad', 'Sequence error', 'The loop is ordered. Generation comes before scoring, relative comparison comes before bounded updating, and reward hacking is a failure mode rather than a legitimate stage.');
+      }
+    }
+
+    function submitDesignGate() {
+      const value = document.getElementById('designText').value.trim().toLowerCase();
+      const checks = [
+        value.includes('g =') || value.includes('options') || value.includes('versions'),
+        value.includes('reward'),
+        value.includes('clip') || value.includes('20%'),
+        value.includes('hack') || value.includes('game') || value.includes('metric')
+      ];
+      const hits = checks.filter(Boolean).length;
+      document.getElementById('designText').disabled = true;
+      if (hits >= 4) {
+        showFeedback('design-feedback', 'good', 'Gate passed', 'You mapped the optimization structure into a new domain with the right load-bearing pieces: multiple candidates, a scoring signal, bounded adaptation, and a metric-gaming failure mode.');
+        document.getElementById('design-next').classList.remove('hidden');
+      } else {
+        showFeedback('design-feedback', 'bad', 'Gate failed', 'The analogy is still missing structure. Layer 3 requires the optimizer, the reward, the clip, and the reward-hacking risk to all be explicit.');
+        document.getElementById('designText').disabled = false;
+      }
+    }
+
+    function containsAny(value, options) {
+      return options.some((option) => value.includes(option));
+    }
+
+    function gradeGauntlet() {
+      const answers = {
+        g1: ['two outputs', 'pairwise preference', 'binary preference', 'smaller g'],
+        g2: ['no iteration', 'one shot', 'cannot try again', 'no repeated updates'],
+        g3: ['reward hacking', 'metric gaming', 'wrong metric'],
+        g4: ['identity', 'base style', 'muscle memory', 'reference policy'],
+        g5: ['different reward', 'different gradient', 'specialized heads', 'attention heads'],
+        g6: ['abstract art', 'love', 'spiritual growth', 'unknowable'],
+        g7: ['iterative optimization', 'generate options', 'score them', 'amplify good', 'suppress bad']
+      };
+      let score = 0;
+      Object.entries(answers).forEach(([id, keywords]) => {
+        const value = document.getElementById(id).value.trim().toLowerCase();
+        if (value && containsAny(value, keywords)) score += 1;
+      });
+      if (score >= 5) {
+        showFeedback('gauntlet-feedback', 'good', 'Gauntlet cleared: ' + score + '/7', 'The transfer held. The surface changes across domains, but the optimizer remains the same: generate, evaluate, compare relatively, move toward what works, and do not destroy the base identity on one lucky signal.');
+        document.getElementById('final-box').classList.remove('hidden');
+        document.getElementById('final-text').textContent = 'Across gaming, football, music, cooking, therapy, and AI training, the same hidden geometry appears: multiple candidates, a reward signal, relative comparison, bounded change, and a reference identity that should not be annihilated by one strong sample. That is the deep structure of GRPO and DPO.';
+      } else {
+        showFeedback('gauntlet-feedback', 'bad', 'Gauntlet failed: ' + score + '/7', 'Revisit the transfer structure. The most common misses are why DPO is cheaper, why clipping protects identity, and why reward hacking is just faithful optimization of a bad metric.');
+        document.getElementById('final-box').classList.add('hidden');
+      }
+    }
+
+    setProgress(0);
+    drawPredictionCanvas(false);
+  </script>
+</body>
+</html>

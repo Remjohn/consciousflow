@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pydantic Data Contracts — Orchestration</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0A;--surface:#151515;--surface2:#1e1e1e;--surface3:#2A2A2A;
+  --text:#FAFAFA;--muted:#A0A0A0;--border:#2e2e2e;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;--blue:#56B6C2;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--serif:'Playfair Display',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.65;overflow-x:hidden;}
+.container{max-width:860px;margin:0 auto;padding:4rem 2rem 10rem;}
+
+h1{font-family:var(--serif);font-size:clamp(2.5rem,6vw,3.8rem);line-height:1.0;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-family:var(--serif);font-size:1.9rem;margin-bottom:1rem;color:var(--accent);}
+h3{font-size:1.2rem;margin-bottom:1rem;color:#fff;}
+p{margin-bottom:1.4rem;color:var(--muted);font-size:1rem;line-height:1.7;}
+strong{color:var(--text);}
+ul, ol{margin-bottom:1.4rem;color:var(--muted);padding-left:1.5rem;font-size:1rem;line-height:1.7;}
+li{margin-bottom:0.5rem;}
+
+/* CODE BLOCKS */
+pre {background: var(--surface2); padding: 1.25rem; border-radius: 6px; border: 1px solid var(--border); overflow-x: auto; margin-bottom: 1.5rem;}
+code {font-family: var(--mono); font-size: 0.85rem;}
+.hljs-keyword {color: #C678DD;}
+.hljs-class {color: #E5C07B;}
+.hljs-string {color: #98C379;}
+.hljs-comment {color: #5C6370; font-style: italic;}
+.hljs-builtin {color: #56B6C2;}
+.hljs-number {color: #D19A66;}
+.hljs-decorator {color: #61AFEF;}
+code.inline {background: var(--surface2); color: var(--accent); padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.85em;}
+
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.75rem 1.5rem;font-family:var(--sans);font-weight:600;font-size:0.95rem;border-radius:4px;cursor:pointer;transition:all 0.18s;}
+.btn:hover:not(:disabled){background:#fff;transform:translateY(-1px);}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);padding:0.65rem 1.25rem;}
+.btn-outline:hover:not(:disabled){border-color:var(--text);background:var(--surface2);}
+.divider{border:none;border-top:1px solid var(--border);margin:3.5rem 0;}
+
+/* 6-SUBSYSTEM GRID */
+.subsystem-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin:2.5rem 0;}
+.sys-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.5rem;cursor:pointer;transition:all 0.2s;}
+.sys-card:hover{border-color:var(--muted);background:var(--surface2);transform:translateY(-2px);}
+.sys-card.active{border-color:var(--accent);background:var(--surface2);}
+.sys-icon{font-size:1.5rem;margin-bottom:0.75rem;}
+.sys-title{font-family:var(--mono);font-size:0.75rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;}
+.sys-desc{font-size:0.88rem;color:var(--muted);line-height:1.5;}
+
+.sys-detail-panel{background:var(--surface);border:1px solid var(--accent);border-radius:8px;padding:2.5rem;display:none;margin-bottom:3rem;position:relative;}
+.sys-detail-panel.visible{display:block;animation:fadein 0.3s;}
+.sys-close{position:absolute;top:1rem;right:1rem;background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;line-height:1;padding:0.5rem;}
+.sys-close:hover{color:#fff;}
+
+.impact-row{display:flex;gap:1.5rem;margin-top:2rem;}
+.impact-col{flex:1;background:var(--surface2);padding:1.2rem;border-radius:6px;border-left:2px solid var(--border);}
+.impact-col.works{border-color:var(--green);}
+.impact-col.wrong{border-color:var(--red);}
+.impact-title{font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem;}
+
+/* SCENARIO CARDS */
+.scenario-list{display:flex;flex-direction:column;gap:1rem;margin-bottom:3rem;}
+.scenario-item{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.scenario-head{padding:1.25rem 1.5rem;background:var(--surface2);cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background 0.2s;font-weight:500;}
+.scenario-head:hover{background:var(--surface3);}
+.scenario-body{padding:0 1.5rem;max-height:0;overflow:hidden;transition:all 0.3s ease;color:var(--muted);font-size:0.95rem;opacity:0;}
+.scenario-item.open .scenario-body{padding:1.5rem;max-height:500px;opacity:1;border-top:1px solid var(--border);}
+.scenario-tag{font-family:var(--mono);font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);background:rgba(232,196,106,0.1);padding:0.2rem 0.5rem;border-radius:2px;}
+
+/* GAUNTLET */
+.q-block{background:var(--surface2);padding:1.4rem 1.5rem;border-radius:6px;margin-bottom:1.25rem;border:1px solid var(--border);}
+.q-num{font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.4rem;letter-spacing:0.1em;}
+.q-text{font-size:1rem;margin-bottom:1rem;font-weight:500;color:#fff;line-height:1.55;}
+.q-code{margin-bottom:1.25rem;}
+.choices{display:flex;flex-direction:column;gap:0.75rem;}
+.choice-btn{text-align:left;padding:0.8rem 1rem;background:var(--bg);border:1px solid var(--border);color:var(--muted);border-radius:4px;cursor:pointer;transition:all 0.18s;font-size:0.9rem;font-family:var(--sans);}
+.choice-btn:hover{border-color:var(--text);color:var(--text);}
+.choice-btn.selected-wrong{border-color:var(--red);color:var(--red);background:rgba(231,111,81,0.05);}
+.choice-btn.selected-right{border-color:var(--green);color:var(--green);background:rgba(42,157,143,0.05);}
+.feedback{display:none;margin-top:1.25rem;padding:1rem;border-radius:4px;font-size:0.88rem;line-height:1.5;}
+.feedback.visible{display:block;animation:fadein 0.35s;}
+.feedback.error{background:rgba(231,111,81,0.08);border-left:3px solid var(--red);color:#ffb3a1;}
+.feedback.success{background:rgba(42,157,143,0.08);border-left:3px solid var(--green);color:#a7ece2;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+/* BUILDER TOOL */
+.builder-box{background:var(--surface);border:1px solid var(--accent);border-radius:8px;padding:2rem;}
+.b-step{margin-bottom:1.5rem;}
+.b-step-title{font-family:var(--mono);font-size:0.75rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.75rem;}
+.field-row{display:flex;gap:0.5rem;margin-bottom:0.5rem;}
+.field-input{flex:2;background:var(--bg);border:1px solid var(--border);color:#fff;padding:0.6rem;border-radius:4px;font-family:var(--mono);font-size:0.85rem;}
+.type-input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--blue);padding:0.6rem;border-radius:4px;font-family:var(--mono);font-size:0.85rem;}
+.add-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:0.6rem;border-radius:4px;cursor:pointer;}
+.add-btn:hover{background:var(--border);}
+#builder-preview{background:var(--bg);padding:1.5rem;border-radius:6px;font-family:var(--mono);font-size:0.85rem;color:var(--muted);white-space:pre-wrap;border:1px solid var(--border);min-height:150px;margin-top:1.5rem;}
+
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div style="font-family:var(--mono);font-size:0.7rem;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.15em;">Lesson 11 · Layer 3 — Orchestration</div>
+  <h1>Pydantic Data Contracts</h1>
+
+  <!-- RECAP -->
+  <p>Pydantic <code class="inline">BaseModel</code> transforms Python from a dynamic, trusting language into a rigid, enforcing environment. It takes unvalidated data structures—like incoming web JSON payloads, erratic text responses from LLMs, or abstract graph node parameters—and forces them through a defined architectural schema.</p>
+  <p>If the payload conforms, it becomes a heavily typed immutable object. If it violates boundaries, Pydantic immediately throws a structured exception thereby destroying the payload and preventing downstream contagion across the stack. You will now observe the QA Department operating in 6 entirely different contexts of the Conscious Coaching Platform.</p>
+
+  <hr class="divider">
+
+  <!-- SUBSYSTEM NAVIGATION -->
+  <h2>The 6 Contexts of Enforcement</h2>
+  <div class="subsystem-grid">
+    <div class="sys-card" onclick="openSys(this, 'sys-chassis')">
+      <div class="sys-icon">🏗️</div>
+      <div class="sys-title">The Chassis</div>
+      <div class="sys-desc">FastAPI Deterministic Orchestrator</div>
+    </div>
+    <div class="sys-card" onclick="openSys(this, 'sys-qa')">
+      <div class="sys-icon">📋</div>
+      <div class="sys-title">The QA Department</div>
+      <div class="sys-desc">Logic Rulesets & Thresholds</div>
+    </div>
+    <div class="sys-card" onclick="openSys(this, 'sys-machinist')">
+      <div class="sys-icon">⚙️</div>
+      <div class="sys-title">The Machinist</div>
+      <div class="sys-desc">DSPy AI Pipeline Signatures</div>
+    </div>
+    <div class="sys-card" onclick="openSys(this, 'sys-robot')">
+      <div class="sys-icon">🤖</div>
+      <div class="sys-title">The Robot Arm</div>
+      <div class="sys-desc">Pi Harness Bash Executions</div>
+    </div>
+    <div class="sys-card" onclick="openSys(this, 'sys-memory')">
+      <div class="sys-icon">🧠</div>
+      <div class="sys-title">The Memory Engine</div>
+      <div class="sys-desc">Neo4j Graph Abstractions</div>
+    </div>
+    <div class="sys-card" onclick="openSys(this, 'sys-skill')">
+      <div class="sys-icon">🎯</div>
+      <div class="sys-title">The Skill Compiler</div>
+      <div class="sys-desc">JIT Voice DNA Construction</div>
+    </div>
+  </div>
+
+  <!-- SUBSYSTEM PANELS -->
+  <div id="sys-panel-container">
+    <!-- Chassis -->
+    <div id="sys-chassis" class="sys-detail-panel">
+      <button class="sys-close" onclick="closeSys()">×</button>
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
+        <div style="font-size:2rem">🏗️</div>
+        <div>
+          <h3>The Chassis (FastAPI Routes)</h3>
+          <p style="margin:0;font-size:0.9rem">Guards the perimeter. Translates incoming client JSON into execution objects securely.</p>
+        </div>
+      </div>
+      <pre><code><span class="hljs-keyword">from</span> fastapi <span class="hljs-keyword">import</span> FastAPI
+<span class="hljs-keyword">from</span> pydantic <span class="hljs-keyword">import</span> BaseModel, EmailStr
+
+<span class="hljs-keyword">class</span> <span class="hljs-class">CoachProfileUpdate</span>(BaseModel):
+    coach_id: <span class="hljs-builtin">str</span>
+    email: EmailStr
+    is_active: <span class="hljs-builtin">bool</span>
+
+<span class="hljs-decorator">@app.post</span>(<span class="hljs-string">"/coach/update"</span>)
+<span class="hljs-keyword">async def</span> <span class="hljs-builtin">update_profile</span>(data: CoachProfileUpdate): ...</code></pre>
+      <div class="impact-row">
+        <div class="impact-col works">
+          <div class="impact-title" style="color:var(--green)">When It Works</div>
+          FastAPI ingests JSON natively. Pydantic evaluates `EmailStr` formatting (without manual regex) and prevents malformed structure entry.
+        </div>
+        <div class="impact-col wrong">
+          <div class="impact-title" style="color:var(--red)">If It Fails / Is Removed</div>
+          Invalid data triggers HTTP 422 structurally avoiding execution logic entirely. Otherwise, untrusted raw properties reach the database.
+        </div>
+      </div>
+    </div>
+
+    <!-- QA -->
+    <div id="sys-qa" class="sys-detail-panel">
+      <button class="sys-close" onclick="closeSys()">×</button>
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
+        <div style="font-size:2rem">📋</div>
+        <div>
+          <h3>The QA Department</h3>
+          <p style="margin:0;font-size:0.9rem">Establishing mathematical boundaries that type-checking alone cannot solve natively.</p>
+        </div>
+      </div>
+      <pre><code><span class="hljs-keyword">class</span> <span class="hljs-class">BoundaryThresholds</span>(BaseModel):
+    lower_bound: <span class="hljs-builtin">float</span>
+    upper_bound: <span class="hljs-builtin">float</span>
+
+    <span class="hljs-decorator">@model_validator</span>(mode=<span class="hljs-string">"after"</span>)
+    <span class="hljs-keyword">def</span> <span class="hljs-builtin">bounds_logic</span>(self):
+        <span class="hljs-keyword">if</span> self.lower_bound >= self.upper_bound:
+            <span class="hljs-keyword">raise</span> ValueError(<span class="hljs-string">"Inverted thresholds."</span>)
+        <span class="hljs-keyword">return</span> self</code></pre>
+      <div class="impact-row">
+        <div class="impact-col works">
+          <div class="impact-title" style="color:var(--green)">When It Works</div>
+          Assures logical integrity. Cross-data structures remain mathematically valid everywhere in the codebase automatically.
+        </div>
+        <div class="impact-col wrong">
+          <div class="impact-title" style="color:var(--red)">If It Fails / Is Removed</div>
+          Downstream processes process inverted coordinates natively, causing division-by-zero or looping errors deep inside processing engines.
+        </div>
+      </div>
+    </div>
+
+    <!-- Machinist -->
+    <div id="sys-machinist" class="sys-detail-panel">
+      <button class="sys-close" onclick="closeSys()">×</button>
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
+        <div style="font-size:2rem">⚙️</div>
+        <div>
+          <h3>The Machinist (DSPy Signatures)</h3>
+          <p style="margin:0;font-size:0.9rem">The framework governing probabilistic language model behavior cleanly into data tools.</p>
+        </div>
+      </div>
+      <pre><code><span class="hljs-keyword">class</span> <span class="hljs-class">LLMOutputSchema</span>(BaseModel):
+    reasoning_process: <span class="hljs-builtin">str</span>
+    confidence_scale: <span class="hljs-builtin">float</span> = Field(ge=<span class="hljs-number">0.0</span>, le=<span class="hljs-number">100.0</span>)
+
+<span class="hljs-keyword">class</span> <span class="hljs-class">SynthesizeLogic</span>(dspy.Signature):
+    contextual_history: <span class="hljs-builtin">str</span> = dspy.InputField()
+    parsed_structured_output: LLMOutputSchema = dspy.OutputField()</code></pre>
+      <div class="impact-row">
+        <div class="impact-col works">
+          <div class="impact-title" style="color:var(--green)">When It Works</div>
+          The chaotic textual token output collapses heavily into quantified, enforced bounds that compilers can execute loops identically over.
+        </div>
+        <div class="impact-col wrong">
+          <div class="impact-title" style="color:var(--red)">If It Fails / Is Removed</div>
+          Compilers attempt to parse "non-JSON" strings arbitrarily, halting optimizer executions without actionable parameter signals. 
+        </div>
+      </div>
+    </div>
+
+    <!-- Robot Arm -->
+    <div id="sys-robot" class="sys-detail-panel">
+      <button class="sys-close" onclick="closeSys()">×</button>
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
+        <div style="font-size:2rem">🤖</div>
+        <div>
+          <h3>The Robot Arm (Pi Harness Execution)</h3>
+          <p style="margin:0;font-size:0.9rem">Guards operations unleashing side effects onto the host Operating System architecture.</p>
+        </div>
+      </div>
+      <div class="impact-row">
+        <div class="impact-col works">
+          <div class="impact-title" style="color:var(--green)">When It Works</div>
+          Context payload intents are structurally flagged, enforcing "safe zones" preventing shell logic from operating outside defined boundaries globally.
+        </div>
+        <div class="impact-col wrong">
+          <div class="impact-title" style="color:var(--red)">If It Fails / Is Removed</div>
+          Raw prompt strings parse automatically into terminal commands. The agent hallucinates executing `rm -rf /` freely.
+        </div>
+      </div>
+    </div>
+    
+    <!-- Memory Engine -->
+    <div id="sys-memory" class="sys-detail-panel">
+      <button class="sys-close" onclick="closeSys()">×</button>
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
+        <div style="font-size:2rem">🧠</div>
+        <div>
+          <h3>The Memory Engine (Neo4j)</h3>
+          <p style="margin:0;font-size:0.9rem">Managing relationship node objects retrieved from flexible fluid Graph states.</p>
+        </div>
+      </div>
+      <div class="impact-row">
+        <div class="impact-col works">
+          <div class="impact-title" style="color:var(--green)">When It Works</div>
+          A dictionary returned via query `raw_query={"weight":0.8}` transforms flawlessly into an untamperable `RelationshipNode` object natively guaranteeing data format. 
+        </div>
+        <div class="impact-col wrong">
+          <div class="impact-title" style="color:var(--red)">If It Fails / Is Removed</div>
+          Code assessing properties encounters dictionary string casing defects resulting in silent variable mapping failures breaking node retrieval natively.
+        </div>
+      </div>
+    </div>
+    
+    <!-- Skill Compiler -->
+    <div id="sys-skill" class="sys-detail-panel">
+      <button class="sys-close" onclick="closeSys()">×</button>
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
+        <div style="font-size:2rem">🎯</div>
+        <div>
+          <h3>The Skill Compiler (Voice DNA)</h3>
+          <p style="margin:0;font-size:0.9rem">JIT Blueprint configuration tracking for behavior identity.</p>
+        </div>
+      </div>
+      <div class="impact-row">
+        <div class="impact-col works">
+          <div class="impact-title" style="color:var(--green)">When It Works</div>
+          Restrains humor generation constraints perfectly, enabling dynamic runtime prompts to remain contextually adherent to assigned coaching personas.
+        </div>
+        <div class="impact-col wrong">
+          <div class="impact-title" style="color:var(--red)">If It Fails / Is Removed</div>
+          Personas experience "Voice Drift," shattering empathy models with highly erratic logic configurations during execution generation natively.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <hr class="divider">
+
+  <h2>Scenario-Based Architectural Reasoning</h2>
+  <div class="scenario-list">
+    <div class="scenario-item" onclick="toggleScenario(this)">
+      <div class="scenario-head">
+        What happens if every BaseModel removed default values (`score: float = 0.5`  →  `score: float`)?
+        <span class="scenario-tag">Fragility Scenario</span>
+      </div>
+      <div class="scenario-body">
+        It dramatically increases platform fragility. Every single API request, LLM response, or Neo4j data query that formerly assumed standard operation defaults will now hard-crash at Pydantic's checkpoint boundaries throwing immediate <code>ValidationError</code>s. Omitted properties become fatal errors instead of defaulting safely natively.
+      </div>
+    </div>
+    <div class="scenario-item" onclick="toggleScenario(this)">
+      <div class="scenario-head">
+        What happens if the Pi harness execution uses Pydantic securely, but the FastAPI REST Route does not?
+        <span class="scenario-tag">Boundary Bleed</span>
+      </div>
+      <div class="scenario-body">
+        The front door of the factory stands entirely unguarded while the internal machines are heavily fortified. A bad actor or errant client could push malformed JSON directly into the python processing chassis natively, resulting in unexpected <code>KeyError</code> processing crashes deep inside the ecosystem before execution pipelines ever deploy securely.
+      </div>
+    </div>
+    <div class="scenario-item" onclick="toggleScenario(this)">
+      <div class="scenario-head">
+        Why does this boundary feel strict in Pydantic but highly adaptive when enveloped by DSPy?
+        <span class="scenario-tag">Compiler Loops</span>
+      </div>
+      <div class="scenario-body">
+        Because Pydantic is a binary lock whereas DSPy is an evolutionary loop. Pydantic is utterly rigid—it does not negotiate, it fails. DSPy wraps around Pydantic specifically to harness that failure. DSPy utilizes Pydantic's exact structured error logs as automated context to re-train AI prompts via retry mechanisms adaptively over iteration cycles smoothly.
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <h2>Builder Interaction Tool: The Audit Logger</h2>
+  <p>Map the Pydantic capability inside a new CCP Context. The <strong>Audit Logger</strong> requires a historical tracking structure holding an immutable timestamp string, an executing Coach ID, and an optional failure trace string. Assemble the schema correctly.</p>
+
+  <div class="builder-box">
+    <div class="b-step">
+      <div class="b-step-title">Constructor</div>
+      <div id="field-list">
+        <!-- Fields injected here -->
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-top:1rem;">
+        <input type="text" id="b-fname" class="field-input" placeholder="Field name (e.g. coach_id)">
+        <select id="b-ftype" class="type-input">
+          <option value="str">str</option>
+          <option value="int">int</option>
+          <option value="float">float</option>
+          <option value="str | None = None">str | None = None</option>
+          <option value="bool = False">bool = False</option>
+        </select>
+        <button class="add-btn" onclick="addField()">Add Field</button>
+      </div>
+    </div>
+    <div class="b-step">
+      <button class="btn" style="width:100%" onclick="compileBuilder()">Compile Pydantic Schema</button>
+    </div>
+    <div id="builder-preview"># Schema will generate here...</div>
+    <div class="feedback" id="b-fb" style="margin-top:1.5rem"></div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="gauntlet-wrap">
+    <h2>Logical Misunderstandings (Critical Evaluation)</h2>
+    <div class="gauntlet-intro">
+      Learners consistently falter when aligning native python behavior against Pydantic structural mechanisms globally.
+    </div>
+    <div id="q-container"></div>
+  </div>
+
+</div>
+
+<script>
+// Subsytem interaction
+function closeSys() { document.querySelectorAll('.sys-detail-panel').forEach(p => p.classList.remove('visible')); document.querySelectorAll('.sys-card').forEach(c => c.classList.remove('active')); }
+function openSys(card, id) {
+  closeSys();
+  card.classList.add('active');
+  document.getElementById(id).classList.add('visible');
+}
+
+// Scenarios
+function toggleScenario(item) {
+  item.classList.toggle('open');
+}
+
+// Builder Tool
+let schemaFields = [];
+function addField() {
+  const name = document.getElementById('b-fname').value.trim();
+  const type = document.getElementById('b-ftype').value;
+  if (!name) return;
+  
+  // enforce snake_case
+  const snakeName = name.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+  
+  // Check dupes
+  if(schemaFields.some(f => f.name === snakeName)) return;
+  
+  schemaFields.push({name: snakeName, type: type});
+  document.getElementById('b-fname').value = '';
+  
+  renderFields();
+}
+
+function renderFields() {
+  const list = document.getElementById('field-list');
+  list.innerHTML = schemaFields.map((f, i) => `
+    <div class="field-row">
+      <div class="field-input" style="background:var(--surface2)">${f.name}</div>
+      <div class="type-input" style="background:var(--surface2)">${f.type}</div>
+      <button class="add-btn" style="color:var(--red)" onclick="removeField(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function removeField(idx) {
+  schemaFields.splice(idx, 1);
+  renderFields();
+}
+
+function compileBuilder() {
+  const fb = document.getElementById('b-fb');
+  const preview = document.getElementById('builder-preview');
+  
+  if (schemaFields.length === 0) {
+    preview.innerHTML = "# Cannot compile empty schema.";
+    fb.classList.remove('visible');
+    return;
+  }
+  
+  let code = `from pydantic import BaseModel\n\nclass AuditLog(BaseModel):\n`;
+  schemaFields.forEach(f => {
+    code += `    ${f.name}: ${f.type}\n`;
+  });
+  
+  preview.innerHTML = `<pre style="margin:0;border:none;padding:0"><code><span class="hljs-keyword">from</span> pydantic <span class="hljs-keyword">import</span> BaseModel\n\n<span class="hljs-keyword">class</span> <span class="hljs-class">AuditLog</span>(BaseModel):\n` + schemaFields.map(f => `    ${f.name}: <span class="hljs-builtin">${f.type.split(' ')[0]}</span>${f.type.includes('=') ? ' '+f.type.substring(f.type.indexOf('|')) : ''}`).join('\n') + `</code></pre>`;
+  
+  // Validate if they got the exact 3 requirements
+  let hasTs = schemaFields.some(f => f.name.includes('time') || f.name.includes('stamp') || f.name.includes('date'));
+  let hasId = schemaFields.some(f => f.name.includes('id') || f.name.includes('coach'));
+  let hasTrace = schemaFields.some(f => (f.name.includes('error') || f.name.includes('trace') || f.name.includes('fail')) && f.type.includes('None'));
+  
+  fb.className = 'feedback visible';
+  if (hasTs && hasId && hasTrace) {
+    fb.classList.add('success');
+    fb.innerHTML = `<strong>Architectural Check: PASS.</strong> The immutable envelope securely limits database operations correctly. Pydantic guarantees valid structures avoiding indexing failures natively.`;
+  } else {
+    fb.classList.add('neutral');
+    fb.innerHTML = `<strong>Schema Generated.</strong> Ensure you included a timestamp, a coach ID, and specifically configured the failure trace as an <em>optional string allowing None</em> to meet the exact brief requirement.`;
+  }
+}
+
+// GUI GAUNTLET
+const G_DATA = [
+  {
+    num: '01',
+    target: 'Type Hints vs Enforcement',
+    q: 'Does defining <code class="inline">def log_user(user_id: str):</code> securely force the input parameter to absolutely be a python string natively?',
+    type: 'bool',
+    ans: false,
+    exp: 'Standard parameter definitions without Pydantic wrappers act solely as decorative labels exclusively for IDE completion tools. It accepts Integer formats freely.'
+  },
+  {
+    num: '02',
+    target: 'FastAPI Bypass Mechanism',
+    q: 'Does <code class="inline">@app.post("/endpoint") def handle(payload: dict):</code> securely validate HTTP incoming bounds?',
+    type: 'bool',
+    ans: false,
+    exp: 'By intentionally utilizing a pure Dictionary layout, you actively disabled FastAPI\'s inherent Pydantic routing protections natively.'
+  },
+  {
+    num: '03',
+    target: 'Coercion Order Operations',
+    q: 'Does standard Pydantic coercion run <em>before</em> or <em>after</em> customized <code>@field_validator</code> hooks generally execute by default?',
+    type: 'text',
+    match: ['before', 'prior'],
+    exp: 'BEFORE. Pydantic generically resolves standard native variable coercion processes prior to executing specific custom classmethod logic constraints locally.'
+  },
+  {
+    num: '04',
+    target: 'Missing @model_validator',
+    q: 'If a <code>BaseModel</code> contains a standard python method <code>def check_bounds(self):</code> but lacks any Pydantic decorator, will it run on instantiation?',
+    type: 'bool',
+    ans: false,
+    exp: 'Native functions globally placed inside Pydantic structures never trigger autonomously upon instantiation without explicit <code>@model_validator</code> structural bindings attached directly.'
+  }
+];
+
+function renderGauntlet() {
+  const container = document.getElementById('q-container');
+  let html = '';
+  G_DATA.forEach((item, idx) => {
+    html += `
+    <div class="q-block" id="gq-${idx}">
+      <div class="q-num">Misconception ${item.num}</div>
+      <div class="q-misconception">Targets: ${item.target}</div>
+      <div class="q-text">${item.q}</div>
+    `;
+    if (item.type === 'bool') {
+      html += `
+        <div class="choices">
+          <button class="choice-btn" onclick="answerG(${idx}, true, this)">True / Yes</button>
+          <button class="choice-btn" onclick="answerG(${idx}, false, this)">False / No</button>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="input-group" style="margin-bottom:0;">
+          <input type="text" id="gInput-${idx}" class="input-text" placeholder="Type text...">
+          <button class="btn" onclick="answerGText(${idx}, this)">Lock</button>
+        </div>
+      `;
+    }
+    html += `<div class="feedback" id="gfb-${idx}"></div></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function answerG(idx, val, btn) {
+  const block = document.getElementById(`gq-${idx}`);
+  block.querySelectorAll('button').forEach(b => b.style.pointerEvents = 'none');
+  const fb = document.getElementById(`gfb-${idx}`);
+  fb.classList.add('visible');
+
+  if (val === G_DATA[idx].ans) {
+    btn.classList.add('selected-right');
+    fb.classList.add('success');
+    fb.innerHTML = `<strong>Architectural Fact Confirmed.</strong> ${G_DATA[idx].exp}`;
+  } else {
+    btn.classList.add('selected-wrong');
+    fb.classList.add('error');
+    fb.innerHTML = `<strong>Critical Misunderstanding.</strong> ${G_DATA[idx].exp}`;
+  }
+}
+
+function answerGText(idx, btn) {
+  const input = document.getElementById(`gInput-${idx}`);
+  const val = input.value.toLowerCase().trim();
+  if (!val) return;
+  input.disabled = true;
+  btn.disabled = true;
+  const fb = document.getElementById(`gfb-${idx}`);
+  fb.classList.add('visible');
+
+  let correct = false;
+  if (G_DATA[idx].match) {
+    correct = G_DATA[idx].match.some(m => val.includes(m));
+  }
+
+  if (correct) {
+    fb.classList.add('success');
+    fb.innerHTML = `<strong>Architectural Fact Confirmed.</strong> ${G_DATA[idx].exp}`;
+  } else {
+    fb.classList.add('error');
+    fb.innerHTML = `<strong>Critical Misunderstanding.</strong> ${G_DATA[idx].exp}`;
+  }
+}
+
+// Init
+renderGauntlet();
+</script>
+</body>
+</html>

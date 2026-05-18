@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Change of Basis — Mechanistic Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0A;--surface:#151515;--surface2:#1E1E1E;--surface3:#2A2A2A;
+  --text:#FAFAFA;--muted:#A0A0A0;--border:#2E2E2E;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;--blue:#264653;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--serif:'Playfair Display',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.7;overflow-x:hidden;}
+.container{max-width:800px;margin:0 auto;padding:4rem 2rem 8rem;}
+
+/* — Typography — */
+h1{font-family:var(--serif);font-size:3.2rem;line-height:1.05;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-family:var(--serif);font-size:1.75rem;margin:2.5rem 0 1rem;color:var(--accent);}
+h3{font-family:var(--mono);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin:2rem 0 0.75rem;}
+p{margin-bottom:1.25rem;color:var(--muted);font-size:1rem;}
+p strong{color:var(--text);}
+
+/* — Structural equation / matrix displays — */
+.eq-block{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:1.25rem 1.5rem;margin:1.25rem 0;font-family:var(--mono);font-size:0.9rem;line-height:2;overflow-x:auto;}
+.eq-block .eq-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:0.5rem;}
+.eq-row{display:flex;align-items:flex-start;gap:1.5rem;flex-wrap:wrap;}
+.mat{display:inline-grid;gap:0.1rem 1.25rem;padding:0.6rem 0.5rem;position:relative;font-size:0.9rem;text-align:right;}
+.mat::before,.mat::after{content:'';position:absolute;top:0;bottom:0;width:6px;border:1.5px solid var(--muted);}
+.mat::before{left:0;border-right:none;border-radius:3px 0 0 3px;}
+.mat::after{right:0;border-left:none;border-radius:0 3px 3px 0;}
+.mat-2{grid-template-columns:repeat(2,auto);}
+.mat-4{grid-template-columns:repeat(4,auto);}
+.mat-c{color:var(--accent);}
+.eq-sym{display:flex;align-items:center;font-size:1.1rem;color:var(--muted);padding:0 0.25rem;}
+.mono{font-family:var(--mono);color:var(--text);font-size:0.9rem;}
+.dim{font-family:var(--mono);font-size:0.75rem;color:var(--muted);vertical-align:super;}
+
+/* — Interaction boxes — */
+.interaction-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2.5rem;margin:2rem 0;position:relative;}
+.interaction-header{font-family:var(--mono);font-size:0.7rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:.5rem;}
+.question-text{font-size:1.05rem;font-weight:500;margin-bottom:1.75rem;color:#fff;line-height:1.6;}
+.question-sub{font-family:var(--mono);font-size:0.82rem;color:var(--muted);margin-bottom:1.75rem;line-height:1.8;}
+
+/* — Inputs — */
+.input-row{display:flex;gap:0.75rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;}
+.input-label{font-family:var(--mono);font-size:0.9rem;color:var(--muted);}
+.input-field{background:var(--bg);border:2px solid var(--border);color:#fff;font-family:var(--mono);font-size:1.2rem;padding:0.65rem 0.9rem;width:90px;border-radius:4px;text-align:center;transition:border-color 0.2s;}
+.input-field:focus{outline:none;border-color:var(--accent);}
+.input-field:disabled{opacity:0.4;cursor:not-allowed;}
+.input-text{background:var(--bg);border:2px solid var(--border);color:#fff;font-family:var(--mono);font-size:0.95rem;padding:0.65rem 1rem;flex:1;min-width:180px;border-radius:4px;}
+.input-text:disabled{opacity:0.4;cursor:not-allowed;}
+
+/* — Buttons — */
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.7rem 1.5rem;font-family:var(--sans);font-weight:600;font-size:0.95rem;border-radius:4px;cursor:pointer;transition:all 0.2s;}
+.btn:hover:not(:disabled){background:#fff;box-shadow:0 4px 14px rgba(255,255,255,0.12);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.btn-outline:hover:not(:disabled){background:var(--surface2);border-color:var(--text);color:var(--text);}
+
+/* — Feedback — */
+.feedback{display:none;margin-top:1.5rem;padding:1.25rem 1.5rem;border-radius:4px;font-size:0.92rem;line-height:1.65;}
+.feedback.visible{display:block;animation:fadein 0.35s;}
+.feedback.error{background:rgba(231,111,81,0.08);border-left:3px solid var(--red);color:#ffb3a1;}
+.feedback.success{background:rgba(42,157,143,0.08);border-left:3px solid var(--green);color:#a7ece2;}
+.feedback.trap{background:rgba(232,196,106,0.08);border-left:3px solid var(--accent);color:#f5e0a0;}
+.feedback-title{font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.4rem;font-weight:600;}
+
+/* — Choice buttons — */
+.choices{display:flex;flex-direction:column;gap:0.875rem;margin-bottom:1.5rem;}
+.choice-btn{text-align:left;padding:1.1rem 1.25rem;background:var(--bg);border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;transition:all 0.2s;font-family:var(--sans);font-size:0.95rem;line-height:1.5;}
+.choice-btn:hover{border-color:var(--text);color:var(--text);}
+.choice-btn.selected-wrong{border-color:var(--red);color:var(--red);background:rgba(231,111,81,0.05);pointer-events:none;}
+.choice-btn.selected-right{border-color:var(--green);color:var(--green);background:rgba(42,157,143,0.05);pointer-events:none;}
+.choice-btn:disabled{pointer-events:none;opacity:0.5;}
+
+/* — Gated content — */
+.gated-content{display:none;opacity:0;transform:translateY(16px);transition:opacity 0.45s ease,transform 0.45s ease;}
+.gated-content.unlocked{display:block;animation:reveal 0.45s ease forwards;}
+
+/* — Concept callout — */
+.callout{background:var(--surface2);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;padding:1.1rem 1.5rem;margin:1.5rem 0;}
+.callout p{margin:0;color:var(--text);font-size:0.95rem;}
+.callout .callout-label{font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:0.4rem;}
+
+/* — Comparison row — */
+.compare-row{display:flex;gap:1px;margin:1.5rem 0;border-radius:6px;overflow:hidden;border:1px solid var(--border);}
+.compare-cell{flex:1;padding:1rem 1.25rem;background:var(--surface2);}
+.compare-cell:first-child{border-right:1px solid var(--border);}
+.compare-label{font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:0.4rem;}
+.compare-val{font-family:var(--mono);font-size:1rem;color:var(--text);}
+.compare-val.highlight{color:var(--accent);}
+
+/* — Gauntlet — */
+.gauntlet-wrap{margin-top:4rem;border-top:2px solid var(--border);padding-top:3rem;}
+.q-block{background:var(--surface2);padding:1.5rem;border-radius:6px;margin-bottom:1.25rem;border:1px solid var(--border);}
+.q-num{font-family:var(--mono);font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;}
+.q-text{font-size:1rem;margin-bottom:1.25rem;font-weight:500;color:#fff;line-height:1.55;}
+.q-sub{font-family:var(--mono);font-size:0.78rem;color:var(--muted);margin-top:-0.75rem;margin-bottom:1rem;line-height:1.7;}
+
+/* — Section divider — */
+.section-break{border:none;border-top:1px solid var(--border);margin:3rem 0;}
+
+/* — Layer tag — */
+.layer-tag{font-family:var(--mono);font-size:0.72rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;}
+
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+@keyframes reveal{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ═══════════════════════════════════════════════════
+       SPACED INTERRUPT — Layer 1 Retrieval Probe
+  ═══════════════════════════════════════════════════ -->
+  <div class="interaction-box" id="interrupt-box">
+    <div class="interaction-header" style="color:var(--red)">System Interrupt · Spaced Retrieval — No Notes</div>
+    <div class="question-text">
+      P is constructed from two basis vectors as its columns.<br>
+      <span style="font-family:var(--mono);font-size:0.95rem;display:block;margin-top:0.75rem;">P = [[2, −1], [1, 3]]</span>
+    </div>
+    <p style="color:var(--muted);font-size:0.9rem;margin-bottom:1.5rem;">Compute det(P) = (2)(3) − (−1)(1).</p>
+    <div class="input-row">
+      <span class="input-label">det(P) =</span>
+      <input type="number" id="int-pred" class="input-field" placeholder="?">
+      <button class="btn" id="int-btn" onclick="submitInterrupt()">Verify</button>
+    </div>
+    <div class="feedback" id="int-fb"></div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════
+       MAIN CONTENT — Gate 1 unlocks this
+  ═══════════════════════════════════════════════════ -->
+  <div class="gated-content" id="main-content">
+
+    <div class="layer-tag">Lesson 07 · Mechanistic Layer</div>
+    <h1>The Basis Engine</h1>
+    <p>Every matrix multiplication in a Transformer is a change of basis. This layer builds the derivation: from the formal definition of a basis, through the construction of change-of-basis matrices, to the exact mechanism by which attention projections and MLP layers transform representations.</p>
+
+
+    <!-- FORMAL DEFINITION BLOCK -->
+    <h2>I. Formal Definition</h2>
+    <h3>Basis</h3>
+    <p>A <strong>basis</strong> for ℝⁿ is a set of n vectors satisfying two properties simultaneously:</p>
+    <div class="callout">
+      <div class="callout-label">The Two Properties</div>
+      <p><strong>Linear independence:</strong> No vector in the set can be expressed as a linear combination of the others.<br>
+      <strong>Spanning:</strong> Every vector in ℝⁿ can be expressed as a linear combination of the basis vectors.</p>
+    </div>
+    <p>Together, these guarantee a <strong>unique representation</strong>: for any <span class="mono">v ∈ ℝⁿ</span>, there exist unique coefficients c₁…cₙ such that:</p>
+    <div class="eq-block">
+      <div class="eq-label">Coordinate Representation</div>
+      <span class="mono">v = c₁b₁ + c₂b₂ + ⋯ + cₙbₙ</span><br>
+      <span class="mono">[v]_B = [c₁, c₂, …, cₙ]ᵀ</span>&nbsp;&nbsp;<span style="color:var(--muted);font-size:0.82rem;">← the coordinates of v in basis B</span>
+    </div>
+
+    <h3>Change-of-Basis Matrix</h3>
+    <p>Given a source basis B and target basis C, the <strong>change-of-basis matrix</strong> P<sub>B→C</sub> converts coordinates:</p>
+    <div class="eq-block">
+      <div class="eq-label">Core Formula</div>
+      <span class="mono">[v]_C = P_{B→C} · [v]_B</span><br><br>
+      <span style="color:var(--muted);font-size:0.82rem;">Construction: Column j of P<sub>B→C</sub> = [b_j]_C (the j-th source basis vector expressed in target-basis coordinates)</span>
+    </div>
+
+    <p><strong>Converting FROM basis B TO standard S:</strong> Place the basis vectors of B as columns of P.</p>
+    <div class="eq-block">
+      <div class="eq-label">P_{B→S} Construction</div>
+      <div class="eq-row" style="align-items:center;">
+        <span class="mono">P_{B→S} =</span>
+        <div class="mat mat-2">
+          <span class="mat-c">b₁ₓ</span><span class="mat-c">b₂ₓ</span>
+          <span class="mat-c">b₁ᵧ</span><span class="mat-c">b₂ᵧ</span>
+        </div>
+        <span class="mono" style="color:var(--muted);font-size:0.8rem;">columns = basis vectors in standard coordinates</span>
+      </div>
+    </div>
+
+    <p><strong>Converting FROM standard S TO basis B:</strong> Use the inverse.</p>
+    <div class="eq-block">
+      <div class="eq-label">Direction Reversal</div>
+      <span class="mono">P_{S→B} = P_{B→S}⁻¹</span>&nbsp;&nbsp;&nbsp;
+      <span style="color:var(--muted);font-size:0.82rem;">← this is the operation most learners apply backwards</span>
+    </div>
+
+
+    <!-- PREDICTION GATE 02 -->
+    <div class="interaction-box">
+      <div class="interaction-header">Prediction Gate 02 — Change-of-Basis Computation</div>
+      <div class="question-text">
+        Basis B = {<strong>b₁ = [3, 0]</strong>, <strong>b₂ = [0, 2]</strong>}.<br>
+        Vector <strong>v = [6, 4]</strong> is expressed in standard coordinates.<br><br>
+        The change-of-basis matrix is:
+      </div>
+      <div class="eq-block" style="margin-top:-0.5rem;margin-bottom:1.5rem;">
+        <div class="eq-row" style="align-items:center;gap:1rem;">
+          <span class="mono">P =</span>
+          <div class="mat mat-2">
+            <span>3</span><span>0</span>
+            <span>0</span><span>2</span>
+          </div>
+          <span class="eq-sym">→</span>
+          <span class="mono">P⁻¹ =</span>
+          <span class="mono" style="color:var(--muted);">?</span>
+        </div>
+      </div>
+      <div class="question-text" style="margin-bottom:0.5rem;">
+        Compute <strong>[v]_B = P⁻¹ · [6, 4]ᵀ</strong>. Enter the B-coordinates of v.
+      </div>
+      <div class="input-row">
+        <span class="input-label">x_B =</span>
+        <input type="number" id="x-pred" class="input-field" placeholder="?">
+        <span class="input-label" style="margin-left:0.5rem;">y_B =</span>
+        <input type="number" id="y-pred" class="input-field" placeholder="?">
+        <button class="btn" id="calc-btn" onclick="submitCalc()">Compute</button>
+      </div>
+      <div class="feedback" id="fb-calc"></div>
+    </div>
+
+  </div><!-- /main-content -->
+
+
+  <!-- ═══════════════════════════════════════════════════
+       MASTERY CONTENT — Gate 2 unlocks this
+  ═══════════════════════════════════════════════════ -->
+  <div class="gated-content" id="mastery-content">
+
+    <!-- POST-GATE EXPLANATION: FULL WORKED EXAMPLE -->
+    <h2>II. Full Derivation: Manual Change of Basis</h2>
+    <p>Using the values from the MD worked example — a non-trivial basis where P is not diagonal.</p>
+
+    <div class="eq-block">
+      <div class="eq-label">Given</div>
+      <span class="mono">B = {b₁=[2,1], b₂=[−1,3]},&nbsp;&nbsp;v = [5, 7]_S</span>
+    </div>
+
+    <h3>Step 1 — Construct P</h3>
+    <div class="eq-block">
+      <div class="eq-row" style="align-items:center;gap:1rem;">
+        <span class="mono">P_{B→S} =</span>
+        <div class="mat mat-2">
+          <span class="mat-c">2</span><span class="mat-c">−1</span>
+          <span class="mat-c">1</span><span class="mat-c">3</span>
+        </div>
+        <span class="mono" style="color:var(--muted);">← columns are b₁ and b₂</span>
+      </div>
+    </div>
+
+    <h3>Step 2 — Compute P⁻¹</h3>
+    <div class="eq-block">
+      <span class="mono">det(P) = (2)(3) − (−1)(1) = 7</span><br><br>
+      <div class="eq-row" style="align-items:center;gap:0.75rem;">
+        <span class="mono">P⁻¹ = (1/7) ·</span>
+        <div class="mat mat-2">
+          <span>3</span><span>1</span>
+          <span>−1</span><span>2</span>
+        </div>
+        <span class="mono" style="color:var(--muted);font-size:0.8rem;">← swap diagonal, negate off-diagonal, divide by det</span>
+      </div>
+    </div>
+
+    <h3>Step 3 — Apply P⁻¹ to v</h3>
+    <div class="eq-block">
+      <span class="mono">[v]_B = P⁻¹ · [5, 7]ᵀ = (1/7) · [3·5 + 1·7, −1·5 + 2·7]ᵀ</span><br>
+      <span class="mono" style="color:var(--accent);">= (1/7) · [22, 9]ᵀ = [22/7, 9/7]</span>
+    </div>
+
+    <h3>Verification</h3>
+    <div class="eq-block">
+      <span class="mono">(22/7)[2,1] + (9/7)[−1,3] = [44/7, 22/7] + [−9/7, 27/7]</span><br>
+      <span class="mono" style="color:var(--green);">= [35/7, 49/7] = [5, 7] ✓</span>
+    </div>
+
+    <hr class="section-break">
+
+    <!-- ORTHONORMAL BASES -->
+    <h2>III. Orthonormal Bases — The Computational Shortcut</h2>
+    <p>A basis is <strong>orthogonal</strong> when all basis vectors are mutually perpendicular: <span class="mono">bᵢ · bⱼ = 0</span> for i ≠ j. It is <strong>orthonormal</strong> when additionally each vector has unit length: <span class="mono">‖bᵢ‖ = 1</span>.</p>
+
+    <div class="callout">
+      <div class="callout-label">Orthonormal Shortcut</div>
+      <p>For an orthonormal basis matrix Q: <span class="mono" style="color:var(--accent);">Qᵀ Q = I</span>, which means <span class="mono" style="color:var(--accent);">Q⁻¹ = Qᵀ</span>.<br>
+      Matrix inversion is computationally expensive. Transposition is essentially free. This is why Transformer weight matrices are often initialized and regularized toward orthonormality.</p>
+    </div>
+
+    <hr class="section-break">
+
+    <!-- TRANSFORMER CONNECTION -->
+    <h2>IV. Basis Changes in the Transformer</h2>
+    <h3>Attention Projections</h3>
+    <p>Each attention head performs three simultaneous basis changes:</p>
+    <div class="eq-block">
+      <div class="eq-label">Per Head h at Layer l</div>
+      <span class="mono">q_{l,h} = W_Q^{l,h} · h_{l−1}</span>&nbsp;&nbsp;<span style="color:var(--muted);font-size:0.8rem;">W_Q ∈ ℝ^{d_k × d}</span><br>
+      <span class="mono">k_{l,h} = W_K^{l,h} · h_{l−1}</span>&nbsp;&nbsp;<span style="color:var(--muted);font-size:0.8rem;">W_K ∈ ℝ^{d_k × d}</span><br>
+      <span class="mono">v_{l,h} = W_V^{l,h} · h_{l−1}</span>&nbsp;&nbsp;<span style="color:var(--muted);font-size:0.8rem;">W_V ∈ ℝ^{d_k × d}</span>
+    </div>
+    <p>Each W matrix is a <strong>non-square projection</strong>: it maps from d dimensions to d_k dimensions (with d_k &lt; d). These are dimension-reducing basis changes. The discarded dimensions are permanently gone.</p>
+
+    <h3>MLP — Round-Trip Through Higher Dimensions</h3>
+    <div class="eq-block">
+      <div class="eq-label">MLP Basis Change</div>
+      <span class="mono">MLP(h) = W₂ · σ(W₁ · h + b₁) + b₂</span><br><br>
+      <span class="mono">W₁ ∈ ℝ^{4d × d}</span>&nbsp;&nbsp;<span style="color:var(--muted);font-size:0.8rem;">↑ expands d → 4d (up-projection)</span><br>
+      <span class="mono">W₂ ∈ ℝ^{d × 4d}</span>&nbsp;&nbsp;<span style="color:var(--muted);font-size:0.8rem;">↓ projects 4d → d (down-projection)</span>
+    </div>
+    <p>The 4× expansion into higher-dimensional space provides more "room" for the nonlinearity σ to carve decision boundaries that do not exist in the lower-dimensional space. The round-trip <span class="mono">W₂·W₁ ≠ I</span> — the MLP is not an identity transform.</p>
+
+    <h3>KV-Direct: The Residual Stream as Universal Basis</h3>
+    <p>Since W_K is a <strong>fixed, deterministic matrix</strong> after training, knowing the residual stream h_{t} fully determines k_{l,t} for every layer l:</p>
+    <div class="eq-block">
+      <div class="eq-label">On-Demand Rederivation</div>
+      <span class="mono">k_{l,t} = W_K^l · h_{t}</span>&nbsp;&nbsp;<span style="color:var(--muted);font-size:0.8rem;">one matrix-vector product</span>
+    </div>
+    <p>This enables a radical memory optimization: store only the residual stream, rederive keys and values on demand.</p>
+    <div class="compare-row">
+      <div class="compare-cell">
+        <div class="compare-label">Standard KV Cache</div>
+        <div class="compare-val">24 layers × 2(K+V) × 32 heads × 128 × 2B</div>
+        <div class="compare-val highlight" style="margin-top:0.4rem;">≈ 393 KB / token</div>
+      </div>
+      <div class="compare-cell">
+        <div class="compare-label">KV-Direct</div>
+        <div class="compare-val">2560 × 2 bytes = residual stream only</div>
+        <div class="compare-val highlight" style="margin-top:0.4rem;color:var(--green);">≈ 5 KB / token  (~78× compression)</div>
+      </div>
+    </div>
+
+    <h3>The Similarity Transform</h3>
+    <p>If transformation T is described in the standard basis, and you want the <em>same</em> transformation described in basis B:</p>
+    <div class="eq-block">
+      <div class="eq-label">Similarity Transform</div>
+      <span class="mono" style="color:var(--accent);">T_B = P⁻¹ · T · P</span><br><br>
+      <span style="color:var(--muted);font-size:0.82rem;">P = change-of-basis matrix from B to standard. T itself doesn't change — only its coordinate description changes. In Lesson 8, the eigenvector basis makes every T a pure diagonal scaling matrix.</span>
+    </div>
+
+    <hr class="section-break">
+
+    <!-- MASTERY GATE 03 -->
+    <div class="interaction-box">
+      <div class="interaction-header">Mastery Gate 03 — Projection Non-Invertibility</div>
+      <div class="question-text">
+        W_K ∈ ℝ<sup>128×4096</sup> projects the residual stream<br>
+        h_t ∈ ℝ<sup>4096</sup> to produce k_t ∈ ℝ<sup>128</sup>.<br><br>
+        You need to recover h_t from k_t. Which statement is correct?
+      </div>
+      <div class="choices">
+        <button class="choice-btn" onclick="checkMaster(this, false)">Multiply k_t by W_K<sup>T</sup> — the transpose reverses any matrix multiplication.</button>
+        <button class="choice-btn" onclick="checkMaster(this, false)">Construct the pseudo-inverse W_K<sup>+</sup> — it will recover all 4096 components exactly.</button>
+        <button class="choice-btn" onclick="checkMaster(this, true)">h_t cannot be recovered. W_K maps 4096D → 128D and permanently discards 3968 dimensions.</button>
+      </div>
+      <div class="feedback" id="fb-master"></div>
+    </div>
+
+  </div><!-- /mastery-content -->
+
+
+  <!-- ═══════════════════════════════════════════════════
+       GAUNTLET — Gate 3 unlocks this
+  ═══════════════════════════════════════════════════ -->
+  <div class="gated-content" id="gauntlet-content">
+    <div class="gauntlet-wrap">
+      <h2>Mechanistic Gauntlet</h2>
+      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:2rem;">7-Question Derivation Drill. No references. Execute each operation from first principles.</p>
+      <div id="q-container"></div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+/* ── INTERRUPT GATE ── */
+function submitInterrupt() {
+  const v = parseInt(document.getElementById('int-pred').value);
+  if (isNaN(v)) return;
+  const inp = document.getElementById('int-pred');
+  const btn = document.getElementById('int-btn');
+  inp.disabled = true; btn.disabled = true;
+  const fb = document.getElementById('int-fb');
+  fb.classList.add('visible');
+
+  if (v === 7) {
+    fb.className = 'feedback visible success';
+    fb.innerHTML = `<div class="feedback-title">Correct</div>det([[2,−1],[1,3]]) = (2)(3) − (−1)(1) = 6 + 1 = 7. This determinant value will appear in the P⁻¹ computation ahead.`;
+    setTimeout(() => unlock('main-content'), 1200);
+  } else {
+    fb.className = 'feedback visible error';
+    fb.innerHTML = `<div class="feedback-title">Incorrect</div>Use the 2×2 formula: det = ad − bc where a=2, b=−1, c=1, d=3. Resetting.`;
+    setTimeout(() => {
+      inp.disabled = false; btn.disabled = false;
+      fb.classList.remove('visible');
+    }, 2500);
+  }
+}
+
+/* ── PREDICTION GATE 02 ── */
+function submitCalc() {
+  const x = parseFloat(document.getElementById('x-pred').value);
+  const y = parseFloat(document.getElementById('y-pred').value);
+  if (isNaN(x) || isNaN(y)) return;
+
+  const xEl = document.getElementById('x-pred');
+  const yEl = document.getElementById('y-pred');
+  const btn = document.getElementById('calc-btn');
+  xEl.disabled = true; yEl.disabled = true; btn.disabled = true;
+
+  const fb = document.getElementById('fb-calc');
+  fb.classList.add('visible');
+
+  // Check for forward-matrix trap: P·[6,4] = [18, 8]
+  if (x === 18 && y === 8) {
+    fb.className = 'feedback visible trap';
+    fb.innerHTML = `<div class="feedback-title">⚠ Forward Matrix Trap</div>
+      You applied P forward: P · [6,4] = [18, 8]. That takes B-coordinates <em>to</em> standard. To go <em>from</em> standard to B, you need P⁻¹.<br><br>
+      For a diagonal P = [[3,0],[0,2]], the inverse simply reciprocates the diagonal: P⁻¹ = [[1/3, 0],[0, 1/2]].<br>
+      [v]_B = (1/3)×6, (1/2)×4 = <strong>[2, 2]</strong>.`;
+    setTimeout(() => unlock('mastery-content'), 4500);
+
+  } else if (x === 2 && y === 2) {
+    fb.className = 'feedback visible success';
+    fb.innerHTML = `<div class="feedback-title">Correct</div>
+      P⁻¹ = [[1/3, 0],[0, 1/2]]. Applying it: [6/3, 4/2] = [2, 2].<br>
+      Verification: 2·[3,0] + 2·[0,2] = [6,0] + [0,4] = [6,4] ✓`;
+    setTimeout(() => unlock('mastery-content'), 1500);
+
+  } else {
+    fb.className = 'feedback visible error';
+    fb.innerHTML = `<div class="feedback-title">Incorrect</div>
+      P = [[3,0],[0,2]] is diagonal. Its inverse simply reciprocates the diagonal entries: P⁻¹ = [[1/3,0],[0,1/2]]. Apply that to [6,4].`;
+    setTimeout(() => {
+      xEl.disabled = false; yEl.disabled = false; btn.disabled = false;
+      fb.classList.remove('visible');
+    }, 2800);
+  }
+}
+
+/* ── MASTERY GATE 03 ── */
+function checkMaster(btn, correct) {
+  document.querySelectorAll('.choice-btn').forEach(c => c.disabled = true);
+  const fb = document.getElementById('fb-master');
+  fb.classList.add('visible');
+
+  if (correct) {
+    btn.classList.add('selected-right');
+    fb.className = 'feedback visible success';
+    fb.innerHTML = `<div class="feedback-title">Correct</div>
+      W_K is non-square (128×4096). It performs a <em>dimension-reducing</em> basis change: 4096D collapses to 128D. The 3968 discarded dimensions are gone permanently — they leave no trace in k_t. Non-square projections are non-injective and have no left inverse. This is an irreversible operation.`;
+    setTimeout(() => {
+      unlock('gauntlet-content');
+      renderGauntlet();
+    }, 1800);
+
+  } else {
+    btn.classList.add('selected-wrong');
+    fb.className = 'feedback visible error';
+    const which = btn.textContent.includes('pseudo') ?
+      `The pseudo-inverse W_K⁺ minimises reconstruction error — it returns the <em>closest</em> vector in the preimage. But the 3968 dimensions not captured by W_K are simply gone. Least-squares approximation is not exact recovery.` :
+      `The transpose trick Q⁻¹ = Qᵀ applies <em>only</em> to square orthonormal matrices. W_K is neither square nor orthonormal — its transpose has shape 4096×128, producing a 4096×4096 matrix, but W_Kᵀ·W_K ≠ I.`;
+    fb.innerHTML = `<div class="feedback-title">Incorrect</div>${which} Resetting.`;
+    setTimeout(() => {
+      document.querySelectorAll('.choice-btn').forEach(c => {
+        c.disabled = false;
+        c.classList.remove('selected-wrong', 'selected-right');
+      });
+      fb.classList.remove('visible');
+    }, 3000);
+  }
+}
+
+/* ── UNLOCK HELPER ── */
+function unlock(id) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    });
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   GAUNTLET ENGINE
+══════════════════════════════════════════════════ */
+const G_DATA = [
+  {
+    q: "P = [[2, −1], [1, 3]]. Compute det(P).",
+    sub: "Use: det = ad − bc",
+    type: "text",
+    ans: "7",
+    exp: "det = (2)(3) − (−1)(1) = 6 + 1 = 7. A nonzero determinant confirms the basis vectors are linearly independent and P⁻¹ exists."
+  },
+  {
+    q: "For an orthonormal basis matrix Q, Q⁻¹ equals which operation?",
+    sub: "Type: transpose, or QT, or Q^T",
+    type: "text",
+    match: ["transpose", "qt", "q^t", "qᵀ"],
+    exp: "Q⁻¹ = Qᵀ. This follows from Qᵀ Q = I (definition of orthonormal). Transposition is O(1) and costs no arithmetic — compared to full matrix inversion which requires O(n³) operations."
+  },
+  {
+    q: "P converts basis A→B. Q converts basis B→C. What single matrix converts directly from A→C?",
+    sub: "Order matters. Write the product.",
+    type: "text",
+    match: ["qp", "q·p", "q*p"],
+    exp: "QP. Matrix multiplication composes basis changes. Apply P first (A→B), then Q (B→C). Note: PQ would give C→A→B, which is the wrong direction. Order is not commutative."
+  },
+  {
+    q: "If det(P) = 0, can the inverse P⁻¹ be computed?",
+    type: "bool",
+    ans: false,
+    exp: "No. det(P) = 0 means the basis vectors have collapsed (become linearly dependent — parallel or coplanar). The axes no longer span the space. Inversion requires dividing by the determinant, and division by zero is undefined."
+  },
+  {
+    q: "W_Q ∈ ℝ^{128×4096} and W_O ∈ ℝ^{4096×128}. Does the round-trip W_O · W_Q equal the 4096×4096 identity matrix?",
+    sub: "W_O · W_Q has shape 4096×4096.",
+    type: "bool",
+    ans: false,
+    exp: "False. W_Q first discards 3968 dimensions (4096→128). W_O then reconstructs a 4096D vector from only 128 dimensions of information. The reconstruction cannot recover what W_Q deleted. W_O·W_Q is a rank-128 matrix — a projection onto a 128D subspace, not identity."
+  },
+  {
+    q: "KV-Direct stores the residual stream (~5 KB/token) instead of the full KV cache (~393 KB/token). What is the approximate integer compression factor?",
+    sub: "Round to the nearest integer.",
+    type: "text",
+    match: ["78", "~78", "≈78"],
+    exp: "393 / 5 ≈ 78×. This compression arises because the residual stream is the universal basis: all 24-layer KV pairs are deterministic functions of a single stored vector. Instead of storing 24 × 2 × 32 × 128-dimensional vectors, we store one 2560-dimensional vector."
+  },
+  {
+    q: "In a Transformer MLP, W₁ ∈ ℝ^{4d×d} expands d dimensions to 4d. If d = 512, what is the intermediate dimension?",
+    type: "text",
+    ans: "2048",
+    exp: "4 × 512 = 2048. The 4× expansion gives the nonlinear activation σ more 'room' to carve complex decision boundaries that do not exist in the original 512D space. W₂ then projects from 2048 back to 512."
+  }
+];
+
+function renderGauntlet() {
+  const container = document.getElementById('q-container');
+  let html = '';
+  G_DATA.forEach((item, idx) => {
+    html += `
+    <div class="q-block" id="gq-${idx}">
+      <div class="q-num">Drill 0${idx + 1}</div>
+      <div class="q-text">${item.q}</div>
+      ${item.sub ? `<div class="q-sub">${item.sub}</div>` : ''}
+    `;
+    if (item.type === 'bool') {
+      html += `
+        <div style="display:flex;gap:0.75rem;">
+          <button class="btn btn-outline" onclick="answerG(${idx}, true, this)">True / Yes</button>
+          <button class="btn btn-outline" onclick="answerG(${idx}, false, this)">False / No</button>
+        </div>`;
+    } else {
+      html += `
+        <div style="display:flex;gap:0.75rem;">
+          <input type="text" id="gInput-${idx}" class="input-text" placeholder="Type answer…">
+          <button class="btn" onclick="answerGText(${idx}, this)">Lock</button>
+        </div>`;
+    }
+    html += `<div class="feedback" id="gfb-${idx}"></div></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function answerG(idx, val, btn) {
+  const block = document.getElementById(`gq-${idx}`);
+  block.querySelectorAll('button').forEach(b => b.disabled = true);
+  const fb = document.getElementById(`gfb-${idx}`);
+  fb.classList.add('visible');
+
+  if (val === G_DATA[idx].ans) {
+    btn.style.background = 'rgba(42,157,143,0.15)';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = '#a7ece2';
+    fb.className = 'feedback visible success';
+    fb.innerHTML = `<div class="feedback-title">Correct</div>${G_DATA[idx].exp}`;
+  } else {
+    btn.style.background = 'rgba(231,111,81,0.1)';
+    btn.style.borderColor = 'var(--red)';
+    btn.style.color = '#ffb3a1';
+    fb.className = 'feedback visible error';
+    fb.innerHTML = `<div class="feedback-title">Incorrect</div>${G_DATA[idx].exp}`;
+  }
+}
+
+function answerGText(idx, btn) {
+  const input = document.getElementById(`gInput-${idx}`);
+  const raw = input.value.trim().toLowerCase().replace(/\s+/g, '');
+  if (!raw) return;
+  input.disabled = true; btn.disabled = true;
+
+  const fb = document.getElementById(`gfb-${idx}`);
+  fb.classList.add('visible');
+
+  let correct = false;
+  const item = G_DATA[idx];
+  if (item.ans) {
+    correct = (raw === item.ans.toLowerCase());
+  }
+  if (item.match) {
+    correct = item.match.some(m => raw.includes(m.replace(/\s/g, '')));
+  }
+
+  if (correct) {
+    fb.className = 'feedback visible success';
+    fb.innerHTML = `<div class="feedback-title">Correct</div>${item.exp}`;
+  } else {
+    fb.className = 'feedback visible error';
+    fb.innerHTML = `<div class="feedback-title">Incorrect</div>${item.exp}`;
+  }
+}
+</script>
+</body>
+</html>

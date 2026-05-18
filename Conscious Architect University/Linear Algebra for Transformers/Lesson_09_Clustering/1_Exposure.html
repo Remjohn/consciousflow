@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distance Metrics & Clustering — Exposure Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050505;--surface:#111;--surface2:#1a1a1a;--surface3:#252525;
+  --text:#FAFAFA;--muted:#888;--border:#333;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--serif:'Playfair Display',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6;overflow-x:hidden;}
+.container{max-width:820px;margin:0 auto;padding:4rem 2rem 8rem;}
+
+h1{font-family:var(--serif);font-size:3.2rem;line-height:1.05;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-weight:700;font-size:1.5rem;margin-bottom:1rem;}
+p{margin-bottom:1.5rem;color:var(--muted);font-size:1.05rem;line-height:1.7;}
+strong{color:#fff;}
+
+/* ── INTERACTION BOX ── */
+.interaction-box{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:2.5rem;margin:2rem 0;
+}
+.interaction-header{
+  font-family:var(--mono);font-size:0.72rem;color:var(--accent);
+  text-transform:uppercase;letter-spacing:0.1em;
+  border-bottom:1px solid var(--border);padding-bottom:0.6rem;margin-bottom:1.5rem;
+}
+.question-text{font-size:1.1rem;font-weight:500;margin-bottom:2rem;color:#fff;line-height:1.65;}
+
+/* ── BUTTONS ── */
+.btn{
+  background:var(--text);color:var(--bg);border:none;
+  padding:0.75rem 1.5rem;font-family:var(--sans);font-weight:600;
+  font-size:1rem;border-radius:4px;cursor:pointer;transition:all 0.2s;
+}
+.btn:hover:not(:disabled){transform:translateY(-2px);background:#fff;box-shadow:0 4px 12px rgba(255,255,255,0.08);}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+.btn-outline{background:transparent;border:1px solid var(--muted);color:var(--text);}
+.btn-outline:hover:not(:disabled){background:var(--surface3);border-color:#fff;}
+
+/* ── INPUTS ── */
+.input-group{display:flex;gap:1rem;margin-bottom:1rem;}
+.input-text{
+  background:var(--bg);border:2px solid var(--border);color:#fff;
+  font-family:var(--mono);font-size:1.05rem;padding:0.75rem 1rem;flex:1;border-radius:4px;
+  transition:border-color 0.2s;
+}
+.input-text:focus{outline:none;border-color:var(--accent);}
+
+/* ── FEEDBACK ── */
+.feedback{
+  display:none;margin-top:2rem;padding:1.5rem;
+  border-radius:4px;font-size:0.95rem;line-height:1.65;
+}
+.feedback.visible{display:block;animation:fadein 0.4s;}
+.feedback.error{background:rgba(231,111,81,0.1);border-left:3px solid var(--red);color:#ffb3a1;}
+.feedback.success{background:rgba(42,157,143,0.1);border-left:3px solid var(--green);color:#a7ece2;}
+.feedback-title{font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;font-weight:600;}
+@keyframes fadein{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── GATED CONTENT ── */
+.gated-content{opacity:0;pointer-events:none;transform:translateY(20px);transition:all 0.5s ease;display:none;}
+.gated-content.unlocked{opacity:1;pointer-events:auto;transform:translateY(0);display:block;}
+
+/* ── INLINE MATH ── */
+.im{font-family:var(--mono);background:var(--surface2);padding:0.15rem 0.45rem;border-radius:3px;color:var(--accent);font-size:0.92rem;}
+
+/* ── DATA TABLE ── */
+.data-table{width:100%;border-collapse:collapse;margin:1.2rem 0;font-family:var(--mono);font-size:0.9rem;}
+.data-table th{text-align:left;padding:0.5rem 0.8rem;color:var(--accent);font-size:0.75rem;text-transform:uppercase;border-bottom:1px solid var(--border);}
+.data-table td{padding:0.5rem 0.8rem;border-bottom:1px solid var(--surface3);color:var(--muted);}
+.data-table td strong{color:#fff;}
+
+/* ── BOOL ROW ── */
+.bool-row{display:flex;gap:1rem;flex-wrap:wrap;}
+
+/* ── MC OPTION ── */
+.mc-option{
+  display:block;width:100%;text-align:left;
+  background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  padding:0.85rem 1.1rem;border-radius:4px;margin-bottom:0.7rem;
+  cursor:pointer;font-family:var(--sans);font-size:0.98rem;
+  transition:all 0.2s;
+}
+.mc-option:hover:not(:disabled){border-color:var(--accent);background:var(--surface3);}
+.mc-option:disabled{cursor:not-allowed;}
+
+/* ── GAUNTLET ── */
+.gauntlet-wrap{margin-top:4rem;border-top:2px solid var(--border);padding-top:3rem;}
+.q-block{background:var(--surface2);padding:1.5rem;border-radius:6px;margin-bottom:1.5rem;border:1px solid var(--border);}
+.q-num{font-family:var(--mono);font-size:0.68rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.5rem;}
+.q-text{font-size:1.05rem;margin-bottom:1.5rem;font-weight:500;color:#fff;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div style="font-family:var(--mono);font-size:0.72rem;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.1em;">Lesson 09 · Layer 1 · Exposure</div>
+  <h1>The Intelligence<br>of Sorting</h1>
+
+  <p>Imagine you are a head coach on the first day of pre-season at Appiano Gentile. Sixty-three players from across Europe have arrived. You've never seen forty of them play. Within twenty minutes of a training match, your coaching brain has already begun sorting — the aggressive pressers hounding the ball in packs of three, the quiet tempo controllers who barely move but always receive in space, the two centre-backs who drop deep at the first sign of pressure, the third who steps forward to intercept. You did not start with labels. You discovered the groups by observing the data itself.</p>
+
+  <p>Now scale the problem. You are operating the Conscious Coaching Platform with <strong>five hundred clients</strong> sending daily Telegram voice notes. Each client is not a name — they are a continuously updating vector of measurable behavioral signals. Your brain cannot hold five hundred multi-dimensional profiles in real time. But the mathematics can. Clustering is the procedure that discovers the hidden structure, assigns every client to a tribe, and converts human-scale intuition ("these clients feel similar") into machine-scale intelligence ("these clients are 0.3 units from Centroid 2").</p>
+
+  <!-- ═══════════════════════════════════════════
+       TRAP 1 — Metric Contradiction
+       Misconception: magnitude and direction are the same thing
+  ═══════════════════════════════════════════ -->
+  <div class="interaction-box" id="trap-1">
+    <div class="interaction-header">Trap 01 — The Metric Contradiction</div>
+    <div class="question-text">
+      Two CCP coaching clients:<br><br>
+      <strong>Client X:</strong> <span class="im">(2, 1)</span> — 2 sessions, 1 breakthrough.<br>
+      <strong>Client Y:</strong> <span class="im">(20, 10)</span> — 20 sessions, 10 breakthroughs.<br><br>
+      Euclidean distance between them is <span class="im">√((20−2)² + (10−1)²) ≈ 20.12</span> — enormous. But their session-to-breakthrough ratio is identical: both are exactly 2:1.<br><br>
+      <strong>Your prediction:</strong> Under Cosine Distance, which measures the angle between vectors rather than the gap between their positions — are these two clients far apart, or behaviorally identical?
+    </div>
+    <div class="bool-row">
+      <button class="btn btn-outline" onclick="answerTrap1('far', this)">Far apart — Cosine also sees a large gap</button>
+      <button class="btn btn-outline" onclick="answerTrap1('same', this)">Identical — Cosine distance = 0</button>
+    </div>
+    <div class="feedback" id="fb-trap-1"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       GATE 1 — unlocks after Trap 1 (both answers trigger it)
+  ═══════════════════════════════════════════ -->
+  <div class="gated-content" id="gate-1">
+
+    <p>This is the decisive difference. <strong>Euclidean Distance</strong> measures absolute positional gap — Client Y is 20× further from the origin than Client X, so the ruler-span between them is large. <strong>Cosine Distance</strong> measures the angle between the two vectors. Both vectors point in exactly the same direction (both have a 2:1 ratio), so the angle is zero and the Cosine Distance is zero. They are behaviorally identical under Cosine. Two clients doing the same thing — one just doing more of it.</p>
+
+    <p>The mathematics ruthlessly demand you choose your operating lens. <strong>Euclidean for behavioral volume. Cosine for behavioral pattern.</strong> The same clients, measured with different metrics, end up in entirely different clusters.</p>
+
+    <!-- ═══════════════════════════════════════════
+         GATE CHALLENGE — Cosine identification
+    ═══════════════════════════════════════════ -->
+    <div class="interaction-box" id="trap-2">
+      <div class="interaction-header">Gate Challenge — Confirm Your Understanding</div>
+      <div class="question-text">
+        A third client, Client Z: <span class="im">(10, 5)</span> — 10 sessions, 5 breakthroughs. Under which distance metric is the distance between Client X <span class="im">(2,1)</span> and Client Z <span class="im">(10,5)</span> exactly <strong>zero</strong>?
+      </div>
+      <div class="input-group">
+        <input type="text" id="g-input" class="input-text" placeholder="Type the metric name…">
+        <button class="btn" id="lock-g" onclick="checkGate()">Lock</button>
+      </div>
+      <div class="feedback" id="fb-gate"></div>
+    </div>
+
+  </div><!-- /gate-1 -->
+
+  <!-- ═══════════════════════════════════════════
+       GATE 2 — unlocks after gate challenge
+  ═══════════════════════════════════════════ -->
+  <div class="gated-content" id="gate-2">
+
+    <!-- ═══════════════════════════════════════════
+         TRAP 2 — K-Means local minimum misconception
+    ═══════════════════════════════════════════ -->
+    <div class="interaction-box" id="trap-3">
+      <div class="interaction-header">Trap 02 — Convergence ≠ Correctness</div>
+      <div class="question-text">
+        K-Means ran on 500 CCP clients and converged cleanly — the centroids stopped moving, the algorithm terminated, the code returned a result. A team member says: <em>"It converged, so we found the best possible grouping."</em><br><br>
+        <strong>Your prediction:</strong> Is this claim correct?
+      </div>
+      <div class="bool-row">
+        <button class="btn btn-outline" onclick="answerTrap2(true, this)">True — convergence guarantees the global optimum</button>
+        <button class="btn btn-outline" onclick="answerTrap2(false, this)">False — convergence only guarantees a local minimum</button>
+      </div>
+      <div class="feedback" id="fb-trap-2"></div>
+    </div>
+
+  </div><!-- /gate-2 -->
+
+  <!-- ═══════════════════════════════════════════
+       GATE 3 — unlocks after Trap 2 correct answer
+       Mastery Gate before gauntlet
+  ═══════════════════════════════════════════ -->
+  <div class="gated-content" id="gate-3">
+
+    <div class="interaction-box" id="mastery-gate">
+      <div class="interaction-header">Mastery Gate — Centroid Reality Check</div>
+      <div class="question-text">
+        Three CCP clients form a cluster. Their vectors are: <span class="im">(1, 9)</span>, <span class="im">(4, 6)</span>, <span class="im">(3, 8)</span>.<br><br>
+        K-Means computes the new centroid as the mean of these three vectors. Which of the following is the correct centroid — and does it correspond to any actual client in the dataset?
+      </div>
+
+      <button class="mc-option" id="mc-0" onclick="answerMastery(0, this)">(2.67, 7.67) — does not correspond to any real client</button>
+      <button class="mc-option" id="mc-1" onclick="answerMastery(1, this)">(4, 6) — corresponds to the second client</button>
+      <button class="mc-option" id="mc-2" onclick="answerMastery(2, this)">(2.67, 7.67) — corresponds to the geometric midpoint between all three clients</button>
+
+      <div class="feedback" id="fb-mastery"></div>
+    </div>
+
+  </div><!-- /gate-3 -->
+
+  <!-- ═══════════════════════════════════════════
+       GAUNTLET — 7 questions from MD
+  ═══════════════════════════════════════════ -->
+  <div class="gated-content" id="gauntlet-content">
+    <div class="gauntlet-wrap">
+      <div style="font-family:var(--mono);font-size:0.72rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;">// Rapid-Fire Drill</div>
+      <h2>Exposure Gauntlet</h2>
+      <p style="font-size:0.95rem;">No visuals. No scaffolding. Rely on your raw mental model. These seven questions cover every concept introduced in this layer — misconceptions are embedded.</p>
+      <div id="q-container"></div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+/* ═══════════════════════════════════════════════
+   TRAP 1 — Cosine vs Euclidean metric contradiction
+   Both answers unlock gate-1; correct = same (Cosine = 0)
+═══════════════════════════════════════════════ */
+function answerTrap1(val, btn) {
+  document.querySelectorAll('#trap-1 .btn-outline').forEach(b => b.disabled = true);
+  const fb = document.getElementById('fb-trap-1');
+  fb.classList.add('visible');
+
+  if (val === 'same') {
+    btn.style.borderColor = 'var(--green)'; btn.style.background = 'rgba(42,157,143,0.1)';
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">✓ Correct — Cosine Distance = 0</div>
+      Cosine Similarity = (a · b) / (‖a‖ × ‖b‖). Compute: X·Y = (2×20) + (1×10) = 50. ‖X‖ = √5. ‖Y‖ = √500. Cosine = 50 / (√5 × √500) = 50/50 = 1.00. Perfect directional alignment. Cosine Distance = 1 − 1.00 = 0. Despite being 20× apart in volume, both vectors point in the exact same direction from the origin. The division strips away the length, leaving only the angle — and the angle is zero.`;
+  } else {
+    btn.style.borderColor = 'var(--red)'; btn.style.background = 'rgba(231,111,81,0.1)';
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title">✗ Misconception Triggered</div>
+      Under Cosine Distance, they are <strong>identical</strong> (distance = 0). Cosine measures the angle between vectors, not the gap between their positions. Both X and Y have a 2:1 ratio — they point in the same direction from the origin. The formula: Cosine Similarity = (X·Y) / (‖X‖ × ‖Y‖) = 50 / (√5 × √500) = 1.00. Distance = 1 − 1.00 = 0. You triggered the most common misconception in clustering: that all distance metrics agree on which points are "close."`;
+  }
+
+  setTimeout(() => document.getElementById('gate-1').classList.add('unlocked'), 1600);
+}
+
+/* ═══════════════════════════════════════════════
+   GATE CHALLENGE — cosine keyword
+═══════════════════════════════════════════════ */
+function checkGate() {
+  const val = document.getElementById('g-input').value.toLowerCase().trim();
+  if (!val) return;
+  document.getElementById('g-input').disabled = true;
+  document.getElementById('lock-g').disabled = true;
+  const fb = document.getElementById('fb-gate');
+  fb.classList.add('visible');
+
+  if (val.includes('cosine')) {
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">✓ Gate Cleared</div>
+      Correct. Client X = (2,1) and Client Z = (10,5) both have a 2:1 ratio. They point in the same direction from the origin. Cosine Similarity = (2×10 + 1×5) / (√5 × √125) = 25/25 = 1.00. Cosine Distance = 0. Euclidean distance between them is √(64+16) ≈ 8.94 — very much non-zero. Cosine is blind to magnitude; it sees only direction.`;
+    setTimeout(() => document.getElementById('gate-2').classList.add('unlocked'), 800);
+  } else {
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title">✗ Incorrect</div>
+      Euclidean distance between (2,1) and (10,5) is approximately 8.94 — not zero. The metric that ignores magnitude and measures only directional alignment is Cosine Distance. Both points have a 2:1 ratio, so their angle from the origin is identical.<br><br>
+      <button class="btn btn-outline" style="margin-top:1rem;" onclick="resetGate()">Retry</button>`;
+  }
+}
+
+function resetGate() {
+  document.getElementById('g-input').disabled = false;
+  document.getElementById('lock-g').disabled = false;
+  document.getElementById('g-input').value = '';
+  document.getElementById('fb-gate').className = 'feedback';
+}
+
+/* ═══════════════════════════════════════════════
+   TRAP 2 — K-Means local vs global minimum
+   Correct answer = false (convergence ≠ global optimum)
+═══════════════════════════════════════════════ */
+function answerTrap2(val, btn) {
+  document.querySelectorAll('#trap-3 .btn-outline').forEach(b => b.disabled = true);
+  const fb = document.getElementById('fb-trap-2');
+  fb.classList.add('visible');
+
+  if (val === false) {
+    btn.style.borderColor = 'var(--green)'; btn.style.background = 'rgba(42,157,143,0.1)';
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">✓ Correct — Local Minimum Only</div>
+      K-Means converges to a <strong>local</strong> minimum — the nearest valley on the error surface — not necessarily the global one. If two centroids are randomly initialized inside the same dense cloud of "Escape Mode" clients, while a third centroid lands far from everyone, the algorithm converges to a structurally terrible solution. The standard remedy: run K-Means ten times with different random seeds and select the run with the lowest total within-cluster error. K-Means++ improves initialization by deliberately spacing starting centroids far apart, but still cannot guarantee global optimality.`;
+    setTimeout(() => document.getElementById('gate-3').classList.add('unlocked'), 1000);
+  } else {
+    btn.style.borderColor = 'var(--red)'; btn.style.background = 'rgba(231,111,81,0.1)';
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title">✗ Misconception 1 Triggered</div>
+      This is the most common K-Means misconception. Convergence means the centroids have stopped moving — the algorithm has found a valley. But the error surface has many valleys, and K-Means has no mechanism for escaping a local valley to find a deeper global one. The algorithm is always rolling downhill: each reassignment can only decrease or maintain total distance. It cannot climb back out of a poor initialization. A converged result is not a correct result — it is a stable result.<br><br>
+      <button class="btn btn-outline" style="margin-top:1rem;" onclick="resetTrap2()">Retry</button>`;
+  }
+}
+
+function resetTrap2() {
+  document.querySelectorAll('#trap-3 .btn-outline').forEach(b => {
+    b.disabled = false; b.style.borderColor = ''; b.style.background = '';
+  });
+  document.getElementById('fb-trap-2').className = 'feedback';
+}
+
+/* ═══════════════════════════════════════════════
+   MASTERY GATE — centroid calculation
+   Correct: option 0 — (2.67, 7.67), not a real client
+   Option 2 is a trap — the centroid IS the geometric midpoint,
+   but the phrasing "does not correspond to any real client"
+   is the correct and important qualifier.
+═══════════════════════════════════════════════ */
+function answerMastery(idx, btn) {
+  document.querySelectorAll('#mastery-gate .mc-option').forEach(b => b.disabled = true);
+  const fb = document.getElementById('fb-mastery');
+  fb.classList.add('visible');
+
+  if (idx === 0) {
+    btn.style.borderColor = 'var(--green)'; btn.style.background = 'rgba(42,157,143,0.08)';
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">✓ Correct — The Centroid Is a Mathematical Ghost</div>
+      Mean of x-coordinates: (1+4+3)/3 = 2.67. Mean of y-coordinates: (9+6+8)/3 = 7.67. Centroid = (2.67, 7.67). This does not match any of the three real clients — it is a computed average that may not exist in the actual dataset. The centroid is the ideal geometric anchor of its group, not a real inhabitant of the data. Misconception 4 in this lesson: "The centroid is always a real data point." It is not. It is a mathematical ghost.`;
+    setTimeout(() => {
+      document.getElementById('gauntlet-content').classList.add('unlocked');
+      renderGauntlet();
+      setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 500);
+    }, 900);
+  } else if (idx === 1) {
+    btn.style.borderColor = 'var(--red)'; btn.style.background = 'rgba(231,111,81,0.08)';
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title">✗ Incorrect — (4,6) Is One Client, Not the Mean</div>
+      The centroid is the mathematical mean of all vectors in the cluster. (4,6) is the second client — it's in the data, but the mean of (1,9), (4,6), (3,8) is ((1+4+3)/3, (9+6+8)/3) = (2.67, 7.67). Only when a real client's coordinates happen to equal the mean does the centroid "land" on an actual data point. That is coincidence, not a rule.<br><br>
+      <button class="btn btn-outline" style="margin-top:1rem;" onclick="resetMastery()">Retry</button>`;
+  } else {
+    btn.style.borderColor = 'var(--red)'; btn.style.background = 'rgba(231,111,81,0.08)';
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title">✗ Close — But Missing the Key Point</div>
+      (2.67, 7.67) is the correct value, and yes, it is the geometric midpoint. But option A already says this — the critical distinction in option C is that it omits the key qualifier: <em>the centroid does not correspond to any real client</em>. That qualifier is the entire point of this misconception trap. The centroid is a mathematical ghost — the ideal anchor, not a real inhabitant of the dataset.<br><br>
+      <button class="btn btn-outline" style="margin-top:1rem;" onclick="resetMastery()">Retry</button>`;
+  }
+}
+
+function resetMastery() {
+  document.querySelectorAll('#mastery-gate .mc-option').forEach(b => {
+    b.disabled = false; b.style.borderColor = ''; b.style.background = '';
+  });
+  document.getElementById('fb-mastery').className = 'feedback';
+}
+
+/* ═══════════════════════════════════════════════
+   GAUNTLET — 7 questions
+   All drawn from 1_Exposure.md content:
+   Manhattan distance, K=N, feature selection,
+   Voronoi geometry, Elbow method, K-Means++,
+   scale / normalization trap
+═══════════════════════════════════════════════ */
+const G_DATA = [
+  {
+    type: 'text',
+    q: 'Manhattan Distance walks strictly along grid lines — only horizontal and vertical moves, never diagonally. Unlike Euclidean, it does not square the differences between coordinates. What practical property does this give it when one client has an extreme outlier value on a single dimension?',
+    match: 'outl',
+    altMatch: 'sensitiv',
+    exp: 'Manhattan distance is less sensitive to outliers. Because it takes absolute differences without squaring them, a single extreme value contributes proportionally — not exponentially. Euclidean distance squares the gap, allowing one extreme dimension to dominate the entire calculation. Manhattan distance treats all dimensional gaps equally, which makes it more robust in high-dimensional coaching data where behavioral outliers are common.'
+  },
+  {
+    type: 'bool',
+    q: 'You set K = N (number of clusters equals number of clients — 500 clusters for 500 clients). The algorithm converges and reports a within-cluster error of exactly zero. True or False: This is a sign of a well-performing clustering model.',
+    ans: false,
+    exp: 'False. Zero error means every client is their own cluster — mathematical perfection with zero generalization value. You cannot design 500 bespoke coaching protocols. The Elbow Method exists precisely to find the sweet spot where adding more clusters provides diminishing returns. Zero error signals catastrophic overfitting, not model quality.'
+  },
+  {
+    type: 'text',
+    q: 'You are clustering 500 CCP clients on two features: "Total Messages Sent" (range: 0–500) and "Average Self-Disclosure Score" (range: 0.0–1.0). You run K-Means with Euclidean distance and get one enormous cluster and two tiny ones. The algorithm is not broken. What went wrong with the data preparation?',
+    match: 'scal',
+    altMatch: 'normal',
+    exp: 'Scale mismatch — the features were not normalized. "Total Messages Sent" ranges 0–500 while "Self-Disclosure Score" ranges 0.0–1.0. Euclidean distance calculates the sum of squared differences across all dimensions. The message count dimension contributes 500× more squared variance than the disclosure score. K-Means effectively ignores Self-Disclosure entirely and clusters purely on message volume. Z-Score normalization (subtract mean, divide by standard deviation) brings all features to the same scale before clustering.'
+  },
+  {
+    type: 'bool',
+    q: 'K-Means produces "Voronoi partitions" — regions of space where every point is closer to one centroid than to any other. True or False: When using Cosine-based clustering instead of Euclidean, these partitions are shaped like spheres (circles in 2D) around each centroid.',
+    ans: false,
+    exp: 'False. Euclidean K-Means produces spherical Voronoi regions — roughly circular in 2D. Cosine-based clustering produces angular sectors — wedge-shaped slices radiating from the origin. Two clients at vastly different distances from the origin can belong to the same Cosine cluster if their behavioral ratios are aligned. The geometry of the clusters mirrors the geometry of the metric: Euclidean sees position, Cosine sees direction.'
+  },
+  {
+    type: 'text',
+    q: 'The CCP\'s Coping-Diagnostic Engine uses the Elbow Method to choose K. The within-cluster error drops sharply from K=1 to K=4, then barely decreases from K=4 to K=8. The team wants to run K=12 "because more clusters always gives a better model." What is the correct counter-argument?',
+    match: 'elbow',
+    altMatch: 'diminish',
+    exp: 'The Elbow Method counter-argument: the decrease in error is trivially guaranteed — if every point is its own cluster, error is zero. But zero error means zero insight. The inflection point at K=4 is the elbow: adding more clusters beyond K=4 provides diminishing returns on discriminative power while adding operational complexity. The CCP also has a hard constraint — it cannot deploy more than four or five distinct coaching protocols. K=12 means 12 different intervention types, which is operationally unmanageable.'
+  },
+  {
+    type: 'bool',
+    q: 'A developer includes the Telegram User_ID number as a feature in the K-Means clustering pipeline and normalizes it alongside behavioral features. The resulting clusters have a near-perfect Silhouette Score of 0.91. True or False: This is evidence of excellent behavioral clustering.',
+    ans: false,
+    exp: 'False. This is the feature selection misconception. K-Means will happily cluster clients into perfectly separated groups based on their User_ID number — IDs are sequential and unique, so the clustering is geometrically clean. But it has zero behavioral meaning. A near-perfect Silhouette Score proves only that the clusters are geometrically tight, not that they capture meaningful behavioral variation. Garbage features produce garbage clusters regardless of how clean the geometry looks.'
+  },
+  {
+    type: 'text',
+    q: 'For clustering the CRAL semantic search index — which contains thousands of coaching articles ranging from 500 to 15,000 words — should the pipeline use Euclidean or Cosine distance? Name the metric and the core reason.',
+    match: 'cosine',
+    exp: 'Cosine distance. A 500-word article and a 15,000-word article on the same topic are directionally identical — they both point toward the same semantic region in the embedding space — but their vector magnitudes differ enormously. Euclidean distance would separate them into different clusters purely because of word count, not content. Cosine distance divides out the magnitude (document length) and compares only the directional alignment (semantic content). When behavioral pattern matters more than behavioral volume, Cosine is the correct metric.'
+  }
+];
+
+function renderGauntlet() {
+  const container = document.getElementById('q-container');
+  let html = '';
+  G_DATA.forEach((item, idx) => {
+    html += `<div class="q-block" id="gq-${idx}">
+      <div class="q-num">Drill ${String(idx+1).padStart(2,'0')}</div>
+      <div class="q-text">${item.q}</div>`;
+
+    if (item.type === 'bool') {
+      html += `<div class="bool-row">
+        <button class="btn btn-outline" onclick="answerGBool(${idx}, true, this)">True</button>
+        <button class="btn btn-outline" onclick="answerGBool(${idx}, false, this)">False</button>
+      </div>`;
+    } else {
+      html += `<div class="input-group">
+        <input type="text" id="gInput-${idx}" class="input-text" placeholder="Type primary keyword…">
+        <button class="btn" onclick="answerGText(${idx}, this)">Lock</button>
+      </div>`;
+    }
+    html += `<div class="feedback" id="gfb-${idx}"></div></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function showGFb(idx, correct) {
+  const block = document.getElementById(`gq-${idx}`);
+  block.querySelectorAll('button').forEach(b => b.disabled = true);
+  const fb = document.getElementById(`gfb-${idx}`);
+  fb.className = `feedback visible ${correct ? 'success' : 'error'}`;
+  fb.innerHTML = `<div class="feedback-title">${correct ? '✓ Correct' : '✗ Incorrect'}</div>${G_DATA[idx].exp}`;
+}
+
+function answerGBool(idx, val, btn) {
+  showGFb(idx, val === G_DATA[idx].ans);
+}
+
+function answerGText(idx, btn) {
+  const input = document.getElementById(`gInput-${idx}`);
+  const val = input.value.toLowerCase().trim();
+  if (!val) return;
+  input.disabled = true; btn.disabled = true;
+  const d = G_DATA[idx];
+  const correct = val.includes(d.match) || (d.altMatch && val.includes(d.altMatch));
+  showGFb(idx, correct);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Application Layer — Environment Variables</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+  --sky:#38bdf8;--sky-glow:rgba(56,189,248,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--amber);background:rgba(245,158,11,0.08);padding:.1em .4em;border-radius:4px;}
+pre code{background:transparent;padding:0;color:var(--text-muted);}
+pre{background:var(--bg-elevated);border:1px solid var(--border);padding:1rem;border-radius:8px;overflow-x:auto;margin-bottom:1.5rem;font-size:.85rem;line-height:1.6;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;padding:1.5rem;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;height:400px;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1;min-width:280px;}
+.visual-col{flex:1.2;min-width:320px;}
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);margin-bottom:1rem;}
+.insight strong{color:var(--amber);}
+.insight.rose{border-color:var(--rose);background:var(--rose-glow);}
+.insight.emerald{border-color:var(--emerald);background:var(--emerald-glow);}
+
+.env-toggle{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;margin-bottom:.5rem;cursor:pointer;font-family:'JetBrains Mono';font-size:.8rem;color:var(--text-dim);transition:all .2s;}
+.env-toggle.active{color:var(--emerald);border-color:var(--emerald-glow);background:rgba(16,185,129,0.05);}
+.env-toggle.active .val{color:var(--emerald);}
+.env-toggle .val{color:var(--text-dim);}
+
+.quiz-option{display:block;width:100%;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:.88rem;color:var(--text-muted);transition:all .25s;text-align:left;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;}
+.quiz-option:hover{border-color:var(--border-light);color:var(--text);}
+.quiz-option.correct{border-color:var(--emerald);color:var(--emerald);background:var(--emerald-glow);}
+.quiz-option.wrong{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+.quiz-option.disabled{pointer-events:none;opacity:.6;}
+.quiz-explanation{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+.quiz-explanation.show{max-height:300px;}
+.pred-gate{background:rgba(255,255,255,0.02);border:1px solid var(--border);padding:1rem;border-radius:8px;margin-top:1rem;}
+
+@media(max-width:768px){
+  .flex-layout{flex-direction:column-reverse!important;}
+  .canvas-wrap{height:300px;}
+  .nav-links{display:none;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--sky);">ENV VARS</span>
+    <div class="nav-links">
+      <a href="#interrupt" class="nav-link active" data-section="interrupt">Interrupt</a>
+      <a href="#artifacts" class="nav-link" data-section="artifacts">Artifacts</a>
+      <a href="#pipeline" class="nav-link" data-section="pipeline">Pipeline Engine</a>
+      <a href="#gauntlet" class="nav-link" data-section="gauntlet">Gauntlet</a>
+    </div>
+  </div>
+</nav>
+
+<section id="interrupt" class="section" style="padding-top:7rem;min-height:auto;">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">00 — SPACED RETRIEVAL INTERRUPT</p>
+    <div class="card" style="border-left:3px solid var(--amber);">
+      <p style="font-size:1.1rem;color:var(--text);margin-bottom:1.5rem;font-weight:500;">
+        Without looking: How do you force a boolean evaluation to be genuinely false when parsing the environment variable <span class="mono">os.environ.get("DEBUG_MODE")</span>, knowing that setting the environment variable to the text <span class="mono">"False"</span> will evaluate as logically true?
+      </p>
+      <div id="qInt-opts">
+        <button class="quiz-option" data-correct="false">Convert it natively with bool(os.environ.get("DEBUG_MODE"))</button>
+        <button class="quiz-option" data-correct="false">Set it to None explicitly in the variable.</button>
+        <button class="quiz-option" data-correct="true">Explicitly parse the string content: if os.environ.get("DEBUG_MODE") == "True":</button>
+      </div>
+      <div class="quiz-explanation" id="qInt-exp" style="margin-top:1rem;">
+        <div class="insight emerald" style="margin:0;">
+          <strong>Correct Concept Retrieved:</strong> Strings are never false in Python unless they are completely empty "". To check a boolean configuration, you must compare the string value explicitly against the target string representation.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pipeline" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — SYSTEM BOOT LOADER</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">.dotenv Load Pipeline</h2>
+    <div class="flex-layout">
+      <div class="visual-col">
+        <div class="canvas-wrap">
+          <canvas id="pipelineCanvas"></canvas>
+        </div>
+        <div style="font-family:'JetBrains Mono';font-size:.75rem;color:var(--text-dim);text-align:center;margin-top:.5rem;">
+          FastAPI & DSPy Boot Sequence
+        </div>
+      </div>
+      <div class="reading-col">
+        <p style="color:var(--text-muted);margin-bottom:1.5rem;">
+          Toggle the environment variables operating in the OS prior to process deployment. Watch how the codebase correctly loads gracefully via <span class="mono">os.environ.get</span> fallbacks, or fatally crashes via fail-fast <span class="mono">os.environ["KEY"]</span> architecture.
+        </p>
+        <div id="env-toggles">
+          <div class="env-toggle" data-key="CCP_MASTER_SECRET" data-val="hx49...">
+            <span>CCP_MASTER_SECRET</span><span class="val">Missing</span>
+          </div>
+          <div class="env-toggle" data-key="RLM_CHILD_MODEL" data-val="qwen-72b">
+            <span>RLM_CHILD_MODEL</span><span class="val">Missing</span>
+          </div>
+          <div class="env-toggle" data-key="CBCS_THRESHOLD" data-val="0.95">
+            <span>CBCS_THRESHOLD</span><span class="val">Missing</span>
+          </div>
+        </div>
+        <div class="insight" style="margin-top:1.5rem;">
+          If <span class="mono">CCP_MASTER_SECRET</span> is missing, the Security router throws HTTP 500 automatically preventing breach. If <span class="mono">RLM_CHILD_MODEL</span> is missing, DSPy safely uses a default configuration.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="artifacts" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--sky);margin-bottom:.5rem;">02 — PRODUCTION ARTIFACTS</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">The Architecture Maps</h2>
+
+    <div style="display:grid;grid-template-columns:1fr;gap:2rem;">
+      <div class="card" style="border-top:3px solid var(--violet);">
+        <h3>A. JIT Skill Compiler — Threshold Calibration</h3>
+        <p style="font-size:.85rem;color:var(--violet);margin-bottom:1rem;font-family:'Space Grotesk';">Subsystem: Pydantic QA Department</p>
+<pre><code>@model_validator(mode='after')
+def validate_alignment_threshold(self) -> 'VoiceDNAParams':
+    raw_threshold_env: str = os.environ.get("CBCS_THRESHOLD", "0.80")
+    active_threshold: float = float(raw_threshold_env)
+    
+    if self.cbcs_score < active_threshold:
+        raise ValueError("Alignment score violates strict threshold.")
+    return self</code></pre>
+        <div class="insight">
+          <strong>Orchestration Dichotomy:</strong> Enforces validation logic. If this mechanism is removed, the threshold must be "hardcoded". This forces an Architect to push a commit to change a simple threshold validation.
+        </div>
+        <div class="pred-gate">
+          <strong>Prediction:</strong> If a dev mistakenly sets <code>os.environ["CBCS_THRESHOLD"] = "HIGH"</code>, what happens?
+          <button class="btn btn-amber" style="margin-top:.5rem;" onclick="alert('ValueError! The string HIGH cannot be cast into a strict float. The Pydantic model crashes.')">Reveal</button>
+        </div>
+      </div>
+
+      <div class="card" style="border-top:3px solid var(--teal);">
+        <h3>B. DSPy Model Router — Dynamic Target Directives</h3>
+        <p style="font-size:.85rem;color:var(--teal);margin-bottom:1rem;font-family:'Space Grotesk';">Subsystem: The Machinist (DSPy Optimization Pipeline)</p>
+<pre><code>def configure_dspy_machinist() -> None:
+    # Fail critically if NIM_ENDPOINT is omitted.
+    nim_url: str = os.environ["NIM_ENDPOINT"]
+    target_model_name: str = os.environ.get("MODEL_NAME", "qwen-3.5-72b")
+    
+    lm = dspy.LM(model=target_model_name, api_base=nim_url)
+    dspy.settings.configure(lm=lm)</code></pre>
+        <div class="insight">
+          <strong>Orchestration Dichotomy:</strong> Global model configuration happens through dynamic environment strings, allowing routing to change seamlessly during outages without tearing apart the application logic.
+        </div>
+      </div>
+
+      <div class="card" style="border-top:3px solid var(--emerald);">
+        <h3>C. The Pi Harness Runtime Constraints</h3>
+        <p style="font-size:.85rem;color:var(--emerald);margin-bottom:1rem;font-family:'Space Grotesk';">Subsystem: The Robot Arm (Pi Agent Subprocess)</p>
+<pre><code>def spawn_rlm_agent_loop(cmd: str) -> str:
+    timeout_str: str = os.environ.get("RLM_TIMEOUT", "30")
+    budget_timeout: int = int(timeout_str)
+    
+    try:
+        subprocess.run(["bash", "-c", cmd], timeout=budget_timeout)
+    except subprocess.TimeoutExpired:
+        return "__error.md: Task exceeded budget."</code></pre>
+        <div class="insight">
+          <strong>Orchestration Dichotomy:</strong> Without this environmental enforcement, the agentic subprocess possesses infinite time execution capabilities, risking catastrophic hang states and recursive AI loops.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Capstone Gauntlet -->
+<section id="gauntlet" class="section">
+  <div class="section-inner" style="max-width:800px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">03 — APPLICATION GAUNTLET</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Trace Edge Cases</h2>
+    <div id="quizContainer" style="display:flex;flex-direction:column;gap:1.5rem;"></div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);margin-top:2rem;">
+  Interactive Visual Learning — Lesson 10: Environment Variables Application Layer
+</footer>
+
+<script>
+const DPR = window.devicePixelRatio || 1;
+function setupCanvas(c) {
+  const p = c.parentElement; const r = p.getBoundingClientRect();
+  c.width = r.width * DPR; c.height = r.height * DPR;
+  c.style.width = r.width + 'px'; c.style.height = r.height + 'px';
+  const ctx = c.getContext('2d'); ctx.scale(DPR, DPR);
+  return { ctx, w: r.width, h: r.height };
+}
+
+/* Interrupt Setup */
+document.getElementById('qInt-opts').addEventListener('click',(e)=>{
+  if(e.target.tagName==='BUTTON'){
+    const btns = document.querySelectorAll('#qInt-opts button');
+    btns.forEach(b=>b.style.pointerEvents='none');
+    if(e.target.dataset.correct==='true'){
+      e.target.classList.add('correct');
+      e.target.style.borderColor='var(--emerald)';
+    }else{
+      e.target.classList.add('wrong');
+    }
+    document.getElementById('qInt-exp').classList.add('show');
+  }
+});
+
+/* Pipeline Canvas State */
+const ENV = { CCP_MASTER_SECRET:false, RLM_CHILD_MODEL:false, CBCS_THRESHOLD:false };
+document.querySelectorAll('.env-toggle').forEach(el=>{
+  el.addEventListener('click',()=>{
+    el.classList.toggle('active');
+    const key = el.dataset.key;
+    ENV[key] = !ENV[key];
+    el.querySelector('.val').textContent = ENV[key] ? el.dataset.val : 'Missing';
+  });
+});
+
+/* Canvas Render Engine */
+(function(){
+  const c = document.getElementById('pipelineCanvas');
+  let t = 0;
+  function draw() {
+    const {ctx, w, h} = setupCanvas(c);
+    ctx.clearRect(0,0,w,h);
+    
+    // Draw Nodes
+    const bootX=w*0.15, secX=w*0.5, llmX=w*0.85;
+    const bootY=h*0.5, secY=h*0.3, llmY=h*0.7;
+
+    // Connectors
+    ctx.beginPath(); ctx.moveTo(bootX, bootY); ctx.lineTo(secX, secY); 
+    ctx.strokeStyle = ENV.CCP_MASTER_SECRET?'rgba(16,185,129,0.5)':'rgba(244,63,94,0.5)'; ctx.lineWidth=2; ctx.stroke();
+
+    ctx.beginPath(); ctx.moveTo(bootX, bootY); ctx.lineTo(llmX, llmY);
+    ctx.strokeStyle = 'rgba(20,184,166,0.5)'; ctx.stroke();
+
+    // Data Pulses
+    const pulseOffset = (t%100)/100;
+    
+    // Pulse to Security Node
+    if(pulseOffset < 1) {
+      const px = bootX + (secX-bootX)*pulseOffset;
+      const py = bootY + (secY-bootY)*pulseOffset;
+      ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI*2);
+      ctx.fillStyle = ENV.CCP_MASTER_SECRET?'#10b981':'#f43f5e'; ctx.fill();
+    }
+
+    // Nodes
+    function renderNode(x,y,label,statusStr,isErr) {
+      ctx.beginPath(); ctx.arc(x,y,20,0,Math.PI*2);
+      ctx.fillStyle = '#1a1a1f'; ctx.fill();
+      ctx.strokeStyle = isErr?'#f43f5e':'#27272a'; ctx.stroke();
+      ctx.fillStyle=isErr?'#f43f5e':'#a1a1aa'; ctx.textAlign='center'; ctx.font='12px Space Grotesk';
+      ctx.fillText(label,x,y-30);
+      ctx.font='10px JetBrains Mono'; ctx.fillStyle=isErr?'#f43f5e':'#10b981';
+      ctx.fillText(statusStr,x,y+35);
+    }
+
+    renderNode(bootX, bootY, "OS Loader", "Ready", false);
+    
+    const secStatus = ENV.CCP_MASTER_SECRET ? "200 Authorized" : "500 Server Crash (KeyError)";
+    renderNode(secX, secY, "FastAPI Security", secStatus, !ENV.CCP_MASTER_SECRET);
+
+    const llmStatus = ENV.RLM_CHILD_MODEL ? "qwen-72b Loaded" : "qwen-3.5-72b (Fallback)";
+    renderNode(llmX, llmY, "DSPy Router", llmStatus, false);
+
+    t+=0.8;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* Quiz */
+(function(){
+  const questions = [
+    {q: 'class FactoryConfig(BaseSettings):\n    nim_endpoint: str\n    max_rlm_depth: int = 3\nconfig = FactoryConfig()',
+     opts: ['It manually calls os.environ internally', 'It uses Pydantic to automatically parse OS variables into validated math schemas', 'It compiles the DSPy pipeline natively', 'It is a dict replacement'],
+     correct: 1, explanation: 'BaseSettings parses environment strings and forces them into strictly validated type geometries.'},
+    {q: 'timeout_str = os.environ.get("PI_TIMEOUT", "60")\ntry:\n    timeout_int = int(timeout_str)\nexcept ValueError:\n    timeout_int = 60',
+     opts: ['It ensures strings are kept strings', 'It prevents type coercion errors (e.g. PI_TIMEOUT="sixty") shutting down the system', 'It falls back to a dict check', 'It throws 500 automatically'],
+     correct: 1, explanation: 'It is a resilient defense against invalid configuration typing. Setting "sixty" throws ValueError natively but is caught.'},
+    {q: 'log_level = os.environ.get("LOG_LEVEL", "INFO")\nif log_level == "DEBUG": \n    print_secrets()',
+     opts: ['It allows debugging safely', 'It correctly utilizes the boolean mechanism', 'It leaks secrets into stdout, fundamentally breaking security sovereign rules', 'It safely restricts output'],
+     correct: 2, explanation: 'Secrets must always remain isolated in memory. Piping explicit secrets out into terminal/logfile output turns logs into vectors.'},
+     {q: 'def boot_agent() -> None:\n    depth = os.environ["RLM_DEPTH"]\n    run_cycle(int(depth))\n\nIf you remove line 2 and hardcode depth, what happens?',
+     opts: ['The system runs faster without dictionary lookups.', 'The subsystem loses deterministic external constraint mapping, forcing code recompilation to change boundaries.', 'The OS deletes the variable.', 'Nothing functionally changes.'],
+     correct: 1, explanation: 'The constraint is no longer sovereign and is wired structurally into the code.'}
+  ];
+
+  const container = document.getElementById('quizContainer');
+  questions.forEach((q,qi) => {
+    const card = document.createElement('div'); card.className = 'card';
+    let optsHTML = ''; q.opts.forEach((o,oi) => { optsHTML += `<button class="quiz-option" data-q="${qi}" data-o="${oi}">${o}</button>`; });
+    card.innerHTML = `<p style="font-size:.82rem;font-weight:600;color:var(--text-dim);margin-bottom:.75rem;">Q${qi+1}</p>
+      <pre><code>${q.q}</code></pre>
+      <div id="qO${qi}">${optsHTML}</div>
+      <div class="quiz-explanation" id="qE${qi}" style="margin-top:.75rem;"><div class="insight emerald"><strong>Architectural Mapping:</strong> ${q.explanation}</div></div>`;
+    container.appendChild(card);
+  });
+
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('.quiz-option'); if(!btn) return;
+    const qi = +btn.dataset.q, oi = +btn.dataset.o;
+    const opts = document.querySelectorAll(`#qO${qi} .quiz-option`);
+    if(opts[0].classList.contains('disabled')) return;
+    opts.forEach((o,i) => {
+      o.classList.add('disabled');
+      if(i===questions[qi].correct) o.classList.add('correct');
+      else if(i===oi && oi!==questions[qi].correct) o.classList.add('wrong');
+    });
+    document.getElementById(`qE${qi}`).classList.add('show');
+  });
+})();
+
+/* Nav */
+(function(){
+  const links=document.querySelectorAll('.nav-link');
+  const ids=['interrupt','artifacts','pipeline','gauntlet'];
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+100; let active=ids[0];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+    links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Layer 3 — Analogy · Probability, Sampling & Entropy</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0b0f;
+    --surface: #111318;
+    --surface2: #181b22;
+    --border: #252932;
+    --border-bright: #363d4a;
+    --text: #e8eaf0;
+    --text-dim: #7a8194;
+    --text-mid: #b0b8cc;
+    --accent: #f0c040;
+    --accent2: #40c0f0;
+    --green: #3dd68c;
+    --red: #f05060;
+    --purple: #a06cf8;
+    --amber: #f0a030;
+    --glow: rgba(240,192,64,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Lora', Georgia, serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── GRID NOISE BACKGROUND ─── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(240,192,64,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(240,192,64,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page-wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* ─── HEADER ─── */
+  .layer-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .layer-tag::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    opacity: 0.3;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    font-size: 16px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-bottom: 48px;
+    font-style: italic;
+  }
+
+  /* ─── SECTION BLOCKS ─── */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 32px;
+    position: relative;
+  }
+  .section.locked {
+    opacity: 0.4;
+    pointer-events: none;
+    user-select: none;
+  }
+  .section.unlocked {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .section-head {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+  .section-body {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text-mid);
+    margin-bottom: 24px;
+  }
+  .section-body strong { color: var(--text); font-style: normal; }
+
+  /* ─── CANVAS CONTAINER ─── */
+  .canvas-wrap {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  canvas {
+    display: block;
+    border-radius: 4px;
+  }
+
+  /* ─── PREDICT PROMPT ─── */
+  .predict-prompt {
+    background: linear-gradient(135deg, rgba(240,192,64,0.08), rgba(240,192,64,0.02));
+    border: 1px solid rgba(240,192,64,0.3);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    line-height: 1.5;
+  }
+  .predict-prompt strong { color: var(--text); font-family: 'Lora', serif; font-size: 14px; }
+
+  /* ─── BUTTONS ─── */
+  .btn {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 12px 28px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #0a0b0f;
+  }
+  .btn-primary:hover:not(:disabled) { background: #f8d060; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+  .btn-secondary {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .btn-secondary:hover { background: rgba(240,192,64,0.1); }
+
+  .btn-choice {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: 1px solid var(--border-bright);
+    background: var(--surface2);
+    color: var(--text-mid);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin: 6px 6px 6px 0;
+  }
+  .btn-choice:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .btn-choice.selected { border-color: var(--amber); color: var(--amber); background: rgba(240,160,48,0.1); }
+  .btn-choice.correct { border-color: var(--green); color: var(--green); background: rgba(61,214,140,0.1); }
+  .btn-choice.wrong { border-color: var(--red); color: var(--red); background: rgba(240,80,96,0.1); }
+  .btn-choice:disabled { cursor: not-allowed; }
+
+  /* ─── FEEDBACK BOX ─── */
+  .feedback {
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-size: 14px;
+    line-height: 1.6;
+    display: none;
+    margin-top: 16px;
+  }
+  .feedback.show { display: block; animation: fadeUp 0.3s ease; }
+  .feedback.correct { background: rgba(61,214,140,0.1); border: 1px solid rgba(61,214,140,0.4); color: var(--green); }
+  .feedback.wrong { background: rgba(240,80,96,0.08); border: 1px solid rgba(240,80,96,0.35); color: var(--red); }
+  .feedback.info { background: rgba(64,192,240,0.08); border: 1px solid rgba(64,192,240,0.3); color: var(--accent2); }
+  .feedback .fb-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+  .feedback p { color: var(--text-mid); margin-top: 6px; font-size: 13px; }
+  .feedback strong { color: var(--text); }
+
+  /* ─── UNLOCK BANNER ─── */
+  .unlock-banner {
+    display: none;
+    background: linear-gradient(135deg, rgba(61,214,140,0.12), rgba(61,214,140,0.04));
+    border: 1px solid rgba(61,214,140,0.4);
+    border-radius: 8px;
+    padding: 16px 24px;
+    margin: 20px 0 0;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--green);
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+  .unlock-banner.show { display: block; animation: fadeUp 0.4s ease; }
+
+  /* ─── PROGRESS BAR ─── */
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-bottom: 40px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  /* ─── PIPELINE BUILDER ─── */
+  .pipeline-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .pipeline-slot {
+    border: 2px dashed var(--border-bright);
+    border-radius: 8px;
+    padding: 14px 18px;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-dim);
+    transition: border-color 0.2s;
+    cursor: pointer;
+  }
+  .pipeline-slot.filled {
+    border-style: solid;
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(240,192,64,0.05);
+  }
+  .pipeline-slot.correct-slot { border-color: var(--green); color: var(--green); background: rgba(61,214,140,0.07); }
+  .pipeline-slot.wrong-slot { border-color: var(--red); color: var(--red); background: rgba(240,80,96,0.07); }
+  .slot-num {
+    font-size: 10px;
+    opacity: 0.5;
+    flex-shrink: 0;
+  }
+  .slot-arrow {
+    font-size: 18px;
+    color: var(--border-bright);
+    text-align: center;
+    font-family: monospace;
+  }
+
+  .op-inventory {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .op-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border-bright);
+    background: var(--surface2);
+    color: var(--text-mid);
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .op-chip:hover:not(.used) { border-color: var(--accent); color: var(--accent); }
+  .op-chip.used { opacity: 0.3; cursor: not-allowed; }
+  .op-chip.active { border-color: var(--amber); color: var(--amber); background: rgba(240,160,48,0.1); }
+
+  /* ─── GAUNTLET ─── */
+  .gauntlet-q {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .gauntlet-q .q-text {
+    font-size: 15px;
+    color: var(--text);
+    margin-bottom: 14px;
+    line-height: 1.6;
+  }
+  .gauntlet-q .q-domain {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .gauntlet-q.answered-correct { border-color: rgba(61,214,140,0.4); }
+  .gauntlet-q.answered-wrong { border-color: rgba(240,80,96,0.3); }
+
+  /* ─── SCORE DISPLAY ─── */
+  .score-display {
+    text-align: center;
+    padding: 32px;
+    background: var(--surface2);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    display: none;
+  }
+  .score-display.show { display: block; animation: fadeUp 0.5s ease; }
+  .score-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 64px;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .score-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  /* ─── DRAG HINT ─── */
+  .drag-hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ─── COMPARISON DISPLAY ─── */
+  .compare-row {
+    display: flex;
+    gap: 16px;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+  .compare-cell {
+    flex: 1;
+    min-width: 160px;
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 14px 16px;
+    border-left: 3px solid var(--border-bright);
+  }
+  .compare-cell.predicted { border-color: var(--amber); }
+  .compare-cell.actual { border-color: var(--green); }
+  .compare-cell .cell-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .compare-cell .cell-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .compare-cell.predicted .cell-value { color: var(--amber); }
+  .compare-cell.actual .cell-value { color: var(--green); }
+
+  /* ─── DIVIDER ─── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 28px 0;
+  }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .pulsing { animation: pulse 2s ease infinite; }
+
+  /* ─── MONO CODE ─── */
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88em;
+    background: rgba(255,255,255,0.06);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--accent2);
+  }
+
+  .label-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- Header -->
+  <div class="layer-tag">Layer 3 · Analogy / Visual &nbsp;·&nbsp; Lesson 13</div>
+  <h1>The <span>Loot Table</span> Engine</h1>
+  <p class="subtitle">Every probability distribution is a loot table. Every temperature scaling is a luck modifier. Every top-p is a quality filter. Navigate the structure — then prove you can see it anywhere.</p>
+
+  <!-- Progress -->
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill" style="width:0%"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — TRANSFER CHALLENGE (Type B: State Selection)
+       "Which canvas is T=2.0?"
+  ═══════════════════════════════════════════════ -->
+  <div class="section unlocked" id="s1">
+    <div class="section-title">Transfer Challenge · Section 1 of 4</div>
+    <div class="section-head">Identify the Temperature — Without the Label</div>
+    <div class="section-body">
+      An RPG boss uses a loot table with six items. Below are three possible <strong>states of the same loot table</strong> under different temperatures. Each canvas shows the distribution as a bar chart.<br><br>
+      You know: <strong>T = 0.3</strong> sharpens toward the most common item. <strong>T = 1.0</strong> is the base table. <strong>T = 2.0</strong> flattens all probabilities toward equality — rare and common items converge.
+    </div>
+
+    <div class="predict-prompt">
+      <strong>Your Prediction Task:</strong><br>
+      Select which canvas shows the loot table at <code>T = 2.0 (Chaos Mode)</code>.<br>
+      Commit your prediction. You cannot change it after clicking.
+    </div>
+
+    <!-- Three canvases side-by-side -->
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+      <div style="flex:1;min-width:200px;">
+        <div class="label-row"><span>Canvas A</span></div>
+        <canvas id="cvA" width="220" height="160" style="width:100%;border-radius:6px;border:2px solid var(--border);cursor:pointer;" onclick="selectCanvas('A')"></canvas>
+      </div>
+      <div style="flex:1;min-width:200px;">
+        <div class="label-row"><span>Canvas B</span></div>
+        <canvas id="cvB" width="220" height="160" style="width:100%;border-radius:6px;border:2px solid var(--border);cursor:pointer;" onclick="selectCanvas('B')"></canvas>
+      </div>
+      <div style="flex:1;min-width:200px;">
+        <div class="label-row"><span>Canvas C</span></div>
+        <canvas id="cvC" width="220" height="160" style="width:100%;border-radius:6px;border:2px solid var(--border);cursor:pointer;" onclick="selectCanvas('C')"></canvas>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <span id="s1_selLabel" style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">No selection yet.</span>
+      <button class="btn btn-primary" id="s1_lockBtn" disabled onclick="lockCanvasSelection()">Lock Prediction →</button>
+    </div>
+
+    <div class="feedback" id="s1_fb"></div>
+    <div class="unlock-banner" id="s1_unlock">✓ Transfer Confirmed — Section 2 Unlocked</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — DRAG-TO-PREDICT (Type A)
+       Drag the top-p cutoff line
+  ═══════════════════════════════════════════════ -->
+  <div class="section locked" id="s2">
+    <div class="section-title">Visual Prediction Gate · Section 2 of 4</div>
+    <div class="section-head">Drag the Top-p Cutoff</div>
+    <div class="section-body">
+      Below is a loot table's cumulative probability — bars stacked from most common to rarest. The bars are sorted by probability, highest first.<br><br>
+      <strong>Top-p = 0.90</strong> means: keep only the items whose cumulative probability first reaches 90%. Everything beyond that cutoff is filtered out — zeroed, removed from the sampling pool.
+    </div>
+
+    <div class="predict-prompt">
+      <strong>Your Prediction Task:</strong><br>
+      Drag the vertical cutoff line to where you think <code>p = 0.90</code> lands — which item index is the last one kept?<br>
+      Release to lock. The line will snap and your prediction will be frozen.
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="cvDrag" width="600" height="220" style="width:100%;cursor:ew-resize;touch-action:none;"></canvas>
+      <div class="drag-hint">← Drag the gold line to your predicted 90% cutoff — release to lock →</div>
+    </div>
+
+    <div id="s2_predictedDisplay" style="display:none;">
+      <div class="compare-row">
+        <div class="compare-cell predicted">
+          <div class="cell-label">Your Cutoff</div>
+          <div class="cell-value" id="s2_predVal">—</div>
+        </div>
+        <div class="compare-cell actual">
+          <div class="cell-label">Actual p=0.90 Cutoff</div>
+          <div class="cell-value" id="s2_actualVal">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feedback" id="s2_fb"></div>
+    <div class="unlock-banner" id="s2_unlock">✓ Geometric Intuition Confirmed — Section 3 Unlocked</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — PIPELINE CONSTRUCTION (Type C)
+       Assemble the correct inference pipeline order
+  ═══════════════════════════════════════════════ -->
+  <div class="section locked" id="s3">
+    <div class="section-title">Pipeline Construction · Section 3 of 4</div>
+    <div class="section-head">Build the Inference Pipeline</div>
+    <div class="section-body">
+      The CCP Pipecat engine produces each token in a strict sequence of operations. The operations are known — but <strong>order is everything</strong>. Applying softmax before temperature scaling produces mathematically wrong results. Sampling before top-p exposes the dangerous tail.<br><br>
+      Assemble the correct pipeline by clicking operations in order from left to right.
+    </div>
+
+    <div class="predict-prompt">
+      <strong>Your Prediction Task:</strong><br>
+      Click operations from the inventory to place them in the correct slot order (1 → 5).<br>
+      Once all 5 slots are filled, lock and submit. Wrong orderings will be diagnosed by slot.
+    </div>
+
+    <!-- Op Inventory -->
+    <div class="op-inventory" id="opInventory"></div>
+
+    <!-- Pipeline Slots -->
+    <div class="pipeline-stage" id="pipelineStage"></div>
+
+    <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;">
+      <button class="btn btn-primary" id="s3_lockBtn" disabled onclick="lockPipeline()">Lock Pipeline →</button>
+      <button class="btn btn-secondary" id="s3_resetBtn" onclick="resetPipeline()">Reset</button>
+    </div>
+
+    <div class="feedback" id="s3_fb"></div>
+    <div class="unlock-banner" id="s3_unlock">✓ Pipeline Mastered — Section 4 Unlocked</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — TRANSFER GAUNTLET (No visual scaffolding)
+  ═══════════════════════════════════════════════ -->
+  <div class="section locked" id="s4">
+    <div class="section-title">Transfer Gauntlet · Section 4 of 4</div>
+    <div class="section-head">Structural Recognition — No Visual Scaffolding</div>
+    <div class="section-body">
+      The following questions describe scenarios from <strong>cooking, therapy, and music</strong>. No diagrams. No loot tables. No bar charts. Identify the underlying probabilistic structure in each one. The concepts are identical — only the surface domain has changed.
+    </div>
+
+    <div id="gauntletContainer"></div>
+
+    <button class="btn btn-primary" id="s4_submitBtn" onclick="submitGauntlet()" style="margin-top:8px;">Submit All Answers →</button>
+
+    <div class="feedback" id="s4_fb"></div>
+    <div class="score-display" id="scoreDisplay">
+      <div class="score-num" id="scoreNum">—</div>
+      <div class="score-label">Transfer Gauntlet Score</div>
+      <p style="margin-top:16px;font-size:14px;color:var(--text-mid);line-height:1.6;" id="scoreMsg"></p>
+    </div>
+  </div>
+
+</div><!-- /page-wrap -->
+
+<script>
+// ══════════════════════════════════════════════════
+// SECTION 1 — TYPE B: State Selection Canvas
+// ══════════════════════════════════════════════════
+
+// Base loot table probabilities (sorted high→low)
+const baseDist = [0.40, 0.25, 0.15, 0.08, 0.05, 0.04, 0.03];
+const itemLabels = ['Common\nSword','Rare\nShield','Epic\nHelm','Legendary\nStaff','Mythic\nRing','Debug\nItem','Null\nDrop'];
+const shortLabels = ['CS','RS','EH','LS','MR','DI','ND'];
+
+function applyTemperature(probs, temp) {
+  if (temp < 0.001) {
+    const result = probs.map(() => 0);
+    const maxIdx = probs.indexOf(Math.max(...probs));
+    result[maxIdx] = 1;
+    return result;
+  }
+  // softmax with temperature: treat probs as logits (log of them)
+  const logits = probs.map(p => Math.log(p) / temp);
+  const maxL = Math.max(...logits);
+  const exps = logits.map(l => Math.exp(l - maxL));
+  const sum = exps.reduce((a,b)=>a+b,0);
+  return exps.map(e => e/sum);
+}
+
+const temps = { A: 0.3, B: 2.0, C: 1.0 };
+// correct answer is B (T=2.0)
+const CORRECT_CANVAS = 'B';
+
+function drawLootBar(canvasId, dist, highlight) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const padL=28,padR=12,padT=16,padB=36;
+  const chartW = W-padL-padR, chartH = H-padT-padB;
+  const n = dist.length;
+  const barW = chartW/n * 0.7;
+  const gap = chartW/n * 0.3;
+
+  ctx.fillStyle = '#181b22';
+  ctx.fillRect(0,0,W,H);
+
+  // Grid lines
+  for (let v=0;v<=4;v++) {
+    const y = padT + chartH*(1 - v/4);
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.font = '8px JetBrains Mono';
+    ctx.textAlign = 'right';
+    ctx.fillText((v*25)+'%', padL-4, y+3);
+  }
+
+  dist.forEach((val, i) => {
+    const x = padL + i*(barW+gap) + gap/2;
+    const bH = chartH * val;
+    const y = padT + chartH - bH;
+
+    // Bar fill — warm gold gradient
+    const grad = ctx.createLinearGradient(0, y, 0, y+bH);
+    grad.addColorStop(0, highlight==='amber' ? '#f0c040' : '#3dd68c');
+    grad.addColorStop(1, highlight==='amber' ? '#9a6a00' : '#1a7a4a');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(x, y, barW, bH, [3,3,0,0]);
+    ctx.fill();
+
+    // Short label
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '8px JetBrains Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText(shortLabels[i], x+barW/2, H-padB+12);
+
+    // Value on top
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '7px JetBrains Mono';
+    ctx.fillText(Math.round(val*100)+'%', x+barW/2, y-3);
+  });
+}
+
+// Draw the three canvases
+(function initS1() {
+  ['A','B','C'].forEach(lbl => {
+    const dist = applyTemperature(baseDist, temps[lbl]);
+    drawLootBar('cv'+lbl, dist, 'amber');
+  });
+})();
+
+let s1_selected = null;
+let s1_locked = false;
+
+function selectCanvas(id) {
+  if (s1_locked) return;
+  s1_selected = id;
+  ['A','B','C'].forEach(lbl => {
+    const cv = document.getElementById('cv'+lbl);
+    cv.style.border = lbl===id ? '2px solid #f0c040' : '2px solid var(--border)';
+  });
+  document.getElementById('s1_selLabel').textContent = 'Selected: Canvas ' + id;
+  document.getElementById('s1_selLabel').style.color = '#f0a030';
+  document.getElementById('s1_lockBtn').disabled = false;
+}
+
+function lockCanvasSelection() {
+  if (!s1_selected || s1_locked) return;
+  s1_locked = true;
+  document.getElementById('s1_lockBtn').disabled = true;
+
+  const correct = s1_selected === CORRECT_CANVAS;
+  const fb = document.getElementById('s1_fb');
+
+  // Redraw canvases with reveal colors
+  ['A','B','C'].forEach(lbl => {
+    const isCorrect = lbl === CORRECT_CANVAS;
+    const cv = document.getElementById('cv'+lbl);
+    cv.style.border = isCorrect ? '2px solid #3dd68c' : (lbl===s1_selected ? '2px solid #f05060' : '2px solid var(--border)');
+    const dist = applyTemperature(baseDist, temps[lbl]);
+    drawLootBar('cv'+lbl, dist, isCorrect ? 'green' : 'amber');
+  });
+
+  // Label each canvas with actual temperature
+  const tempLabels = { A:'T = 0.3 (Sharpened)', B:'T = 2.0 (Chaos Mode)', C:'T = 1.0 (Base)' };
+  ['A','B','C'].forEach(lbl => {
+    const cv = document.getElementById('cv'+lbl);
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = lbl===CORRECT_CANVAS ? '#3dd68c' : '#f0a030';
+    ctx.font = 'bold 9px Syne';
+    ctx.textAlign = 'center';
+    ctx.fillText(tempLabels[lbl], cv.width/2, 14);
+  });
+
+  if (correct) {
+    fb.className = 'feedback correct show';
+    fb.innerHTML = `<div class="fb-title">✓ Correct — T = 2.0 is Canvas B</div>
+      <p>At high temperature, all probabilities are pulled toward equality — the <strong>softmax flattening</strong> is visible in the bar heights converging. The rare Mythic Ring (originally 3%) rises dramatically; the Common Sword (originally 40%) falls. This is the geometric signature of high-temperature sampling: not randomness, but <strong>deliberate flattening of the probability simplex</strong>.</p>
+      <p style="margin-top:8px;">Canvas A (T=0.3) shows the opposite — a sharp peak on Common Sword, everything else suppressed. Canvas C is the base table at T=1.0.</p>`;
+    document.getElementById('s1_unlock').classList.add('show');
+    setTimeout(() => { unlockSection('s2'); updateProgress(25); }, 700);
+  } else {
+    fb.className = 'feedback wrong show';
+    fb.innerHTML = `<div class="fb-title">✗ Incorrect — Canvas ${s1_selected} is not T = 2.0</div>
+      <p><strong>Misconception identified:</strong> You may have interpreted the flattest visual as "more balanced" rather than "maximum temperature." At T = 2.0, rare items rise to meet common items — the bars should be converging toward equal heights. The correct answer was Canvas B.</p>
+      <p style="margin-top:8px;">Notice how Canvas B's bars are the <strong>most uniform in height</strong>. The Mythic Ring (3% base) rose to ~13%; the Common Sword (40% base) fell to ~20%. That convergence is the T = 2.0 signature.</p>`;
+    // Still unlock after seeing the explanation — learning from failure
+    setTimeout(() => {
+      document.getElementById('s1_unlock').textContent = '→ Explanation Complete — Section 2 Unlocked';
+      document.getElementById('s1_unlock').style.borderColor = 'rgba(240,192,64,0.4)';
+      document.getElementById('s1_unlock').style.color = 'var(--accent)';
+      document.getElementById('s1_unlock').classList.add('show');
+      unlockSection('s2'); updateProgress(25);
+    }, 2000);
+  }
+}
+
+
+// ══════════════════════════════════════════════════
+// SECTION 2 — TYPE A: Drag-to-Predict (top-p cutoff)
+// ══════════════════════════════════════════════════
+
+// Loot table for drag: sorted high→low, cumulative
+const dragDist = [0.35, 0.22, 0.16, 0.10, 0.08, 0.05, 0.04];
+const dragLabels = ['Cmn','Rare','Epic','Lgnd','Myth','Dbg','Null'];
+
+// cumulative sums
+const cumDist = dragDist.reduce((acc,v,i)=>{
+  acc.push((acc[i-1]||0)+v); return acc;
+}, []);
+
+// top-p=0.90 actual cutoff index (0-based)
+// cumDist: [0.35, 0.57, 0.73, 0.83, 0.91, 0.96, 1.00]
+// first index where cumulative >= 0.90 is index 4 (0.91)
+const ACTUAL_TOPP_IDX = 4;
+
+let dragX = null;
+let dragLocked = false;
+let predictedIdx = null;
+
+function initDragCanvas() {
+  const canvas = document.getElementById('cvDrag');
+  drawDragState(canvas, null, false);
+
+  function getIdx(clientX) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const x = (clientX - rect.left) * scaleX;
+    const padL = 60, padR = 20;
+    const chartW = canvas.width - padL - padR;
+    const n = dragDist.length;
+    const cellW = chartW / n;
+    const idx = Math.floor((x - padL) / cellW);
+    return Math.max(0, Math.min(n-1, idx));
+  }
+
+  canvas.addEventListener('mousedown', (e)=>{ if(dragLocked) return; dragX=e.clientX; });
+  canvas.addEventListener('mousemove', (e)=>{
+    if(dragLocked) return;
+    if(e.buttons===1 || dragX!==null){
+      const idx = getIdx(e.clientX);
+      drawDragState(canvas, idx, false);
+    }
+  });
+  canvas.addEventListener('mouseup', (e)=>{
+    if(dragLocked) return;
+    const idx = getIdx(e.clientX);
+    predictedIdx = idx;
+    dragLocked = true;
+    drawDragState(canvas, idx, true);
+    revealTopP(idx);
+  });
+
+  // Touch
+  canvas.addEventListener('touchmove', (e)=>{
+    if(dragLocked) return;
+    e.preventDefault();
+    const idx = getIdx(e.touches[0].clientX);
+    drawDragState(canvas, idx, false);
+  }, {passive:false});
+  canvas.addEventListener('touchend', (e)=>{
+    if(dragLocked) return;
+    const idx = getIdx(e.changedTouches[0].clientX);
+    predictedIdx = idx;
+    dragLocked = true;
+    drawDragState(canvas, idx, true);
+    revealTopP(idx);
+  });
+}
+
+function drawDragState(canvas, hoverIdx, locked) {
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const padL=60,padR=20,padT=24,padB=40;
+  const chartW=W-padL-padR, chartH=H-padT-padB;
+  const n=dragDist.length;
+  const cellW=chartW/n;
+  const barW=cellW*0.55;
+
+  ctx.fillStyle='#181b22';
+  ctx.fillRect(0,0,W,H);
+
+  // Y-axis label
+  ctx.save();
+  ctx.translate(14, padT+chartH/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillStyle='rgba(255,255,255,0.25)';
+  ctx.font='9px JetBrains Mono';
+  ctx.textAlign='center';
+  ctx.fillText('CUMULATIVE PROBABILITY',0,0);
+  ctx.restore();
+
+  // Grid lines at 0.25 intervals
+  for(let v=0;v<=4;v++){
+    const y=padT+chartH*(1-v/4);
+    ctx.strokeStyle='rgba(255,255,255,0.06)';
+    ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(W-padR,y); ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.3)';
+    ctx.font='9px JetBrains Mono';
+    ctx.textAlign='right';
+    ctx.fillText((v*25)+'%',padL-6,y+3);
+  }
+
+  // Target p=0.90 line (dashed)
+  const targetY = padT+chartH*(1-0.90);
+  ctx.setLineDash([5,4]);
+  ctx.strokeStyle='rgba(64,192,240,0.4)';
+  ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(padL,targetY); ctx.lineTo(W-padR,targetY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(64,192,240,0.7)';
+  ctx.font='9px JetBrains Mono';
+  ctx.textAlign='right';
+  ctx.fillText('p=0.90',W-padR-2,targetY-4);
+
+  // Bars — cumulative
+  dragDist.forEach((val,i)=>{
+    const cumH = chartH*cumDist[i];
+    const x = padL+i*cellW+(cellW-barW)/2;
+    const y = padT+chartH-cumH;
+
+    // Color: green if included in predicted top-p, dim otherwise
+    let color;
+    if(hoverIdx===null){
+      color='rgba(240,192,64,0.5)';
+    } else if(i<=hoverIdx){
+      color= locked ? (hoverIdx>=ACTUAL_TOPP_IDX-1 && hoverIdx<=ACTUAL_TOPP_IDX+1 ? '#3dd68c' : '#f05060') : '#f0a030';
+    } else {
+      color='rgba(255,255,255,0.12)';
+    }
+
+    ctx.fillStyle=color;
+    ctx.beginPath();
+    ctx.roundRect(x,y,barW,cumH,[3,3,0,0]);
+    ctx.fill();
+
+    // Index label
+    ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.font='9px JetBrains Mono';
+    ctx.textAlign='center';
+    ctx.fillText(dragLabels[i], x+barW/2, H-padB+14);
+
+    // Cumulative value on bar
+    if(cumH>18){
+      ctx.fillStyle='rgba(255,255,255,0.6)';
+      ctx.font='8px JetBrains Mono';
+      ctx.fillText(Math.round(cumDist[i]*100)+'%', x+barW/2, y+12);
+    }
+  });
+
+  // Predicted cutoff line
+  if(hoverIdx!==null){
+    const cutX = padL+(hoverIdx+1)*cellW;
+    ctx.strokeStyle= locked ? (Math.abs(hoverIdx-ACTUAL_TOPP_IDX)<=0 ? '#3dd68c' : '#f05060') : '#f0a030';
+    ctx.lineWidth=2.5;
+    ctx.setLineDash(locked?[]:[6,3]);
+    ctx.beginPath(); ctx.moveTo(cutX,padT); ctx.lineTo(cutX,padT+chartH); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Label
+    ctx.fillStyle= locked ? '#f0a030' : '#f0a030';
+    ctx.font='bold 9px Syne';
+    ctx.textAlign= hoverIdx>=5 ? 'right' : 'left';
+    const lblX = hoverIdx>=5 ? cutX-6 : cutX+6;
+    ctx.fillText('YOUR CUTOFF', lblX, padT+14);
+  }
+}
+
+function revealTopP(predicted) {
+  // Reveal actual cutoff on canvas
+  const canvas = document.getElementById('cvDrag');
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  const padL=60,padR=20,padT=24,padB=40;
+  const chartH=H-padT-padB;
+  const n=dragDist.length;
+  const cellW=(W-padL-padR)/n;
+
+  // Draw actual cutoff
+  const actX = padL+(ACTUAL_TOPP_IDX+1)*cellW;
+  ctx.strokeStyle='#3dd68c';
+  ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.moveTo(actX,padT); ctx.lineTo(actX,padT+chartH); ctx.stroke();
+  ctx.fillStyle='#3dd68c';
+  ctx.font='bold 9px Syne';
+  ctx.textAlign= ACTUAL_TOPP_IDX>=5 ? 'right' : 'left';
+  const lblX2 = ACTUAL_TOPP_IDX>=5 ? actX-6 : actX+6;
+  ctx.fillText('ACTUAL p=0.90', lblX2, padT+26);
+
+  // Show compare display
+  const predItemName = dragLabels[predicted] || '?';
+  const actualItemName = dragLabels[ACTUAL_TOPP_IDX];
+  document.getElementById('s2_predVal').textContent = 'After ' + predItemName + ' (idx '+predicted+')';
+  document.getElementById('s2_actualVal').textContent = 'After ' + actualItemName + ' (idx '+ACTUAL_TOPP_IDX+')';
+  document.getElementById('s2_predictedDisplay').style.display='block';
+
+  const correct = predicted === ACTUAL_TOPP_IDX;
+  const close = Math.abs(predicted - ACTUAL_TOPP_IDX) <= 1;
+  const fb = document.getElementById('s2_fb');
+
+  if(correct){
+    fb.className='feedback correct show';
+    fb.innerHTML=`<div class="fb-title">✓ Exact — You Found the p=0.90 Cutoff</div>
+      <p>The cumulative sum reaches <strong>0.91</strong> after the Mythic Ring (index 4). Top-p keeps the first 5 items (CS + RS + EH + LS + MR) and zeros out Debug Item and Null Drop. This is not "removing bad items" — it is truncating the probability distribution's support set to the 90th percentile. The remaining probabilities are then <strong>renormalized</strong> to sum to 1.0.</p>`;
+  } else if(close){
+    fb.className='feedback info show';
+    fb.innerHTML=`<div class="fb-title">Close — Off by ${Math.abs(predicted-ACTUAL_TOPP_IDX)} Position</div>
+      <p>You placed the cutoff after ${predItemName}. The actual p=0.90 boundary falls after <strong>Mythic Ring (index 4)</strong>, where the cumulative sum first reaches 0.91. The concept is clear — the precision of reading cumulative probabilities is what was off.</p>
+      <p style="margin-top:8px;">The math: 0.35+0.22+0.16+0.10+0.08 = <strong>0.91</strong>, which is the first position ≥ 0.90.</p>`;
+  } else {
+    fb.className='feedback wrong show';
+    fb.innerHTML=`<div class="fb-title">✗ Missed — Cutoff is After Mythic Ring (Index 4)</div>
+      <p><strong>Misconception likely:</strong> You may have been estimating by probability size rather than cumulative sum. Top-p doesn't ask "is this item rare?" — it asks "does adding this item push the cumulative probability past the threshold?"</p>
+      <p style="margin-top:8px;">Work through it: 0.35 → 0.57 → 0.73 → 0.83 → <strong>0.91</strong>. The fifth item (Mythic Ring) is what pushes the cumulative past 0.90. Everything after (Debug Item, Null Drop) is filtered out and zeroed.</p>`;
+  }
+
+  document.getElementById('s2_unlock').classList.add('show');
+  setTimeout(()=>{ unlockSection('s3'); updateProgress(50); }, 900);
+}
+
+
+// ══════════════════════════════════════════════════
+// SECTION 3 — PIPELINE CONSTRUCTION
+// ══════════════════════════════════════════════════
+
+const OPERATIONS = [
+  { id:'logits', label:'Compute Logits', desc:'Forward pass → raw scores' },
+  { id:'temp',   label:'Apply Temperature', desc:'Divide logits by T' },
+  { id:'softmax',label:'Softmax', desc:'Convert to probabilities' },
+  { id:'topp',   label:'Top-p Filter', desc:'Truncate tail, renormalize' },
+  { id:'sample', label:'Sample Token', desc:'Draw from distribution' },
+];
+const CORRECT_PIPELINE = ['logits','temp','softmax','topp','sample'];
+
+let pipeSlots = [null,null,null,null,null];
+let selectedOp = null;
+
+function initPipeline() {
+  const inv = document.getElementById('opInventory');
+  const stage = document.getElementById('pipelineStage');
+  inv.innerHTML='';
+  stage.innerHTML='';
+
+  // Shuffle display order
+  const shuffled = [...OPERATIONS].sort(()=>Math.random()-0.5);
+
+  shuffled.forEach(op=>{
+    const chip = document.createElement('div');
+    chip.className='op-chip';
+    chip.id='chip_'+op.id;
+    chip.textContent=op.label;
+    chip.onclick=()=>selectOp(op.id);
+    inv.appendChild(chip);
+  });
+
+  for(let i=0;i<5;i++){
+    if(i>0){
+      const arrow = document.createElement('div');
+      arrow.className='slot-arrow';
+      arrow.textContent='↓';
+      stage.appendChild(arrow);
+    }
+    const slot=document.createElement('div');
+    slot.className='pipeline-slot';
+    slot.id='slot_'+i;
+    slot.innerHTML=`<span class="slot-num">STEP ${i+1}</span><span class="slot-content" id="slotContent_${i}">Click to place operation</span>`;
+    slot.onclick=()=>placeInSlot(i);
+    stage.appendChild(slot);
+  }
+}
+
+function selectOp(opId) {
+  if(document.getElementById('chip_'+opId).classList.contains('used')) return;
+  // Deselect previous
+  if(selectedOp) document.getElementById('chip_'+selectedOp).classList.remove('active');
+  selectedOp=opId;
+  document.getElementById('chip_'+opId).classList.add('active');
+}
+
+function placeInSlot(idx) {
+  if(!selectedOp) return;
+  const prevOp = pipeSlots[idx];
+  // If slot was filled, return old op to inventory
+  if(prevOp){
+    document.getElementById('chip_'+prevOp).classList.remove('used');
+  }
+  pipeSlots[idx]=selectedOp;
+  const op=OPERATIONS.find(o=>o.id===selectedOp);
+  const slot=document.getElementById('slot_'+idx);
+  slot.className='pipeline-slot filled';
+  document.getElementById('slotContent_'+idx).textContent=op.label+' — '+op.desc;
+  document.getElementById('chip_'+selectedOp).classList.add('used');
+  document.getElementById('chip_'+selectedOp).classList.remove('active');
+  selectedOp=null;
+
+  const allFilled=pipeSlots.every(s=>s!==null);
+  document.getElementById('s3_lockBtn').disabled=!allFilled;
+}
+
+function resetPipeline() {
+  pipeSlots=[null,null,null,null,null];
+  selectedOp=null;
+  initPipeline();
+  document.getElementById('s3_lockBtn').disabled=true;
+  document.getElementById('s3_fb').className='feedback';
+  document.getElementById('s3_unlock').classList.remove('show');
+}
+
+function lockPipeline() {
+  document.getElementById('s3_lockBtn').disabled=true;
+  document.getElementById('s3_resetBtn').disabled=true;
+
+  let correctCount=0;
+  const wrongSlots=[];
+  pipeSlots.forEach((op,i)=>{
+    const slot=document.getElementById('slot_'+i);
+    if(op===CORRECT_PIPELINE[i]){
+      slot.className='pipeline-slot correct-slot';
+      correctCount++;
+    } else {
+      slot.className='pipeline-slot wrong-slot';
+      wrongSlots.push({slot:i+1, placed:OPERATIONS.find(o=>o.id===op)?.label, correct:OPERATIONS.find(o=>o.id===CORRECT_PIPELINE[i])?.label});
+    }
+  });
+
+  const fb=document.getElementById('s3_fb');
+  if(correctCount===5){
+    fb.className='feedback correct show';
+    fb.innerHTML=`<div class="fb-title">✓ Perfect Pipeline — All 5 Stages Correct</div>
+      <p>The inference sequence is exact: <strong>Logits → Temperature → Softmax → Top-p → Sample</strong>. Temperature must come before softmax because we're scaling the raw scores (logits), not the probabilities. Top-p operates on probabilities, so it must follow softmax. Sampling is always last — it draws a single token from the final, filtered, renormalized distribution.</p>`;
+    document.getElementById('s3_unlock').classList.add('show');
+    setTimeout(()=>{ unlockSection('s4'); updateProgress(75); }, 800);
+  } else {
+    let diagnosis='';
+    wrongSlots.forEach(w=>{
+      if(w.placed==='Softmax' && CORRECT_PIPELINE[w.slot-1]==='temp'){
+        diagnosis += `<p style="margin-top:6px;"><strong>Step ${w.slot}:</strong> You placed Softmax here, but Temperature comes first. Softmax on raw logits loses the magnitude information that temperature scaling needs to reshape.</p>`;
+      } else if(w.placed==='Sample' && CORRECT_PIPELINE[w.slot-1]==='topp'){
+        diagnosis += `<p style="margin-top:6px;"><strong>Step ${w.slot}:</strong> Top-p filtering must happen before sampling — otherwise you're sampling from the full unfiltered distribution, exposing the dangerous probability tail.</p>`;
+      } else {
+        diagnosis += `<p style="margin-top:6px;"><strong>Step ${w.slot}:</strong> Got "${w.placed}" — should be "${w.correct}."</p>`;
+      }
+    });
+    fb.className='feedback wrong show';
+    fb.innerHTML=`<div class="fb-title">✗ ${5-correctCount} Stage(s) Wrong — Diagnosis Below</div>${diagnosis}
+      <p style="margin-top:10px;color:var(--text-mid);">Correct order: Logits → Temperature → Softmax → Top-p → Sample. Reset and try again.</p>`;
+    document.getElementById('s3_resetBtn').disabled=false;
+  }
+}
+
+
+// ══════════════════════════════════════════════════
+// SECTION 4 — TRANSFER GAUNTLET (no visual scaffolding)
+// ══════════════════════════════════════════════════
+
+const GAUNTLET_QS = [
+  {
+    id:'g1',
+    domain:'🍳 COOKING',
+    text:'A chef perfecting a ramen recipe knows exactly what it needs: 2ml more tare, done. Earlier in development, many adjustments were plausible. What probabilistic concept describes this progression from "many options plausible" to "one option obvious"?',
+    choices:['Temperature decrease','Entropy reduction','Top-p filtering','KL divergence increase'],
+    correct:1,
+    explanation:'Entropy reduction. As the recipe matures, the chef\'s distribution over seasoning choices converges from broad (high entropy, many options plausible) to narrow (low entropy, one clearly correct adjustment). This mirrors how a language model\'s entropy at a given position drops as context constrains the prediction.'
+  },
+  {
+    id:'g2',
+    domain:'🧠 THERAPY',
+    text:'A therapist using self-disclosure (normally 3% of interventions) and direct confrontation (normally 8%) is operating as if which parameter has been increased?',
+    choices:['Top-p raised to 1.0','Temperature increased','Entropy decreased','KL divergence set to zero'],
+    correct:1,
+    explanation:'Temperature increased. Higher temperature flattens the intervention distribution — low-probability techniques like self-disclosure and confrontation rise in frequency. The therapist is sampling from a broader, less peaked distribution, exactly as a high-temperature language model does with rare tokens.'
+  },
+  {
+    id:'g3',
+    domain:'🎵 MUSIC',
+    text:'A pop producer decides to "only use chords within 85% of the harmonic expectation" for their genre. This explicitly filters out Neapolitan chords and augmented sixths. What operation in the inference pipeline does this map to?',
+    choices:['Softmax','Temperature scaling','Top-p filtering','Greedy decoding'],
+    correct:2,
+    explanation:'Top-p filtering. The genre convention defines a probability threshold — only harmonies whose cumulative probability falls within that threshold are "in bounds." Rare, genre-inappropriate chords are zeroed out and renormalized away, exactly as top-p zeros out the low-probability tail in token distributions.'
+  },
+  {
+    id:'g4',
+    domain:'🎵 MUSIC',
+    text:'After incorporating jazz harmonics into a pop album, a critic notes the chord distribution has shifted significantly from the standard pop distribution. What metric specifically quantifies "how far the distribution has shifted" from the original reference?',
+    choices:['Entropy H(p)','Temperature T','KL divergence KL(p||q)','Standard deviation'],
+    correct:2,
+    explanation:'KL divergence. KL(blended || pop_reference) measures exactly how much the blended distribution has moved away from the pure pop baseline. Small KL = "pop with jazzy touches." Large KL = "this has become jazz." In GRPO training, KL(π_θ || π_ref) serves this exact function — measuring policy drift from the reference model.'
+  },
+  {
+    id:'g5',
+    domain:'🍳 COOKING',
+    text:'A fusion kitchen uses "whatever is in the pantry" to constrain seasoning choices. If fish sauce isn\'t available, it cannot be chosen regardless of the base recipe probability. This physical constraint maps to which inference operation?',
+    choices:['Temperature = 0 (greedy)','Top-p filtering','Entropy maximization','KL penalty'],
+    correct:1,
+    explanation:'Top-p filtering. The pantry physically zeroes out unavailable ingredients and forces renormalization over what remains — identical to how top-p zeros out low-probability tokens beyond the threshold and renormalizes the remaining vocabulary. The constraint is not about preference; it is about support set restriction.'
+  },
+  {
+    id:'g6',
+    domain:'🧠 THERAPY',
+    text:'A CBT therapist scores perfectly on "intervention fidelity" metrics but clients report their sessions feel robotic and repetitive. What is the most likely cause in probabilistic terms?',
+    choices:['KL divergence too high','Temperature too low — over-peaked distribution','Entropy too high — too many techniques used','Top-p set to 0.5 — too restrictive'],
+    correct:1,
+    explanation:'Temperature too low. High fidelity metrics reward consistency — the model (or therapist) always picks the highest-probability intervention. But over-peaked distributions produce repetitive, robotic sessions. This is the same tradeoff as a language model at T=0.3: Voice DNA fidelity is technically high, but the output sounds like a recording. Naturalness requires non-zero entropy.'
+  },
+];
+
+let gauntletAnswers = {};
+let gauntletLocked = false;
+
+function initGauntlet() {
+  const container = document.getElementById('gauntletContainer');
+  container.innerHTML = '';
+  GAUNTLET_QS.forEach((q,qi)=>{
+    const div=document.createElement('div');
+    div.className='gauntlet-q';
+    div.id='gq_'+q.id;
+    let choicesHTML=q.choices.map((c,ci)=>`
+      <button class="btn-choice" id="gc_${q.id}_${ci}" onclick="selectGauntlet('${q.id}',${ci})">${c}</button>
+    `).join('');
+    div.innerHTML=`
+      <div class="q-domain">${q.domain}</div>
+      <div class="q-text">Q${qi+1}. ${q.text}</div>
+      ${choicesHTML}
+      <div class="feedback" id="gfb_${q.id}"></div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function selectGauntlet(qid, choiceIdx) {
+  if(gauntletLocked) return;
+  gauntletAnswers[qid]=choiceIdx;
+  const q=GAUNTLET_QS.find(q=>q.id===qid);
+  q.choices.forEach((_,ci)=>{
+    const btn=document.getElementById('gc_'+qid+'_'+ci);
+    btn.className='btn-choice'+(ci===choiceIdx?' selected':'');
+  });
+}
+
+function submitGauntlet() {
+  if(gauntletLocked) return;
+  const unanswered=GAUNTLET_QS.filter(q=>gauntletAnswers[q.id]===undefined);
+  if(unanswered.length>0){
+    const fb=document.getElementById('s4_fb');
+    fb.className='feedback info show';
+    fb.innerHTML=`<div class="fb-title">Answer All Questions First</div><p>${unanswered.length} question(s) unanswered.</p>`;
+    return;
+  }
+  gauntletLocked=true;
+  document.getElementById('s4_submitBtn').disabled=true;
+  document.getElementById('s4_fb').className='feedback';
+
+  let score=0;
+  GAUNTLET_QS.forEach(q=>{
+    const ans=gauntletAnswers[q.id];
+    const correct=ans===q.correct;
+    if(correct) score++;
+
+    // Mark choices
+    q.choices.forEach((_,ci)=>{
+      const btn=document.getElementById('gc_'+q.id+'_'+ci);
+      btn.disabled=true;
+      if(ci===q.correct) btn.className='btn-choice correct';
+      else if(ci===ans && !correct) btn.className='btn-choice wrong';
+      else btn.className='btn-choice';
+    });
+
+    // Feedback per question
+    const fb=document.getElementById('gfb_'+q.id);
+    fb.className='feedback '+(correct?'correct':'wrong')+' show';
+    fb.innerHTML=(correct?'<div class="fb-title">✓ Correct</div>':'<div class="fb-title">✗ Incorrect</div>')+
+      `<p>${q.explanation}</p>`;
+
+    document.getElementById('gq_'+q.id).className='gauntlet-q '+(correct?'answered-correct':'answered-wrong');
+  });
+
+  const pct=Math.round(score/GAUNTLET_QS.length*100);
+  const scoreDisp=document.getElementById('scoreDisplay');
+  document.getElementById('scoreNum').textContent=score+'/'+GAUNTLET_QS.length;
+  let msg='';
+  if(score===GAUNTLET_QS.length){
+    msg='Perfect transfer. You identified the probabilistic structure across cooking, therapy, and music without any visual scaffolding. The mechanism is fully internalized.';
+  } else if(score>=4){
+    msg='Strong transfer. The probabilistic framework is largely internalized. Review the incorrect questions — they typically reveal confusion between entropy (degree of spread) and temperature (parameter that controls spread).';
+  } else {
+    msg='Transfer is incomplete. Review the analogies: Temperature = adventurousness of sampling. Entropy = how spread the current distribution is. Top-p = what\'s in bounds. KL = how much has changed. These are different concepts with different uses.';
+  }
+  document.getElementById('scoreMsg').textContent=msg;
+  scoreDisp.classList.add('show');
+  updateProgress(100);
+}
+
+
+// ══════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════
+
+function unlockSection(id) {
+  const sec=document.getElementById(id);
+  sec.classList.remove('locked');
+  sec.classList.add('unlocked');
+  sec.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function updateProgress(pct) {
+  document.getElementById('progressFill').style.width=pct+'%';
+}
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', ()=>{
+  // S1 canvases already drawn above via IIFE
+  initDragCanvas();
+  initPipeline();
+  initGauntlet();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regex & String Parsing — Orchestration Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-dim:#92400e;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-dim:#0f766e;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-dim:#9f1239;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-dim:#065f46;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+  --blue:#3b82f6;--blue-glow:rgba(59,130,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--amber);background:rgba(245,158,11,0.08);padding:.1em .4em;border-radius:4px;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-amber{background:var(--amber);color:#000;}
+.btn-amber:hover{background:#fbbf24;transform:translateY(-1px);}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text-muted);color:var(--text);}
+.btn-outline.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow);}
+
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+.insight.teal{border-color:var(--teal);background:var(--teal-glow);}
+.insight.teal strong{color:var(--teal);}
+.insight.rose{border-color:var(--rose);background:var(--rose-glow);}
+.insight.rose strong{color:var(--rose);}
+.insight.violet{border-color:var(--violet);background:var(--violet-glow);}
+.insight.violet strong{color:var(--violet);}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1;min-width:280px;}
+.visual-col{flex:1.2;min-width:320px;}
+
+.formula-block{background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--text-muted);line-height:1.8;overflow-x:auto;margin-bottom:1rem;}
+.formula-block .hl{color:var(--amber);font-weight:600;}
+.formula-block .tl{color:var(--teal);}
+
+.quiz-option{display:block;width:100%;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:.88rem;color:var(--text-muted);transition:all .25s;text-align:left;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;}
+.quiz-option:hover{border-color:var(--border-light);color:var(--text);}
+.quiz-option.correct{border-color:var(--emerald);color:var(--emerald);background:var(--emerald-glow);}
+.quiz-option.wrong{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+.quiz-option.disabled{pointer-events:none;opacity:.6;}
+.quiz-explanation{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+.quiz-explanation.show{max-height:300px;}
+
+.sys-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;}
+.sys-card{padding:1.5rem;border-left:4px solid;border-radius:8px;background:var(--bg-elevated);}
+
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+.scroll-hint{animation:bounce 2s ease infinite;}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column!important;}
+  .canvas-wrap{min-height:280px!important;}
+  .nav-links{display:none;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">REGEX & STRING PARSING</span>
+    <div class="nav-links">
+      <a href="#tour" class="nav-link active" data-section="tour">System Tour</a>
+      <a href="#triage" class="nav-link" data-section="triage">Defect Triage</a>
+      <a href="#checkpoint" class="nav-link" data-section="checkpoint">Checkpoint</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 20 — ORCHESTRATION LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Cross-Context Validation<br><span style="color:var(--text-muted);font-weight:300;">The 6 Subsystems</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      How precise string parsing behavior mutates across the 6 core systems of the Conscious Coaching Platform — from Fast API perimeter checks to deep graph sanitization.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: The 6 Subsystems -->
+<section id="tour" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — SYSTEM TOUR</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">The Regex Morphometry</h2>
+    <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1.5rem;max-width:800px;">
+      Regex behaves differently depending on exactly where in the architectural stack it is deployed. A perimeter router uses it to block traffic. A memory engine uses it to sanitize queries. An extraction harness uses it to hunt through noise.
+    </p>
+    
+    <div class="sys-grid">
+      <!-- Chassis -->
+      <div class="sys-card" style="border-color:var(--blue);">
+        <h4 style="color:var(--blue);margin-bottom:.5rem;">1. The Chassis (FastAPI)</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:.75rem;">
+          <strong>Perimeter Routing Guard:</strong> FastAPI natively uses Regex in path definitions. If you define a route <code>@app.get("/agent/{agent_id:[0-9]+}")</code>, the router inherently validates that the ID is fully numeric. Traffic with non-numeric IDs never reaches your logic.
+        </p>
+      </div>
+
+      <!-- QA -->
+      <div class="sys-card" style="border-color:var(--violet);">
+        <h4 style="color:var(--violet);margin-bottom:.5rem;">2. The QA Dept (Pydantic)</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:.75rem;">
+          <strong>Immutable State Asserter:</strong> Uses <code>Field(pattern=...)</code>. It is completely inflexible. It does not extract; it violently asserts. It verifies that data already extracted strictly maps to database schemas (e.g., precise hex codes) to prevent SQL/Graph injection downstream.
+        </p>
+      </div>
+
+      <!-- Machinist -->
+      <div class="sys-card" style="border-color:var(--amber);">
+        <h4 style="color:var(--amber);margin-bottom:.5rem;">3. The Machinist (DSPy)</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:.75rem;">
+          <strong>Semantic Normalizer:</strong> Uses <code>re.sub()</code> extensively to prune out CoT formatting. For instance, parsing <code>&lt;think&gt;...&lt;/think&gt;</code> tags gracefully to extract the pristine final semantic instruction before passing it to the next module. It embraces variability.
+        </p>
+      </div>
+
+      <!-- Robot Arm -->
+      <div class="sys-card" style="border-color:var(--rose);">
+        <h4 style="color:var(--rose);margin-bottom:.5rem;">4. The Robot Arm (Pi Harness)</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:.75rem;">
+          <strong>Mechanical Payload Extractor:</strong> Extremely greedy/non-greedy balance. Uses <code>re.DOTALL</code> specifically to pull vast multi-line shell scripts out of <code>&lt;bash&gt;</code> tags. The regex here must survive code formatting, markdown blocks, and hallucinated spacing.
+        </p>
+      </div>
+
+      <!-- Memory -->
+      <div class="sys-card" style="border-color:var(--emerald);">
+        <h4 style="color:var(--emerald);margin-bottom:.5rem;">5. The Memory Engine (Neo4j)</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:.75rem;">
+          <strong>Cypher Format Enforcement:</strong> Regex sanitizes string formatting prior to cypher rendering to ensure nodes aren't malformed. <code>re.sub("[^a-zA-Z0-9_]", "", label)</code> violently strips any character that isn't native Cypher safe before query execution.
+        </p>
+      </div>
+
+      <!-- Compiler -->
+      <div class="sys-card" style="border-color:var(--teal);">
+        <h4 style="color:var(--teal);margin-bottom:.5rem;">6. The Skill Compiler (JIT)</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:.75rem;">
+          <strong>Template DNA Substitution:</strong> Replaces template variables dynamically. When a prompt blueprint has <code>{{USER_BIOGRAPHY}}</code>, the compiler uses regex parameter matching to hot-swap systemic contexts before shipping the finalized sequence to the LLM.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: Defect Triage -->
+<section id="triage" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">02 — DEFECT TRIAGE</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Cross-Context Architectural Failures</h2>
+    <div class="flex-layout">
+      <div class="visual-col">
+         <div class="card" style="padding:1.5rem;min-height:350px;" id="triageBoard">
+            <h4 style="color:var(--text);margin-bottom:.5rem;" id="trTitle">Scenario 1: The Infinite Loop</h4>
+            <div style="background:#0d0d10;padding:1rem;border-radius:6px;border:1px solid var(--border);color:var(--rose);font-family:'JetBrains Mono';font-size:.85rem;margin-bottom:1.5rem;" id="trLogs">
+              [WARNING] Agent generated code.<br>
+              [WARNING] Regex matcher returned 'None'.<br>
+              [INFO] Passing None payload to terminal.<br>
+              [ERROR] Terminal blocked. Returning execution error to Agent.<br>
+              [WARNING] Agent apologized and generated new multi-line code.<br>
+              [WARNING] Regex matcher returned 'None'.<br>
+              ... Reached MAX_TURNS limit.
+            </div>
+            <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem;">Where specifically in the 6 Subsystems did the parsing explicitly fail, and why?</p>
+            
+            <div style="display:flex;flex-direction:column;gap:.5rem;" id="trBtns">
+              <button class="btn btn-outline" style="justify-content:flex-start;" onclick="checkTr(1, false)">The Chassis (FastAPI missing path ID)</button>
+              <button class="btn btn-outline" style="justify-content:flex-start;" onclick="checkTr(1, false)">QA Dept (Pydantic Field failed)</button>
+              <button class="btn btn-outline" style="justify-content:flex-start;" onclick="checkTr(1, true)">The Robot Arm (Pi Extractor missing re.DOTALL)</button>
+            </div>
+            
+            <div id="trFbk" style="display:none;margin-top:1rem;font-size:.85rem;padding:1rem;border-radius:8px;background:var(--emerald-glow);border:1px solid var(--emerald);color:var(--emerald);">
+               <strong>Correct.</strong> Multi-line bash logic was continually generated but the Regex string execution failed silently because the `.` flag didn't cross linebreaks. The arm received nothing.
+            </div>
+         </div>
+      </div>
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          In complex agentic architectures, extraction failures are often silently passed down as `NoneType` bugs or masked as LLM hallucination errors. The LLM behaves perfectly, but the string boundary failed to secure it.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+           Use the defect triage panel to evaluate how varying systems report format violations. 
+        </p>
+        <div class="insight">
+           Supervising complex platforms demands that you isolate <strong>where</strong> the structural breakage actually occurs. Is it a perimeter issue? A logic normalization issue? An extraction issue?
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: Checkpoint -->
+<section id="checkpoint" class="section">
+  <div class="section-inner" style="max-width:720px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">03 — CHECKPOINT</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Test Your Understanding</h2>
+    <div id="quizContainer" style="display:flex;flex-direction:column;gap:1.5rem;"></div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem 4rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);">
+   Interactive Visual Learning — Lesson 20: Regex & String Parsing (Orchestration)
+</footer>
+
+<script>
+const DPR=window.devicePixelRatio||1;
+function setupCanvas(c){const p=c.parentElement,r=p.getBoundingClientRect();c.width=r.width*DPR;c.height=r.height*DPR;c.style.width=r.width+'px';c.style.height=r.height+'px';const ctx=c.getContext('2d');ctx.scale(DPR,DPR);return{ctx,w:r.width,h:r.height};}
+
+/* Hero Net Canvas */
+(function(){
+  const c=document.getElementById('heroCanvas');let W,H,ctx;
+  function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+  resize();window.addEventListener('resize',resize);
+  let nodes = Array.from({length:6}, (_,i)=>{
+     return {x: Math.random()*W, y: Math.random()*H, vx: (Math.random()-.5)*0.5, vy:(Math.random()-.5)*0.5};
+  });
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    // Draw 6 central nodes representing subsystems
+    for(let i=0;i<6;i++){
+       nodes[i].x += nodes[i].vx; nodes[i].y += nodes[i].vy;
+       if(nodes[i].x<0 || nodes[i].x>W) nodes[i].vx *= -1;
+       if(nodes[i].y<0 || nodes[i].y>H) nodes[i].vy *= -1;
+       
+       for(let j=i+1;j<6;j++){
+          ctx.beginPath();
+          ctx.moveTo(nodes[i].x, nodes[i].y);
+          ctx.lineTo(nodes[j].x, nodes[j].y);
+          ctx.strokeStyle='rgba(245,158,11,0.05)';
+          ctx.stroke();
+       }
+       
+       ctx.beginPath();ctx.arc(nodes[i].x, nodes[i].y, 15, 0, Math.PI*2);
+       ctx.fillStyle='rgba(139,92,246,0.1)';ctx.fill();
+       ctx.strokeStyle='rgba(139,92,246,0.3)';ctx.stroke();
+       
+       // Orbiting parse packets
+       const t = Date.now()*0.001 + i;
+       const px = nodes[i].x + Math.cos(t*2)*25;
+       const py = nodes[i].y + Math.sin(t*2)*25;
+       ctx.fillStyle='var(--amber)';
+       ctx.fillRect(px-2, py-2, 4, 4);
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* Defect Triage System */
+window.checkTr = function(scenarioCode, isCorrect){
+   const btns = document.getElementById('trBtns').querySelectorAll('.btn');
+   btns.forEach(b => b.style.opacity = '0.5');
+   const fbk = document.getElementById('trFbk');
+   fbk.style.display = 'block';
+   if(isCorrect){
+      fbk.style.borderColor='var(--emerald)'; fbk.style.background='var(--emerald-glow)'; fbk.style.color='var(--emerald)';
+      fbk.innerHTML = `<strong>Correct.</strong> Multi-line bash logic was continually generated but the Regex string execution failed silently because the \`.\` flag didn't cross linebreaks. The arm received nothing.`;
+   } else {
+      fbk.style.borderColor='var(--rose)'; fbk.style.background='var(--rose-glow)'; fbk.style.color='var(--rose)';
+      fbk.innerHTML = `<strong>Incorrect.</strong> Look at the logs. The agent successfully generated code, but the match returned None and the system passed None to the terminal. This points directly to the extractor parsing mechanism, not the API perimeter or the QA strict schema field.`;
+   }
+}
+
+/* Application Gauntlet (Checkpoint) */
+(function(){
+  const questions=[
+    {q:"If an API request hits FastAPI at `/agent/trigger-run` but the route was declared as `@app.get('/agent/{agent_id:[0-9]+}')`, what happens before your code executes?",
+     opts:["It throws a ValidationError inside the function body.","FastAPI immediately rejects the routing with a 404/422 because the string 'trigger-run' fails the fundamental `[0-9]+` route regex.","The route processes the string as a variable anyway.","The Skill compiler intercepts the URL."],
+     correct:1,explanation:"FastAPI validates route path variables dynamically using internal regex. The moment 'trigger-run' hits a string enforcing numerics-only, the router natively rejects traffic before the node even allocates compute resources."},
+    {q:"Why do we use strictly different parsing behavior in the Machinist (DSPy) vs the Robot Arm (Pi Harness)?",
+     opts:["The Machinist uses Python, the Arm uses Bash.","The Machinist anticipates semantic output and strips generative noise (`<think>`) iteratively. The Robot Arm requires exact code payload extraction to prevent running conversational text in the terminal.","The Machinist doesn't use parsing.","The Robot Arm is entirely visual."],
+     correct:1,explanation:"DSPy orchestrates reasoning. Its Regex `re.sub()` normalizes strings by removing internal thinking wrappers so models can cleanly map outputs. The Pi Harness demands extreme isolation—the code block must be perfectly extracted to safely pipe into bash."},
+    {q:"What is the danger of NOT sanitizing labels in the Memory Engine (Neo4j) with `re.sub(\"[^a-zA-Z0-9_]\", \"\", label)`?",
+     opts:["The database executes slower.","A hallucinated Node classification like `Type: 4#$!@ User Node` would shatter Cypher syntax generation, potentially triggering a fatal syntax error or Graph Injection vulnerability.","Python would fail to garbage collect it.","The label would be parsed as a float."],
+     correct:1,explanation:"Cypher queries construct strings dynamically. If you don't aggressively strip out non-alphanumeric elements using Regex sanitization, hallucinated characters break graph syntax and disrupt memory persistence completely."}
+  ];
+  const container=document.getElementById('quizContainer');
+  questions.forEach((q,qi)=>{
+    const card=document.createElement('div');card.className='card';card.style.padding='1.25rem';
+    let optsHTML='';q.opts.forEach((o,oi)=>{optsHTML+=`<button class="quiz-option" data-q="${qi}" data-o="${oi}">${o}</button>`;});
+    card.innerHTML=`<p style="font-size:.82rem;font-weight:600;color:var(--text-dim);margin-bottom:.75rem;">Question ${qi+1}</p>
+      <p style="font-size:.92rem;line-height:1.6;margin-bottom:1rem;">${q.q}</p>
+      <div id="qO${qi}">${optsHTML}</div>
+      <div class="quiz-explanation" id="qE${qi}" style="margin-top:.75rem;"><div class="insight">${q.explanation}</div></div>`;
+    container.appendChild(card);
+  });
+  container.addEventListener('click',(e)=>{
+    const btn=e.target.closest('.quiz-option');if(!btn)return;
+    const qi=+btn.dataset.q,oi=+btn.dataset.o;
+    const opts=document.querySelectorAll(`#qO${qi} .quiz-option`);
+    if(opts[0].classList.contains('disabled'))return;
+    opts.forEach((o,i)=>{o.classList.add('disabled');
+      if(i===questions[qi].correct)o.classList.add('correct');
+      else if(i===oi&&oi!==questions[qi].correct)o.classList.add('wrong');});
+    document.getElementById(`qE${qi}`).classList.add('show');
+  });
+})();
+</script>
+</body>
+</html>

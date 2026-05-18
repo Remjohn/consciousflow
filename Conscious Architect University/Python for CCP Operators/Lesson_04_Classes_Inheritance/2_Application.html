@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classes & Inheritance — Application Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{
+  --bg:#09090b;--surface:#131316;--surface2:#1a1a1f;--surface3:#27272a;
+  --text:#fafafa;--muted:#a1a1aa;--border:#27272a;
+  --accent:#3b82f6;--accent-glow:rgba(59, 130, 246, 0.12);
+  --red:#f43f5e;--red-glow:rgba(244, 63, 94, 0.12);
+  --green:#10b981;--green-glow:rgba(16, 185, 129, 0.12);
+  --amber:#f59e0b;--amber-glow:rgba(245, 158, 11, 0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139, 92, 246, 0.15);
+  --mono:'JetBrains Mono',monospace;--sans:'DM Sans',sans-serif;--grotesk:'Space Grotesk',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.65;overflow-x:hidden;}
+.container{max-width:800px;margin:0 auto;padding:4rem 2rem 10rem;}
+
+h1{font-family:var(--grotesk);font-size:clamp(2.5rem,5.5vw,3.5rem);line-height:1.1;margin-bottom:1.5rem;letter-spacing:-0.03em;}
+h2{font-family:var(--grotesk);font-size:1.8rem;margin-bottom:1rem;color:var(--text);font-weight:700;}
+h3{font-family:var(--grotesk);font-size:1.3rem;margin-bottom:1rem;color:var(--accent);font-weight:600;}
+p{margin-bottom:1.4rem;color:var(--muted);font-size:1.05rem;line-height:1.7;}
+strong{color:var(--text);}
+code{font-family:var(--mono);font-size:0.85em;background:var(--surface2);padding:0.2em 0.4em;border-radius:4px;color:var(--amber);}
+
+pre{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:1.2rem;overflow-x:auto;margin-bottom:1.5rem;}
+pre code{background:transparent;padding:0;color:var(--text);font-size:0.9rem;}
+.keyword{color:#c678dd;} .string{color:#98c379;} .class{color:#e5c07b;} .param{color:#d19a66;} .type{color:#56b6c2;} .comment{color:#5c6370;font-style:italic;}
+
+/* INTERRUPT GATE */
+.interrupt-modal{position:fixed;inset:0;background:rgba(9,9,11,0.95);backdrop-filter:blur(10px);z-index:100;display:flex;align-items:center;justify-content:center;transition:opacity 0.4s;}
+.interrupt-modal.hidden{opacity:0;pointer-events:none;}
+.interrupt-box{background:var(--surface);border:1px solid var(--border);border-top:4px solid var(--violet);border-radius:8px;padding:3rem;max-width:600px;width:90%;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);}
+.interrupt-label{font-family:var(--mono);font-size:0.75rem;color:var(--violet);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:1rem;font-weight:600;}
+.interrupt-q{font-size:1.25rem;font-family:var(--grotesk);margin-bottom:2rem;line-height:1.5;}
+
+.input-group{display:flex;gap:1rem;align-items:center;margin-bottom:0.5rem;}
+.input-text{background:var(--bg);border:1px solid var(--border);color:#fff;font-family:var(--mono);font-size:0.95rem;padding:0.75rem 1rem;flex:1;border-radius:6px;transition:border-color 0.2s;}
+.input-text:focus{outline:none;border-color:var(--violet);}
+
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.75rem 1.5rem;font-family:var(--grotesk);font-weight:600;font-size:0.95rem;border-radius:6px;cursor:pointer;transition:all 0.18s;}
+.btn:hover:not(:disabled){transform:translateY(-1px);background:#e4e4e7;}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+
+/* TABS FOR ARTIFACTS */
+.tabs{display:flex;gap:0.5rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:0.8rem;overflow-x:auto;}
+.tab-btn{background:transparent;border:1px solid transparent;color:var(--muted);padding:0.5rem 1rem;font-family:var(--mono);font-size:0.8rem;border-radius:6px;cursor:pointer;white-space:nowrap;transition:all 0.2s;}
+.tab-btn:hover{color:var(--text);background:var(--surface2);}
+.tab-btn.active{background:var(--surface2);border:1px solid var(--border);color:var(--accent);}
+
+.tab-content{display:none;animation:fadein 0.3s;}
+.tab-content.active{display:block;}
+
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+.strategic-callout{font-family:var(--mono);font-size:0.75rem;color:var(--amber);background:var(--amber-glow);border:1px solid rgba(245,158,11,0.2);padding:0.6rem 1rem;border-radius:6px;margin-bottom:1.5rem;}
+
+.lock-display{display:none;margin-top:1.5rem;padding:1.25rem 1.5rem;background:var(--surface2);border-radius:6px;border:1px dashed var(--border);}
+.lock-display.visible{display:block;}
+.reveal-text{margin-top:0.5rem;font-size:0.95rem;color:var(--muted);line-height:1.6;}
+.reveal-text strong{color:var(--green);}
+
+/* GAUNTLET */
+.gauntlet-wrap{margin-top:4rem;border-top:2px solid var(--border);padding-top:3rem;}
+.gauntlet-intro{font-size:0.95rem;color:var(--muted);margin-bottom:2rem;padding:1.2rem 1.5rem;background:var(--surface2);border-radius:6px;border-left:3px solid var(--red);}
+.q-block{background:var(--surface);padding:1.75rem;border-radius:8px;margin-bottom:1.5rem;border:1px solid var(--border);}
+.q-num{font-family:var(--mono);font-size:0.7rem;color:var(--accent);text-transform:uppercase;margin-bottom:0.75rem;letter-spacing:0.1em;}
+.q-code{font-family:var(--mono);font-size:0.85rem;background:var(--bg);padding:1rem;border-radius:6px;color:var(--text);border:1px solid var(--border);margin-bottom:1.25rem;white-space:pre-wrap;}
+.q-text{font-size:1.05rem;margin-bottom:1.25rem;font-weight:500;color:#fff;line-height:1.55;}
+
+.choices{display:flex;flex-direction:column;gap:0.75rem;margin-bottom:0.5rem;}
+.choice-btn{text-align:left;padding:1rem 1.25rem;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;transition:all 0.2s;font-size:0.95rem;font-weight:400;font-family:var(--sans);line-height:1.5;}
+.choice-btn:hover:not(:disabled){border-color:var(--accent);background:var(--accent-glow);}
+.choice-btn:disabled{cursor:not-allowed;}
+.choice-btn.selected-wrong{border-color:var(--red);color:var(--red);background:var(--red-glow);}
+.choice-btn.selected-right{border-color:var(--green);color:var(--green);background:var(--green-glow);}
+
+.feedback{display:none;margin-top:1.25rem;padding:1.25rem;border-radius:6px;font-size:0.95rem;line-height:1.6;}
+.feedback.visible{display:block;animation:fadein 0.3s;}
+.feedback.error{background:var(--red-glow);border-left:3px solid var(--red);color:#fda4af;}
+.feedback.success{background:var(--green-glow);border-left:3px solid var(--green);color:#6ee7b7;}
+
+</style>
+</head>
+<body>
+
+<!-- SPACED RETRIEVAL INTERRUPT -->
+<div class="interrupt-modal" id="interruptGate">
+  <div class="interrupt-box">
+    <div class="interrupt-label"><i class="fa-solid fa-lock"></i> Spaced Retrieval Interrupt</div>
+    <div class="interrupt-q">Without looking: What architectural mechanism allows you to reuse the entire validation and serialization engine of Pydantic without writing a single line of inspection logic yourself?</div>
+    <div class="input-group">
+      <input type="text" id="int_input" class="input-text" placeholder="Type the mechanism...">
+      <button class="btn" onclick="checkInterrupt()">Commit</button>
+    </div>
+    <div id="int_error" style="color:var(--red);font-size:0.85rem;margin-top:0.5rem;display:none;">Incorrect. Think about how subclasses extend blueprints.</div>
+  </div>
+</div>
+
+<div class="container" style="opacity:0;" id="mainContent">
+
+  <div style="font-family:var(--mono);font-size:0.75rem;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.15em;">Lesson 04 · Layer 2 — Application</div>
+  <h1>Classes & Inheritance in Production</h1>
+  <p style="font-size:1.15rem;margin-bottom:2.5rem;color:var(--text);">We leave the realm of theory. Step onto the factory floor and trace the exact blueprints holding the Sovereign Stack together.</p>
+
+  <p>The artifacts below designate critical load-bearing components of the platform. You are reading them as a Foreman, supervising code agents to ensure adherence to the Orchestration Dichotomy.</p>
+
+  <h2>The CCP Artifact Gallery</h2>
+  
+  <div class="tabs">
+    <button class="tab-btn active" onclick="openTab(event, 'tab-qa')">1. The QA Department</button>
+    <button class="tab-btn" onclick="openTab(event, 'tab-dsp')">2. The Machinist</button>
+    <button class="tab-btn" onclick="openTab(event, 'tab-api')">3. The Chassis</button>
+    <button class="tab-btn" onclick="openTab(event, 'tab-arm')">4. The Robot Arm</button>
+    <button class="tab-btn" onclick="openTab(event, 'tab-db')">5. The Memory Engine</button>
+  </div>
+
+  <!-- TAB 1: QA -->
+  <div class="tab-content active" id="tab-qa">
+    <div class="strategic-callout"><i class="fa-solid fa-book"></i> Strategic Source: Orchestration Dichotomy (Dictum 2) & OpenProse Contract (173/200)</div>
+<pre><code><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field
+
+<span class="keyword">class</span> <span class="class">CoachingSkillOutput</span>(<span class="class">BaseModel</span>):
+    <span class="comment">"""Base output structure for all compiled skills."""</span>
+    skill_name: <span class="type">str</span> = Field(..., description=<span class="string">"The exact registered name"</span>)
+    execution_success: <span class="type">bool</span>
+
+<span class="keyword">class</span> <span class="class">ConfrontationSkillOutput</span>(<span class="class">CoachingSkillOutput</span>):
+    <span class="comment">"""Specific output enforcement for the Confrontation skill."""</span>
+    confrontation_intensity: <span class="type">float</span> = Field(..., ge=<span class="string">0.0</span>, le=<span class="string">1.0</span>)
+    defensive_response_detected: <span class="type">bool</span>
+    trigger_deployed: <span class="type">str</span> = Field(..., min_length=<span class="string">3</span>)</code></pre>
+
+    <div style="background:var(--surface2);padding:1.5rem;border-radius:8px;margin-bottom:1.5rem;border-left:3px solid var(--accent);">
+      <h4 style="margin-bottom:0.5rem;font-family:var(--mono);color:var(--accent);">Data Flow Trace</h4>
+      <p style="font-size:0.9rem;margin-bottom:0;">The LLM emits JSON. It enters <code>ConfrontationSkillOutput.model_validate_json()</code>. Because it inherits from <code>CoachingSkillOutput</code>, it validates <code>skill_name</code> first. Then it asserts <code>confrontation_intensity</code> strict float bounds. The downstream pipeline rests entirely on this mathematical guarantee.</p>
+    </div>
+
+    <div class="input-group">
+      <input type="text" id="t1_inp" class="input-text" placeholder="If LLM outputs confrontation_intensity: 1.5, what happens?">
+      <button class="btn" id="t1_btn" onclick="lockT(1)">Lock Prediction</button>
+    </div>
+    <div class="lock-display" id="t1_lock">
+      <div class="reveal-text"><strong>The Reveal:</strong> Pydantic intercepts the <code>1.5</code>, triggers the <code>BaseModel</code> logic evaluating the <code>le=1.0</code> boundary constraint, and forcefully crashes the instantiation with a <code>ValidationError</code>. The malformed data is vaporized before polluting downstream metrics.</div>
+    </div>
+  </div>
+
+  <!-- TAB 2: Machinist -->
+  <div class="tab-content" id="tab-dsp">
+    <div class="strategic-callout"><i class="fa-solid fa-book"></i> Strategic Source: DSPy: The End of Prompt Engineering (185/200)</div>
+<pre><code><span class="keyword">import</span> dspy
+
+<span class="keyword">class</span> <span class="class">GenerateNarrativePivot</span>(<span class="class">dspy.Module</span>):
+    <span class="keyword">def</span> <span class="type">__init__</span>(<span class="param">self</span>):
+        <span class="type">super</span>().__init__()
+        <span class="param">self</span>.assess_block = dspy.ChainOfThought(<span class="string">"transcript -> block_sum"</span>)
+        <span class="param">self</span>.generate_pivot = dspy.Predict(<span class="string">"block_sum, dna -> pivot_script"</span>)
+
+    <span class="keyword">def</span> <span class="type">forward</span>(<span class="param">self</span>, <span class="param">transcript</span>: <span class="type">str</span>, <span class="param">dna</span>: <span class="type">str</span>) -> dspy.Prediction:
+        assessment = <span class="param">self</span>.assess_block(transcript=transcript)
+        pivot = <span class="param">self</span>.generate_pivot(block_sum=assessment.block_sum, dna=dna)
+        <span class="keyword">return</span> dspy.Prediction(pivot_script=pivot.pivot_script)</code></pre>
+
+    <div class="input-group">
+      <input type="text" id="t2_inp" class="input-text" placeholder="If an agent deletes line 5 (super().__init__()), what fails?">
+      <button class="btn" id="t2_btn" onclick="lockT(2)">Lock Prediction</button>
+    </div>
+    <div class="lock-display" id="t2_lock">
+      <div class="reveal-text"><strong>The Reveal:</strong> Manual pipeline tests work fine, but DSPy's BootstrapFewShot optimizer fails catastrophically. The compiler traverses the <code>dspy.Module</code> inheritance registry to locate sub-modules. Without parent initialization, the tracker array is empty. The optimizer silently skips the entire pipeline.</div>
+    </div>
+  </div>
+
+  <!-- TAB 3: API -->
+  <div class="tab-content" id="tab-api">
+    <div class="strategic-callout"><i class="fa-solid fa-book"></i> Strategic Source: Inside the Scaffold (182/200) - FastAPI Integrations</div>
+<pre><code><span class="keyword">from</span> fastapi <span class="keyword">import</span> FastAPI, Depends, HTTPException
+
+app = FastAPI()
+
+<span class="keyword">class</span> <span class="class">VoiceDNAUpdate</span>(<span class="class">BaseModel</span>):
+    coach_id: <span class="type">str</span>
+    aggression_mod: <span class="type">float</span> = Field(..., ge=<span class="string">-1.0</span>, le=<span class="string">1.0</span>)
+    humor_style: <span class="type">str</span>
+
+<span class="type">@app.post</span>(<span class="string">"/api/v1/dna/update"</span>)
+<span class="keyword">async def</span> <span class="type">update_voice</span>(<span class="param">payload</span>: <span class="class">VoiceDNAUpdate</span>):
+    <span class="comment"># Internal Execution Layer</span>
+    current_profile.aggression += payload.aggression_mod
+    <span class="keyword">return</span> {<span class="string">"status"</span>: <span class="string">"success"</span>}</code></pre>
+
+    <div class="input-group">
+      <input type="text" id="t3_inp" class="input-text" placeholder="A POST occurs missing the 'humor_style' key. Does it reach execution logic?">
+      <button class="btn" id="t3_btn" onclick="lockT(3)">Lock Prediction</button>
+    </div>
+    <div class="lock-display" id="t3_lock">
+      <div class="reveal-text"><strong>The Reveal:</strong> No. The code execution never even touches the function block. FastAPI inherently parses the <code>payload: VoiceDNAUpdate</code> inheritance signature beforehand. Discerning a missing parameter against the blueprint, it intercepts and throws a <code>422 Unprocessable Entity</code> automatically over HTTP.</div>
+    </div>
+  </div>
+
+  <!-- TAB 4: Robot Arm -->
+  <div class="tab-content" id="tab-arm">
+    <div class="strategic-callout"><i class="fa-solid fa-book"></i> Strategic Source: Pi Agentic Harness (190/200)</div>
+<pre><code><span class="keyword">import</span> subprocess, shlex
+
+<span class="keyword">class</span> <span class="class">BashExecutionBoundary</span>:
+    <span class="keyword">def</span> <span class="type">__init__</span>(<span class="param">self</span>, <span class="param">command</span>: <span class="type">str</span>):
+        <span class="param">self</span>.command = command
+        
+    <span class="keyword">def</span> <span class="type">_sanitize</span>(<span class="param">self</span>) -> <span class="type">str</span>:
+        parts = shlex.split(<span class="param">self</span>.command)
+        <span class="keyword">if</span> parts[0] <span class="keyword">in</span> [<span class="string">"rm"</span>, <span class="string">"sudo"</span>, <span class="string">"mv"</span>]:
+            <span class="keyword">raise</span> PermissionError(<span class="string">"Disallowed root command."</span>)
+        <span class="keyword">return</span> shlex.join(parts)
+
+    <span class="keyword">def</span> <span class="type">execute</span>(<span class="param">self</span>) -> <span class="type">dict</span>:
+        safe_cmd = <span class="param">self</span>._sanitize()
+        res = subprocess.run(safe_cmd, shell=<span class="class">True</span>, capture_output=<span class="class">True</span>)
+        <span class="keyword">return</span> {<span class="string">"out"</span>: res.stdout}</code></pre>
+
+    <div class="input-group">
+      <input type="text" id="t4_inp" class="input-text" placeholder="Why use a Class wrapper for a simple subprocess run?">
+      <button class="btn" id="t4_btn" onclick="lockT(4)">Lock Prediction</button>
+    </div>
+    <div class="lock-display" id="t4_lock">
+      <div class="reveal-text"><strong>The Reveal:</strong> To isolate execution context explicitly. Inside a polling asynchronous loop driven by an LLM, throwing raw <code>subprocess.run()</code> opens the entire runtime matrix to global variables and unbounded states. The instance wrapper creates a deterministic shell bounding box limiting LLM logic bleeds mathematically.</div>
+    </div>
+  </div>
+
+  <!-- TAB 5: Memory Engine -->
+  <div class="tab-content" id="tab-db">
+    <div class="strategic-callout"><i class="fa-solid fa-book"></i> Strategic Source: OpenProse State Persistence Model (173/200)</div>
+<pre><code><span class="keyword">class</span> <span class="class">Neo4jNode</span>(<span class="class">BaseModel</span>):
+    node_id: <span class="type">str</span>
+    timestamp: <span class="type">int</span>
+
+<span class="keyword">class</span> <span class="class">CoachingStateNode</span>(<span class="class">Neo4jNode</span>):
+    dominant_emotion: <span class="type">str</span>
+    is_evading: <span class="type">bool</span>
+
+<span class="keyword">def</span> <span class="type">flush_to_graph</span>(<span class="param">node_data</span>: <span class="class">CoachingStateNode</span>):
+    execute_cypher(
+        <span class="string">"MERGE (n) SET n = $data"</span>, 
+        parameters=node_data.model_dump()
+    )</code></pre>
+
+    <div class="input-group">
+      <input type="text" id="t5_inp" class="input-text" placeholder="What explicitly does model_dump() format here?">
+      <button class="btn" id="t5_btn" onclick="lockT(5)">Lock Prediction</button>
+    </div>
+    <div class="lock-display" id="t5_lock">
+      <div class="reveal-text"><strong>The Reveal:</strong> It iterates the inherited baseline fields (<code>node_id</code>, <code>timestamp</code>) combined with the child subclass nodes directly into a flattened dictionary strictly compliant with the parameters expected by Neo4j's Cypher bridging layer without raising downstream NullPointer exceptions.</div>
+    </div>
+  </div>
+
+
+  <!-- GAUNTLET -->
+  <div class="gated-content" id="gauntlet-section" style="margin-top:5rem;">
+    <div class="gauntlet-wrap">
+      <h2>Application Gauntlet</h2>
+      <div class="gauntlet-intro">
+        Code Inspector Task: We are running rapid inspections on agent-submitted patches attempting to merge into the main Sovereign Stack branch. Assess the structural consequences immediately.
+      </div>
+      <div id="q-container"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function checkInterrupt(){
+  const val = document.getElementById('int_input').value.toLowerCase();
+  if(val.includes('inherit') || val.includes('class') || val.includes('blueprint') || val.includes('pydantic')) {
+    document.getElementById('interruptGate').classList.add('hidden');
+    document.getElementById('mainContent').style.opacity = '1';
+    document.body.style.overflow = 'auto';
+  } else {
+    document.getElementById('int_error').style.display = 'block';
+  }
+}
+
+// Ensure locked scroll if interrupt is open
+window.onload = () => {
+  document.body.style.overflow = 'hidden';
+};
+
+// Tabs
+function openTab(evt, tabName) {
+  let tabs = document.getElementsByClassName("tab-content");
+  for (let i = 0; i < tabs.length; i++) { tabs[i].classList.remove("active"); }
+  let links = document.getElementsByClassName("tab-btn");
+  for (let i = 0; i < links.length; i++) { links[i].classList.remove("active"); }
+  document.getElementById(tabName).classList.add("active");
+  evt.currentTarget.classList.add("active");
+}
+
+let completedTabs = 0;
+function lockT(id){
+  const inp = document.getElementById('t'+id+'_inp');
+  if(!inp.value) return;
+  inp.disabled = true;
+  document.getElementById('t'+id+'_btn').disabled = true;
+  document.getElementById('t'+id+'_lock').classList.add('visible');
+  completedTabs++;
+  if(completedTabs >= 5) {
+    document.getElementById('gauntlet-section').classList.add('unlocked');
+  }
+}
+
+const G_DATA = [
+  {num:1, code:`class CoachConfig(ServerConfig):
+    max_retry: int = Field(default=3, le=5)
+    
+app_config = CoachConfig(max_retry=4)`,
+   q:`What structural concept asserts the 'server_url' field exists internally inside app_config despite not being written here?`,
+   opts:[`Pydantic decorators`,`Dependency Injection`,`Inheritance`], ans:2,
+   exp:`Inheritance. ServerConfig possesses the parent attribute structure. CoachConfig gains those physical properties invisibly via extension.`},
+   
+  {num:2, code:`def route_call(session_data: dict) -> None:
+    internal_data = session_data["client_metric"] * 2.0`,
+   q:`Which subsystem inherently collapses under this raw dict input approach?`,
+   opts:[`The Memory Engine`,`The Chassis`,`The Telemetry Engine`], ans:1,
+   exp:`The Chassis. Routing raw dynamic dictionaries opens severe vulnerability to KeyErrors and TypeErrors. Ingress streams must funnel through mathematical validation classes first.`},
+
+  {num:3, code:`class RAGPipeline(dspy.Module):
+    def retrieve(self, query): pass
+    def generate(self, ctx): pass`,
+   q:`What required architectural mechanism is entirely absent causing the teleprompter optimization to fail?`,
+   opts:[`A forward() execution hook and the __init__ constructor.`,`Inheriting from BaseModel.`,`Adding @dspy.track decorators.`], ans:0,
+   exp:`The __init__ combined with super().__init__(). Without them, DSPy cannot map hooks onto target subroutines to tune the prompt parameters natively.`},
+
+  {num:4, code:`class Neo4jIntegrator:
+    def execute(self, payload: PipelineOut):
+        driver.session().run("...", **payload.model_dump())`,
+   q:`What specifically dictates the shape of the data inserted into the graph?`,
+   opts:[`The driver.session() method`,`The PipelineOut class blueprint`,`The Neo4j database configuration`], ans:1,
+   exp:`The Pydantic class definition generating PipelineOut strictly shapes the data via serialization payload.`},
+
+  {num:5, code:`class ScriptGen(BaseModel):
+    script_content: str
+    
+    @field_validator("script_content")
+    def prevent_breaks(cls, v: str):
+        if "<STOP>" in v: raise ValueError("Break.")
+        return v`,
+   q:`What agent omission occurs in line 4?`,
+   opts:[`It forgot self.`,`It is missing @classmethod above it.`,`It should be @model_validator.`], ans:1,
+   exp:`Because Pydantic frameworks evaluate fields across parallel manipulations, it demands @classmethod implementation or immediately throws a TypeError upon boot.`},
+
+  {num:6, code:`class TerminalWrapper(PiHarnessBase):
+    command_log: list[str] = []`,
+   q:`Inside asynchronous polling loops, what is the role of PiHarnessBase?`,
+   opts:[`It imports the terminal tools.`,`It guarantees execution sanitization and formatting isolated specifically to that execution loop run.`,`It connects the bash process to Neo4j.`], ans:1,
+   exp:`The parent guarantees security controls inside an un-bleedable state encapsulation box. You don't rewrite security per subsystem, you just inherit the harness framework.`},
+
+  {num:7, code:`class ExecuteBlock(dspy.Module):
+    def __init__(self):
+        super().__init__()
+        self.block = dspy.ChainOfThought(AnalyzeBase)`,
+   q:`If AnalyzeBase verification fails from an LLM hallucination, where does the retry logic trigger first?`,
+   opts:[`At the ExecuteBlock parent layer.`,`Internal to dspy.ChainOfThought before ever returning up the chain.`,`It crashes directly back to FastAPI.`], ans:1,
+   exp:`DSPy implements local resilience. The sub-module ChainOfThought inherently executes recursive retries directly against its local OutputField schemas before bubbling generic failure up.`}
+];
+
+function renderGauntlet(){
+  const target = document.getElementById('q-container');
+  let html = '';
+  G_DATA.forEach((g, idx) => {
+    html += `
+      <div class="q-block" id="gq-${idx}">
+        <div class="q-num">Inspection ${g.num}</div>
+        <div class="q-code">${g.code}</div>
+        <div class="q-text">${g.q}</div>
+        <div class="choices" id="gc-${idx}">`;
+    g.opts.forEach((opt, oIdx) => {
+      html += `<button class="choice-btn" onclick="answerG(${idx}, ${oIdx})">${opt}</button>`;
+    });
+    html += `</div>
+        <div class="feedback" id="gfb-${idx}">
+          <div class="feedback-title">Architecture Assessment</div>
+          ${g.exp}
+        </div>
+      </div>
+    `;
+  });
+  target.innerHTML = html;
+}
+
+function answerG(qIdx, oIdx) {
+  const block = document.getElementById(`gc-${qIdx}`);
+  const btns = block.querySelectorAll('button');
+  btns.forEach(b => b.disabled = true);
+  
+  const isCorrect = (oIdx === G_DATA[qIdx].ans);
+  if(isCorrect){
+    btns[oIdx].classList.add('selected-right');
+    const fb = document.getElementById(`gfb-${qIdx}`);
+    fb.classList.add('visible', 'success');
+  } else {
+    btns[oIdx].classList.add('selected-wrong');
+    btns[G_DATA[qIdx].ans].style.borderColor = "var(--green)";
+    btns[G_DATA[qIdx].ans].style.color = "var(--green)";
+    const fb = document.getElementById(`gfb-${qIdx}`);
+    fb.classList.add('visible', 'error');
+  }
+}
+
+renderGauntlet();
+</script>
+</body>
+</html>

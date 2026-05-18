@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 14 - Orchestration Layer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #09090b; --panel: #131316; --panel-2: #1a1a1f; --line: #27272a;
+      --text: #fafafa; --muted: #a1a1aa;
+      --amber: #f59e0b; --amber-glow: rgba(245,158,11,0.12);
+      --teal: #14b8a6; --teal-glow: rgba(20,184,166,0.12);
+      --emerald: #10b981; --emerald-glow: rgba(16,185,129,0.12);
+      --rose: #f43f5e; --rose-glow: rgba(244,63,94,0.12);
+      --violet: #8b5cf6; --violet-glow: rgba(139,92,246,0.12);
+      --blue: #3b82f6; --blue-glow: rgba(59,130,246,0.12);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; line-height: 1.6; overflow-x: hidden; }
+
+    h1, h2, h3, h4 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
+    
+    .nav-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      backdrop-filter: blur(16px); background: rgba(9,9,11,0.85);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      max-width: 1200px; margin: 0 auto; padding: 0 1rem; height: 54px;
+    }
+    .nav-brand { font-family: 'Space Grotesk'; font-size: 0.85rem; color: var(--violet); letter-spacing: 0.1em; }
+    .nav-links { display: flex; gap: 1.5rem; }
+    .nav-link { color: var(--muted); font-size: 0.85rem; text-decoration: none; font-weight: 500; transition: color 0.2s; }
+    .nav-link:hover, .nav-link.active { color: var(--violet); }
+
+    .section { min-height: 100vh; padding: 6rem 1.5rem 4rem; position: relative; }
+    .section-inner { max-width: 1120px; margin: 0 auto; }
+    
+    .eyebrow { color: var(--violet); text-transform: uppercase; letter-spacing: 0.15em; font: 700 0.8rem/1.2 'Space Grotesk'; margin-bottom: 12px; }
+    h1 { font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1.1; margin-bottom: 1.5rem; letter-spacing: -0.03em; }
+    h2 { font-size: 2rem; margin-bottom: 1.2rem; }
+    p { margin-bottom: 1rem; color: var(--muted); font-size: 0.98rem; }
+    
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 2rem; margin-bottom: 24px; }
+    .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; }
+
+    /* Map Layout */
+    .map-grid { display: grid; grid-template-columns: 280px 1fr; gap: 24px; margin-top: 32px; }
+    .node-list { display: flex; flex-direction: column; gap: 10px; }
+    .node-btn {
+      background: var(--panel-2); border: 1px solid var(--line); padding: 16px; border-radius: 8px;
+      text-align: left; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+    }
+    .node-btn:hover { border-color: rgba(255,255,255,0.2); }
+    .node-btn.active { background: var(--panel); border-color: var(--violet); }
+    .node-btn::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: transparent; transition: all 0.2s;
+    }
+    .node-btn.active::before { background: var(--violet); }
+    
+    .node-title { font: 700 1rem 'Space Grotesk'; color: var(--text); margin-bottom: 4px; }
+    .node-sub { font: 500 0.8rem 'DM Sans'; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    
+    .node-content-panel { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 24px; min-height: 500px; }
+    .node-view { display: none; animation: fadeIn 0.3s ease; }
+    .node-view.active { display: block; }
+    
+    .code-block {
+      background: #0d0d10; border: 1px solid var(--line); border-radius: 8px;
+      padding: 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
+      color: #e5e7eb; white-space: pre-wrap; margin-bottom: 16px; overflow-x: auto;
+    }
+
+    .badge-bar { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .badge { padding: 4px 10px; border-radius: 4px; border: 1px solid var(--line); font: 600 0.75rem 'JetBrains Mono'; background: #0d0d10; }
+    
+    /* Scenarios */
+    .scenario-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top: 24px; }
+    .scenario-card { padding: 20px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); }
+    .scenario-q { font-weight: 600; color: var(--text); font-size: 1.05rem; margin-bottom: 12px; }
+    .scenario-a { color: var(--muted); font-size: 0.95rem; border-left: 2px solid var(--violet); padding-left: 12px; margin-top: 12px; }
+
+    /* Accordion */
+    .accordion { margin-top: 24px; }
+    .acc-item { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 12px; background: var(--panel); overflow: hidden; }
+    .acc-header {
+      padding: 18px 20px; width: 100%; text-align: left; background: transparent; border: none;
+      cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+      font: 600 1.05rem 'Space Grotesk'; color: var(--text); transition: background 0.2s;
+    }
+    .acc-header:hover { background: rgba(255,255,255,0.03); }
+    .acc-icon { font-size: 1.2rem; transition: transform 0.3s; color: var(--violet); }
+    .acc-header.active .acc-icon { transform: rotate(45deg); }
+    .acc-body { display: none; padding: 0 20px 20px; border-top: 1px solid var(--line); margin-top: 10px; padding-top: 16px; }
+    .acc-body.active { display: block; animation: fadeIn 0.3s ease; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media (max-width: 900px) {
+      .map-grid { grid-template-columns: 1fr; }
+      .node-content-panel { min-height: auto; }
+      .section { padding: 5rem 1rem 3rem; }
+    }
+  </style>
+</head>
+<body>
+  
+  <nav class="nav-bar">
+    <div class="nav-inner">
+      <span class="nav-brand">ORCH LAYER</span>
+      <div class="nav-links">
+        <a href="#factory" class="nav-link active">Factory Floor</a>
+        <a href="#scenarios" class="nav-link">Scenarios</a>
+        <a href="#challenges" class="nav-link">Challenges</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="section" style="padding-bottom: 2rem;">
+    <div class="section-inner">
+      <p class="eyebrow">Lesson 14 - Orchestration Layer</p>
+      <h1>Multi-Context Tensor Alignment</h1>
+      <p style="font-size: 1.1rem; max-width: 700px; margin-bottom: 2rem;">To comprehend the structural power of PyTorch Tensor Literacy, we must observe how the immutable rules of <span class="mono">.shape</span>, <span class="mono">.eval()</span>, and <span class="mono">requires_grad</span> are rigorously enforced across six specialized subsystems.</p>
+    </div>
+  </header>
+
+  <!-- Section 1: Factory Floor Tour -->
+  <section id="factory" class="section" style="padding-top: 2rem;">
+    <div class="section-inner">
+      <h2>The Subsystem Integrations</h2>
+      <p>The context shifts, but the underlying principle of Sovereign dimensional control remains entirely constant. Click each node to inspect the PyTorch payload.</p>
+      
+      <div class="map-grid">
+        <div class="node-list">
+          <button class="node-btn active" onclick="showNode('n1', this)">
+            <div class="node-title">The Chassis</div>
+            <div class="node-sub">FastAPI Route Context</div>
+          </button>
+          <button class="node-btn" onclick="showNode('n2', this)">
+            <div class="node-title">The QA Dept</div>
+            <div class="node-sub">Pydantic Schema Context</div>
+          </button>
+          <button class="node-btn" onclick="showNode('n3', this)">
+            <div class="node-title">The Machinist</div>
+            <div class="node-sub">DSPy Pipeline Context</div>
+          </button>
+          <button class="node-btn" onclick="showNode('n4', this)">
+            <div class="node-title">The Robot Arm</div>
+            <div class="node-sub">Pi Harness Subprocess</div>
+          </button>
+          <button class="node-btn" onclick="showNode('n5', this)">
+            <div class="node-title">The Memory Engine</div>
+            <div class="node-sub">Neo4j Graph Context</div>
+          </button>
+          <button class="node-btn" onclick="showNode('n6', this)">
+            <div class="node-title">The Skill Compiler</div>
+            <div class="node-sub">JIT Composition</div>
+          </button>
+        </div>
+
+        <div class="node-content-panel">
+          
+          <!-- Node 1: FastAPI -->
+          <div id="n1" class="node-view active">
+            <h3 style="color:var(--amber); margin-bottom: 12px;">Active Generative Inference Queue</h3>
+            <div class="badge-bar">
+              <span class="badge" style="color:var(--amber); border-color:var(--amber);">torch.no_grad()</span>
+              <span class="badge" style="color:var(--amber); border-color:var(--amber);">.eval()</span>
+            </div>
+            <p><strong>Role:</strong> Managing the lifecycle and concurrency of the PyTorch inference models invoked by client HTTP requests.</p>
+            <div class="code-block">@router.post("/execute/voice-dna")
+async def execute_inference(utt: str):
+    global active_model
+    
+    # Deterministic lockout 
+    active_model.eval()
+    
+    # Executes inference without gradient overhead
+    with torch.no_grad():
+        output = active_model.generate(**tokenize(utt))
+        
+    return {"res": decode_tensor(output)}</div>
+            <div style="padding: 16px; background: rgba(255,255,255,0.03); border-left: 3px solid var(--amber); border-radius: 0 8px 8px 0;">
+              <p style="margin:0;"><strong>If missing:</strong> Omitting <span class="mono">torch.no_grad()</span> causes PyTorch to silently cache mathematical derivatives into memory, leading to an eventual and violent CUDA OOM failure that crashes the concurrent pipeline.</p>
+            </div>
+          </div>
+
+          <!-- Node 2: Pydantic -->
+          <div id="n2" class="node-view">
+            <h3 style="color:var(--teal); margin-bottom: 12px;">Voice DNA Config Registry</h3>
+            <div class="badge-bar">
+              <span class="badge" style="color:var(--teal); border-color:var(--teal);">tensor_shape == [1, 8192]</span>
+            </div>
+            <p><strong>Role:</strong> Formally declaring the architectural requirements of a custom adapter <em>before</em> it is physically injected into VRAM.</p>
+            <div class="code-block">class AdapterDimensionSchema(BaseModel):
+    dim_shape_array: list[int]
+    
+    @model_validator(mode='after')
+    def verify_congruence(self):
+        # QA contracts
+        if len(self.dim_shape_array) != 3:
+            raise ValueError(f"CRITICAL VRAM FAULT: Expected 3D Tensor.")
+        if self.dim_shape_array[-1] not in [4096, 8192]:
+            raise ValueError(f"ILLEGAL DIMENSION.")
+        return self</div>
+            <div style="padding: 16px; background: rgba(255,255,255,0.03); border-left: 3px solid var(--teal); border-radius: 0 8px 8px 0;">
+              <p style="margin:0;"><strong>Structural Logic:</strong> By strictly typing PyTorch's <span class="mono">.shape</span> output arrays, Pydantic acts as a firewall, blocking mathematically hallucinated tensors from attempting to merge using the PeftModel loader.</p>
+            </div>
+          </div>
+
+          <!-- Node 3: DSPy -->
+          <div id="n3" class="node-view">
+            <h3 style="color:var(--violet); margin-bottom: 12px;">DSPy Context Alignment</h3>
+            <div class="badge-bar">
+              <span class="badge" style="color:var(--violet); border-color:var(--violet);">dspy.OutputField</span>
+            </div>
+            <p><strong>Role:</strong> Commanding the explicit construction and mathematical parsing of prompts utilizing specialized agentic modules.</p>
+            <div class="code-block">class InspectTokenDistribution(dspy.Signature):
+    transcript: str = dspy.InputField()
+    
+    # We force the LLM to understand dimensional requirements
+    expected_tensor_shape: str = dspy.OutputField(
+        desc="A string formatted as a PyTorch shape tuple e.g., 'torch.Size([1, 8192])'"
+    )</div>
+            <div style="padding: 16px; background: rgba(255,255,255,0.03); border-left: 3px solid var(--violet); border-radius: 0 8px 8px 0;">
+              <p style="margin:0;"><strong>If missing:</strong> The LLM hallucinates arbitrary dimensions ("width = 25"), causing DSPy's built-in Retry Loops to spiral repetitively trying to coerce a strict tuple structure out of the model.</p>
+            </div>
+          </div>
+
+          <!-- Node 4: Pi Harness -->
+          <div id="n4" class="node-view">
+            <h3 style="color:var(--emerald); margin-bottom: 12px;">Isolated Subprocess Containment</h3>
+            <div class="badge-bar">
+              <span class="badge" style="color:var(--emerald); border-color:var(--emerald);">stderr scan</span>
+              <span class="badge" style="color:var(--emerald); border-color:var(--emerald);">subprocess.run</span>
+            </div>
+            <p><strong>Role:</strong> Operating the physical OS bindings to execute computationally volatile ML operations away from the main thread.</p>
+            <div class="code-block">def isolated_initialization(script_payload: str):
+    proc = subprocess.run(["python", script], capture_output=True, timeout=120)
+    
+    # Sentinel Check against PyTorch Core Logics
+    if "param.requires_grad = True" in proc.stderr or proc.returncode != 0:
+         return {"STATUS": "ABORTED", "REASON": "VRAM Corruption Attempt."}
+         
+    return json.loads(proc.stdout)</div>
+            <div style="padding: 16px; background: rgba(255,255,255,0.03); border-left: 3px solid var(--emerald); border-radius: 0 8px 8px 0;">
+              <p style="margin:0;"><strong>Structural Logic:</strong> <span class="mono">.shape</span> sizing errors and <span class="mono">requires_grad</span> mutations are treated not as Python bugs, but as severe systemic physical threats monitored directly via OS level sandboxing.</p>
+            </div>
+          </div>
+
+          <!-- Node 5: Neo4j -->
+          <div id="n5" class="node-view">
+            <h3 style="color:var(--blue); margin-bottom: 12px;">Context Premise Knowledge Graph</h3>
+            <div class="badge-bar">
+              <span class="badge" style="color:var(--blue); border-color:var(--blue);">Neo4j Query</span>
+            </div>
+            <p><strong>Role:</strong> Maintaining persistent memory and dynamic structural mapping of different Neural Tensors to client states across sessions.</p>
+            <div class="code-block">MATCH (c:Coach {id: $coach_id})
+MERGE (m:NeuralMatrix {type: "VoiceDNA"})
+SET m.last_verified_shape = $applied_shape_matrix,
+    m.requires_grad_status = false
+MERGE (c)-[:ENFORCES_DIMENSIONS]->(m)
+RETURN m.last_verified_shape</div>
+            <div style="padding: 16px; background: rgba(255,255,255,0.03); border-left: 3px solid var(--blue); border-radius: 0 8px 8px 0;">
+              <p style="margin:0;"><strong>If missing:</strong> Loss of persistent context forces the JIT Compiler to "try and see" if adapters merge correctly at runtime, radically degrading system efficiency through repetitive CUDA failure loops.</p>
+            </div>
+          </div>
+
+          <!-- Node 6: Skill Compiler -->
+          <div id="n6" class="node-view">
+            <h3 style="color:var(--rose); margin-bottom: 12px;">JIT Composition Assembly</h3>
+            <div class="badge-bar">
+              <span class="badge" style="color:var(--rose); border-color:var(--rose);">Compilation Math</span>
+            </div>
+            <p><strong>Role:</strong> Orchestrating the injection of multi-modal trigger sequences onto the compiled prompts.</p>
+            <div class="code-block">def compile_voice_dna(matrix_dims: tuple[int]) -> str:
+    # JIT Compilation relies on absolute deterministic paths.
+    if matrix_dims[-1] != 8192:
+         raise ArchitectureCompilationException("JIT FAULT: Mismatch.")
+         
+    return f"[SYSTEM ALIGNMENT: Engaged. Shape Confirmed: {matrix_dims}]"</div>
+            <div style="padding: 16px; background: rgba(255,255,255,0.03); border-left: 3px solid var(--rose); border-radius: 0 8px 8px 0;">
+              <p style="margin:0;"><strong>Structural Logic:</strong> PyTorch matrix dimensions are directly integrated into the prompt compilation variables acting as hardware-level checks inside the cognitive algorithms.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: Scenario Reasoning -->
+  <section id="scenarios" class="section">
+    <div class="section-inner">
+      <p class="eyebrow">Deep Analysis</p>
+      <h2>Scenario-Based Reasoning</h2>
+      <p>Analyze these hypothetical operational scenarios regarding PyTorch functionality by reasoning completely through structural cause-and-effect paths.</p>
+      
+      <div class="scenario-grid">
+        <div class="scenario-card">
+          <div class="scenario-q">A: What happens if every Pydantic schema in the CCP removes its internal dimensional checks regarding `[batch, token, dim]` arrays?</div>
+          <div class="scenario-a"><strong>Reasoning Path:</strong> The QA Department goes completely blind to hardware physics. The JIT compiler can accidentally generate prompts assuming a 4096-width matrix constraint towards an 8192-width global model. The subsequent error bypasses Python, slamming the Pi Subprocesses with fatal <span class="mono">m1:m2 mismatch</span> C++ trace routes, compromising operational safety.</div>
+        </div>
+        <div class="scenario-card">
+          <div class="scenario-q">B: What happens if the JIT skill compiler accurately checks `.shape` dimensionality and merges correctly, but entirely forgets to engage `.eval()` inside the Pi Execution loop before opening WebSockets?</div>
+          <div class="scenario-a"><strong>Reasoning Path:</strong> Without <span class="mono">.eval()</span>, the base generative layer defaults to stochastic training behavior (<span class="mono">.train()</span>). Dropout mechanisms sever random neuronal pathways. A client asking the exact same question during the identical timestamp will receive radically disparate coaching strategies, utterly breaking Sovereign Dictum 1 determinism.</div>
+        </div>
+        <div class="scenario-card">
+          <div class="scenario-q">C: What happens if the context premise graph dynamically requests the specific `requires_grad=True` parameters applied actively to a fine-tuned LoRA, but neo4j discovers zero linked `NeuralMatrix` properties?</div>
+          <div class="scenario-a"><strong>Reasoning Path:</strong> A failure here forces the Chassis layer to "blindly trust" an agent-generated Python module without historical verification. If an agent hallucinates that global core layers must be mutated via backpropagation, no centralized knowledge limits this action. Foundational intelligence degradation begins spreading.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: Critical Thinking Challenges -->
+  <section id="challenges" class="section">
+    <div class="section-inner" style="max-width: 800px;">
+      <p class="eyebrow">Defect Triage</p>
+      <h2>Critical Thinking Challenges</h2>
+      <p>Identify the contextual faults occurring within the following architectures. Click to reveal the defect analysis.</p>
+
+      <div class="accordion">
+        
+        <div class="acc-item">
+          <button class="acc-header" onclick="toggleAcc(this)">
+            <span>1. The Chassis (Voice DNA Config Loader)</span>
+            <span class="acc-icon">+</span>
+          </button>
+          <div class="acc-body">
+            <div class="code-block">@router.post("/execute/load-weights")
+async def load_new_lora_weights(adapter_path: str):
+    active_model = PeftModel.from_pretrained(global_base, adapter_path)
+    active_model.train()  # Ready for inference sequence
+    return {"status": "success"}</div>
+            <p><strong>What breaks explicitly?</strong> The <span class="mono">active_model.train()</span> directly violates production determinism logic. Invoking train intentionally activates dropout nodes for deep stochastic optimization. Re-locking via <span class="mono">active_model.eval()</span> and employing <span class="mono">torch.no_grad()</span> is comprehensively mandated here.</p>
+          </div>
+        </div>
+
+        <div class="acc-item">
+          <button class="acc-header" onclick="toggleAcc(this)">
+            <span>2. QA Department (Pydantic Neural Formatter)</span>
+            <span class="acc-icon">+</span>
+          </button>
+          <div class="acc-body">
+            <div class="code-block">class LatentSpaceContract(BaseModel):
+    batch_count: int
+    context_window_size: int
+    hidden_dimensions: list[int]
+    
+    @model_validator(mode='after')
+    def evaluate_array(self):
+        if self.context_window_size > 1024:
+            raise ValueError("Too large")
+        return self</div>
+            <p><strong>Subtle Defect:</strong> The contract fundamentally forgets to measure the <span class="mono">hidden_dimensions</span> array lengths via parallel shape validation. If a configuration specifies 16384 dimensions, the validator blissfully passes the object to PyTorch. VRAM fills exponentially and fails violently.</p>
+          </div>
+        </div>
+
+        <div class="acc-item">
+          <button class="acc-header" onclick="toggleAcc(this)">
+            <span>3. The Robot Arm (Pi Subprocess Invoker)</span>
+            <span class="acc-icon">+</span>
+          </button>
+          <div class="acc-body">
+            <div class="code-block">proc = subprocess.run(["python", "execute_embedding_analysis.py"], capture_output=True)
+if proc.returncode != 0:
+    log.warning(f"Error executing. Output: {proc.stdout}")</div>
+            <p><strong>Subtle Defect:</strong> By logging <span class="mono">proc.stdout</span> entirely upon a deep execution failure, the developer structurally ignores <span class="mono">.stderr</span> which handles the detailed C++ traceback routes and deep CUDA faults. The log natively outputs an entirely blank warning leaving operations blind to dimensionality problems.</p>
+          </div>
+        </div>
+
+        <div class="acc-item">
+          <button class="acc-header" onclick="toggleAcc(this)">
+            <span>4. The Machinist (DSPy Wrapper)</span>
+            <span class="acc-icon">+</span>
+          </button>
+          <div class="acc-body">
+            <div class="code-block">class VerifyAdapterShape(dspy.Signature):
+    expected_dimensions: int = dspy.InputField()
+    actual_dimensions: int = dspy.OutputField()</div>
+            <p><strong>What breaks explicitly?</strong> The system reduces complex <span class="mono">torch.Size()</span> tuples explicitly into a single integer. A model's dimensionality maps heavily across batches, sequence layers, and width constraints. Compressing it implicitly into one flat int deletes 66% of the architectural context natively available.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="section" style="padding-top: 2rem;">
+    <div class="section-inner" style="max-width: 800px; text-align: center;">
+      <div style="padding: 32px; background: rgba(139,92,246,0.06); border: 1px solid var(--violet); border-radius: 12px;">
+        <h2 style="color:var(--violet);">The Compression Layer</h2>
+        <p style="font-size:1.1rem; color:var(--text); margin-bottom: 24px;">This concept is the Immutable Calibration Rig of the factory floor — without it, the algorithms attempt physically invalid actions resulting universally in massive system-wide VRAM collapses or inherently hallucinated randomness variables.</p>
+        <p style="color:var(--muted); font-size: 0.95rem;">You must memorize the specific rule: The platform generates textual logic efficiently exclusively because its underlying arrays and tensors strictly follow predictable dimension sizes verified externally by multiple highly specialized sovereign boundary systems.</p>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    function showNode(id, el) {
+      document.querySelectorAll('.node-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.node-view').forEach(view => view.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById(id).classList.add('active');
+    }
+
+    function toggleAcc(el) {
+      const parent = el.parentElement;
+      const body = parent.querySelector('.acc-body');
+      const isActive = el.classList.contains('active');
+      
+      document.querySelectorAll('.acc-header').forEach(h => h.classList.remove('active'));
+      document.querySelectorAll('.acc-body').forEach(b => b.classList.remove('active'));
+      
+      if (!isActive) {
+        el.classList.add('active');
+        body.classList.add('active');
+      }
+    }
+
+    const links = document.querySelectorAll('.nav-link');
+    const ids = ['factory','scenarios','challenges'];
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY + 100;
+      let active = ids[0];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if(el && el.offsetTop <= y) active = id;
+      });
+      links.forEach(l => l.classList.toggle('active', l.getAttribute('href').substring(1) === active));
+    });
+  </script>
+</body>
+</html>

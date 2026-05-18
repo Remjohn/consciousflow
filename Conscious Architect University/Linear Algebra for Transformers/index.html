@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Linear Algebra for Transformers Offline</title>
+  <meta name="theme-color" content="#0f172a">
+  <meta name="description" content="Installable offline reader for the Linear Algebra for Transformers course.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="eyebrow">Conscious Architect University</div>
+        <h1>Linear Algebra for Transformers</h1>
+        <p class="sidebar-copy">
+          Install this course once, then keep reading the lessons offline on Android or desktop.
+        </p>
+        <div class="status-stack">
+          <div class="status-pill" id="offline-status">Checking offline status...</div>
+          <button class="install-button hidden" id="install-button" type="button">Install Offline App</button>
+        </div>
+        <label class="search-box">
+          <span>Search</span>
+          <input id="search-input" type="search" placeholder="Lesson, paper, or file name">
+        </label>
+      </div>
+
+      <nav class="nav-sections" id="nav-sections"></nav>
+    </aside>
+
+    <main class="main-panel">
+      <header class="viewer-header">
+        <div>
+          <div class="viewer-eyebrow">Offline Reader</div>
+          <h2 id="viewer-title">Course Overview</h2>
+          <p id="viewer-subtitle">Choose a lesson or reference file from the left panel.</p>
+        </div>
+        <div class="viewer-actions">
+          <button id="native-open-button" type="button" class="secondary-button hidden">Open Native File</button>
+          <button id="raw-open-button" type="button" class="secondary-button hidden">Open Raw File</button>
+        </div>
+      </header>
+
+      <section class="overview-card" id="overview-card">
+        <div class="overview-grid">
+          <article>
+            <div class="section-kicker">Why This Build Exists</div>
+            <p>
+              This offline shell keeps the full course installable on a phone. The lesson HTML files open natively,
+              markdown-only notes remain readable, and the service worker pre-caches the course so it keeps working
+              without internet after first install.
+            </p>
+          </article>
+          <article>
+            <div class="section-kicker">Best Phone Workflow</div>
+            <p>
+              Open this course once in Chrome, wait for the offline cache message, tap install, then launch it from
+              your home screen like a normal app. The course will keep its lessons locally after that first sync.
+            </p>
+          </article>
+          <article>
+            <div class="section-kicker">File Strategy</div>
+            <p>
+              Lesson layers use the handcrafted HTML versions by default. Supporting markdown files stay accessible
+              inside the same reader, so the entire course remains available from one offline surface.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="viewer-surface hidden" id="html-surface">
+        <iframe id="html-frame" title="Course lesson viewer"></iframe>
+      </section>
+
+      <section class="viewer-surface hidden" id="text-surface">
+        <article class="markdown-surface" id="text-viewer"></article>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

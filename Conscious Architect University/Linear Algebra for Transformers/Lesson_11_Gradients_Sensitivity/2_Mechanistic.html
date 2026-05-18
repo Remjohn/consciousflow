@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 11 — Mechanistic Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#090b0d;--fg:#e4e2dc;--muted:#6b7075;--accent:#4a9e9e;
+  --accent-dim:#2d6363;--error:#c45c4a;--success:#6b9e6b;
+  --card:#111416;--border:#1e2225;--input-bg:#0c0e10;
+  --interrupt:#c45c4a;
+}
+html{font-size:16px;scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',sans-serif;color:var(--fg);background:var(--bg);
+  min-height:100vh;line-height:1.7;overflow-x:hidden;
+}
+#app{position:relative;z-index:1;max-width:700px;margin:0 auto;padding:48px 24px 100px}
+.section{display:none;opacity:0;transform:translateY(14px)}
+.section.visible{display:block;opacity:1;transform:translateY(0);transition:opacity .45s ease,transform .45s ease}
+.section.entering{display:block;opacity:0;transform:translateY(14px)}
+.divider{width:140px;height:1px;background:var(--accent);opacity:.2;margin:40px auto}
+h1{font-family:'Space Mono',monospace;font-size:clamp(1.25rem,3.5vw,1.5rem);font-weight:700;color:var(--fg);letter-spacing:-.02em;margin-bottom:6px}
+h2{font-family:'Space Mono',monospace;font-size:clamp(.85rem,2.5vw,1rem);font-weight:700;color:var(--accent);letter-spacing:.04em;margin-bottom:12px;text-transform:uppercase}
+p{color:var(--fg);margin-bottom:12px;font-weight:300}
+p strong{font-weight:700;color:var(--fg)}
+.muted-text{color:var(--muted);font-size:.9rem}
+code{
+  font-family:'Space Mono',monospace;font-size:.9rem;color:var(--accent);
+  background:rgba(74,158,158,.07);padding:2px 5px;border-radius:3px;
+}
+.eq-block{
+  font-family:'Space Mono',monospace;font-size:.88rem;color:var(--fg);
+  background:var(--input-bg);border:1px solid var(--border);border-radius:4px;
+  padding:14px 18px;margin:14px 0;line-height:1.9;
+}
+.matrix-display{
+  font-family:'Space Mono',monospace;font-size:.88rem;color:var(--fg);
+  background:var(--input-bg);border:1px solid var(--border);border-radius:4px;
+  padding:16px 20px;margin:14px 0;line-height:1.85;white-space:pre;overflow-x:auto;
+}
+.matrix-display .mat-name{color:var(--accent)}
+.matrix-display .mat-val{color:var(--fg)}
+/* Interrupt */
+.interrupt-box{
+  border-left:3px solid var(--interrupt);background:rgba(196,92,74,.04);
+  padding:22px 26px;margin:32px 0;border-radius:0 5px 5px 0;
+}
+.interrupt-box p{color:var(--fg);font-weight:400;font-size:.98rem}
+/* Prompt box */
+.prompt-box{background:var(--card);border:1px solid var(--border);border-radius:5px;padding:20px 24px;margin:22px 0}
+/* Inputs */
+.input-row{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.input-field{
+  font-family:'Space Mono',monospace;font-size:.92rem;
+  background:var(--input-bg);border:1px solid var(--border);border-radius:4px;
+  color:var(--fg);padding:9px 13px;outline:none;transition:border-color .2s;width:150px;
+}
+.input-field:focus{border-color:var(--accent)}
+.input-field.locked{border-color:var(--accent-dim);opacity:.7;pointer-events:none}
+.input-field.wrong{border-color:var(--error)}
+.input-field.right{border-color:var(--success)}
+.input-label{font-family:'Space Mono',monospace;font-size:.82rem;color:var(--muted);min-width:65px}
+.two-inputs{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px}
+.two-inputs>div{display:flex;align-items:center;gap:6px}
+.three-inputs{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px}
+.three-inputs>div{display:flex;align-items:center;gap:6px}
+/* Buttons */
+.submit-btn{
+  font-family:'Space Mono',monospace;font-size:.78rem;letter-spacing:.06em;
+  background:none;border:1px solid var(--accent-dim);color:var(--accent);
+  padding:9px 20px;border-radius:4px;cursor:pointer;transition:all .2s;text-transform:uppercase;
+}
+.submit-btn:hover:not(:disabled){border-color:var(--accent);background:rgba(74,158,158,.07)}
+.submit-btn:disabled{opacity:.3;cursor:default}
+.option-grid{display:flex;flex-direction:column;gap:7px;margin-top:12px}
+.option-btn{
+  font-family:'DM Sans',sans-serif;font-size:.93rem;text-align:left;
+  background:var(--input-bg);border:1px solid var(--border);border-radius:4px;
+  color:var(--fg);padding:11px 16px;cursor:pointer;transition:all .2s;
+}
+.option-btn:hover:not(:disabled){border-color:var(--accent-dim);background:rgba(74,158,158,.03)}
+.option-btn:disabled{cursor:default}
+.option-btn.selected{border-color:var(--accent);background:rgba(74,158,158,.07)}
+.option-btn.selected.wrong{border-color:var(--error);background:rgba(196,92,74,.07);color:var(--error)}
+.option-btn.selected.right{border-color:var(--success);background:rgba(107,158,107,.07);color:var(--success)}
+.option-btn.dimmed{opacity:.35}
+/* Feedback */
+.feedback{margin-top:14px;padding:14px 18px;border-radius:4px;font-size:.9rem;line-height:1.7;display:none}
+.feedback.show{display:block;animation:fadeUp .3s ease forwards}
+.feedback.error{background:rgba(196,92,74,.06);border-left:3px solid var(--error)}
+.feedback.success{background:rgba(107,158,107,.06);border-left:3px solid var(--success)}
+.feedback .misconception-tag{
+  font-family:'Space Mono',monospace;font-size:.75rem;letter-spacing:.05em;
+  color:var(--error);text-transform:uppercase;margin-bottom:7px;display:block;
+}
+.comparison{
+  font-family:'Space Mono',monospace;font-size:.85rem;
+  background:var(--input-bg);border:1px solid var(--border);border-radius:4px;
+  padding:10px 14px;margin:10px 0;display:none;
+}
+.comparison.show{display:block}
+.comparison .row{display:flex;justify-content:space-between;gap:16px;padding:2px 0}
+.comparison .label{color:var(--muted)}
+.comparison .val{color:var(--fg)}
+.comparison .val.wrong-val{color:var(--error);text-decoration:line-through;text-decoration-color:var(--error)}
+.comparison .val.right-val{color:var(--success)}
+/* Sub-gates */
+.sub-gate{margin-top:18px;padding-top:16px;border-top:1px solid var(--border);display:none}
+.sub-gate.show{display:block;animation:fadeUp .3s ease forwards}
+/* Continue */
+.continue-wrap{margin-top:26px;display:none}
+.continue-wrap.show{display:block;animation:fadeUp .3s ease forwards}
+.continue-btn{
+  font-family:'Space Mono',monospace;font-size:.78rem;letter-spacing:.06em;
+  background:none;border:1px solid var(--accent-dim);color:var(--accent);
+  padding:8px 26px;border-radius:4px;cursor:pointer;transition:all .2s;
+}
+.continue-btn:hover{border-color:var(--accent);background:rgba(74,158,158,.05)}
+/* Gauntlet */
+.gauntlet-counter{font-family:'Space Mono',monospace;font-size:.8rem;color:var(--muted);letter-spacing:.04em;margin-bottom:18px}
+.gauntlet-card{background:var(--card);border:1px solid var(--border);border-radius:5px;padding:20px 22px;margin-bottom:14px}
+.gauntlet-card .q-text{font-size:.93rem;margin-bottom:12px;line-height:1.6}
+.gauntlet-card .q-code{font-family:'Space Mono',monospace;font-size:.85rem;color:var(--accent);display:block;margin:6px 0 12px}
+.gauntlet-mini-feedback{font-family:'Space Mono',monospace;font-size:.8rem;margin-top:8px;padding:7px 11px;border-radius:3px;display:none}
+.gauntlet-mini-feedback.show{display:block}
+.gauntlet-mini-feedback.correct{color:var(--success);background:rgba(107,158,107,.05)}
+.gauntlet-mini-feedback.incorrect{color:var(--error);background:rgba(196,92,74,.05)}
+.gauntlet-card.answered{opacity:.55;pointer-events:none}
+.final-score{font-family:'Space Mono',monospace;text-align:center;padding:28px 0}
+.final-score .score-num{font-size:2.2rem;font-weight:700;color:var(--accent)}
+.final-score .score-label{font-size:.82rem;color:var(--muted);letter-spacing:.06em;margin-top:3px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:500px){
+  #app{padding:32px 14px 80px}
+  .input-field{width:110px}
+  .two-inputs>div,.three-inputs>div{flex-direction:column;align-items:flex-start;gap:3px}
+  .two-inputs>div .input-label,.three-inputs>div .input-label{min-width:auto}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;transition-duration:0s!important}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ======== S0: SPACED INTERRUPT ======== -->
+<section id="s0" class="section visible">
+  <div class="interrupt-box">
+    <p>Compute the gradient of <code>f(x, y) = 4x&sup2; &minus; y&sup2;</code> at point <strong>(1, 3)</strong>.</p>
+    <div class="input-row">
+      <input type="text" id="s0-input" class="input-field" style="width:220px" placeholder="your answer" autocomplete="off">
+      <button class="submit-btn" id="s0-btn" onclick="submitS0()">Lock Answer</button>
+    </div>
+    <div class="feedback" id="s0-fb"></div>
+  </div>
+</section>
+
+<!-- ======== S1: CHAIN RULE ======== -->
+<section id="s1" class="section">
+  <h2>Derivation 1</h2>
+  <h1>The Chain Rule — Compute It</h1>
+  <div class="prompt-box">
+    <p>Two composed functions:</p>
+    <div class="eq-block">f(u) = u&sup3;&emsp;&emsp;g(x) = 2x + 1<br>Therefore: f(g(x)) = (2x + 1)&sup3;</div>
+    <p>At <strong>x = 2</strong>: g(2) = 5. The chain rule states:</p>
+    <div class="eq-block">f&prime;(g(x)) &middot; g&prime;(x) = f&prime;(5) &middot; g&prime;(2)</div>
+    <p>Compute each piece:</p>
+    <div class="three-inputs">
+      <div><span class="input-label">f&prime;(5) =</span><input type="text" id="s1-a" class="input-field" placeholder="?" autocomplete="off"></div>
+      <div><span class="input-label">g&prime;(2) =</span><input type="text" id="s1-b" class="input-field" placeholder="?" autocomplete="off"></div>
+      <div><span class="input-label">Product =</span><input type="text" id="s1-c" class="input-field" placeholder="?" autocomplete="off"></div>
+    </div>
+    <div class="input-row"><button class="submit-btn" onclick="submitS1()">Lock Answer</button></div>
+  </div>
+  <div class="comparison" id="s1-cmp">
+    <div class="row"><span class="label">Your answer</span><span class="val wrong-val" id="s1-your"></span></div>
+    <div class="row"><span class="label">Correct</span><span class="val right-val" id="s1-correct"></span></div>
+  </div>
+  <div class="feedback" id="s1-fb"></div>
+  <div class="continue-wrap" id="s1-cont"><button class="continue-btn" onclick="revealSection('s2')">Continue</button></div>
+</section>
+
+<!-- ======== S2: ONE-LAYER NETWORK ======== -->
+<section id="s2" class="section">
+  <h2>Derivation 2</h2>
+  <h1>A Minimal Neural Network</h1>
+  <div class="prompt-box">
+    <p>The simplest possible network: one weight, one input, one target.</p>
+    <div class="eq-block">z = wx&emsp;&emsp;L = (z &minus; t)&sup2;<br><br>w = 2&emsp;x = 3&emsp;t = 10</div>
+    <div id="s2-gateA">
+      <p><strong>Forward pass:</strong> compute z and L.</p>
+      <div class="two-inputs">
+        <div><span class="input-label">z =</span><input type="text" id="s2a-z" class="input-field" placeholder="?" autocomplete="off"></div>
+        <div><span class="input-label">L =</span><input type="text" id="s2a-L" class="input-field" placeholder="?" autocomplete="off"></div>
+      </div>
+      <div class="input-row"><button class="submit-btn" onclick="submitS2A()">Lock Answer</button></div>
+      <div class="feedback" id="s2a-fb"></div>
+    </div>
+    <div id="s2-gateB" class="sub-gate">
+      <p><strong>Backward pass:</strong> apply the chain rule to find <code>&part;L/&part;w</code>.</p>
+      <div class="eq-block">&part;L/&part;w = (&part;L/&part;z) &middot; (&part;z/&part;w)</div>
+      <div class="three-inputs">
+        <div><span class="input-label">&part;L/&part;z =</span><input type="text" id="s2b-dLdz" class="input-field" placeholder="?" autocomplete="off"></div>
+        <div><span class="input-label">&part;z/&part;w =</span><input type="text" id="s2b-dzdw" class="input-field" placeholder="?" autocomplete="off"></div>
+        <div><span class="input-label">&part;L/&part;w =</span><input type="text" id="s2b-dLdw" class="input-field" placeholder="?" autocomplete="off"></div>
+      </div>
+      <div class="input-row"><button class="submit-btn" onclick="submitS2B()">Lock Answer</button></div>
+      <div class="feedback" id="s2b-fb"></div>
+    </div>
+  </div>
+  <div class="continue-wrap" id="s2-cont"><button class="continue-btn" onclick="revealSection('s3')">Continue</button></div>
+</section>
+
+<!-- ======== S3: TWO-LAYER EXTENSION ======== -->
+<section id="s3" class="section">
+  <h2>Derivation 3</h2>
+  <h1>Stacking a Second Layer</h1>
+  <div class="prompt-box">
+    <p>Two layers: <code>h = w₁x</code>, then <code>z = w₂h</code>, loss <code>L = (z &minus; t)&sup2;</code>.</p>
+    <div class="eq-block">w₁ = 2&emsp;w₂ = 1.5&emsp;x = 3&emsp;t = 12<br><br>Forward results (given):<br>h = 6&emsp;z = 9&emsp;&part;L/&part;z = &minus;6</div>
+    <p>Now compute the backward pass for <strong>both</strong> weights:</p>
+    <div class="three-inputs">
+      <div><span class="input-label">&part;L/&part;w₂ =</span><input type="text" id="s3-dLdw2" class="input-field" placeholder="?" autocomplete="off"></div>
+      <div><span class="input-label">&part;L/&part;h =</span><input type="text" id="s3-dLdh" class="input-field" placeholder="?" autocomplete="off"></div>
+      <div><span class="input-label">&part;L/&part;w₁ =</span><input type="text" id="s3-dLdw1" class="input-field" placeholder="?" autocomplete="off"></div>
+    </div>
+    <div class="input-row"><button class="submit-btn" onclick="submitS3()">Lock Answer</button></div>
+  </div>
+  <div class="comparison" id="s3-cmp">
+    <div class="row"><span class="label">Your answer</span><span class="val wrong-val" id="s3-your"></span></div>
+    <div class="row"><span class="label">Correct</span><span class="val right-val" id="s3-correct"></span></div>
+  </div>
+  <div class="feedback" id="s3-fb"></div>
+  <div class="continue-wrap" id="s3-cont"><button class="continue-btn" onclick="revealSection('s4')">Continue</button></div>
+</section>
+
+<!-- ======== S4: MATRIX BACKWARD PASS — THE TRAP ======== -->
+<section id="s4" class="section">
+  <h2>Derivation 4 — Critical</h2>
+  <h1>The Backward Pass Is Transposed Multiplication</h1>
+  <div class="prompt-box">
+    <p>A single linear layer: <code>z = Wx</code>. Given the upstream gradient <code>&part;L/&part;z</code>, compute <code>&part;L/&part;x</code>.</p>
+    <div class="matrix-display"><span class="mat-name">W</span> = | 2   1 |
+    | 0   3 |
+
+<span class="mat-name">x</span> = |  4 |
+     | -1 |
+
+<span class="mat-name">∂L/∂z</span> = | 2 |
+            | 1 |</div>
+    <p style="margin-top:12px">Compute <code>&part;L/&part;x</code>. Enter each component:</p>
+    <div class="two-inputs">
+      <div><span class="input-label">Component 1 =</span><input type="text" id="s4-c1" class="input-field" placeholder="?" autocomplete="off"></div>
+      <div><span class="input-label">Component 2 =</span><input type="text" id="s4-c2" class="input-field" placeholder="?" autocomplete="off"></div>
+    </div>
+    <div class="input-row"><button class="submit-btn" onclick="submitS4()">Lock Answer</button></div>
+  </div>
+  <div class="comparison" id="s4-cmp">
+    <div class="row"><span class="label">Your answer</span><span class="val wrong-val" id="s4-your"></span></div>
+    <div class="row"><span class="label">Correct</span><span class="val right-val" id="s4-correct"></span></div>
+  </div>
+  <div class="feedback" id="s4-fb"></div>
+  <!-- Verification with new matrix -->
+  <div id="s4-ver" class="sub-gate">
+    <p class="muted-text" style="margin-bottom:10px">Verification — same operation, different matrix:</p>
+    <div class="matrix-display"><span class="mat-name">W</span> = | 1   3 |
+    | 2   0 |
+
+<span class="mat-name">∂L/∂z</span> = | 1 |
+            | 2 |</div>
+    <p>Compute <code>&part;L/&part;x = W<sup>T</sup> &middot; (&part;L/&part;z)</code>:</p>
+    <div class="two-inputs">
+      <div><span class="input-label">Component 1 =</span><input type="text" id="s4v-c1" class="input-field" placeholder="?" autocomplete="off"></div>
+      <div><span class="input-label">Component 2 =</span><input type="text" id="s4v-c2" class="input-field" placeholder="?" autocomplete="off"></div>
+    </div>
+    <div class="input-row"><button class="submit-btn" onclick="submitS4Ver()">Lock Answer</button></div>
+    <div class="feedback" id="s4v-fb"></div>
+  </div>
+  <div class="continue-wrap" id="s4-cont"><button class="continue-btn" onclick="revealSection('s5')">Continue</button></div>
+</section>
+
+<!-- ======== S5: LORA GRADIENT ASYMMETRY ======== -->
+<section id="s5" class="section">
+  <h2>Derivation 5</h2>
+  <h1>LoRA Gradient Asymmetry</h1>
+  <div class="prompt-box">
+    <p>LoRA decomposes weight updates as <code>&Delta;W = BA</code>. During training on Voice DNA scripts, gradient norms are measured:</p>
+    <div class="eq-block">||&nabla;<sub>B</sub> L|| = 0.003&emsp;&emsp;||&nabla;<sub>A</sub> L|| = 0.039<br><br>Uniform learning rate: &eta; = 0.001</div>
+    <p>Diagnose the asymmetry:</p>
+    <div class="two-inputs">
+      <div><span class="input-label">Ratio =</span><input type="text" id="s5-ratio" class="input-field" placeholder="||∇ₐ|| / ||∇ᵦ||" autocomplete="off"></div>
+      <div><span class="input-label">Corrected &eta;<sub>A</sub> =</span><input type="text" id="s5-eta" class="input-field" placeholder="?" autocomplete="off"></div>
+    </div>
+    <div class="input-row"><button class="submit-btn" onclick="submitS5()">Lock Answer</button></div>
+  </div>
+  <div class="comparison" id="s5-cmp">
+    <div class="row"><span class="label">Your answer</span><span class="val wrong-val" id="s5-your"></span></div>
+    <div class="row"><span class="label">Correct</span><span class="val right-val" id="s5-correct"></span></div>
+  </div>
+  <div class="feedback" id="s5-fb"></div>
+  <div class="continue-wrap" id="s5-cont"><button class="continue-btn" onclick="revealSection('s6')">Continue</button></div>
+</section>
+
+<!-- ======== S6: HESSIAN INTERPRETATION ======== -->
+<section id="s6" class="section">
+  <h2>Derivation 6</h2>
+  <h1>The Hessian — Reading Curvature</h1>
+  <div class="prompt-box">
+    <p>The Hessian matrix's eigenvalues reveal the curvature of the loss landscape. A training run produces these four dominant eigenvalues:</p>
+    <div class="eq-block">&lambda;₁ = 3.2&emsp;&emsp;&lambda;₂ = 7.8&emsp;&emsp;&lambda;₃ = 0.01&emsp;&emsp;&lambda;₄ = &minus;1.5</div>
+    <p>What type of critical point is this?</p>
+    <div class="option-grid" id="s6-opts">
+      <button class="option-btn" onclick="submitS6(this,'a')">Local minimum — all eigenvalues positive</button>
+      <button class="option-btn" onclick="submitS6(this,'b')">Local maximum — all eigenvalues negative</button>
+      <button class="option-btn" onclick="submitS6(this,'c')">Saddle point — mixed positive and negative eigenvalues</button>
+      <button class="option-btn" onclick="submitS6(this,'d')">Flat plateau — all eigenvalues near zero</button>
+    </div>
+  </div>
+  <div class="feedback" id="s6-fb"></div>
+  <div class="continue-wrap" id="s6-cont"><button class="continue-btn" onclick="revealSection('mastery')">Continue to Mastery Gate</button></div>
+</section>
+
+<!-- ======== MASTERY GATE ======== -->
+<section id="mastery" class="section">
+  <h2>Mastery Gate</h2>
+  <h1>Full Two-Layer Backward Pass</h1>
+  <div class="prompt-box">
+    <p>Novel values — compute the backward pass from scratch.</p>
+    <div class="eq-block">w₁ = &minus;1&emsp;w₂ = 3&emsp;x = 2&emsp;t = 5<br><br>Forward (given):<br>h = w₁x = &minus;2<br>z = w₂h = &minus;6<br>L = (&minus;6 &minus; 5)&sup2; = 121<br>&part;L/&part;z = 2(&minus;11) = &minus;22</div>
+    <p>Compute the gradients for both weights:</p>
+    <div class="two-inputs">
+      <div><span class="input-label">&part;L/&part;w₂ =</span><input type="text" id="mg-dw2" class="input-field" placeholder="?" autocomplete="off"></div>
+      <div><span class="input-label">&part;L/&part;w₁ =</span><input type="text" id="mg-dw1" class="input-field" placeholder="?" autocomplete="off"></div>
+    </div>
+    <div class="input-row"><button class="submit-btn" onclick="submitMastery()">Lock Answer</button></div>
+  </div>
+  <div class="comparison" id="mg-cmp">
+    <div class="row"><span class="label">Your answer</span><span class="val wrong-val" id="mg-your"></span></div>
+    <div class="row"><span class="label">Correct</span><span class="val right-val" id="mg-correct"></span></div>
+  </div>
+  <div class="feedback" id="mg-fb"></div>
+  <div class="continue-wrap" id="mg-cont"><button class="continue-btn" onclick="revealSection('gauntlet')">Enter Gauntlet</button></div>
+</section>
+
+<!-- ======== GAUNTLET ======== -->
+<section id="gauntlet" class="section">
+  <h2>Mechanistic Gauntlet</h2>
+  <h1>7 questions. No scaffolding.</h1>
+  <div class="gauntlet-counter" id="gq-counter">0 / 7</div>
+  <div id="gq-container"></div>
+  <div class="final-score" id="gq-final" style="display:none">
+    <div class="score-num" id="gq-score-num"></div>
+    <div class="score-label">out of 7 correct</div>
+    <div class="continue-wrap show" id="gq-done" style="display:none;margin-top:22px">
+      <button class="continue-btn" onclick="finishL2()">Complete Mechanistic Layer</button>
+    </div>
+  </div>
+</section>
+
+<!-- ======== COMPLETION ======== -->
+<section id="done" class="section">
+  <div class="divider" style="margin-top:0;margin-bottom:32px"></div>
+  <h1>Mechanistic layer complete.</h1>
+  <p class="muted-text">You computed gradients by hand through a chain rule, a one-layer network, a two-layer network, and a matrix backward pass. You diagnosed LoRA gradient asymmetry and classified Hessian curvature.</p>
+  <p class="muted-text" style="margin-top:10px">In Layer 3, you will transfer these mechanics to an entirely unfamiliar domain — with no surface features linking it to calculus or neural networks. You will predict spatially, commit, and observe.</p>
+  <p style="margin-top:22px;color:var(--accent);font-weight:500">Backpropagation is Lesson 5 in reverse.</p>
+</section>
+
+</div>
+
+<script>
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+function revealSection(id){
+  const el=document.getElementById(id);
+  el.classList.remove('hidden');
+  el.classList.add('entering');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    el.classList.remove('entering');
+    el.classList.add('visible');
+  }));
+  setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),80);
+  if(id==='gauntlet') buildGauntlet();
+}
+
+function pn(s){const n=parseFloat(s);return isNaN(n)?null:n}
+
+function showFB(id,type,html){
+  const el=document.getElementById(id);
+  el.className='feedback show '+type;
+  el.innerHTML=html;
+}
+
+function showCMP(id,your,correct){
+  document.querySelector('#'+id+' .wrong-val').textContent=your;
+  document.querySelector('#'+id+' .right-val').textContent=correct;
+  document.getElementById(id).classList.add('show');
+}
+
+function lockAll(fields){
+  fields.forEach(f=>{const el=typeof f==='string'?document.getElementById(f):f;el.classList.add('locked')});
+}
+
+function showCont(id){document.getElementById(id).classList.add('show')}
+
+function showSub(id){document.getElementById(id).classList.add('show')}
+
+function checkFields(ids){
+  let ok=true;
+  ids.forEach(id=>{if(!document.getElementById(id).value.trim())ok=false});
+  return ok;
+}
+
+function markField(id,ok){
+  const el=document.getElementById(id);
+  el.classList.remove('wrong','right');
+  el.classList.add(ok?'right':'wrong');
+}
+
+function resetFields(ids){
+  ids.forEach(id=>{
+    const el=document.getElementById(id);
+    el.classList.remove('locked','wrong','right');
+    el.value='';
+  });
+}
+
+/* ============================================================
+   S0: SPACED INTERRUPT — cold retrieval, no context
+   ============================================================ */
+function submitS0(){
+  const input=document.getElementById('s0-input');
+  const raw=input.value.trim();
+  if(!raw)return;
+  input.classList.add('locked');
+  document.getElementById('s0-btn').disabled=true;
+
+  const nums=raw.replace(/[\[\]\(\)\{\}]/g,'').split(/[,\s]+/).filter(s=>s).map(Number);
+  // f(x,y)=4x²-y² at (1,3): ∂f/∂x=8x=8, ∂f/∂y=-2y=-6
+  const ok=nums.length===2&&Math.abs(nums[0]-8)<0.1&&Math.abs(nums[1]-(-6))<0.1;
+
+  if(ok){
+    input.classList.add('right');
+    revealSection('s1');
+  }else{
+    input.classList.add('wrong');
+    showFB('s0-fb','error','Incorrect.');
+    setTimeout(()=>{
+      input.classList.remove('locked','wrong','right');
+      input.value='';
+      input.focus();
+      document.getElementById('s0-btn').disabled=false;
+      document.getElementById('s0-fb').className='feedback';
+    },1200);
+  }
+}
+
+/* ============================================================
+   S1: CHAIN RULE
+   ============================================================ */
+function submitS1(){
+  const ids=['s1-a','s1-b','s1-c'];
+  if(!checkFields(ids))return;
+  lockAll(ids);
+  const a=pn(document.getElementById('s1-a').value);
+  const b=pn(document.getElementById('s1-b').value);
+  const c=pn(document.getElementById('s1-c').value);
+  const aOk=Math.abs(a-75)<0.5; // f'(5)=3(25)=75
+  const bOk=Math.abs(b-2)<0.1;  // g'(x)=2
+  const cOk=Math.abs(c-150)<0.5; // 75*2=150
+
+  markField('s1-a',aOk);
+  markField('s1-b',bOk);
+  markField('s1-c',cOk);
+
+  if(aOk&&bOk&&cOk){
+    showFB('s1-fb','success',
+      'Correct. f&prime;(u) = 3u&sup2;, so f&prime;(5) = 3(25) = 75. g&prime;(x) = 2. The chain rule product: 75 &times; 2 = 150. ' +
+      'This composition is exact — not approximate. Backpropagation relies on this exactness across billions of parameters.');
+    showCont('s1-cont');
+  }else{
+    showCMP('s1-cmp','['+a+', '+b+', '+c+']','[75, 2, 150]');
+    let hint='Compute each derivative separately:<br>';
+    if(!aOk) hint+='<code>f&prime;(u) = 3u&sup2; &rarr; f&prime;(5) = 3(25) = 75</code><br>';
+    if(!bOk) hint+='<code>g&prime;(x) = 2 &rarr; g&prime;(2) = 2</code><br>';
+    if(!cOk) hint+='<code>Product: 75 &times; 2 = 150</code><br>';
+    showFB('s1-fb','error',hint);
+    setTimeout(()=>{resetFields(ids);document.getElementById('s1-fb').className='feedback';document.getElementById('s1-cmp').classList.remove('show')},2800);
+  }
+}
+
+/* ============================================================
+   S2: ONE-LAYER NETWORK
+   ============================================================ */
+function submitS2A(){
+  const ids=['s2a-z','s2a-L'];
+  if(!checkFields(ids))return;
+  lockAll(ids);
+  const z=pn(document.getElementById('s2a-z').value);
+  const L=pn(document.getElementById('s2a-L').value);
+  const zOk=Math.abs(z-6)<0.1;
+  const LOk=Math.abs(L-16)<0.1;
+  markField('s2a-z',zOk);
+  markField('s2a-L',LOk);
+  if(zOk&&LOk){
+    showFB('s2a-fb','success','Forward pass correct. z = 2&times;3 = 6. L = (6&minus;10)&sup2; = 16.');
+    showSub('s2-gateB');
+  }else{
+    showFB('s2a-fb','error','z = w&times;x = 2&times;3 = 6. L = (z&minus;t)&sup2; = (6&minus;10)&sup2; = 16.');
+    setTimeout(()=>{resetFields(ids);document.getElementById('s2a-fb').className='feedback'},2200);
+  }
+}
+
+function submitS2B(){
+  const ids=['s2b-dLdz','s2b-dzdw','s2b-dLdw'];
+  if(!checkFields(ids))return;
+  lockAll(ids);
+  const dLdz=pn(document.getElementById('s2b-dLdz').value);
+  const dzdw=pn(document.getElementById('s2b-dzdw').value);
+  const dLdw=pn(document.getElementById('s2b-dLdw').value);
+  // ∂L/∂z = 2(z-t) = 2(6-10) = -8
+  // ∂z/∂w = x = 3
+  // ∂L/∂w = -8 * 3 = -24
+  const aOk=Math.abs(dLdz-(-8))<0.1;
+  const bOk=Math.abs(dzdw-3)<0.1;
+  const cOk=Math.abs(dLdw-(-24))<0.1;
+  markField('s2b-dLdz',aOk);
+  markField('s2b-dzdw',bOk);
+  markField('s2b-dLdw',cOk);
+  if(aOk&&bOk&&cOk){
+    showFB('s2b-fb','success',
+      'Correct. The gradient scales linearly with both the error (&minus;8) and the input (3). ' +
+      'If the error were zero, the gradient would be zero — the weight should not change. If the input were larger, the gradient would be proportionally larger.');
+    showCont('s2-cont');
+  }else{
+    let hint='<span class="misconception-tag">Chain Rule Application</span>';
+    hint+='Apply the chain rule step by step:<br>';
+    if(!aOk) hint+='<code>&part;L/&part;z = 2(z&minus;t) = 2(6&minus;10) = &minus;8</code><br>';
+    if(!bOk) hint+='<code>&part;z/&part;w = x = 3</code><br>';
+    if(!cOk) hint+='<code>&part;L/&part;w = (&minus;8) &times; 3 = &minus;24</code>';
+    showFB('s2b-fb','error',hint);
+    setTimeout(()=>{resetFields(ids);document.getElementById('s2b-fb').className='feedback'},2800);
+  }
+}
+
+/* ============================================================
+   S3: TWO-LAYER EXTENSION
+   ============================================================ */
+function submitS3(){
+  const ids=['s3-dLdw2','s3-dLdh','s3-dLdw1'];
+  if(!checkFields(ids))return;
+  lockAll(ids);
+  const dw2=pn(document.getElementById('s3-dLdw2').value);
+  const dh=pn(document.getElementById('s3-dLdh').value);
+  const dw1=pn(document.getElementById('s3-dLdw1').value);
+  // ∂L/∂w₂ = ∂L/∂z · ∂z/∂w₂ = -6 · 6 = -36
+  // ∂L/∂h = ∂L/∂z · ∂z/∂h = -6 · 1.5 = -9
+  // ∂L/∂w₁ = ∂L/∂h · ∂h/∂w₁ = -9 · 3 = -27
+  const aOk=Math.abs(dw2-(-36))<0.5;
+  const bOk=Math.abs(dh-(-9))<0.5;
+  const cOk=Math.abs(dw1-(-27))<0.5;
+  markField('s3-dLdw2',aOk);
+  markField('s3-dLdh',bOk);
+  markField('s3-dLdw1',cOk);
+
+  if(aOk&&bOk&&cOk){
+    showFB('s3-fb','success',
+      'Correct. The critical observation: <strong>&part;L/&part;w₁ = &minus;6 &times; 1.5 &times; 3 = &minus;27</strong>. ' +
+      'The gradient for w₁ passes <em>through</em> w₂. The deeper the layer, the more weight matrices the gradient must travel through. ' +
+      'In a 64-layer Transformer, this chain has 64 links — and if each link amplifies or attenuates the signal, the gradient at layer 1 can be exponentially different from the gradient at layer 64.');
+    showCont('s3-cont');
+  }else{
+    showCMP('s3-cmp','['+dw2+', '+dh+', '+dw1+']','[-36, -9, -27]');
+    let hint='<span class="misconception-tag">Chain Through Layers</span>';
+    hint+='Trace the gradient layer by layer:<br>';
+    if(!aOk) hint+='<code>&part;L/&part;w₂ = (&part;L/&part;z)&middot;(&part;z/&part;w₂) = (&minus;6)&times;6 = &minus;36</code><br>';
+    if(!bOk) hint+='<code>&part;L/&part;h = (&part;L/&part;z)&middot;(&part;z/&part;h) = (&minus;6)&times;w₂ = (&minus;6)&times;1.5 = &minus;9</code><br>';
+    if(!cOk) hint+='<code>&part;L/&part;w₁ = (&part;L/&part;h)&middot;(&part;h/&part;w₁) = (&minus;9)&times;3 = &minus;27</code>';
+    showFB('s3-fb','error',hint);
+    setTimeout(()=>{resetFields(ids);document.getElementById('s3-fb').className='feedback';document.getElementById('s3-cmp').classList.remove('show')},3200);
+  }
+}
+
+/* ============================================================
+   S4: MATRIX BACKWARD PASS — THE TRAP
+   ============================================================ */
+function submitS4(){
+  const ids=['s4-c1','s4-c2'];
+  if(!checkFields(ids))return;
+  lockAll(ids);
+  const c1=pn(document.getElementById('s4-c1').value);
+  const c2=pn(document.getElementById('s4-c2').value);
+  // Correct: Wᵀ·(∂L/∂z) = [[2,0],[1,3]]·[2,1]ᵀ = [4, 5]ᵀ
+  // Trap:    W·(∂L/∂z)   = [[2,1],[0,3]]·[2,1]ᵀ = [5, 3]ᵀ
+  const c1Ok=Math.abs(c1-4)<0.1;
+  const c2Ok=Math.abs(c2-5)<0.1;
+  const trapHit=Math.abs(c1-5)<0.1&&Math.abs(c2-3)<0.1;
+  markField('s4-c1',c1Ok);
+  markField('s4-c2',c2Ok);
+
+  if(c1Ok&&c2Ok){
+    showFB('s4-fb','success',
+      'Correct. <code>&part;L/&part;x = W<sup>T</sup>&middot;(&part;L/&part;z)</code> = [[2,0],[1,3]]&middot;[2,1]<sup>T</sup> = [4, 5]<sup>T</sup>. ' +
+      'The TRANSPOSE reverses the transformation direction, sending the error signal back through the layer the way it came. ' +
+      'This is not a new operation — it is Lesson 5 (matrix multiplication) applied from output to input.');
+    showCont('s4-cont');
+  }else if(trapHit){
+    // THE MISCONCEPTION TRAP FIRED
+    showCMP('s4-cmp','[5, 3]','[4, 5]');
+    showFB('s4-fb','error',
+      '<span class="misconception-tag">Forward-Backward Conflation</span>' +
+      'You computed <strong>W&middot;(&part;L/&part;z)</strong> — the forward matrix, not its transpose. ' +
+      'That gives [5, 3], which is wrong.<br><br>' +
+      'The backward gradient requires <strong>W<sup>T</sup></strong>, not W:<br>' +
+      '<code>W<sup>T</sup> = [[2,0],[1,3]]</code> (rows and columns swapped)<br>' +
+      '<code>W<sup>T</sup>&middot;[2,1]<sup>T</sup> = [2(2)+0(1), 1(2)+3(1)]<sup>T</sup> = [4, 5]<sup>T</sup></code><br><br>' +
+      'The transpose is not optional. It is the mathematical operation that "reverses" the forward transformation. Without it, the gradient flows in the wrong direction through the weight matrix.');
+    // Show verification with new matrix
+    setTimeout(()=>showSub('s4-ver'),600);
+  }else{
+    showCMP('s4-cmp','['+c1+', '+c2+']','[4, 5]');
+    showFB('s4-fb','error',
+      'Compute the transpose of W first: <code>W<sup>T</sup> = [[2,0],[1,3]]</code> (swap rows and columns). ' +
+      'Then multiply: <code>W<sup>T</sup>&middot;[2,1]<sup>T</sup> = [2(2)+0(1), 1(2)+3(1)]<sup>T</sup> = [4, 5]<sup>T</sup></code>.');
+    setTimeout(()=>{resetFields(ids);document.getElementById('s4-fb').className='feedback';document.getElementById('s4-cmp').classList.remove('show')},3000);
+  }
+}
+
+function submitS4Ver(){
+  const ids=['s4v-c1','s4v-c2'];
+  if(!checkFields(ids))return;
+  lockAll(ids);
+  const c1=pn(document.getElementById('s4v-c1').value);
+  const c2=pn(document.getElementById('s4v-c2').value);
+  // W = [[1,3],[2,0]], Wᵀ = [[1,2],[3,0]]
+  // Wᵀ·[1,2]ᵀ = [1(1)+2(2), 3(1)+0(2)]ᵀ = [5, 3]ᵀ
+  // Trap: W·[1,2]ᵀ = [1+6, 2+0]ᵀ = [7, 2]ᵀ
+  const c1Ok=Math.abs(c1-5)<0.1;
+  const c2Ok=Math.abs(c2-3)<0.1;
+  const trapAgain=Math.abs(c1-7)<0.1&&Math.abs(c2-2)<0.1;
+  markField('s4v-c1',c1Ok);
+  markField('s4v-c2',c2Ok);
+
+  if(c1Ok&&c2Ok){
+    showFB('s4v-fb','success',
+      'Correct. <code>W<sup>T</sup> = [[1,2],[3,0]]</code>, then <code>W<sup>T</sup>&middot;[1,2]<sup>T</sup> = [5, 3]<sup>T</sup></code>. ' +
+      'You applied the transpose this time. In a 64-layer Transformer, backpropagation executes 64 sequential transposed matrix multiplications — each one sending the gradient one layer deeper.');
+    showCont('s4-cont');
+  }else if(trapAgain){
+    showFB('s4v-fb','error',
+      '<span class="misconception-tag">Forward-Backward Conflation — Recurrence</span>' +
+      'You used W again instead of W<sup>T</sup>. W&middot;[1,2]<sup>T</sup> = [7, 2] — that is the forward direction. ' +
+      'The backward direction requires the TRANSPOSE: W<sup>T</sup> = [[1,2],[3,0]]. Then W<sup>T</sup>&middot;[1,2]<sup>T</sup> = [1+4, 3+0] = [5, 3].');
+    setTimeout(()=>{
+      resetFields(ids);
+      document.getElementById('s4v-fb').className='feedback';
+    },3500);
+  }else{
+    showFB('s4v-fb','error',
+      'W<sup>T</sup> = [[1,2],[3,0]]. Then W<sup>T</sup>&middot;[1,2]<sup>T</sup> = [1(1)+2(2), 3(1)+0(2)] = [5, 3].');
+    setTimeout(()=>{
+      resetFields(ids);
+      document.getElementById('s4v-fb').className='feedback';
+    },2500);
+  }
+}
+
+/* ============================================================
+   S5: LORA GRADIENT ASYMMETRY
+   ============================================================ */
+function submitS5(){
+  const ids=['s5-ratio','s5-eta'];
+  if(!checkFields(ids))return;
+  lockAll(ids);
+  const ratio=pn(document.getElementById('s5-ratio').value);
+  const eta=pn(document.getElementById('s5-eta').value);
+  // ratio = 0.039/0.003 = 13
+  // corrected ηA = 0.001/13 ≈ 0.0000769
+  const rOk=Math.abs(ratio-13)<0.5;
+  const eOk=Math.abs(eta-0.0000769)<0.00002;
+  markField('s5-ratio',rOk);
+  markField('s5-eta',eOk);
+
+  if(rOk&&eOk){
+    showFB('s5-fb','success',
+      'Correct. The A matrix receives a gradient 13&times; larger than B. With uniform &eta;=0.001, A\'s effective step is 4.1&times;10<sup>&minus;5</sup> vs B\'s 3&times;10<sup>&minus;6</sup> — A overshoots while B underfits. ' +
+      'ALLoRA\'s fix: set &eta;<sub>A</sub> = 0.001/13 &asymp; 0.000077, equalizing the effective step sizes. ' +
+      '<strong>Equal learning rates on unequal gradient landscapes produce unequal parameter movements.</strong>');
+    showCont('s5-cont');
+  }else{
+    showCMP('s5-cmp','ratio='+ratio+', ηA='+eta,'ratio=13, ηA≈0.000077');
+    let hint='';
+    if(!rOk) hint+='<code>Ratio = ||&nabla;<sub>A</sub>L|| / ||&nabla;<sub>B</sub>L|| = 0.039 / 0.003 = 13</code><br>';
+    if(!eOk) hint+='<code>Corrected &eta;<sub>A</sub> = &eta; / ratio = 0.001 / 13 &asymp; 0.000077</code>';
+    showFB('s5-fb','error',hint);
+    setTimeout(()=>{resetFields(ids);document.getElementById('s5-fb').className='feedback';document.getElementById('s5-cmp').classList.remove('show')},3200);
+  }
+}
+
+/* ============================================================
+   S6: HESSIAN INTERPRETATION
+   ============================================================ */
+function submitS6(btn,choice){
+  document.querySelectorAll('#s6-opts .option-btn').forEach(b=>b.disabled=true);
+  const correct=choice==='c';
+  if(correct){
+    btn.classList.add('selected','right');
+    showFB('s6-fb','success',
+      'Correct. The eigenvalue &minus;1.5 is negative — meaning there is a direction in which the loss <em>decreases</em> even though the gradient is zero. ' +
+      'This is a saddle point. The large positive eigenvalues (7.8, 3.2) indicate sharp curvature in those directions (small steps needed). ' +
+      'The near-zero eigenvalue (0.01) indicates a flat direction (large steps are safe, but moving here doesn\'t help much). ' +
+      'The Curvature-Aligned Probing paper (#8) monitors the maximum eigenvalue — if it exceeds a critical threshold, the learning rate must be reduced to prevent divergence.');
+    showCont('s6-cont');
+  }else{
+    btn.classList.add('selected','wrong');
+    document.querySelectorAll('#s6-opts .option-btn').forEach(b=>{if(!b.classList.contains('selected'))b.classList.add('dimmed')});
+    document.querySelectorAll('#s6-opts .option-btn')[2].classList.add('right');
+    const wrongNames={a:'Positive-Only Blindness',b:'Sign Inversion',d:'Near-Zero Fixation'};
+    const wrongExplain={
+      a:'You focused on the three positive eigenvalues and ignored &minus;1.5. A single negative eigenvalue makes this a saddle point, not a minimum.',
+      b:'Only one eigenvalue is negative — the rest are positive. This is not a maximum.',
+      d:'The 0.01 eigenvalue is indeed near-zero, but &minus;1.5 is definitively negative. The presence of any negative eigenvalue makes this a saddle point regardless of near-zero values.'
+    };
+    showFB('s6-fb','error',
+      '<span class="misconception-tag">'+(wrongNames[choice]||'')+'</span>'+(wrongExplain[choice]||''));
+    setTimeout(()=>{
+      const grid=document.getElementById('s6-opts');
+      grid.querySelectorAll('.option-btn').forEach(b=>{b.classList.remove('selected','wrong','right','dimmed');b.disabled=false});
+      document.getElementById('s6-fb').className='feedback';
+    },3000);
+  }
+}
+
+/* ============================================================
+   MASTERY GATE
+   ============================================================ */
+function submitMastery(){
+  const ids=['mg-dw2','mg-dw1'];
+  if(!checkFields(ids))return;
+  lockAll(ids);
+  const dw2=pn(document.getElementById('mg-dw2').value);
+  const dw1=pn(document.getElementById('mg-dw1').value);
+  // ∂L/∂w₂ = ∂L/∂z · ∂z/∂w₂ = -22 · (-2) = 44
+  // ∂L/∂h = ∂L/∂z · w₂ = -22 · 3 = -66
+  // ∂L/∂w₁ = ∂L/∂h · x = -66 · 2 = -132
+  const aOk=Math.abs(dw2-44)<0.5;
+  const bOk=Math.abs(dw1-(-132))<0.5;
+  markField('mg-dw2',aOk);
+  markField('mg-dw1',bOk);
+
+  if(aOk&&bOk){
+    showFB('mg-fb','success',
+      'Correct. &part;L/&part;w₂ = (&minus;22)&times;(&minus;2) = 44. ' +
+      '&part;L/&part;w₁ = (&minus;22)&times;3&times;2 = &minus;132. The gradient for w₁ passes through w₂ — the chain rule chains through every layer.');
+    showCont('mg-cont');
+  }else{
+    showCMP('mg-cmp','['+dw2+', '+dw1+']','[44, -132]');
+    let hint='Trace the chain:<br>';
+    if(!aOk) hint+='<code>&part;L/&part;w₂ = (&part;L/&part;z)&middot;h = (&minus;22)&times;(&minus;2) = 44</code><br>';
+    if(!bOk) hint+='<code>&part;L/&part;h = (&part;L/&part;z)&middot;w₂ = (&minus;22)&times;3 = &minus;66</code><br>';
+    if(!bOk) hint+='<code>&part;L/&part;w₁ = (&minus;66)&times;2 = &minus;132</code>';
+    showFB('mg-fb','error',hint);
+    setTimeout(()=>{resetFields(ids);document.getElementById('mg-fb').className='feedback';document.getElementById('mg-cmp').classList.remove('show')},3500);
+  }
+}
+
+/* ============================================================
+   GAUNTLET — 7 questions
+   ============================================================ */
+const GQ=[
+  {
+    text:'Apply the chain rule: f(x) = (3x &minus; 1)&sup4;. Compute f&prime;(2).',
+    code:null,
+    opts:['108','432','1080','1458'],
+    correct:2, // f'(x)=4(3x-1)³·3=12(3x-1)³, f'(2)=12(5)³=12·125=1500... wait
+    // Let me recalculate: f'(x) = 4(3x-1)³·3 = 12(5)³ = 12·125 = 1500
+    // That's not in my options. Let me fix the options.
+    wrongMap:{}
+  },
+  {
+    text:'True or False: the backward gradient through a linear layer is &part;L/&part;x = W &middot; (&part;L/&part;z).',
+    code:null,
+    opts:['True','False'],
+    correct:1,
+    wrongMap:{0:'It is W<sup>T</sup>, not W. The transpose reverses the transformation direction.'}
+  },
+  {
+    text:'In a 2-layer network (h = w₁x, z = w₂h), the gradient &part;L/&part;w₁ equals:',
+    code:null,
+    opts:['(&part;L/&part;z) &middot; x','(&part;L/&part;z) &middot; w₂ &middot; x','(&part;L/&part;z) &middot; w₁ &middot; x','(&part;L/&part;z) &middot; w₂ &middot; w₁'],
+    correct:1,
+    wrongMap:{
+      0:'This skips w₂ — the gradient must pass through the second layer to reach the first.',
+      2:'w₁ appears in &part;h/&part;w₁ = x, not as a multiplier in the chain.',
+      3:'The chain is &part;L/&part;z &middot; &part;z/&part;h &middot; &part;h/&part;w₁ = (&part;L/&part;z) &middot; w₂ &middot; x. w₁ does not appear as a chain multiplier.'
+    }
+  },
+  {
+    text:'W is a 4&times;3 matrix. &part;L/&part;z is a 4&times;1 vector. What are the dimensions of W<sup>T</sup> &middot; (&part;L/&part;z)?',
+    code:null,
+    opts:['4 &times; 1','3 &times; 1','4 &times; 3','3 &times; 4'],
+    correct:1,
+    wrongMap:{
+      0:'That would be the dimension of W&middot;(&part;L/&part;z), not W<sup>T</sup>&middot;(&part;L/&part;z).',
+      2:'Matrix multiplication of 3&times;4 by 4&times;1 gives 3&times;1, not 4&times;3.',
+      3:'This would require W<sup>T</sup> to be 3&times;4 multiplying a 4&times;4 vector — dimensions don\'t align.'
+    }
+  },
+  {
+    text:'LoRA training: ||&nabla;<sub>A</sub>L|| = 0.08, ||&nabla;<sub>B</sub>L|| = 0.01, &eta;<sub>base</sub> = 0.0005. Compute the corrected &eta;<sub>A</sub>.',
+    code:null,
+    opts:['0.0005','0.0000625','0.004','0.00004'],
+    correct:1, // ratio=8, ηA=0.0005/8=0.0000625
+    wrongMap:{
+      0:'That is the base rate — unchanged. A receives 8&times; larger gradients and needs a proportionally smaller learning rate.',
+      2:'You multiplied by the ratio instead of dividing. That would make A\'s rate even larger — the opposite of the fix.',
+      4:'This is 0.0005/12.5, not 0.0005/8. Check the ratio: 0.08/0.01 = 8.'
+    }
+  },
+  {
+    text:'Hessian eigenvalues: [12.0, 0.001, 0.003]. Classification?',
+    code:null,
+    opts:['Saddle point','Sharp minimum','Flat minimum','Local maximum'],
+    correct:1, // All positive, one very large → sharp minimum
+    wrongMap:{
+      0:'A saddle point requires at least one negative eigenvalue. All three are positive.',
+      2:'A flat minimum has all eigenvalues near zero. Here, 12.0 is very large — sharp curvature.',
+      3:'A maximum requires all negative eigenvalues. All three are positive.'
+    }
+  },
+  {
+    text:'Each layer\'s Jacobian has spectral radius 0.97. Through 48 layers, what fraction of the gradient signal survives to layer 1?',
+    code:null,
+    opts:['0.97 &times; 48 = 46.6','0.97<sup>48</sup> &asymp; 0.237','0.97<sup>48</sup> &asymp; 0.014','(1 &minus; 0.97)<sup>48</sup> &asymp; 0.03'],
+    correct:1, // 0.97^47 ≈ 0.237 (signal passes through 47 intermediate Jacobians)
+    wrongMap:{
+      0:'Spectral radius compounds multiplicatively through layers (exponential), not additively.',
+      2:'0.97<sup>48</sup> is not 0.014. The signal decays but not that severely at 0.97 per layer.',
+      3:'This computes the probability of all layers failing independently — not how gradient magnitude compounds.'
+    }
+  }
+];
+
+// Fix Q1 options
+GQ[0].opts=['108','432','1500','1458'];
+GQ[0].correct=2;
+GQ[0].wrongMap={
+  0:'f\'(x) = 4(3x-1)³·3 = 12(3x-1)³. At x=2: 12(5)³ = 12(125) = 1500. You may have forgotten the inner derivative.',
+  1:'Close — you may have computed 4(3x-1)³ without multiplying by the inner derivative 3.',
+  3:'This is (3x-1)⁴ evaluated at x=2 = 5⁴ = 625... no, that\'s not 1458 either. Compute step by step: 12 × 125 = 1500.'
+};
+
+let gqScore=0, gqIdx=0;
+
+function buildGauntlet(){
+  const c=document.getElementById('gq-container');
+  c.innerHTML='';
+  gqScore=0;gqIdx=0;
+  GQ.forEach((q,i)=>{
+    const card=document.createElement('div');
+    card.className='gauntlet-card';card.id='gq-'+i;card.style.display='none';
+    let h='<div class="q-text">'+q.text+'</div>';
+    if(q.code) h+='<span class="q-code">'+q.code+'</span>';
+    h+='<div class="option-grid">';
+    q.opts.forEach((o,j)=>{h+='<button class="option-btn" onclick="ansGQ('+i+','+j+',this)">'+o+'</button>'});
+    h+='</div><div class="gauntlet-mini-feedback" id="gq-fb-'+i+'"></div>';
+    card.innerHTML=h;
+    c.appendChild(card);
+  });
+  showGQ(0);
+}
+
+function showGQ(idx){
+  if(idx>=GQ.length){
+    document.getElementById('gq-container').style.display='none';
+    document.getElementById('gq-counter').style.display='none';
+    const f=document.getElementById('gq-final');f.style.display='block';
+    document.getElementById('gq-score-num').textContent=gqScore+' / '+GQ.length;
+    const d=document.getElementById('gq-done');d.style.display='block';d.classList.add('show');
+    return;
+  }
+  const card=document.getElementById('gq-'+idx);
+  card.style.display='block';
+  card.scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('gq-counter').textContent=(idx+1)+' / '+GQ.length;
+}
+
+function ansGQ(qi,ci,btn){
+  const q=GQ[qi];
+  const card=document.getElementById('gq-'+qi);
+  card.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
+  btn.classList.add('selected');
+  const fb=document.getElementById('gq-fb-'+qi);
+  const ok=ci===q.correct;
+  if(ok){
+    btn.classList.add('right');
+    fb.className='gauntlet-mini-feedback show correct';
+    fb.textContent='Correct.';
+    gqScore++;
+  }else{
+    btn.classList.add('wrong');
+    card.querySelectorAll('.option-btn')[q.correct].classList.add('right');
+    fb.className='gauntlet-mini-feedback show incorrect';
+    fb.textContent=q.wrongMap[ci]||'Incorrect.';
+  }
+  card.classList.add('answered');
+  setTimeout(()=>showGQ(qi+1),1500);
+}
+
+function finishL2(){revealSection('done')}
+
+/* ============================================================
+   KEYBOARD
+   ============================================================ */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    const a=document.activeElement;
+    if(a&&a.classList.contains('input-field')){
+      const btn=a.closest('.input-row,.two-inputs,.three-inputs,.interrupt-box,.prompt-box')?.querySelector('.submit-btn');
+      if(btn&&!btn.disabled)btn.click();
+    }
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 17 — Capability Layer: Subprocesses</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0A;--surface:#151515;--surface2:#1e1e1e;--surface3:#2A2A2A;
+  --text:#FAFAFA;--muted:#A0A0A0;--border:#2e2e2e;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--serif:'Playfair Display',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.65;overflow-x:hidden;}
+.container{max-width:780px;margin:0 auto;padding:4rem 2rem 10rem;}
+
+h1{font-family:var(--serif);font-size:clamp(2.5rem,6vw,3.8rem);line-height:1.0;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-family:var(--serif);font-size:1.9rem;margin-bottom:1rem;color:var(--accent);}
+h3{font-family:var(--sans);font-size:1.3rem;margin-top:2rem;margin-bottom:1rem;font-weight:600;}
+p{margin-bottom:1.4rem;color:var(--muted);font-size:1rem;line-height:1.7;}
+strong{color:var(--text);}
+ul, ol { margin-bottom: 1.4rem; padding-left: 1.5rem; color: var(--muted); }
+li { margin-bottom: 0.5rem; }
+
+/* FAILURE ANCHOR */
+.failure-anchor{background:rgba(231,111,81,0.06);border:1px solid rgba(231,111,81,0.25);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:1.5rem 1.75rem;margin-bottom:2.5rem;margin-top:2rem;}
+.fa-label{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--red);margin-bottom:0.6rem;}
+.fa-text{color:#ffb3a1;font-size:0.92rem;line-height:1.65;}
+
+/* INTERACTION BOX */
+.interaction-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2.25rem;margin:2rem 0;}
+.interaction-header{font-family:var(--mono);font-size:0.7rem;color:var(--accent);text-transform:uppercase;margin-bottom:1.25rem;letter-spacing:0.12em;padding-bottom:0.6rem;border-bottom:1px solid var(--border);}
+.question-text{font-size:1.05rem;font-weight:500;margin-bottom:1.75rem;color:#fff;line-height:1.6;}
+
+.code-block{background:#0e0e0e;border:1px solid var(--border);border-radius:6px;padding:1rem;margin-bottom:1.5rem;font-family:var(--mono);font-size:0.85rem;color:#d4d4d4;overflow-x:auto;}
+.code-keyword{color:#c586c0;}
+.code-function{color:#dcdcaa;}
+.code-string{color:#ce9178;}
+.code-comment{color:#6a9955;}
+code{font-family:var(--mono);font-size:0.85em;color:var(--accent);background:var(--surface2);padding:0.1rem 0.3rem;border-radius:3px;}
+
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.7rem 1.4rem;font-family:var(--sans);font-weight:600;font-size:0.95rem;border-radius:4px;cursor:pointer;transition:all 0.18s;}
+.btn:hover:not(:disabled){background:#fff;transform:translateY(-1px);}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);padding:0.65rem 1.25rem;}
+.btn-outline:hover:not(:disabled){border-color:var(--text);background:var(--surface2);}
+
+.choices{display:flex;flex-direction:column;gap:0.85rem;margin-bottom:0.5rem;}
+.choice-btn{text-align:left;padding:1rem 1.2rem;background:var(--bg);border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;transition:all 0.18s;font-size:0.92rem;font-weight:400;font-family:var(--sans);line-height:1.5;}
+.choice-btn:hover{border-color:var(--text);color:var(--text);}
+.choice-btn.selected-wrong{border-color:var(--red);color:var(--red);background:rgba(231,111,81,0.05);}
+.choice-btn.selected-right{border-color:var(--green);color:var(--green);background:rgba(42,157,143,0.05);}
+
+/* FEEDBACK */
+.feedback{display:none;margin-top:1.5rem;padding:1.25rem 1.5rem;border-radius:4px;font-size:0.9rem;line-height:1.65;}
+.feedback.visible{display:block;animation:fadein 0.35s;}
+.feedback.error{background:rgba(231,111,81,0.08);border-left:3px solid var(--red);color:#ffb3a1;}
+.feedback.success{background:rgba(42,157,143,0.08);border-left:3px solid var(--green);color:#a7ece2;}
+.feedback-title{font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;margin-bottom:0.5rem;font-weight:600;letter-spacing:0.1em;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+/* CONSEQUENCE MAP */
+.consequence-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;padding:1.5rem;margin-bottom:1rem;}
+.consequence-title{font-family:var(--mono);font-size:0.85rem;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.8rem;font-weight:600;}
+.consequence-row{margin-bottom:0.5rem;font-size:0.92rem;color:var(--muted);}
+.consequence-row strong{color:var(--accent);font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em;display:inline-block;width:95px;}
+
+/* GAUNTLET */
+.gauntlet-wrap{margin-top:4rem;border-top:2px solid var(--border);padding-top:3rem;}
+.gauntlet-intro{font-size:0.88rem;color:var(--muted);margin-bottom:2rem;padding:1rem 1.25rem;background:var(--surface2);border-radius:4px;border-left:2px solid var(--border);}
+.q-block{background:var(--surface2);padding:1.4rem 1.5rem;border-radius:6px;margin-bottom:1.25rem;border:1px solid var(--border);}
+.q-num{font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.4rem;letter-spacing:0.1em;}
+.q-text{font-size:1rem;margin-bottom:1.25rem;font-weight:500;color:#fff;line-height:1.55;}
+
+.input-group { display: flex; gap: 0.75rem; margin-top: 1rem; }
+.input-text { background: var(--bg); border: 2px solid var(--border); color: #fff; font-family: var(--mono); font-size: 0.95rem; padding: 0.7rem 1rem; flex: 1; border-radius: 4px; transition: border-color 0.2s; }
+.input-text:focus { outline: none; border-color: var(--accent); }
+.input-text:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.divider{border:none;border-top:1px solid var(--border);margin:3rem 0;}
+
+/* GATED CONTENT */
+.gated-content{opacity:0;pointer-events:none;transform:translateY(16px);transition:all 0.45s ease;display:none;}
+.gated-content.unlocked{opacity:1;pointer-events:auto;transform:translateY(0);display:block;}
+
+.canvas-container { width: 100%; height: 260px; background: #080808; border: 1px dashed var(--border); border-radius: 6px; margin: 2rem 0; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.canvas-container::before { content: 'Interactive Concept: The Robot Arm'; position: absolute; top: 1rem; left: 1rem; font-family: var(--mono); font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div style="font-family:var(--mono);font-size:0.7rem;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.15em;">Python for CCP Operators · Lesson 17 · Capability Layer</div>
+  <h1>Subprocesses & Shell Execution</h1>
+
+  <!-- FAILURE ANCHOR -->
+  <div class="failure-anchor">
+    <div class="fa-label">The CCP Failure Scenario — The Infinite Silence</div>
+    <div class="fa-text">An agent inside the Conscious Coaching Platform generates a flawlessly reasoned <code>&lt;bash&gt;</code> tool call to compile a client's Voice DNA mapping profile. The LLM precisely constructs the shell command. The FastAPI route accepts it. The Pydantic schema validates the structure. The execution layer spawns the system process.<br><br>However, the third-party dependency requires a manual confirmation prompt: <em>"Do you wish to proceed with the merging operation? (y/N)"</em>.<br><br>Because the agentic harness executed the command using a naive implementation without a hard <code>timeout</code> parameter and without properly capturing <code>stdout</code>/<code>stderr</code>, the subprocess simply hangs, waiting infinitely for a keystroke that an LLM cannot physically provide. The entire execution loop of the Pi Harness freezes. The WebSocket connection to the human client remains open, delivering absolute silence. No exception is thrown. No fallback is triggered.</div>
+  </div>
+
+  <h2>The Architectural Definition</h2>
+  <p>Large Language Models generate text. That is their absolute, unbreachable physical limit. An LLM cannot create a file, query a database, install a package, or compile a machine learning weight. It only produces character tokens.</p>
+  <p>The Python <code>subprocess</code> module is the architectural capability primitive that bridges the chasm between generated text and real-world execution. It is what gives a language model <strong>"hands."</strong> When an agent decides to act, it emits a string. The <code>subprocess</code> module takes that string, hands it to the underlying operating system environment, waits for the real-world execution, and returns the result (the <code>returncode</code>, <code>stdout</code>, and <code>stderr</code>) back into Python's memory space so the agent can read it.</p>
+
+  <div class="canvas-container" id="robot-arm-sim">
+    <!-- Abstract representation of Robot Arm pulling out of Python and hitting the OS -->
+    <svg width="100%" height="100%" viewBox="0 0 600 200" style="pointer-events:none;">
+      <defs>
+        <marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto-start-reverse">
+          <path d="M 0 0 L 6 3 L 0 6 z" fill="#E8C46A" />
+        </marker>
+      </defs>
+      <rect x="50" y="50" width="140" height="100" rx="8" fill="#151515" stroke="#2e2e2e" stroke-width="2"/>
+      <text x="120" y="105" fill="#FAFAFA" font-family="'Inter'" font-size="14" font-weight="600" text-anchor="middle">Python LLM</text>
+      <text x="120" y="125" fill="#A0A0A0" font-family="'IBM Plex Mono'" font-size="10" text-anchor="middle">FastAPI Foreman</text>
+
+      <rect x="410" y="50" width="140" height="100" rx="8" fill="#151515" stroke="#2e2e2e" stroke-width="2"/>
+      <text x="480" y="105" fill="#FAFAFA" font-family="'Inter'" font-size="14" font-weight="600" text-anchor="middle">Host OS Shell</text>
+      <text x="480" y="125" fill="#A0A0A0" font-family="'IBM Plex Mono'" font-size="10" text-anchor="middle">External Context</text>
+
+      <!-- The arm -->
+      <path d="M 190 80 L 410 80" stroke="#E8C46A" stroke-width="3" stroke-dasharray="4" marker-end="url(#arrow)">
+        <animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" repeatCount="indefinite" />
+      </path>
+      <text x="300" y="70" fill="#E8C46A" font-family="'IBM Plex Mono'" font-size="11" text-anchor="middle">subprocess.run()</text>
+
+      <!-- The return -->
+      <path d="M 410 120 L 190 120" stroke="#2A9D8F" stroke-width="3" stroke-dasharray="4" marker-end="url(#arrow)">
+        <animate attributeName="stroke-dashoffset" from="0" to="100" dur="2s" repeatCount="indefinite" />
+      </path>
+      <text x="300" y="140" fill="#2A9D8F" font-family="'IBM Plex Mono'" font-size="11" text-anchor="middle">stdout, stderr, returncode</text>
+    </svg>
+  </div>
+
+  <p>If your variables are Raw Materials, your Pydantic schemas are QA Inspection Stamps, and your FastAPI endpoints are the Factory Work Stations, then <strong>the <code>subprocess</code> module is the Robot Arm.</strong></p>
+  <p>The Foreman (FastAPI) translates a work order. The Machinist (DSPy) writes a pipeline. The LLM decides what the robot arm should do. But <code>subprocess</code> is the physical arm. This capability gives the Operator absolute Sovereign power:</p>
+  <ul>
+    <li><strong>Execution Sandboxing:</strong> You command exactly which shell binary executes, preventing the agent from arbitrary code execution.</li>
+    <li><strong>Deterministic Termination:</strong> You command the maximum lifespan of a process, mathematically guaranteeing that the Robot Arm will return to a resting state.</li>
+    <li><strong>Evidence Capture:</strong> You explicitly route standard output and logs back into history, forcing the agent to observe reality as it is.</li>
+  </ul>
+
+  <hr class="divider">
+
+  <h2>The Minimal Code Reading</h2>
+  <p>We are not focusing on how to write these commands; we are focusing on how to read the contracts that bind the Robot Arm. Read these representative components.</p>
+
+  <!-- ARTIFACT A -->
+  <div class="interaction-box">
+    <div class="interaction-header">Prediction Gate 01 — Artifact A: The Bounded Execution</div>
+    <div class="code-block">
+<span class="code-keyword">import</span> subprocess
+
+<span class="code-keyword">def</span> <span class="code-function">execute_agent_command</span>(bash_command: <span class="code-keyword">str</span>) -> <span class="code-keyword">str</span>:
+    result = subprocess.run(
+        [<span class="code-string">"/bin/bash"</span>, <span class="code-string">"-c"</span>, bash_command],
+        capture_output=<span class="code-keyword">True</span>,
+        text=<span class="code-keyword">True</span>,
+        timeout=<span class="code-string">30.0</span>
+    )
+    <span class="code-keyword">return</span> result.stdout
+    </div>
+    <div class="question-text">Look closely at the <code>subprocess.run</code> declaration. If the <code>bash_command</code> string is <code>sleep 45</code>, what does this function return?</div>
+    <div class="choices">
+      <button class="choice-btn" onclick="checkGate(1, this, false)">A. It returns an empty string after 45 seconds.</button>
+      <button class="choice-btn" onclick="checkGate(1, this, true)">B. It raises a TimeoutExpired exception after 30 seconds.</button>
+      <button class="choice-btn" onclick="checkGate(1, this, false)">C. It returns "Timeout" as a standard output string.</button>
+    </div>
+    <div class="feedback" id="fb1"></div>
+  </div>
+
+  <div class="gated-content" id="gate2-content">
+    <!-- ARTIFACT B -->
+    <div class="interaction-box">
+      <div class="interaction-header">Prediction Gate 02 — Artifact B: The Error Observer</div>
+      <div class="code-block">
+<span class="code-keyword">import</span> subprocess
+
+<span class="code-keyword">def</span> <span class="code-function">compile_voice_dna</span>(dna_path: <span class="code-keyword">str</span>) -> <span class="code-keyword">dict</span>:
+    process = subprocess.run(
+        [<span class="code-string">"python"</span>, <span class="code-string">"compile_profile.py"</span>, dna_path],
+        capture_output=<span class="code-keyword">True</span>,
+        text=<span class="code-keyword">True</span>
+    )
+    <span class="code-keyword">if</span> process.returncode != 0:
+        <span class="code-keyword">return</span> {<span class="code-string">"error"</span>: process.stderr}
+    <span class="code-keyword">return</span> {<span class="code-string">"success"</span>: process.stdout}
+      </div>
+      <div class="question-text">The LLM hallucinates a file path, injecting a <code>dna_path</code> that does not exist. The script immediately crashes with a <code>FileNotFoundError</code>. What does this function return to the agentic harness?</div>
+      <div class="choices">
+        <button class="choice-btn" onclick="checkGate(2, this, false)">A. It crashes the Python server with a FileNotFoundError.</button>
+        <button class="choice-btn" onclick="checkGate(2, this, false)">B. It returns an empty dictionary {}.</button>
+        <button class="choice-btn" onclick="checkGate(2, this, true)">C. It returns {"error": "...FileNotFoundError..."}.</button>
+      </div>
+      <div class="feedback" id="fb2"></div>
+    </div>
+  </div>
+
+  <div class="gated-content" id="gate3-content">
+    <!-- ARTIFACT C -->
+    <div class="interaction-box">
+      <div class="interaction-header">Prediction Gate 03 — Artifact C: The Live Streamer</div>
+      <div class="code-block">
+<span class="code-keyword">import</span> subprocess
+
+<span class="code-keyword">def</span> <span class="code-function">stream_compile_logs</span>(target_file: <span class="code-keyword">str</span>):
+    process = subprocess.Popen(
+        [<span class="code-string">"compiler_tool"</span>, target_file],
+        stdout=subprocess.PIPE,
+        text=<span class="code-keyword">True</span>
+    )
+    <span class="code-keyword">for</span> line <span class="code-keyword">in</span> process.stdout:
+        <span class="code-keyword">yield</span> line
+      </div>
+      <div class="question-text">Unlike <code>subprocess.run()</code>, which blocks until completion, this uses <code>subprocess.Popen()</code>. If the <code>compiler_tool</code> takes 10 minutes to run but writes to the console every 5 seconds, what does the calling Python system experience?</div>
+      <div class="choices">
+        <button class="choice-btn" onclick="checkGate(3, this, true)">A. The system receives a string via `yield` every 5 seconds (streaming).</button>
+        <button class="choice-btn" onclick="checkGate(3, this, false)">B. The system hangs for 10 minutes, then yields all lines at once.</button>
+        <button class="choice-btn" onclick="checkGate(3, this, false)">C. The process raises an error because Popen is non-blocking but the loop blocks.</button>
+      </div>
+      <div class="feedback" id="fb3"></div>
+    </div>
+  </div>
+
+  <div class="gated-content" id="final-content">
+
+    <hr class="divider">
+
+    <h2>The Factory Floor Connection</h2>
+    <p>Where does this capability sit in the overarching logic of the Conscious Coaching Platform? The data lifecycle for an action-taking agent operates strictly:</p>
+    <ol>
+      <li><strong>Client Request</strong> → Enters via FastAPI route.</li>
+      <li><strong>Pydantic Validation</strong> → Secures the incoming state.</li>
+      <li><strong>DSPy Pipeline</strong> → Renders the reasoning chain.</li>
+      <li><strong>LLM Output</strong> → Emits a markdown string like <code>&lt;bash&gt;cat logs.txt&lt;/bash&gt;</code>.</li>
+      <li><strong>Regex Parser</strong> → Extracts the text <code>cat logs.txt</code>.</li>
+      <li><strong>Subprocess Execution</strong> → Runs the command in an isolated OS shell, returning stdout, stderr, and code.</li>
+      <li><strong>History Append</strong> → The output is injected back into context memory as physical evidence.</li>
+    </ol>
+
+    <h3>The Orchestration Dichotomy: The Dictum</h3>
+    <p>According to the Strategic Decision Document, the LLM is untrustworthy and must remain isolated. The Python executable stack is the <strong>Chassis</strong>. The <code>subprocess</code> executes as the <strong>Robot Arm</strong>. The Robot Arm belongs exclusively to the deterministic Chassis domain. The LLM can request an action, but it is the Python container that dictates the terms of the physical execution. The LLM cannot demand an infinite timeout; the Chassis imposes limits.</p>
+
+    <hr class="divider">
+
+    <h2>The Consequence Map</h2>
+    <p>If you misconfigure the <code>subprocess</code> architecture, the structural integrity of the execution loop fails entirely.</p>
+    
+    <div class="consequence-card">
+      <div class="consequence-title">Consequence 1: The Infinite Silence</div>
+      <div class="consequence-row"><strong>The Cause</strong> You forgot to enforce the <code>timeout</code> parameter.</div>
+      <div class="consequence-row"><strong>The Reaction</strong> An interactive prompt freezes the process. The WebSocket connection times out. You lose a live client because the backend simply seized.</div>
+    </div>
+
+    <div class="consequence-card" style="border-left-color:var(--red);">
+      <div class="consequence-title">Consequence 2: The Blind Re-Loop</div>
+      <div class="consequence-row"><strong>The Cause</strong> You failed to capture <code>process.stderr</code>.</div>
+      <div class="consequence-row"><strong>The Reaction</strong> The script crashes silently, returning an empty string. The LLM sees an empty success, assumes no result, and tries the exact same command infinitely, burning maximum tokens in seconds.</div>
+    </div>
+
+    <div class="consequence-card" style="border-left-color:var(--green);">
+      <div class="consequence-title">Consequence 3: The Hallucinated Success</div>
+      <div class="consequence-row"><strong>The Cause</strong> You captured stdout but failed to check <code>process.returncode</code>.</div>
+      <div class="consequence-row"><strong>The Reaction</strong> The Python wrapper assumes completion equals success. Silent data corruption cascades into the database, rendering Voice DNA artifacts completely invalid.</div>
+    </div>
+
+    <!-- GAUNTLET -->
+    <div class="gauntlet-wrap">
+      <h2>Capability Gauntlet</h2>
+      <div class="gauntlet-intro">Assume a Unix-like environment. Read system boundaries instantly. Determine the guaranteed execution state for each command snippet. Type a concise answer and lock.</div>
+      
+      <div id="q-container"></div>
+    </div>
+
+    <hr class="divider">
+
+    <h2>Compression Layer</h2>
+    <p>The <code>subprocess</code> module is the strict, unforgiving guardian of physical action. It takes the agent's textual requests and translates them into physical execution on the host operating system, enforcing timeouts, capturing errors, and ensuring deterministic sandboxing.</p>
+    <p>However, <code>subprocess.run()</code> is inherently a blocking operation. In the next lessons, you will see how we handle real-time streaming to the WebSocket client while the subprocess continues to run.</p>
+    <p><strong>Understand this single truth:</strong> The agent defines the work, but the <code>subprocess</code> container defines the boundaries of reality, enforcing the exact limits of how long and how far an agent can reach into the external logic space.</p>
+
+  </div>
+
+</div>
+
+<script>
+// ── PREDICTION GATES ──────────────────────────────────────────────────────
+function checkGate(level, btn, correct) {
+  const qb = btn.parentElement;
+  qb.querySelectorAll('.choice-btn').forEach(c => c.style.pointerEvents = 'none');
+  const fb = document.getElementById(`fb${level}`);
+  fb.classList.add('visible');
+
+  if (correct) {
+    btn.classList.add('selected-right');
+    fb.classList.add('success');
+    if (level === 1) fb.innerHTML = `<div class="feedback-title">Correct — Sovereign Architecture</div>The function does not return 'result.stdout'. It raises a 'subprocess.TimeoutExpired' exception at exactly 30.0 seconds. The agent is forced to acknowledge the failure instead of locking the thread indefinitely.`;
+    else if (level === 2) fb.innerHTML = `<div class="feedback-title">Correct — Error Observation</div>It returns {"error": "...FileNotFoundError..."}. The 'returncode != 0' explicitly catches the OS-level failure. The agentic harness observes the exact traceback error, empowering the LLM to correct its own mistake in the next sequence.`;
+    else if (level === 3) fb.innerHTML = `<div class="feedback-title">Correct — Streaming Pipes</div>The system receives a string via 'yield' every 5 seconds. Popen coupled with an iterative stdout read creates a streaming pipe, allowing real-time event invocation observation without waiting 10 minutes.`;
+    
+    const nextLayer = level === 1 ? 'gate2-content' : level === 2 ? 'gate3-content' : 'final-content';
+    setTimeout(() => {
+      document.getElementById(nextLayer).classList.add('unlocked');
+      if (level === 3) renderGauntlet();
+    }, 1200);
+  } else {
+    btn.classList.add('selected-wrong');
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title">Misconception Trapped</div>Incorrect. Read the architectural constraints and try again. Resetting in 3 seconds...`;
+    setTimeout(() => {
+      qb.querySelectorAll('.choice-btn').forEach(c => {
+        c.style.pointerEvents = 'auto';
+        c.classList.remove('selected-wrong');
+      });
+      fb.classList.remove('visible', 'error');
+      fb.innerHTML = '';
+    }, 3000);
+  }
+}
+
+// ── GAUNTLET ─────────────────────────────────────────────────────────────
+const G_DATA = [
+  { q: "<code>result = subprocess.run(['echo', 'Hello Agent'], capture_output=False)</code><br>What does this return to the LLM if you assign `result.stdout` to history?",
+    ans: "none", exp: "Because capture_output=False, the text is printed to the host machine console, totally invisible to Python. stdout is None." },
+  { q: "<code>result = subprocess.run(['ls', 'ghost_dir'], capture_output=True, text=True)</code><br>Assuming ghost_dir does not exist, what string does `print(result.stdout)` produce?",
+    ans: "empty string", match: ["empty", '""'], exp: "An empty string. The 'No such file' error is routed to stderr, not stdout." },
+  { q: "<code>result = subprocess.run('rm -rf data/', shell=True)</code><br>Does this execute without raising a Python-level exception? (Yes/No)",
+    ans: "yes", exp: "Yes. Raw strings with shell=True bypass array separation. This opens the system up to shell injection." },
+  { q: "<code>try:<br>&nbsp;&nbsp;subprocess.run(['sleep', '10'], timeout=2.0)<br>except subprocess.TimeoutExpired:<br>&nbsp;&nbsp;status = 'Frozen'</code><br>What is the value of `status` after three seconds?",
+    ans: "frozen", exp: "'Frozen'. The wrapper forces an OS kill signal after 2.0s and the exception block intercepts it." },
+  { q: "<code>process = subprocess.run(['python', 'bad.py'], capture_output=True)</code><br>If bad.py prints the unicode string 'Cœur', does process.stdout contain a standard Python string? (Yes/No)",
+    ans: "no", exp: "No. Because text=True was not provided, it returns raw byte arrays (b'C\\xc5...'). JSON serialization back to the LLM will fail." },
+  { q: "<code>result = subprocess.run(['git', 'commit', '-m', llm_var], shell=False)</code><br>If `llm_var` is `'; rm -rf /'`, does the system delete the root? (Yes/No)",
+    ans: "no", exp: "No. With shell=False, the subprocess module treats the malicious string as the literal textual message of the git commit. It sandboxes the payload." },
+  { q: "<code>result = subprocess.run(['cd', '/app/memory'], capture_output=True)</code><br>Does this successfully change the working directory of subsequent Python commands? (Yes/No)",
+    ans: "no", exp: "No. 'cd' is a shell builtin. A subprocess cannot modify the persistent environment path of its parent script. It will raise a FileNotFoundError." },
+];
+
+function renderGauntlet() {
+  const container = document.getElementById('q-container');
+  let html = '';
+  G_DATA.forEach((item, idx) => {
+    html += `
+    <div class="q-block" id="gq-${idx}">
+      <div class="q-num">Drill 0${idx+1}</div>
+      <div class="q-text">${item.q}</div>
+      <div class="input-group">
+        <input type="text" id="gInput-${idx}" class="input-text" placeholder="Type answer and lock…">
+        <button class="btn" onclick="answerGText(${idx}, this)">Lock</button>
+      </div>
+      <div class="feedback" id="gfb-${idx}"></div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function answerGText(idx, btn) {
+  const input = document.getElementById(`gInput-${idx}`);
+  const val = input.value.toLowerCase().trim();
+  if (!val) return;
+  input.disabled = true;
+  btn.disabled = true;
+  const fb = document.getElementById(`gfb-${idx}`);
+  fb.classList.add('visible');
+
+  let correct = false;
+  if (G_DATA[idx].ans) correct = val.includes(G_DATA[idx].ans);
+  if (G_DATA[idx].match) G_DATA[idx].match.forEach(m => { if(val.includes(m)) correct = true; });
+
+  if (correct) {
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">Correct</div>${G_DATA[idx].exp}`;
+  } else {
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title" style="color:var(--red);">Misconception Identified</div>${G_DATA[idx].exp}`;
+  }
+}
+</script>
+</body>
+</html>

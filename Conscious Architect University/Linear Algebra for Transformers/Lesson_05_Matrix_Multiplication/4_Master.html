@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 05 - Master Layer</title>
+  <style>
+    :root {
+      --bg: #09090b;
+      --panel: #111114;
+      --line: rgba(255,255,255,0.08);
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --accent: #f97316;
+      --good: #22c55e;
+      --bad: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #0b0b0e 0%, #09090b 100%);
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+    }
+
+    .hud {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 20;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(9, 9, 11, 0.92);
+      font: 700 0.86rem/1 Arial, Helvetica, sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #f8fafc;
+    }
+
+    .shell {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 34px 18px 90px;
+    }
+
+    .hero,
+    .card,
+    .result {
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+      padding: 24px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 12px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 14px;
+      line-height: 1.08;
+      font-weight: 500;
+    }
+
+    h1 { font-size: clamp(2.2rem, 4vw, 3.8rem); }
+    h2 { font-size: clamp(1.4rem, 2.7vw, 2rem); }
+    h3 { font-size: 1.08rem; }
+    p { margin: 0 0 14px; }
+
+    .divider {
+      height: 1px;
+      margin: 22px 0;
+      background: linear-gradient(90deg, transparent, rgba(249,115,22,0.3), transparent);
+    }
+
+    .mono {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.95rem;
+    }
+
+    .meta {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 18px;
+    }
+
+    .meta div {
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .meta span {
+      display: block;
+      color: var(--muted);
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .card { margin-top: 18px; }
+
+    .qnum {
+      color: #fdba74;
+      font: 700 0.78rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .points {
+      color: var(--muted);
+      font: 700 0.8rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .choices {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .choice {
+      width: 100%;
+      text-align: left;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      transition: border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .choice.selected {
+      border-color: rgba(249,115,22,0.7);
+      background: rgba(249,115,22,0.08);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 170px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(249,115,22,0.55);
+      box-shadow: 0 0 0 4px rgba(249,115,22,0.12);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      padding: 14px 18px;
+      border-radius: 999px;
+      font: 700 0.94rem/1 Arial, Helvetica, sans-serif;
+      transition: transform 0.18s ease, opacity 0.18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .result {
+      margin-top: 22px;
+      display: none;
+    }
+
+    .result.show { display: block; }
+
+    .score {
+      font: 700 1.2rem/1.3 Arial, Helvetica, sans-serif;
+      margin-bottom: 14px;
+    }
+
+    .pass { color: var(--good); }
+    .fail { color: var(--bad); }
+
+    .breakdown {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .breakdown div {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .footnote {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.96rem;
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 720px) {
+      .hud {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        justify-content: space-between;
+      }
+      .meta { grid-template-columns: 1fr; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+      .shell { padding: 74px 14px 60px; }
+      .hero, .card, .result { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <span>Master Exam</span>
+    <span id="timer">10:00</span>
+  </div>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Lesson 05 - Master / Integration Layer</p>
+      <h1>Intelligence is numbers frozen into transformations.</h1>
+      <div class="divider"></div>
+      <p>This is the terminal assessment for Matrix Multiplication. No matrix diagrams. No shape cartoons. No weight-heatmap scaffolds. You either understand how matrices execute learned geometry in transformers, or you do not.</p>
+      <div class="meta">
+        <div><span>Questions</span>12 total</div>
+        <div><span>Time</span>10 minutes</div>
+        <div><span>Passing Score</span>160 / 200</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="startExam()">Start exam</button>
+      </div>
+    </section>
+
+    <form id="examForm" class="hidden" onsubmit="return false;">
+      <section class="card">
+        <div class="qnum">Question 1</div>
+        <div class="points">10 points</div>
+        <h2>Core meaning</h2>
+        <p>What is a matrix in the lesson's framing?</p>
+        <div class="choices" data-question="q1">
+          <button type="button" class="choice" onclick="pickChoice('q1','A',this)">A frozen linear transformation written as numbers</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','B',this)">A random table with no geometric meaning</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','C',this)">Only a storage format for embeddings</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','D',this)">A non-linear activation function</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 2</div>
+        <div class="points">10 points</div>
+        <h2>Matrix-vector product</h2>
+        <p>How is each element of <span class="mono">Mv</span> computed?</p>
+        <input id="q2" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 3</div>
+        <div class="points">10 points</div>
+        <h2>Shape law</h2>
+        <p>What must match for <span class="mono">A_(m x n) B_(n x p)</span> to be valid?</p>
+        <div class="choices" data-question="q3">
+          <button type="button" class="choice" onclick="pickChoice('q3','A',this)">The outer dimensions only</button>
+          <button type="button" class="choice" onclick="pickChoice('q3','B',this)">The inner dimensions</button>
+          <button type="button" class="choice" onclick="pickChoice('q3','C',this)">The row counts only</button>
+          <button type="button" class="choice" onclick="pickChoice('q3','D',this)">Nothing needs to match if the matrices are square</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 4</div>
+        <div class="points">10 points</div>
+        <h2>Order matters</h2>
+        <p>Why is matrix multiplication generally not commutative?</p>
+        <input id="q4" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 5</div>
+        <div class="points">10 points</div>
+        <h2>Column reading</h2>
+        <p>When you read a matrix column-by-column in Lesson 05, what are you reading geometrically?</p>
+        <div class="choices" data-question="q5">
+          <button type="button" class="choice" onclick="pickChoice('q5','A',this)">The transformed basis vectors / column space directions</button>
+          <button type="button" class="choice" onclick="pickChoice('q5','B',this)">Only the matrix determinant</button>
+          <button type="button" class="choice" onclick="pickChoice('q5','C',this)">The null space directly</button>
+          <button type="button" class="choice" onclick="pickChoice('q5','D',this)">The softmax output probabilities</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 6</div>
+        <div class="points">10 points</div>
+        <h2>Rank bottleneck</h2>
+        <p>What does the inequality <span class="mono">rank(AB) <= min(rank(A), rank(B))</span> tell you?</p>
+        <input id="q6" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 7</div>
+        <div class="points">10 points</div>
+        <h2>LoRA factorization</h2>
+        <p>If <span class="mono">Delta W = BA</span> with inner rank <span class="mono">r</span>, what structural constraint does that impose?</p>
+        <div class="choices" data-question="q7">
+          <button type="button" class="choice" onclick="pickChoice('q7','A',this)">The update can modify any direction with no bottleneck</button>
+          <button type="button" class="choice" onclick="pickChoice('q7','B',this)">The update is confined to an r-dimensional subspace</button>
+          <button type="button" class="choice" onclick="pickChoice('q7','C',this)">The update becomes non-linear</button>
+          <button type="button" class="choice" onclick="pickChoice('q7','D',this)">The base matrix is fully replaced</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 8</div>
+        <div class="points">10 points</div>
+        <h2>Dual-stack logic</h2>
+        <p>Why does the CCP split work across LoRA, SparseGrad, and Neo4j instead of asking one method to do everything?</p>
+        <input id="q8" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 9</div>
+        <div class="points">15 points</div>
+        <h2>Fine-tuning pipeline</h2>
+        <p>In the Dr. Elena example, what does LoRA capture, what does SparseGrad capture, and what does Neo4j handle?</p>
+        <textarea id="q9" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 10</div>
+        <div class="points">15 points</div>
+        <h2>Paper logic</h2>
+        <p>Explain how Paper #31, Paper #32, and Paper #50 fit together as one argument about fine-tuning architecture.</p>
+        <textarea id="q10" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 11</div>
+        <div class="points">15 points</div>
+        <h2>Associativity and compute</h2>
+        <p>Why can associativity improve efficiency without changing the mathematical result, and what tradeoff appears when you factor a matrix into a lower-rank chain?</p>
+        <textarea id="q11" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 12</div>
+        <div class="points">35 points</div>
+        <h2>Feynman Compression</h2>
+        <p>Explain how matrix multiplication executes transformer intelligence and why the CCP dual-stack fine-tuning strategy follows directly from rank and sparsity constraints. Minimum length: 220 characters.</p>
+        <p class="footnote">Full credit requires all three structural elements: matrix multiplication as executable transformation/dot-product grid, rank-constrained low-rank updates versus sparse updates, and the architectural separation of style, structure, and knowledge.</p>
+        <textarea id="q12" placeholder="Write the mechanism, not a slogan."></textarea>
+      </section>
+
+      <div class="actions">
+        <button class="btn btn-primary" type="button" onclick="submitExam(false)">Submit exam</button>
+        <button class="btn btn-secondary" type="button" onclick="scrollToTop()">Back to top</button>
+      </div>
+    </form>
+
+    <section id="result" class="result">
+      <div class="eyebrow">Result</div>
+      <div id="scoreLine" class="score"></div>
+      <p id="resultSummary"></p>
+      <div id="breakdown" class="breakdown"></div>
+      <p id="timeoutNote" class="footnote"></p>
+    </section>
+  </main>
+
+  <script>
+    const answers = {};
+    let examStarted = false;
+    let examSubmitted = false;
+    let secondsRemaining = 600;
+    let timerHandle = null;
+
+    function pickChoice(question, value, element) {
+      if (examSubmitted) return;
+      answers[question] = value;
+      document.querySelectorAll('[data-question="' + question + '"] .choice').forEach((btn) => btn.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function startExam() {
+      if (examStarted) return;
+      examStarted = true;
+      document.getElementById('examForm').classList.remove('hidden');
+      window.scrollTo({ top: document.getElementById('examForm').offsetTop - 20, behavior: 'smooth' });
+      timerHandle = setInterval(tick, 1000);
+    }
+
+    function tick() {
+      if (examSubmitted) return;
+      secondsRemaining -= 1;
+      if (secondsRemaining <= 0) {
+        secondsRemaining = 0;
+        updateTimer();
+        submitExam(true);
+        return;
+      }
+      updateTimer();
+    }
+
+    function updateTimer() {
+      const mins = String(Math.floor(secondsRemaining / 60)).padStart(2, '0');
+      const secs = String(secondsRemaining % 60).padStart(2, '0');
+      document.getElementById('timer').textContent = mins + ':' + secs;
+    }
+
+    function textValue(id) {
+      return (document.getElementById(id)?.value || '').trim().toLowerCase();
+    }
+
+    function containsAny(value, options) {
+      return options.some((option) => value.includes(option));
+    }
+
+    function gradeRichText(value, keywordGroups) {
+      if (!value) return 0;
+      let hits = 0;
+      keywordGroups.forEach((group) => {
+        if (containsAny(value, group)) hits += 1;
+      });
+      return hits;
+    }
+
+    function submitExam(fromTimeout) {
+      if (examSubmitted) return;
+      examSubmitted = true;
+      clearInterval(timerHandle);
+
+      document.querySelectorAll('input, textarea, button.choice').forEach((el) => el.disabled = true);
+
+      let total = 0;
+      const breakdown = [];
+
+      const q1 = answers.q1 === 'A' ? 10 : 0;
+      total += q1;
+      breakdown.push(['Q1', q1, 'Matrix = frozen transformation']);
+
+      const q2hits = gradeRichText(textValue('q2'), [['dot product', 'row'], ['sum', 'multiply corresponding'], ['each output element', 'systematic grid']]);
+      const q2 = Math.min(10, q2hits * 4);
+      total += q2;
+      breakdown.push(['Q2', q2, 'Matrix-vector product is a row-dot-product computation']);
+
+      const q3 = answers.q3 === 'B' ? 10 : 0;
+      total += q3;
+      breakdown.push(['Q3', q3, 'Inner dimensions must match']);
+
+      const q4hits = gradeRichText(textValue('q4'), [['order', 'composition order'], ['different result', 'not equal', 'ab not ba'], ['transformations', 'apply first']]);
+      const q4 = Math.min(10, q4hits * 4);
+      total += q4;
+      breakdown.push(['Q4', q4, 'Matrix order encodes transformation order']);
+
+      const q5 = answers.q5 === 'A' ? 10 : 0;
+      total += q5;
+      breakdown.push(['Q5', q5, 'Columns reveal transformed basis / column space']);
+
+      const q6hits = gradeRichText(textValue('q6'), [['bottleneck', 'limited by weaker factor', 'least expressive'], ['rank', 'cannot exceed'], ['product']]);
+      const q6 = Math.min(10, q6hits * 4);
+      total += q6;
+      breakdown.push(['Q6', q6, 'Rank of product is capped by the weaker matrix']);
+
+      const q7 = answers.q7 === 'B' ? 10 : 0;
+      total += q7;
+      breakdown.push(['Q7', q7, 'LoRA update lives in an r-dimensional subspace']);
+
+      const q8hits = gradeRichText(textValue('q8'), [['style', 'voice dna', 'lora'], ['structure', 'format', 'sparsegrad'], ['knowledge', 'neo4j', 'rag'], ['different job', 'separate concerns']]);
+      const q8 = Math.min(10, q8hits * 3);
+      total += q8;
+      breakdown.push(['Q8', q8, 'Dual-stack separates style, structure, and knowledge']);
+
+      const q9hits = gradeRichText(textValue('q9'), [['lora', 'voice dna', 'style', 'emotional distance'], ['sparsegrad', 'json', 'format', 'structure'], ['neo4j', 'knowledge', 'frameworks', 'protocols']]);
+      const q9 = Math.min(15, q9hits * 5);
+      total += q9;
+      breakdown.push(['Q9', q9, 'Dr. Elena pipeline decomposition']);
+
+      const q10hits = gradeRichText(textValue('q10'), [['paper #31', 'lora works for low intrinsic dimensionality', 'style'], ['paper #32', 'fails on cross-layer synthesis', 'illusion of equivalence'], ['paper #50', 'sparsegrad', 'gradient sparsity', 'mlp']]);
+      const q10 = Math.min(15, q10hits * 5);
+      total += q10;
+      breakdown.push(['Q10', q10, 'Three-paper fine-tuning argument']);
+
+      const q11hits = gradeRichText(textValue('q11'), [['associativity', 'regroup', 'same result'], ['efficiency', 'fewer operations', 'speedup'], ['lower-rank', 'rank bottleneck', 'less expressiveness', 'constraint']]);
+      const q11 = Math.min(15, q11hits * 5);
+      total += q11;
+      breakdown.push(['Q11', q11, 'Associativity helps compute; factorization costs expressiveness']);
+
+      const q12Value = textValue('q12');
+      let q12 = 0;
+      let missing = [];
+      if (q12Value.length < 220) {
+        missing = ['minimum length not met'];
+      } else {
+        const hasExecution = containsAny(q12Value, ['matrix multiplication', 'dot product', 'frozen transformation', 'rows and columns']);
+        const hasRankSparsity = containsAny(q12Value, ['rank', 'low-rank', 'lora', 'sparse', 'sparsegrad', 'bottleneck']);
+        const hasArchitecture = containsAny(q12Value, ['style', 'structure', 'knowledge', 'neo4j', 'dual-stack', 'separate concerns']);
+        const count = [hasExecution, hasRankSparsity, hasArchitecture].filter(Boolean).length;
+        if (count === 3) q12 = 35;
+        if (count === 2) q12 = 22;
+        if (count < 2) q12 = 0;
+        if (!hasExecution) missing.push('matrix multiplication as executable transformation/dot-product grid');
+        if (!hasRankSparsity) missing.push('rank-constrained low-rank updates versus sparse updates');
+        if (!hasArchitecture) missing.push('architectural separation of style, structure, and knowledge');
+      }
+      total += q12;
+      breakdown.push(['Q12', q12, missing.length ? 'Missing: ' + missing.join(', ') : 'All three structural elements present']);
+
+      const pass = total >= 160;
+      const scoreLine = document.getElementById('scoreLine');
+      scoreLine.textContent = total + ' / 200';
+      scoreLine.className = 'score ' + (pass ? 'pass' : 'fail');
+
+      document.getElementById('resultSummary').textContent =
+        pass
+          ? 'Passing threshold reached. The lesson held as a computational architecture: matrices as executable geometry, rank and sparsity as control limits, and the CCP dual-stack as a direct engineering consequence of those limits.'
+          : 'Passing threshold not reached. The missing pieces are structural: executable matrix mechanics, rank/sparsity constraints, or the style-structure-knowledge split is still unstable under pressure.';
+
+      const breakdownNode = document.getElementById('breakdown');
+      breakdownNode.innerHTML = '';
+      breakdown.forEach(([label, score, note]) => {
+        const row = document.createElement('div');
+        row.innerHTML = '<strong>' + label + ': ' + score + ' points</strong><br>' + note;
+        breakdownNode.appendChild(row);
+      });
+
+      document.getElementById('timeoutNote').textContent = fromTimeout
+        ? 'Exam auto-submitted at time expiration.'
+        : 'Exam submitted before time expiration.';
+
+      document.getElementById('result').classList.add('show');
+      document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    updateTimer();
+  </script>
+</body>
+</html>

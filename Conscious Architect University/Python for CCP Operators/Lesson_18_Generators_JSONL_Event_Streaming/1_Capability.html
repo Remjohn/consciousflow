@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 18 — Capability Layer: Generators & JSONL Streaming</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#07111a; --panel:rgba(11,19,28,0.9); --panel2:rgba(18,28,40,0.95);
+      --line:rgba(255,255,255,0.08); --text:#f0f4f8; --muted:#8fa3b5;
+      --accent:#ff7a18; --accent2:#56c5ff; --good:#2ecc71; --bad:#ff5c73;
+      --gold:#ffd166; --violet:#8f7cff; --teal:#00c8b4;
+    }
+    *{box-sizing:border-box;}
+    html{scroll-behavior:smooth;}
+    body{margin:0;min-height:100vh;color:var(--text);font-family:'Inter',sans-serif;line-height:1.65;
+      background:radial-gradient(circle at 12% 8%,rgba(86,197,255,.14),transparent 22%),
+        radial-gradient(circle at 88% 12%,rgba(255,122,24,.12),transparent 24%),
+        linear-gradient(180deg,#060f18 0%,#07111a 55%,#08121d 100%);}
+
+    .progress{position:fixed;top:0;left:0;right:0;height:4px;background:rgba(255,255,255,.05);z-index:50;}
+    .progress-fill{height:100%;width:0;background:linear-gradient(90deg,#ff7a18,#ffd166,#56c5ff);transition:width .35s ease;}
+
+    .shell{max-width:1080px;margin:0 auto;padding:48px 20px 90px;}
+    .stage{display:none;animation:fadeUp .45s ease;}
+    .stage.active{display:block;}
+
+    .hero,.card{border-radius:24px;border:1px solid var(--line);
+      background:linear-gradient(160deg,rgba(255,255,255,.035),rgba(255,255,255,.012));
+      box-shadow:0 24px 52px rgba(0,0,0,.28);overflow:hidden;}
+    .hero{padding:32px;} .card{padding:24px;margin-top:18px;}
+
+    .eyebrow{color:var(--gold);text-transform:uppercase;letter-spacing:.2em;
+      font:700 .72rem/1.2 'Inter',sans-serif;margin-bottom:12px;}
+    .section-count{color:#7a96aa;text-transform:uppercase;letter-spacing:.12em;
+      font:700 .74rem/1.2 'Inter',sans-serif;margin-bottom:10px;}
+    h1{margin:0 0 16px;font-size:clamp(2.2rem,4.5vw,4rem);font-weight:600;line-height:1.08;}
+    h2{margin:0 0 14px;font-size:clamp(1.4rem,2.6vw,2.1rem);font-weight:500;line-height:1.1;}
+    h3{margin:0 0 10px;font-size:1.05rem;font-weight:600;}
+    p{margin:0 0 12px;}
+    .lede{max-width:52rem;font-size:1.1rem;color:#d2dde6;}
+
+    .divider{height:1px;margin:22px 0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent);}
+
+    .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;}
+    .mini-card{border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);padding:16px;}
+    .mini-title{color:var(--muted);text-transform:uppercase;letter-spacing:.08em;
+      font:700 .76rem/1.2 'Inter',sans-serif;margin-bottom:8px;}
+
+    /* Code Display */
+    .code-wrap{border-radius:14px;border:1px solid rgba(255,255,255,.1);
+      background:rgba(0,0,0,.55);overflow:hidden;margin:12px 0;}
+    .code-header{padding:8px 16px;background:rgba(255,255,255,.04);
+      border-bottom:1px solid rgba(255,255,255,.07);
+      font:600 .72rem/1 'JetBrains Mono',monospace;color:var(--muted);
+      text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:10px;}
+    .code-dot{width:10px;height:10px;border-radius:50%;}
+    .dot-r{background:#ff5c73;} .dot-y{background:#ffd166;} .dot-g{background:#2ecc71;}
+    pre{margin:0;padding:16px 20px;font:400 .88rem/1.75 'JetBrains Mono',monospace;
+      overflow-x:auto;color:#c9d8e8;}
+    .kw{color:#56c5ff;} .fn{color:#ffd166;} .st{color:#2ecc71;}
+    .cm{color:#506070;font-style:italic;} .tp{color:#8f7cff;}
+    .nu{color:#ff7a18;} .bl{color:#ff9e58;}
+
+    /* Choice buttons */
+    .choices{display:grid;gap:10px;margin-top:14px;}
+    .choice{width:100%;text-align:left;padding:14px 17px;border-radius:14px;
+      border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);
+      color:#dde7f0;font:400 .95rem/1.45 'Inter',sans-serif;cursor:pointer;
+      transition:border-color .18s,background .18s;}
+    .choice:hover{border-color:rgba(255,122,24,.45);background:rgba(255,122,24,.05);}
+    .choice.selected{border-color:rgba(255,122,24,.78);background:rgba(255,122,24,.09);}
+    .choice:disabled{cursor:not-allowed;}
+
+    .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px;}
+    .btn{border:0;cursor:pointer;padding:13px 19px;border-radius:999px;
+      font:700 .92rem/1 'Inter',sans-serif;transition:transform .18s,opacity .18s,background .18s;}
+    .btn:hover{transform:translateY(-1px);}
+    .btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+    .btn-primary{background:linear-gradient(90deg,#ff7a18,#ff9f4d);color:#fff;}
+    .btn-secondary{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,.16);}
+    .btn-teal{background:linear-gradient(90deg,#00c8b4,#00a8b5);color:#000;font-weight:700;}
+
+    .locked{margin-top:10px;color:#ffd7a6;text-transform:uppercase;
+      letter-spacing:.08em;font:700 .74rem/1.2 'Inter',sans-serif;}
+
+    .feedback{display:none;margin-top:16px;padding:17px;border-radius:16px;
+      border:1px solid var(--line);background:rgba(255,255,255,.035);}
+    .feedback.show{display:block;}
+    .feedback.good{border-color:rgba(46,204,113,.38);background:rgba(46,204,113,.06);}
+    .feedback.bad{border-color:rgba(255,92,115,.38);background:rgba(255,92,115,.05);}
+
+    .highlight-box{margin:14px 0;padding:15px 18px;border-radius:12px;
+      border-left:3px solid var(--accent);background:rgba(255,122,24,.06);}
+    .highlight-box.teal{border-left-color:var(--teal);background:rgba(0,200,180,.05);}
+    .highlight-box.violet{border-left-color:var(--violet);background:rgba(143,124,255,.05);}
+    .highlight-box.bad{border-left-color:var(--bad);background:rgba(255,92,115,.06);}
+
+    /* Gauntlet */
+    .gauntlet-grid{display:grid;gap:13px;margin-top:16px;}
+    .q-card{padding:15px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);}
+    .q-card label{display:block;margin-bottom:8px;color:var(--muted);
+      text-transform:uppercase;letter-spacing:.08em;font:700 .74rem/1.2 'Inter',sans-serif;}
+    input[type="text"]{width:100%;padding:12px 15px;border-radius:13px;
+      border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);
+      color:var(--text);font:400 .95rem/1 'Inter',sans-serif;outline:none;}
+    input:focus{border-color:rgba(255,122,24,.55);box-shadow:0 0 0 3px rgba(255,122,24,.1);}
+
+    .final-box{margin-top:16px;padding:22px;border-radius:18px;
+      border:1px solid rgba(86,197,255,.28);
+      background:linear-gradient(160deg,rgba(86,197,255,.08),rgba(255,255,255,.02));}
+    textarea{width:100%;padding:14px 16px;border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);
+      color:var(--text);font:400 1rem/1.6 'Inter',sans-serif;outline:none;
+      min-height:120px;resize:vertical;}
+    textarea:focus{border-color:rgba(255,122,24,.5);box-shadow:0 0 0 3px rgba(255,122,24,.1);}
+
+    .hidden{display:none;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+    @media(max-width:820px){.grid2{grid-template-columns:1fr;}.shell{padding:30px 14px 60px;}
+      .hero,.card{padding:18px;}.actions{flex-direction:column;}.btn{width:100%;}}
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true"><div id="progressFill" class="progress-fill"></div></div>
+
+  <main class="shell">
+
+    <!-- ════ STAGE 0: HERO / CCP FAILURE SCENARIO ════ -->
+    <section id="stage-0" class="stage active">
+      <div class="hero">
+        <p class="eyebrow">Lesson 18 · Layer 1 · Capability</p>
+        <h1>Generators &amp; JSONL Event Streaming</h1>
+        <div class="divider"></div>
+        <p class="lede">You cannot supervise an agent you cannot observe. This layer strips the concept to its architectural core: what generators and JSONL streaming <em>allow you to do</em> that nothing else can.</p>
+        <div class="grid2" style="margin-top:18px;">
+          <div class="mini-card">
+            <p class="mini-title">The CCP Failure</p>
+            <p>An agentic harness executes a 45-second LLM synthesis. The operator sees nothing. Assuming a crash, they kill the agent — three seconds before it would have delivered the perfect coaching script.</p>
+          </div>
+          <div class="mini-card">
+            <p class="mini-title">What This Layer Builds</p>
+            <p>You will predict generator behavior, identify JSONL contract violations, and explain why streaming telemetry is not optional in a sovereign agentic platform.</p>
+          </div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="goToStage(1)">Enter the failure scenario →</button></div>
+      </div>
+    </section>
+
+    <!-- ════ STAGE 1: CCP FAILURE ANCHOR ════ -->
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="section-count">Stage 1 of 8 — CCP Failure Anchor</p>
+        <h2>The 45-Second Black Box</h2>
+        <p>The Architect deploys a Pi Harness subprocess to analyse 50 historical coaching transcripts. The code looks like this:</p>
+        <div class="code-wrap">
+          <div class="code-header"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span>Pi Harness — Monolithic Return</div>
+          <pre><span class="kw">def</span> <span class="fn">analyse_history</span>(client_id: <span class="tp">str</span>) -> <span class="tp">list</span>[<span class="tp">dict</span>]:
+    events: <span class="tp">list</span>[<span class="tp">dict</span>] = []
+    events.append({<span class="st">"status"</span>: <span class="st">"fetching_50_transcripts"</span>})   <span class="cm"># 8s</span>
+    events.append({<span class="st">"status"</span>: <span class="st">"running_dspy_synthesis"</span>})     <span class="cm"># 29s</span>
+    events.append({<span class="st">"status"</span>: <span class="st">"scoring_cbcs_alignment"</span>})     <span class="cm"># 8s</span>
+    events.append({<span class="st">"status"</span>: <span class="st">"complete"</span>, <span class="st">"triggers"</span>: <span class="nu">7</span>})      <span class="cm"># done</span>
+    <span class="kw">return</span> events</pre>
+        </div>
+        <p>The operator calls <code style="font-family:'JetBrains Mono',monospace;color:var(--accent2);">result = analyse_history("CL-042")</code> and presses Enter.</p>
+        <p style="font-weight:600;color:var(--gold);">What does the operator see in the terminal for the first 44 seconds?</p>
+        <div class="choices" data-group="s1">
+          <button class="choice" data-value="A" onclick="selectChoice('s1','A',this)">A status update every time an event is appended.</button>
+          <button class="choice" data-value="B" onclick="selectChoice('s1','B',this)">A blinking cursor. Nothing. Complete silence.</button>
+          <button class="choice" data-value="C" onclick="selectChoice('s1','C',this)">An error because the list is empty until the function returns.</button>
+          <button class="choice" data-value="D" onclick="selectChoice('s1','D',this)">A partial list showing only the first event.</button>
+        </div>
+        <div id="s1-lock" class="locked hidden">⚑ Prediction locked.</div>
+        <div class="actions">
+          <button id="s1-submit" class="btn btn-primary" onclick="submitChoice('s1','B',s1Fb)">Lock prediction</button>
+        </div>
+        <div id="s1-feedback" class="feedback"></div>
+        <div id="s1-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(2)">See the architectural definition →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ STAGE 2: ARCHITECTURAL DEFINITION ════ -->
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="section-count">Stage 2 of 8 — Architectural Definition</p>
+        <h2>The Conveyor Belt vs the Locked Room</h2>
+        <p>The <code style="font-family:'JetBrains Mono',monospace;color:var(--accent2);">return</code> statement builds a <strong>locked room</strong>: all data accumulates inside the function, invisible, until the door opens at the end. The operator is locked out.</p>
+        <div class="highlight-box">
+          <strong style="color:var(--accent);">The <code style="font-family:'JetBrains Mono',monospace;">yield</code> keyword breaks the door open.</strong> Instead of hoarding all events until completion, <code style="font-family:'JetBrains Mono',monospace;">yield</code> hands each event to the caller the millisecond it is produced — then pauses, preserving all internal state, waiting to be asked for the next event.
+        </div>
+        <div class="grid2" style="margin-top:14px;">
+          <div class="mini-card">
+            <p class="mini-title" style="color:var(--bad);">return (Locked Room)</p>
+            <p>Process everything → store in memory → door opens → dump everything at once.</p>
+            <p style="color:var(--bad);font-size:.9rem;">Operator: blind for 44 seconds → assumes crash → kills agent.</p>
+          </div>
+          <div class="mini-card">
+            <p class="mini-title" style="color:var(--good);">yield (Conveyor Belt)</p>
+            <p>Process one event → hand it immediately → pause → next event → hand it → repeat.</p>
+            <p style="color:var(--good);font-size:.9rem;">Operator: live telemetry every step → maintains control → can override if needed.</p>
+          </div>
+        </div>
+        <div class="highlight-box teal" style="margin-top:16px;">
+          <strong style="color:var(--teal);">Factory Floor Metaphor:</strong> The generator is the <strong>Robot Arm's live camera feed</strong>. `return` is shipping everything in a sealed box. `yield` is a live camera transmitting every weld, every pick, every placement in real-time. The Foreman supervises — not guesses.
+        </div>
+        <div class="highlight-box violet" style="margin-top:10px;">
+          <strong style="color:var(--violet);">JSONL</strong> is the cargo format on the conveyor. Each item must be a standalone, complete JSON object terminating with a newline <code style="font-family:'JetBrains Mono',monospace;">\n</code>. If a package arrives without a seal, the receiving parser cannot tell where it ends.
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="goToStage(3)">Read the first code block →</button></div>
+      </div>
+    </section>
+
+    <!-- ════ STAGE 3: CODE PREDICTION A ════ -->
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="section-count">Stage 3 of 8 — Code Prediction A</p>
+        <h2>What does <code style="font-family:'JetBrains Mono',monospace;font-size:1.5rem;">yield</code> change?</h2>
+        <p>Study this generator version of the harness. Predict what the operator experiences in the terminal.</p>
+        <div class="code-wrap">
+          <div class="code-header"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span>Pi Harness — Streaming Generator</div>
+          <pre><span class="kw">import</span> json
+
+<span class="kw">def</span> <span class="fn">stream_history</span>(client_id: <span class="tp">str</span>):
+    <span class="kw">yield</span> json.dumps({<span class="st">"status"</span>: <span class="st">"fetching_transcripts"</span>}) + <span class="st">"\n"</span>
+    <span class="cm"># ... 8 seconds of neo4j retrieval ...</span>
+    <span class="kw">yield</span> json.dumps({<span class="st">"status"</span>: <span class="st">"dspy_synthesis_running"</span>}) + <span class="st">"\n"</span>
+    <span class="cm"># ... 29 seconds of LLM work ...</span>
+    <span class="kw">yield</span> json.dumps({<span class="st">"status"</span>: <span class="st">"complete"</span>, <span class="st">"triggers"</span>: <span class="nu">7</span>}) + <span class="st">"\n"</span>
+
+<span class="kw">for</span> line <span class="kw">in</span> <span class="fn">stream_history</span>(<span class="st">"CL-042"</span>):
+    print(line.strip())</pre>
+        </div>
+        <p style="font-weight:600;color:var(--gold);">What does the operator experience when this block runs?</p>
+        <div class="choices" data-group="s3">
+          <button class="choice" data-value="A" onclick="selectChoice('s3','A',this)">Still silent for 44 seconds, then all three lines appear at once.</button>
+          <button class="choice" data-value="B" onclick="selectChoice('s3','B',this)">At second 0: fetching status. At second 8: synthesis status. At second 37: complete — live visibility throughout.</button>
+          <button class="choice" data-value="C" onclick="selectChoice('s3','C',this)">A SyntaxError because you cannot use for-loops with generators.</button>
+          <button class="choice" data-value="D" onclick="selectChoice('s3','D',this)">The same three lines but in reverse order because generators work backwards.</button>
+        </div>
+        <div id="s3-lock" class="locked hidden">⚑ Prediction locked.</div>
+        <div class="actions">
+          <button id="s3-submit" class="btn btn-primary" onclick="submitChoice('s3','B',s3Fb)">Lock prediction</button>
+        </div>
+        <div id="s3-feedback" class="feedback"></div>
+        <div id="s3-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(4)">Next code block →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ STAGE 4: CODE PREDICTION B — JSONL NEWLINE ════ -->
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="section-count">Stage 4 of 8 — Code Prediction B</p>
+        <h2>The Missing Seal</h2>
+        <p>Two versions of a stream function. Spot the JSONL contract violation and predict the consequence for the frontend parser.</p>
+        <div class="grid2">
+          <div>
+            <p style="color:var(--good);font-weight:600;font-size:.85rem;margin-bottom:8px;">✓ VERSION A</p>
+            <div class="code-wrap">
+              <pre><span class="kw">def</span> <span class="fn">stream_v_a</span>(session_id: <span class="tp">str</span>):
+    event = {<span class="st">"type"</span>: <span class="st">"thought"</span>}
+    <span class="kw">yield</span> json.dumps(event) + <span class="st">"\n"</span>
+    event2 = {<span class="st">"type"</span>: <span class="st">"tool_call"</span>}
+    <span class="kw">yield</span> json.dumps(event2) + <span class="st">"\n"</span></pre>
+            </div>
+          </div>
+          <div>
+            <p style="color:var(--bad);font-weight:600;font-size:.85rem;margin-bottom:8px;">? VERSION B</p>
+            <div class="code-wrap">
+              <pre><span class="kw">def</span> <span class="fn">stream_v_b</span>(session_id: <span class="tp">str</span>):
+    event = {<span class="st">"type"</span>: <span class="st">"thought"</span>}
+    <span class="kw">yield</span> json.dumps(event)
+    event2 = {<span class="st">"type"</span>: <span class="st">"tool_call"</span>}
+    <span class="kw">yield</span> json.dumps(event2)</pre>
+            </div>
+          </div>
+        </div>
+        <p style="font-weight:600;color:var(--gold);margin-top:14px;">When the frontend reads Version B's output, what happens?</p>
+        <div class="choices" data-group="s4">
+          <button class="choice" data-value="A" onclick="selectChoice('s4','A',this)">Nothing different — JSON.parse handles missing newlines automatically.</button>
+          <button class="choice" data-value="B" onclick="selectChoice('s4','B',this)">The two JSON objects arrive fused into one string. JSON.parse fails. The WebSocket crashes.</button>
+          <button class="choice" data-value="C" onclick="selectChoice('s4','C',this)">Only the first event arrives; the second is lost.</button>
+          <button class="choice" data-value="D" onclick="selectChoice('s4','D',this)">A Python SyntaxError is raised before any data is sent.</button>
+        </div>
+        <div id="s4-lock" class="locked hidden">⚑ Prediction locked.</div>
+        <div class="actions">
+          <button id="s4-submit" class="btn btn-primary" onclick="submitChoice('s4','B',s4Fb)">Lock prediction</button>
+        </div>
+        <div id="s4-feedback" class="feedback"></div>
+        <div id="s4-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(5)">Next code block →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ STAGE 5: CODE PREDICTION C — GENERATOR OBJECT ════ -->
+    <section id="stage-5" class="stage">
+      <div class="card">
+        <p class="section-count">Stage 5 of 8 — Code Prediction C</p>
+        <h2>The Frozen Agent</h2>
+        <p>This is the counter-intuitive one. Read carefully.</p>
+        <div class="code-wrap">
+          <div class="code-header"><span class="code-dot dot-r"></span><span class="code-dot dot-y"></span><span class="code-dot dot-g"></span>Generator Object Type</div>
+          <pre><span class="kw">def</span> <span class="fn">agent_loop</span>(context: <span class="tp">dict</span>):
+    <span class="kw">yield</span> {<span class="st">"turn"</span>: <span class="nu">0</span>, <span class="st">"action"</span>: <span class="st">"observe"</span>}
+    <span class="kw">yield</span> {<span class="st">"turn"</span>: <span class="nu">1</span>, <span class="st">"action"</span>: <span class="st">"orient"</span>}
+    <span class="kw">yield</span> {<span class="st">"turn"</span>: <span class="nu">2</span>, <span class="st">"action"</span>: <span class="st">"act"</span>}
+
+loop = <span class="fn">agent_loop</span>({<span class="st">"session"</span>: <span class="st">"active"</span>})
+print(<span class="fn">type</span>(loop))</pre>
+        </div>
+        <p style="font-weight:600;color:var(--gold);">What does <code style="font-family:'JetBrains Mono',monospace;">print(type(loop))</code> output? And does the function body execute at this point?</p>
+        <div class="choices" data-group="s5">
+          <button class="choice" data-value="A" onclick="selectChoice('s5','A',this)">Prints the first dict: <code style="font-family:'JetBrains Mono',monospace;">{"turn": 0, "action": "observe"}</code>. The function runs immediately.</button>
+          <button class="choice" data-value="B" onclick="selectChoice('s5','B',this)">Prints a list of all 3 dicts. The function runs completely before the print.</button>
+          <button class="choice" data-value="C" onclick="selectChoice('s5','C',this)">Prints <code style="font-family:'JetBrains Mono',monospace;">&lt;class 'generator'&gt;</code>. The function body has NOT run yet — it is frozen.</button>
+          <button class="choice" data-value="D" onclick="selectChoice('s5','D',this)">Prints <code style="font-family:'JetBrains Mono',monospace;">&lt;class 'dict'&gt;</code>. Calling the function executes only the first yield.</button>
+        </div>
+        <div id="s5-lock" class="locked hidden">⚑ Prediction locked.</div>
+        <div class="actions">
+          <button id="s5-submit" class="btn btn-primary" onclick="submitChoice('s5','C',s5Fb)">Lock prediction</button>
+        </div>
+        <div id="s5-feedback" class="feedback"></div>
+        <div id="s5-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(6)">Factory Floor Connection →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ STAGE 6: FACTORY FLOOR + CONSEQUENCE MAP ════ -->
+    <section id="stage-6" class="stage">
+      <div class="card">
+        <p class="section-count">Stage 6 of 8 — Factory Floor & Consequence Map</p>
+        <h2>Where This Sits in the Sovereign Stack</h2>
+        <div class="highlight-box">
+          <strong style="color:var(--accent);">The Robot Arm (Pi Harness)</strong> executes commands. The <strong>Chassis (FastAPI)</strong> routes requests. Between them, the generator stream is the <strong>telemetry umbilical</strong>. <code style="font-family:'JetBrains Mono',monospace;">yield</code> + JSONL is what makes the Robot Arm visible to the Foreman in real-time.
+        </div>
+        <div style="margin:14px 0;padding:14px 16px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--line);font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:2;">
+          <span style="color:var(--accent2);">Pi Harness</span> <span style="color:var(--muted);">→ yield JSONL →</span> <span style="color:var(--gold);">FastAPI StreamingResponse</span> <span style="color:var(--muted);">→ encode bytes →</span> <span style="color:var(--good);">WebSocket</span> <span style="color:var(--muted);">→</span> <span style="color:var(--violet);">Client UI</span>
+        </div>
+        <h3 style="margin-top:18px;">Consequence Map — What breaks when this is wrong</h3>
+        <div class="highlight-box bad" style="margin-bottom:10px;">
+          <strong style="color:var(--bad);">1. Missing <code style="font-family:'JetBrains Mono',monospace;">\n</code></strong> → Two JSON payloads fuse into one unparseable string → Frontend <code style="font-family:'JetBrains Mono',monospace;">JSON.parse</code> throws → WebSocket severs → client disconnects mid-session. <em style="color:var(--muted);font-size:.85rem;">(Pi Harness JSONL Protocol)</em>
+        </div>
+        <div class="highlight-box bad" style="margin-bottom:10px;">
+          <strong style="color:var(--bad);">2. Using <code style="font-family:'JetBrains Mono',monospace;">return</code> instead of <code style="font-family:'JetBrains Mono',monospace;">yield</code></strong> → Operator sees no output for 45 seconds → assumes crash → kills process → agent destroyed 3 seconds before completion. <em style="color:var(--muted);font-size:.85rem;">(Building Effective Terminal Agents, 190/200)</em>
+        </div>
+        <div class="highlight-box bad" style="margin-bottom:10px;">
+          <strong style="color:var(--bad);">3. Consuming generator twice</strong> → First consumer exhausts the pipeline → second consumer gets empty stream → FastAPI delivers empty response → client receives zero events. <em style="color:var(--muted);font-size:.85rem;">(Orchestration Dichotomy, Dictum 1)</em>
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="goToStage(7)">Mastery Gate →</button></div>
+      </div>
+    </section>
+
+    <!-- ════ STAGE 7: MASTERY GATE ════ -->
+    <section id="stage-7" class="stage">
+      <div class="card">
+        <p class="eyebrow">Mastery Gate</p>
+        <h2>Compress the mechanism</h2>
+        <p>Explain in your own words why the CCP's agentic harness uses <code style="font-family:'JetBrains Mono',monospace;">yield</code> and JSONL instead of <code style="font-family:'JetBrains Mono',monospace;">return</code> with a list. Your answer must include: <strong>real-time visibility</strong>, <strong>memory efficiency</strong>, and <strong>line delimiter</strong>.</p>
+        <textarea id="masteryText" placeholder="The CCP uses yield and JSONL because..."></textarea>
+        <div class="actions"><button class="btn btn-primary" onclick="submitMastery()">Lock response</button></div>
+        <div id="mastery-feedback" class="feedback"></div>
+        <div id="mastery-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(8)">Enter the 7-question Capability Gauntlet →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════ STAGE 8: GAUNTLET ════ -->
+    <section id="stage-8" class="stage">
+      <div class="card">
+        <p class="eyebrow">Capability Gauntlet</p>
+        <h2>Seven rapid-fire checks</h2>
+        <p style="color:var(--muted);">The code scaffolding disappears. If the concept is stable, the structure remains.</p>
+        <div class="gauntlet-grid">
+          <div class="q-card"><label for="g1">1. What keyword turns a Python function into a generator?</label><input id="g1" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label for="g2">2. What does JSONL require at the end of every emitted object?</label><input id="g2" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label for="g3">3. Calling a generator function (e.g. <code style="font-family:'JetBrains Mono',monospace;">gen = my_fn()</code>) — does the function body execute at that point?</label><input id="g3" type="text" placeholder="yes or no — and explain briefly"></div>
+          <div class="q-card"><label for="g4">4. What happens if you iterate a generator twice (consuming it fully then iterating again)?</label><input id="g4" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label for="g5">5. Which CCP subsystem sits between the Pi Harness generator and the client WebSocket?</label><input id="g5" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label for="g6">6. Why does a generator maintain O(1) memory regardless of session length?</label><input id="g6" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label for="g7">7. In one sentence: what is the Factory Floor metaphor for <code style="font-family:'JetBrains Mono',monospace;">yield</code> + JSONL?</label><input id="g7" type="text" placeholder="Short answer"></div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="gradeGauntlet()">Submit gauntlet</button></div>
+        <div id="gauntlet-feedback" class="feedback"></div>
+        <div id="final-box" class="final-box hidden">
+          <p class="eyebrow" style="margin-bottom:10px;">Layer 1 Complete</p>
+          <p id="final-text"></p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const totalStages = 9;
+    const selections = {};
+
+    function setProgress(i) {
+      document.getElementById('progressFill').style.width = Math.min(100, (i / (totalStages - 1)) * 100) + '%';
+    }
+
+    function goToStage(i) {
+      document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+      document.getElementById('stage-' + i).classList.add('active');
+      setProgress(i);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = 'feedback show ' + type;
+      box.innerHTML = '<h3 style="margin:0 0 8px;">' + title + '</h3><p style="margin:0;">' + body + '</p>';
+    }
+
+    function selectChoice(gid, val, el) {
+      const group = document.querySelector('[data-group="' + gid + '"]');
+      if (group.dataset.locked === 'true') return;
+      selections[gid] = val;
+      group.querySelectorAll('.choice').forEach(b => b.classList.remove('selected'));
+      el.classList.add('selected');
+    }
+
+    function submitChoice(gid, correct, fbPack) {
+      const sel = selections[gid];
+      if (!sel) {
+        showFeedback(gid + '-feedback', 'bad', 'Prediction required', 'You must commit to an answer before the reveal. That commitment is the learning mechanism.');
+        return;
+      }
+      document.querySelector('[data-group="' + gid + '"]').dataset.locked = 'true';
+      document.getElementById(gid + '-submit').disabled = true;
+      document.getElementById(gid + '-lock').classList.remove('hidden');
+      const ok = sel === correct;
+      const pkg = ok ? fbPack.good : fbPack.bad;
+      showFeedback(gid + '-feedback', ok ? 'good' : 'bad', pkg.title, pkg.body);
+      document.getElementById(gid + '-next').classList.remove('hidden');
+    }
+
+    const s1Fb = {
+      good: {
+        title: 'Correct: 44 seconds of silence.',
+        body: 'The list accumulates inside the function — invisible to the operator — for the full 44 seconds. All four events crash out simultaneously when the function finally returns. During those 44 seconds the operator has zero signal: no heartbeat, no progress, no ability to distinguish a working agent from a crashed one.'
+      },
+      bad: {
+        title: 'Misconception: list.append() does not emit output.',
+        body: 'Appending to a list only modifies an in-memory variable. Nothing is printed, yielded, or transmitted until the function explicitly returns. The operator sees silence for the entire execution duration.'
+      }
+    };
+
+    const s3Fb = {
+      good: {
+        title: 'Correct: real-time telemetry at every step.',
+        body: 'Each yield hands the formatted JSONL string to the for-loop immediately when it is produced. The operator sees "fetching_transcripts" at second 0 — proof the agent is alive. The synthesis status appears at second 8. The final result at second 37. The agent is observable throughout. No guessing, no blind killing.'
+      },
+      bad: {
+        title: 'Misconception: yield does not defer like return.',
+        body: 'Unlike return, yield emits data immediately. Each call to the for-loop asks the generator for one value, receives it, processes it, and only then asks for the next. The generator pauses between yields, resuming only when the caller needs the next item. Timing is preserved exactly.'
+      }
+    };
+
+    const s4Fb = {
+      good: {
+        title: 'Correct: the JSONL contract is violated.',
+        body: 'Without the newline \\n terminator, the two JSON payloads arrive as a single continuous byte stream: {"type":"thought"}{"type":"tool_call"}. The frontend parser cannot determine where the first object ends and the second begins. JSON.parse throws a SyntaxError. The WebSocket connection is severed. One missing character destroys the entire session.'
+      },
+      bad: {
+        title: 'Misconception: JSON parsers are not JSONL parsers.',
+        body: 'Standard JSON.parse expects exactly one complete object. JSONL requires a newline \\n boundary after every object so streaming parsers can split the byte stream correctly. Without \\n, objects fuse. The parser fails. This is the most common streaming defect in CCP deployments.'
+      }
+    };
+
+    const s5Fb = {
+      good: {
+        title: 'Correct — and this is the deepest principle.',
+        body: 'Calling a generator function creates a generator object but executes zero lines of the function body. The code is frozen at the first line, waiting to be pulled. The function only runs when you iterate (for-loop, next(), or list()). This is why a generator with an infinite while loop is safe to create — the loop only runs when you pull from it. The agent logic does not begin until the orchestrator demands it.'
+      },
+      bad: {
+        title: 'Misconception: calling ≠ executing for generators.',
+        body: 'This is the most counter-intuitive property of generators. For normal functions, calling = executing. For generator functions, calling = constructing a frozen pipeline. Execution begins only when the first item is demanded by a for-loop or next() call. The function body is a promise, not an immediate action.'
+      }
+    };
+
+    function containsAny(val, words) {
+      return words.some(w => val.includes(w));
+    }
+
+    function submitMastery() {
+      const val = document.getElementById('masteryText').value.trim().toLowerCase();
+      const checks = [
+        containsAny(val, ['real-time', 'realtime', 'visibility', 'observe', 'live', 'immediate', 'see']),
+        containsAny(val, ['memory', 'o(1)', 'ram', 'efficient', 'garbage', 'flat']),
+        containsAny(val, ['newline', '\\n', 'delimiter', 'line', 'separator', 'jsonl', 'boundary'])
+      ];
+      const hits = checks.filter(Boolean).length;
+      document.getElementById('masteryText').disabled = true;
+      if (hits >= 2) {
+        showFeedback('mastery-feedback', 'good', 'Gate passed — ' + hits + '/3 structural elements present',
+          'You have compressed the mechanism correctly. Generators provide real-time observability by emitting events as they occur. JSONL enforces parse-safe boundaries via the newline delimiter. The combination eliminates both the blind-wait problem and the memory accumulation problem — two of the most critical failure modes in the CCP agentic harness.');
+        document.getElementById('mastery-next').classList.remove('hidden');
+      } else {
+        showFeedback('mastery-feedback', 'bad', 'Gate failed — ' + hits + '/3 structural elements',
+          'The explanation needs: (1) real-time visibility or live telemetry, (2) memory efficiency or O(1) footprint, (3) newline delimiter or JSONL boundary. Revise and resubmit.');
+        document.getElementById('masteryText').disabled = false;
+      }
+    }
+
+    function gradeGauntlet() {
+      const answers = {
+        g1: ['yield'],
+        g2: ['newline', '\\n', 'line break', 'line feed'],
+        g3: ['no', 'does not', "doesn't", 'not execute', 'frozen', 'not run'],
+        g4: ['empty', 'exhausted', 'stopiteration', 'nothing', 'no more'],
+        g5: ['fastapi', 'chassis', 'streaming', 'http'],
+        g6: ['yield', 'emit', 'one at a time', 'garbage', 'does not accumulate', 'flush'],
+        g7: ['conveyor', 'camera', 'telemetry', 'real-time', 'live']
+      };
+      let score = 0;
+      Object.entries(answers).forEach(([id, kws]) => {
+        const v = document.getElementById(id).value.trim().toLowerCase();
+        if (v && containsAny(v, kws)) score++;
+      });
+      if (score >= 5) {
+        showFeedback('gauntlet-feedback', 'good', 'Gauntlet cleared: ' + score + '/7',
+          'The concept is stable. You can identify yield as the emission keyword, newline as the JSONL boundary, FastAPI as the transport layer, and articulate why generators achieve memory efficiency through incremental emission.');
+        const fb = document.getElementById('final-box');
+        fb.classList.remove('hidden');
+        document.getElementById('final-text').textContent = 'Generators are now visible as active pipeline valves, not passive data holders. yield suspends execution and emits one event. \\n seals each event for safe parsing. FastAPI StreamingResponse carries the stream to the client. The Robot Arm is no longer a black box — it is a live broadcast. Layer 2 will show exactly where these patterns operate inside the CCP production codebase.';
+      } else {
+        showFeedback('gauntlet-feedback', 'bad', 'Gauntlet failed: ' + score + '/7',
+          'Weak spots remain. Review: (1) yield as the emission primitive, (2) \\n as the mandatory JSONL delimiter, (3) generator objects are frozen until iterated, (4) generators maintain flat memory by emitting immediately rather than accumulating.');
+        document.getElementById('final-box').classList.add('hidden');
+      }
+    }
+
+    setProgress(0);
+  </script>
+</body>
+</html>

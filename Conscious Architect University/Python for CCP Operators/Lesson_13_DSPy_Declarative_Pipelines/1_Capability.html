@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 13 - DSPy: Capability Layer</title>
+  <style>
+    :root {
+      --bg: #08111a;
+      --panel: rgba(12, 20, 30, 0.88);
+      --line: rgba(255,255,255,0.08);
+      --text: #f3f7fb;
+      --muted: #9ab0c2;
+      --accent: #ff7a18;
+      --accent-2: #56c5ff;
+      --good: #2ecc71;
+      --bad: #ff5c73;
+      --gold: #ffd166;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--text);
+      font-family: Georgia, "Times New Roman", serif; line-height: 1.6;
+      background: radial-gradient(circle at 15% 10%, rgba(86,197,255,0.18), transparent 22%),
+                  radial-gradient(circle at 82% 14%, rgba(255,122,24,0.16), transparent 24%),
+                  linear-gradient(180deg, #071018 0%, #08111a 48%, #09131c 100%);
+    }
+
+    .progress { position: fixed; top: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.05); z-index: 50; }
+    .progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, #ff7a18, #ffd166, #56c5ff); transition: width 0.35s ease; }
+    .shell { max-width: 1120px; margin: 0 auto; padding: 42px 18px 80px; }
+
+    .stage { display: none; animation: fadeUp 0.45s ease; }
+    .stage.active { display: block; }
+
+    .card {
+      border-radius: 26px; border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015)),
+                  linear-gradient(135deg, rgba(86,197,255,0.05), transparent 40%);
+      box-shadow: 0 26px 56px rgba(0,0,0,0.24); padding: 28px; margin-top: 18px;
+    }
+
+    .eyebrow { color: var(--gold); text-transform: uppercase; letter-spacing: 0.2em; font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif; margin-bottom: 12px; }
+    h1, h2, h3 { margin: 0 0 14px; line-height: 1.08; font-weight: 500; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    h1 { font-size: clamp(2.2rem, 4vw, 3.8rem); line-height: 1.1; }
+    h2 { font-size: 1.8rem; }
+    h3 { font-size: 1.1rem; color: #fff; }
+    p { margin: 0 0 16px; color: #d9e4ec; font-size: 1.12rem; }
+    .muted-text { color: var(--muted); font-size: 1rem; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .divider { height: 1px; margin: 24px 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent); }
+
+    .actions { display: flex; gap: 12px; margin-top: 24px; }
+    .btn { border: 0; cursor: pointer; padding: 14px 22px; border-radius: 999px; font: 700 0.94rem/1 Arial, Helvetica, sans-serif; transition: all 0.2s ease; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .btn-primary { background: linear-gradient(90deg, #ff7a18, #ff994d); color: white; }
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.15); }
+
+    .choices { display: grid; gap: 12px; margin-top: 16px; }
+    .choice { text-align: left; padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); color: #e7eef5; font: 400 1rem/1.45 Arial, Helvetica, sans-serif; cursor: pointer; transition: all 0.2s ease; }
+    .choice.selected { border-color: rgba(255,122,24,0.78); background: rgba(255,122,24,0.08); }
+
+    .feedback { display: none; margin-top: 18px; padding: 18px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,0.04); }
+    .feedback.show { display: block; animation: fadeUp 0.3s ease; }
+    .feedback.good { border-color: rgba(46,204,113,0.38); background: rgba(46,204,113,0.05); }
+    .feedback.bad { border-color: rgba(255,92,115,0.38); background: rgba(255,92,115,0.05); }
+    
+    .locked { margin-top: 12px; color: #ffd7a6; text-transform: uppercase; letter-spacing: 0.08em; font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif; }
+    .hidden { display: none !important; }
+
+    /* Code Block Styling */
+    .code-window { border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: #0c141e; overflow: hidden; margin-bottom: 20px; font-family: Consolas, Monaco, "Courier New", monospace; font-size: 0.9rem; }
+    .code-header { background: rgba(255,255,255,0.03); padding: 8px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #89a1b2; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 8px; }
+    .code-body { padding: 16px; overflow-x: auto; color: #d6deeb; margin: 0; line-height: 1.5; }
+    
+    .syn-kw { color: #c792ea; } /* Keyword */
+    .syn-cls { color: #ffcb6b; } /* Class */
+    .syn-str { color: #ecc48d; } /* String */
+    .syn-cm { color: #637777; font-style: italic; } /* Comment */
+    .syn-fn { color: #82aaff; } /* Function */
+    .syn-op { color: #89ddff; } /* Operator */
+    .syn-type { color: #addb67; } /* Builtin types */
+
+    input[type="text"], textarea { width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.03); color: var(--text); font: 400 1rem/1.45 Arial, Helvetica, sans-serif; outline: none; margin-bottom: 12px; }
+    textarea { min-height: 120px; resize: vertical; }
+    input:focus, textarea:focus { border-color: rgba(255,122,24,0.55); box-shadow: 0 0 0 4px rgba(255,122,24,0.12); }
+
+    .gauntlet-grid { display: grid; gap: 16px; margin-top: 24px; }
+    .q-card { padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); }
+    .q-card label { display: block; margin-bottom: 8px; color: var(--accent-2); font-family: Arial, Helvetica, sans-serif; font-weight: bold; font-size: 0.9rem; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="progress"><div id="progressFill" class="progress-fill"></div></div>
+
+  <main class="shell">
+    
+    <!-- STAGE 0: The Hook -->
+    <section id="stage-0" class="stage active">
+      <div class="card">
+        <p class="eyebrow">Lesson 13 - Capability Layer</p>
+        <h1>The Failure of the Artisan</h1>
+        <div class="divider"></div>
+        <p>An agent is executing a recursive reasoning loop to assess a client's state. The JIT Skill Compiler sends a handwritten prompt to the language model: <em>"You are an expert resilience coach. Return the result strictly in JSON format with 'coaching_script' and a float 'cbcs_score'."</em></p>
+        <p>For forty sessions, it works. On session forty-one, the context window drifts due to a sarcastic idiom from the human. The LLM shifts its attention to empathy and returns conversational text wrapped around a malformed JSON block.</p>
+        <p>Because the result is unstructured text, Pydantic immediately throws a catastrophic <code>ValidationError</code>. FastAPI retries blindly until timeout. Eighteen seconds later, the WebSocket drops. The session is dead.</p>
+        <div class="divider"></div>
+        <div class="grid-2">
+          <div>
+            <h3>The Artisan Mentality</h3>
+            <p class="muted-text">Writing prompts is treating the LLM like an artisan. You persuade it with linguistic commands ("strictly JSON", "do not apologize") and hope its probabilistic nature obeys.</p>
+          </div>
+          <div>
+            <h3>The Machinist Reality</h3>
+            <p class="muted-text">A prompt is a fragile plea. In a sovereign architecture, relying on prompt engineering inevitably leads to spontaneous structural collapse. You must constrain the engine geometrically.</p>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="goToStage(1)">Enter the capability</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 1: Architectural Concept -->
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="eyebrow">The Core Concept</p>
+        <h2>DSPy is The Machinist</h2>
+        <p>DSPy (Declarative Self-Improving Language Programs) eradicates prompt engineering. It is the primitive that transforms natural language AI requests into typed, mathematically optimizable Python declarations.</p>
+        <p>To understand DSPy's architectural role, map it to the Factory Floor:</p>
+        <ul style="color: #d9e4ec; font-size: 1.12rem; margin-bottom: 24px; line-height: 1.8;">
+          <li>Variables/Types are your <strong>Quality Tags</strong>.</li>
+          <li>FastAPI is the <strong>Foreman</strong> routing requests.</li>
+          <li>Pydantic is the <strong>QA Department</strong> measuring dimensional tolerances.</li>
+          <li>The LLM is the <strong>Laser Cutter</strong> — a raw, blind processing unit.</li>
+        </ul>
+        <p><strong>DSPy is The Machinist.</strong> The Machinist does not care about conversational nuance. It takes a typed blueprint and physically forces the Laser Cutter to output precise geometric cuts. The Machinist ensures that what comes out is strictly typed, accurately formatted, and aggressively optimized before the QA Department ever touches it.</p>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="goToStage(2)">Analyze the contract</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 2: Code Reading 1 -->
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="eyebrow">Code Reading Exercise 1</p>
+        <h2>The Signature Contract</h2>
+        <p>A Signature defines the mechanical filter. It extracts typed fields from probabilistic chaos. Read the block below and lock your prediction.</p>
+        
+        <div class="code-window">
+          <div class="code-header">
+            <span style="color: #ff5c73;">●</span><span style="color: #ffd166;">●</span><span style="color: #2ecc71;">●</span>
+            &nbsp; CCP_Intervention_Signature.py
+          </div>
+          <pre class="code-body">
+<span class="syn-kw">import</span> dspy
+
+<span class="syn-kw">class</span> <span class="syn-cls">GenerateIntervention</span>(dspy.Signature):
+    <span class="syn-str">"""Synthesize a targeted coaching intervention from current state."""</span>
+    
+    session_history: <span class="syn-type">str</span> <span class="syn-op">=</span> dspy.InputField(desc<span class="syn-op">=</span><span class="syn-str">"Past 5 turns of transcript"</span>)
+    client_emotion: <span class="syn-type">str</span> <span class="syn-op">=</span> dspy.InputField(desc<span class="syn-op">=</span><span class="syn-str">"Current emotional volatility"</span>)
+    
+    coaching_script: <span class="syn-type">str</span> <span class="syn-op">=</span> dspy.OutputField(desc<span class="syn-op">=</span><span class="syn-str">"Exact words to say"</span>)
+    cbcs_alignment: <span class="syn-type">float</span> <span class="syn-op">=</span> dspy.OutputField(desc<span class="syn-op">=</span><span class="syn-str">"Alignment score (0.0 to 1.0)"</span>)
+          </pre>
+        </div>
+
+        <p style="font-family: Arial, sans-serif; font-weight: bold;">If the underlying LLM natively hallucinates the conversational text <em>"Score: 0.85"</em> when analyzing alignment, what does this specific DSPy signature ensure is handed over to the rest of the Python execution pipeline?</p>
+
+        <div class="choices" data-group="cr1">
+          <button class="choice" onclick="selectChoice('cr1','A',this)">The string "Score: 0.85" exactly as the LLM generated it.</button>
+          <button class="choice" onclick="selectChoice('cr1','B',this)">Only the floating-point value 0.85 as a typed Python float.</button>
+          <button class="choice" onclick="selectChoice('cr1','C',this)">A TypeError crashing the program immediately because strings can't be floats.</button>
+          <button class="choice" onclick="selectChoice('cr1','D',this)">A JSON dictionary containing all four fields parsed from markdown.</button>
+        </div>
+
+        <div id="cr1-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions">
+          <button id="cr1-submit" class="btn btn-primary" onclick="submitChoice('cr1', 'B', fbkCR1)">Lock prediction</button>
+        </div>
+        <div id="cr1-feedback" class="feedback"></div>
+        <div id="cr1-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(3)">Continue tracing</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 3: Code Reading 2 -->
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="eyebrow">Code Reading Exercise 2</p>
+        <h2>The Execution Module</h2>
+        <p>Look at how the Signature is physically invoked. The module binds the contract and executes the computation.</p>
+        
+        <div class="code-window">
+          <div class="code-header">
+            <span style="color: #ff5c73;">●</span><span style="color: #ffd166;">●</span><span style="color: #2ecc71;">●</span>
+            &nbsp; Intervention_Module.py
+          </div>
+          <pre class="code-body">
+<span class="syn-kw">class</span> <span class="syn-cls">InterventionModule</span>(dspy.Module):
+    <span class="syn-kw">def</span> <span class="syn-fn">__init__</span>(<span class="syn-kw">self</span>):
+        <span class="syn-fn">super</span>().<span class="syn-fn">__init__</span>()
+        <span class="syn-cm"># We declare Chain of Thought reasoning for this signature</span> 
+        <span class="syn-kw">self</span>.reasoning_engine <span class="syn-op">=</span> dspy.ChainOfThought(GenerateIntervention)
+
+    <span class="syn-kw">def</span> <span class="syn-fn">forward</span>(<span class="syn-kw">self</span>, session_history: <span class="syn-type">str</span>, client_emotion: <span class="syn-type">str</span>):
+        prediction <span class="syn-op">=</span> <span class="syn-kw">self</span>.reasoning_engine(
+            session_history<span class="syn-op">=</span>session_history,
+            client_emotion<span class="syn-op">=</span>client_emotion
+        )
+        <span class="syn-kw">return</span> prediction
+          </pre>
+        </div>
+
+        <p style="font-family: Arial, sans-serif; font-weight: bold;">Based on the signature written in the previous step, what precise Python properties will exist on the <code>prediction</code> object returned by this function?</p>
+
+        <div class="choices" data-group="cr2">
+          <button class="choice" onclick="selectChoice('cr2','A',this)">prediction.json_output containing the raw result string.</button>
+          <button class="choice" onclick="selectChoice('cr2','B',this)">prediction.coaching_script and prediction.cbcs_alignment.</button>
+          <button class="choice" onclick="selectChoice('cr2','C',this)">prediction.coaching_script, prediction.cbcs_alignment, and prediction.rationale.</button>
+          <button class="choice" onclick="selectChoice('cr2','D',this)">The object is just a string, so you must use json.loads() on it first.</button>
+        </div>
+
+        <div id="cr2-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions">
+          <button id="cr2-submit" class="btn btn-primary" onclick="submitChoice('cr2', 'C', fbkCR2)">Lock prediction</button>
+        </div>
+        <div id="cr2-feedback" class="feedback"></div>
+        <div id="cr2-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(4)">Continue to Mastery Gate</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 4: Mastery Gate -->
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="eyebrow">Mastery Gate</p>
+        <h2>Compress the Architecture</h2>
+        <p>In one strictly formulated sentence, explain why a <code>dspy.Signature</code> stops Pydantic from throwing cascade errors.</p>
+        <p class="muted-text">Exclude the phrase "prompt engineering" from your answer. You must mention <strong>extraction</strong>, <strong>types (or typed fields)</strong>, and <strong>probability</strong>.</p>
+        
+        <textarea id="masteryText" placeholder="A DSPy Signature solves Pydantic failures because..."></textarea>
+        
+        <div class="actions">
+          <button class="btn btn-primary" id="masterySubmitBtn" onclick="submitMastery()">Lock response</button>
+        </div>
+        <div id="mastery-feedback" class="feedback"></div>
+        <div id="mastery-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(5)">Enter the Gauntlet</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 5: Gauntlet -->
+    <section id="stage-5" class="stage">
+      <div class="card">
+        <p class="eyebrow">Capability Gauntlet</p>
+        <h2>Seven Rapid Checks</h2>
+        <p>A Sovereign Architect must read signatures, not prompts.</p>
+        
+        <div class="gauntlet-grid">
+          <div class="q-card">
+            <label>1. If a signature has <code>apply_trigger: bool = dspy.OutputField()</code>, what does DSPy force the generative output to collapse into?</label>
+            <input id="g1" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label>2. What native module wrapper provides the LLM space to calculate logic before enforcing an `OutputField`?</label>
+            <input id="g2" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label>3. True or False: <code>prediction = dspy.Predict(...)</code> returns an iterable list of generated tokens.</label>
+            <input id="g3" type="text" placeholder="True / False">
+          </div>
+          <div class="q-card">
+            <label>4. If you upgrade from a 7B model to a 72B model, how many lines of the DSPy <code>Signature</code> class must you change?</label>
+            <input id="g4" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label>5. If DSPy's internal parser fails to coerce the text "VII" into an <code>int</code> OutputField, what does it do next?</label>
+            <input id="g5" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label>6. What wrapper algorithm enables the LLM to execute tools dynamically in a loop while retaining the deterministic data contract?</label>
+            <input id="g6" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label>7. In the factory metaphor, what role does DSPy play between the Foreman and the Laser Cutter?</label>
+            <input id="g7" type="text" placeholder="Short answer">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" id="gauntSubmitBtn" onclick="gradeGauntlet()">Submit Gauntlet</button>
+        </div>
+        <div id="gauntlet-feedback" class="feedback"></div>
+        <div id="final-box" class="final-box hidden">
+          <p class="eyebrow" style="margin-bottom:10px;">Layer 1 Complete</p>
+          <p id="final-text">You have mapped DSPy to the physical architecture. It is no longer an AI wrapper; it is the load-bearing pillar that replaces semantic persuasion with structural syntax compilation. You are ready to map this concept into the CCP production environment.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const totalStages = 6;
+    const selections = {};
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function selectChoice(groupId, value, element) {
+      if (document.querySelector(`[data-group="${groupId}"]`).dataset.locked === 'true') return;
+      selections[groupId] = value;
+      document.querySelectorAll(`[data-group="${groupId}"] .choice`).forEach(b => b.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = `feedback show ${type}`;
+      box.innerHTML = `<h3>${title}</h3><p>${body}</p>`;
+    }
+
+    function submitChoice(groupId, correct, feedbackPack) {
+      const selected = selections[groupId];
+      if (!selected) {
+        showFeedback(groupId + '-feedback', 'bad', 'Prediction required', 'Commit to what the code does. You cannot supervise an agent passively.');
+        return;
+      }
+      document.querySelector(`[data-group="${groupId}"]`).dataset.locked = 'true';
+      document.getElementById(groupId + '-submit').disabled = true;
+      document.getElementById(groupId + '-lock').classList.remove('hidden');
+      
+      const isCorrect = selected === correct;
+      const payload = isCorrect ? feedbackPack.good : feedbackPack.bad;
+      showFeedback(groupId + '-feedback', isCorrect ? 'good' : 'bad', payload.title, payload.body);
+      
+      const nextBtn = document.getElementById(groupId + '-next');
+      if(nextBtn) nextBtn.classList.remove('hidden');
+    }
+
+    const fbkCR1 = {
+      good: { title: 'Correct: DSPy coerces types mathematically.', body: 'The signature acts as a mechanical filter. It drops the conversational padding and maps only the precise `float` value to the variable. Pydantic never sees the string "Score", ensuring downstream validation passes perfectly.' },
+      bad: { title: 'Misconception exposed: The string formatting assumption.', body: 'DSPy does not just format the raw string output. The architectural point of an `OutputField(float)` declaration is that DSPy dynamically extracts the probability stream and casts it into exactly the Python type required. It strips language away entirely.' }
+    };
+
+    const fbkCR2 = {
+      good: { title: 'Correct: Chain of Thought injects reasoning dynamically.', body: 'Because you defined `coaching_script` and `cbcs_alignment` in the Signature, those properties exist. Crucially, because you wrapped it in `dspy.ChainOfThought`, DSPy automatically extends the prediction object to include a `.rationale` field without you having to explicitly declare it.' },
+      bad: { title: 'Misconception exposed: Zero-shot structural limits.', body: 'You missed the mathematical allocation injected by the module wrapper. While the signature defines the endpoints, `dspy.ChainOfThought` physically extends the object to include a `.rationale` property where the LLM showed its algorithmic work.' }
+    };
+
+    function containsAny(val, arr) { return arr.some(x => val.includes(x)); }
+
+    function submitMastery() {
+      const val = document.getElementById('masteryText').value.toLowerCase();
+      const c1 = containsAny(val, ['extract', 'pull']);
+      const c2 = containsAny(val, ['type', 'str', 'int', 'float', 'cast']);
+      const c3 = containsAny(val, ['chaos', 'prob', 'unpredictable']);
+      
+      const score = (c1?1:0) + (c2?1:0) + (c3?1:0);
+      document.getElementById('masteryText').disabled = true;
+      document.getElementById('masterySubmitBtn').disabled = true;
+      
+      if(score >= 2) {
+        showFeedback('mastery-feedback', 'good', 'Gate Cleared', 'You accurately framed DSPy as an extraction layer resolving probabilistic chaos into rigid types before Pydantic evaluates it.');
+        document.getElementById('mastery-next').classList.remove('hidden');
+      } else {
+        showFeedback('mastery-feedback', 'bad', 'Gate Failed', 'The architectural relation is weak. You must identify that DSPy *extracts* the string and casts into rigid *types*, neutralizing the *probabilistic* danger of the model output before it hits downstream validation.');
+        document.getElementById('masteryText').disabled = false;
+        document.getElementById('masterySubmitBtn').disabled = false;
+      }
+    }
+
+    function gradeGauntlet() {
+      const ans = {
+        g1: ['deterministic object', 'binary', 'true', 'false', 'boolean', 'bool'],
+        g2: ['chainofthought', 'chain of thought'],
+        g3: ['false'],
+        g4: ['zero', '0', 'none'],
+        g5: ['retry', 'internal retry', 'exception', 'assertionerror'],
+        g6: ['react'],
+        g7: ['machinist', 'the machinist']
+      };
+      
+      let passCount = 0;
+      Object.keys(ans).forEach(k => {
+        const v = document.getElementById(k).value.toLowerCase();
+        if(v && containsAny(v, ans[k])) passCount++;
+      });
+      
+      document.getElementById('gauntSubmitBtn').disabled = true;
+      if(passCount >= 5) {
+        showFeedback('gauntlet-feedback', 'good', `Gauntlet Cleared: ${passCount}/7`, 'Your structural intuition regarding DSPy capability primitives is secure.');
+        document.getElementById('final-box').classList.remove('hidden');
+      } else {
+        showFeedback('gauntlet-feedback', 'bad', `Gauntlet Failed: ${passCount}/7`, 'You are still trapped thinking in raw tokens and strings. Analyze DSPy purely as a compiler of Python object types.');
+        document.getElementById('gauntSubmitBtn').disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

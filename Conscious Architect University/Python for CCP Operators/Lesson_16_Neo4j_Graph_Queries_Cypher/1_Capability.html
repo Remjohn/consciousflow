@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 16 — Neo4j & Graph Queries — Capability</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0A0A0A; --surface: #151515; --surface2: #1E1E1E; --surface3: #2A2A2A;
+  --text: #FAFAFA; --muted: #A0A0A0; --border: #2E2E2E;
+  --accent: #22d3ee; --red: #E76F51; --green: #2A9D8F; --blue: #4A90D9; --orange: #f97316; --purple: #a78bfa;
+  --mono: 'IBM Plex Mono', monospace; --sans: 'Inter', sans-serif; --serif: 'Playfair Display', serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.7; overflow-x: hidden; }
+.container { max-width: 800px; margin: 0 auto; padding: 4rem 2rem 8rem; }
+
+/* — Typography — */
+h1 { font-family: var(--serif); font-size: 3.2rem; line-height: 1.05; margin-bottom: 1.5rem; letter-spacing: -0.02em; }
+h2 { font-family: var(--serif); font-size: 1.75rem; margin: 2.5rem 0 1rem; color: var(--accent); }
+h3 { font-family: var(--mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin: 2rem 0 0.75rem; }
+p { margin-bottom: 1.25rem; color: var(--muted); font-size: 1rem; }
+p strong { color: var(--text); }
+code { font-family: var(--mono); font-size: 0.9em; color: var(--accent); background: rgba(34,211,238,0.08); padding: 0.2rem 0.4rem; border-radius: 4px; }
+
+/* — Code Blocks — */
+.code-block { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 1.25rem 1.5rem; margin: 1.25rem 0; font-family: var(--mono); font-size: 0.85rem; line-height: 1.6; overflow-x: auto; color: #e4e4e4; }
+.code-block .kw { color: #c678dd; } /* keyword */
+.code-block .fn { color: #61afef; } /* function */
+.code-block .str { color: #98c379; } /* string */
+.code-block .var { color: #e06c75; } /* variables/args */
+.code-block .comment { color: #5c6370; font-style: italic; }
+
+/* — Interaction boxes — */
+.interaction-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2.5rem; margin: 2rem 0; position: relative; }
+.interaction-header { font-family: var(--mono); font-size: 0.7rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: .5rem; }
+.question-text { font-size: 1.05rem; font-weight: 500; margin-bottom: 1.75rem; color: #fff; line-height: 1.6; }
+
+/* — Inputs — */
+.input-row { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.input-label { font-family: var(--mono); font-size: 0.9rem; color: var(--muted); }
+.input-text { background: var(--bg); border: 2px solid var(--border); color: #fff; font-family: var(--mono); font-size: 0.95rem; padding: 0.65rem 1rem; flex: 1; min-width: 180px; border-radius: 4px; }
+.input-text:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* — Buttons — */
+.btn { background: var(--text); color: var(--bg); border: none; padding: 0.7rem 1.5rem; font-family: var(--sans); font-weight: 600; font-size: 0.95rem; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+.btn:hover:not(:disabled) { background: #fff; box-shadow: 0 4px 14px rgba(255,255,255,0.12); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.btn-outline:hover:not(:disabled) { background: var(--surface2); border-color: var(--text); color: var(--text); }
+
+/* — Feedback — */
+.feedback { display: none; margin-top: 1.5rem; padding: 1.25rem 1.5rem; border-radius: 4px; font-size: 0.92rem; line-height: 1.65; }
+.feedback.visible { display: block; animation: fadein 0.35s; }
+.feedback.error { background: rgba(231,111,81,0.08); border-left: 3px solid var(--red); color: #ffb3a1; }
+.feedback.success { background: rgba(42,157,143,0.08); border-left: 3px solid var(--green); color: #a7ece2; }
+.feedback.trap { background: rgba(232,196,106,0.08); border-left: 3px solid var(--orange); color: #f5e0a0; }
+.feedback-title { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.4rem; font-weight: 600; }
+
+/* — Choice buttons — */
+.choices { display: flex; flex-direction: column; gap: 0.875rem; margin-bottom: 1.5rem; }
+.choice-btn { text-align: left; padding: 1.1rem 1.25rem; background: var(--bg); border: 1px solid var(--border); color: var(--muted); border-radius: 6px; cursor: pointer; transition: all 0.2s; font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+.choice-btn:hover { border-color: var(--text); color: var(--text); }
+.choice-btn.selected-wrong { border-color: var(--red); color: var(--red); background: rgba(231,111,81,0.05); pointer-events: none; }
+.choice-btn.selected-right { border-color: var(--green); color: var(--green); background: rgba(42,157,143,0.05); pointer-events: none; }
+.choice-btn:disabled { pointer-events: none; opacity: 0.5; }
+
+/* — Gated content — */
+.gated-content { display: none; opacity: 0; transform: translateY(16px); transition: opacity 0.45s ease, transform 0.45s ease; }
+.gated-content.unlocked { display: block; animation: reveal 0.45s ease forwards; }
+
+/* — Concept callout — */
+.callout { background: var(--surface2); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; padding: 1.1rem 1.5rem; margin: 1.5rem 0; }
+.callout p { margin: 0; color: var(--text); font-size: 0.95rem; }
+.callout .callout-label { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 0.4rem; }
+
+/* — Gauntlet — */
+.gauntlet-wrap { margin-top: 4rem; border-top: 2px solid var(--border); padding-top: 3rem; }
+.q-block { background: var(--surface2); padding: 1.5rem; border-radius: 6px; margin-bottom: 1.25rem; border: 1px solid var(--border); }
+.q-num { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+.q-text { font-size: 1rem; margin-bottom: 1.25rem; font-weight: 500; color: #fff; line-height: 1.55; }
+.q-sub { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); margin-top: -0.75rem; margin-bottom: 1rem; line-height: 1.7; }
+
+/* — Canvas Area — */
+.canvas-wrap { position: relative; width: 100%; height: 320px; background: #060606; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; margin: 1.5rem 0; user-select: none; touch-action: none; }
+.cypher-live { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.85); padding: 0.7rem 1rem; font-family: var(--mono); font-size: 0.85rem; color: var(--accent); border-top: 1px solid var(--border); pointer-events: none; }
+.node { position: absolute; width: 80px; height: 80px; background: var(--surface2); border: 2px solid var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-direction: column; cursor: grab; z-index: 10; font-family: var(--mono); font-size: 0.75rem; color: var(--text); user-select: none; transition: transform 0.1s; }
+.node:active { cursor: grabbing; transform: scale(1.05); border-color: var(--orange); }
+.node-label { font-weight: 600; }
+.node-sub { font-size: 0.65rem; color: var(--muted); margin-top: 3px; }
+.drag-instruction { position: absolute; top: 1rem; left: 50%; transform: translateX(-50%); font-family: var(--mono); font-size: 0.75rem; color: var(--muted); background: rgba(0,0,0,0.5); padding: 0.3rem 0.8rem; border-radius: 4px; pointer-events: none; }
+
+@keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes reveal { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ═══════════════════════════════════════════════════
+       SPACED INTERRUPT — Cold Retrieval
+  ═══════════════════════════════════════════════════ -->
+  <div class="interaction-box" id="interrupt-box" style="border-left: 3px solid var(--red);">
+    <div class="interaction-header" style="color:var(--red)">System Interrupt · Spaced Retrieval — Relational vs. Graph</div>
+    <div class="question-text">
+      To log that Session `sid-1` deployed Trigger `humor`, a relational database inserts a row into a `session_triggers` mapping table.<br><br>
+      In Cypher (Graph DB), the exact same semantic insertion is performed not by inserting an isolated row, but by...
+    </div>
+    <div class="choices">
+      <button class="choice-btn" onclick="submitInterrupt(this, 'table')">Updating the Session node's JSON properties to include `"triggers": ["humor"]`.</button>
+      <button class="choice-btn" onclick="submitInterrupt(this, 'edge')">Drawing a directed relationship mapping `(Session)-[:DEPLOYED]->(Trigger)`.</button>
+      <button class="choice-btn" onclick="submitInterrupt(this, 'join')">Performing an INNER JOIN on the `Session` and `Trigger` indexes.</button>
+    </div>
+    <div class="feedback" id="int-fb"></div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════
+       MAIN CONTENT — Gate 1 unlocks this
+  ═══════════════════════════════════════════════════ -->
+  <div class="gated-content" id="main-content">
+
+    <div style="font-family:var(--mono);font-size:0.72rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;">Lesson 16 · Capability Layer</div>
+    <h1>The Context Premise Engine</h1>
+    
+    <h2>I. The CCP Failure Scenario</h2>
+    <p>An operator watches the Pipecat WebSocket stream as a live coaching session unfolds. The client, <code>CL-042</code>, has historically exhibited extreme friction against passive reflection. According to the <code>ClientProfile</code> node inside the Context Premise Engine, <code>CL-042</code> thrives exclusively on the <em>confrontation</em> trigger—a high-stakes psychological intervention that forces immediate accountability.</p>
+
+    <p>The FastAPI route fires. But the backend relies on an incorrectly formed Cypher query: <code>MATCH (c:Client)-[:HAS_STATE]->(s:State) RETURN c, s</code>. The query successfully pulls the client's current emotional state (<code>exhausted</code>), but it utterly fails to traverse the deeper relationship: <code>(s:State)-[:REQUIRES]->(t:Trigger)</code>.</p>
+    
+    <div class="callout" style="border-left-color: var(--red);">
+      <div class="callout-label" style="color: var(--red);">Amnesia by Severed Edge</div>
+      <p>Because the edge traversal is missing, the contextual payload delivered to the LLM's InputField is fundamentally hollow. The agentic harness receives zero historical directive regarding trigger efficacy. The LLM generates a coaching script filled with gentle affirmations. The client, expecting a rigorous challenge, receives therapeutic platitudes. Within 90 seconds, the client disconnects.</p>
+    </div>
+
+    <p>The session died not because the LLM hallucinated, nor because the Pydantic schema failed. The session died because the architectural memory of the platform was severed. The Python execution script queried for independent <em>nodes</em> while abandoning the <em>edges</em>. In the CCP, isolating a node without its relationships is the equivalent of amnesia.</p>
+
+    <hr style="border:none;border-top:1px solid var(--border);margin:3rem 0;">
+
+    <h2>II. The Architectural Definition</h2>
+    <p>Neo4j and its query language, Cypher, function as the central nervous system of the Conscious Coaching Platform. Relational databases structure data in rigid, isolated tables that require expensive computational joins. But coaching is not tabular; coaching is inherently relational.</p>
+
+    <p>Every entity in the CCP—every coach, client, session, psychological trigger, CA11 rule, and Voice DNA adapter—exists solely in relation to something else. A <code>State</code> is meaningless until a <code>Client</code> possesses it. Cypher allows you to express these multidimensional relationships mathematically and traverse them with declarative precision.</p>
+
+    <p>If variables and type hints are the raw materials, and functions are the work stations, Cypher queries are the complex pneumatic transit tubes connecting the archives to the assembly line. They instantly deliver the correct schematics directly to the Machinist (DSPy).</p>
+
+    <!-- INTERACTIVE CANVAS -->
+    <div class="interaction-box">
+      <div class="interaction-header">Visual Neo4j Graph Builder</div>
+      <div class="question-text">
+        Drag from the center of the <strong>Client</strong> node to the <strong>Trigger</strong> node to draw a relationship edge. Watch how the Cypher syntax maps exactly to the physical geometry.
+      </div>
+      
+      <div class="canvas-wrap" id="graph-wrap">
+        <div class="drag-instruction">Drag line from Client to Trigger</div>
+        <canvas id="graph-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;"></canvas>
+        <div class="node" id="node-client" style="left:50px; top:120px;">
+          <span class="node-label">Client</span>
+          <span class="node-sub">id: 042</span>
+        </div>
+        <div class="node" id="node-trigger" style="right:50px; top:40px;">
+          <span class="node-label">Trigger</span>
+          <span class="node-sub">name: humor</span>
+        </div>
+        <div class="node" id="node-state" style="right:50px; top:200px; border-color:var(--muted);">
+          <span class="node-label">State</span>
+          <span class="node-sub">exhausted</span>
+        </div>
+        
+        <div class="cypher-live" id="cypher-out">MATCH (c:Client {id: '042'}) ...</div>
+      </div>
+      
+      <button class="btn" id="canvas-lock-btn" disabled onclick="submitCanvas()">Verify Edge Traversal</button>
+      <div class="feedback" id="fb-canvas"></div>
+    </div>
+
+  </div><!-- /main-content -->
+
+
+  <!-- ═══════════════════════════════════════════════════
+       MASTERY CONTENT — Gate 2 unlocks this
+  ═══════════════════════════════════════════════════ -->
+  <div class="gated-content" id="mastery-content">
+
+    <h2>III. Minimal Code Reading</h2>
+    <p>The following reads represent exactly how Neo4j graph relationships are consumed and enforced via the Python driver. Trace the data. Predict the execution.</p>
+
+    <h3>Snippet 1: The Cypher Traversal</h3>
+<div class="code-block">
+<span class="kw">async def</span> <span class="fn">get_client_triggers</span>(driver, client_id: <span class="kw">str</span>) -> <span class="kw">list</span>[<span class="kw">dict</span>]:
+    <span class="kw">async with</span> driver.session() <span class="kw">as</span> session:
+        result = <span class="kw">await</span> session.run(
+            <span class="str">"""
+            MATCH (c:Client {id: $cid})-[:RESPONDED_TO]->(t:Trigger)
+            WHERE t.effectiveness > 0.8
+            RETURN t.name as trigger_name, t.effectiveness as score
+            ORDER BY t.effectiveness DESC
+            """</span>,
+            cid=client_id
+        )
+        <span class="kw">return</span> [record.data() <span class="kw">async for</span> record <span class="kw">in</span> result]
+</div>
+
+    <!-- PREDICTION GATE 02 -->
+    <div class="interaction-box">
+      <div class="interaction-header">Prediction Gate 02 — Data Extraction</div>
+      <div class="question-text">
+        Assume `CL-042` resides in the database. They have `RESPONDED_TO` two triggers:<br>
+        1. <code>humor</code> (effectiveness: 0.95)<br>
+        2. <code>empathy</code> (effectiveness: 0.30)<br><br>
+        Based on Snippet 1, exactly what value is returned by this Python function? Format your answer as valid JSON (e.g., <code>[{"key": "value"}]</code>).
+      </div>
+      <div class="input-row">
+        <input type="text" id="pg2-inp" class="input-text" placeholder="[ { ... } ]" style="font-family:var(--mono);">
+        <button class="btn" id="pg2-btn" onclick="submitGate2()">Lock Prediction</button>
+      </div>
+      <div class="feedback" id="fb-pg2"></div>
+    </div>
+
+    <div class="gated-content" id="gate2-content">
+      
+      <h3>Snippet 2: Edge Creation (State Transformation)</h3>
+<div class="code-block">
+<span class="kw">async def</span> <span class="fn">log_session_trigger</span>(driver, session_id: <span class="kw">str</span>, trigger_id: <span class="kw">str</span>) -> <span class="kw">None</span>:
+    <span class="kw">async with</span> driver.session() <span class="kw">as</span> session:
+        <span class="kw">await</span> session.run(
+            <span class="str">"""
+            MATCH (s:Session {id: $sid}), (t:Trigger {id: $tid})
+            MERGE (s)-[rel:DEPLOYED]->(t)
+            ON CREATE SET rel.timestamp = datetime()
+            """</span>,
+            sid=session_id, tid=trigger_id
+        )
+</div>
+
+      <!-- PREDICTION GATE 03 -->
+      <div class="interaction-box">
+        <div class="interaction-header">Prediction Gate 03 — Idempotency</div>
+        <div class="question-text">
+          An asynchronous timeout forces the Pi execution loop to retry this exact function with the same `session_id` and `trigger_id` exactly <strong style="color:var(--orange);">three times</strong> in quick succession.<br><br>
+          How many <code>DEPLOYED</code> relationships will exist between the session node and the trigger node in the database?
+        </div>
+        <div class="choices">
+          <button class="choice-btn" onclick="submitGate3(this, 3)">Three. The script executed `session.run()` 3 times.</button>
+          <button class="choice-btn" onclick="submitGate3(this, 1)">Exactly one. `MERGE` behaves idempotently.</button>
+          <button class="choice-btn" onclick="submitGate3(this, 0)">Zero. Repeated simultaneous writes cause a neo4j DeadlockException.</button>
+        </div>
+        <div class="feedback" id="fb-pg3"></div>
+      </div>
+
+    </div>
+
+  </div><!-- /mastery-content -->
+
+
+  <!-- ═══════════════════════════════════════════════════
+       GAUNTLET — Gate 3 unlocks this
+  ═══════════════════════════════════════════════════ -->
+  <div class="gated-content" id="gauntlet-content">
+    <div class="gauntlet-wrap">
+      <h2>Capability Gauntlet</h2>
+      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:2rem;">Architectural Syntax Validation. Execute these graph commands from logic.</p>
+      <div id="g-container"></div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+/* ── INTERRUPT GATE ── */
+function submitInterrupt(btn, answer) {
+  const choices = document.querySelectorAll('#interrupt-box .choice-btn');
+  choices.forEach(c => c.disabled = true);
+  const fb = document.getElementById('int-fb');
+  fb.classList.add('visible');
+
+  if (answer === 'edge') {
+    btn.classList.add('selected-right');
+    fb.className = 'feedback visible success';
+    fb.innerHTML = `<div class="feedback-title">Correct</div>
+      Graph databases treat relationships as first-class citizens. You do not compute connections via mapping tables or JSON arrays. You literally draw a directed physical edge between nodes: <code>(Session)-[:DEPLOYED]->(Trigger)</code>.`;
+    setTimeout(() => unlock('main-content'), 1200);
+  } else {
+    btn.classList.add('selected-wrong');
+    fb.className = 'feedback visible error';
+    fb.innerHTML = `<div class="feedback-title">Incorrect Architecture</div>
+      A Graph DB like Neo4j does not simulate relationships via array arrays inside JSON, nor does it perform computational JOINs. It traverses direct physical pointers (edges). Resetting.`;
+    setTimeout(() => {
+      choices.forEach(c => { c.disabled = false; c.classList.remove('selected-wrong', 'selected-right'); });
+      fb.classList.remove('visible');
+    }, 3000);
+  }
+}
+
+/* ── INTERACTIVE CANVAS: GRAPH BUILDER ── */
+const gWrap = document.getElementById('graph-wrap');
+const gCanvas = document.getElementById('graph-canvas');
+const gCtx = gCanvas.getContext('2d');
+const cypherOut = document.getElementById('cypher-out');
+const nClient = document.getElementById('node-client');
+const nTrigger = document.getElementById('node-trigger');
+
+let isDraggingCanvas = false;
+let startNode = null;
+let edgeDrawn = false;
+let mX = 0, mY = 0;
+
+function drawGraphBg() {
+  gCanvas.width = gWrap.offsetWidth; gCanvas.height = gWrap.offsetHeight;
+  gCtx.clearRect(0,0,gCanvas.width,gCanvas.height);
+  
+  if (edgeDrawn) {
+    const c1 = nClient.getBoundingClientRect();
+    const c2 = nTrigger.getBoundingClientRect();
+    const wR = gWrap.getBoundingClientRect();
+    
+    const x1 = (c1.left - wR.left) + c1.width/2;
+    const y1 = (c1.top - wR.top) + c1.height/2;
+    const x2 = (c2.left - wR.left) + c2.width/2;
+    const y2 = (c2.top - wR.top) + c2.height/2;
+    
+    gCtx.strokeStyle = '#22d3ee'; gCtx.lineWidth = 3;
+    drawArrow(gCtx, x1, y1, x2, y2);
+    
+    gCtx.font = "bold 12px 'IBM Plex Mono'";
+    gCtx.fillStyle = '#22d3ee';
+    gCtx.fillText("[:RESPONDED_TO]", (x1+x2)/2 - 50, (y1+y2)/2 - 10);
+  } else if (isDraggingCanvas && startNode) {
+    const c1 = startNode.getBoundingClientRect();
+    const wR = gWrap.getBoundingClientRect();
+    const x1 = (c1.left - wR.left) + c1.width/2;
+    const y1 = (c1.top - wR.top) + c1.height/2;
+    
+    gCtx.strokeStyle = '#444'; gCtx.lineWidth = 2; gCtx.setLineDash([5, 5]);
+    gCtx.beginPath(); gCtx.moveTo(x1, y1); gCtx.lineTo(mX, mY); gCtx.stroke(); gCtx.setLineDash([]);
+  }
+}
+
+function drawArrow(ctx, x1, y1, x2, y2) {
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  const headlen = 15;
+  const radius = 40; // node radius
+  const startX = x1 + radius * Math.cos(angle);
+  const startY = y1 + radius * Math.sin(angle);
+  const endX = x2 - radius * Math.cos(angle);
+  const endY = y2 - radius * Math.sin(angle);
+  
+  ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, endY); ctx.stroke();
+  
+  ctx.beginPath();
+  ctx.moveTo(endX, endY);
+  ctx.lineTo(endX - headlen * Math.cos(angle - Math.PI / 6), endY - headlen * Math.sin(angle - Math.PI / 6));
+  ctx.lineTo(endX - headlen * Math.cos(angle + Math.PI / 6), endY - headlen * Math.sin(angle + Math.PI / 6));
+  ctx.closePath();
+  ctx.fillStyle = ctx.strokeStyle;
+  ctx.fill();
+}
+
+nClient.addEventListener('mousedown', (e) => {
+  if (edgeDrawn) return;
+  isDraggingCanvas = true; startNode = nClient;
+  const wR = gWrap.getBoundingClientRect();
+  mX = e.clientX - wR.left; mY = e.clientY - wR.top;
+});
+document.addEventListener('mousemove', (e) => {
+  if (!isDraggingCanvas) return;
+  const wR = gWrap.getBoundingClientRect();
+  mX = e.clientX - wR.left; mY = e.clientY - wR.top;
+  
+  if (startNode === nClient) {
+    const c2 = nTrigger.getBoundingClientRect();
+    const tx = c2.left + c2.width/2; const ty = c2.top + c2.height/2;
+    if (Math.hypot(e.clientX - tx, e.clientY - ty) < 60) {
+      document.querySelector('.drag-instruction').textContent = "Release to lock edge";
+      document.querySelector('.drag-instruction').style.color = "var(--green)";
+      cypherOut.innerHTML = \`MATCH <span style="color:var(--text)">(c:Client {id: '042'})</span><span style="color:var(--accent)">-[:RESPONDED_TO]-></span><span style="color:var(--text)">(t:Trigger {name: 'humor'})</span>\`;
+    } else {
+      document.querySelector('.drag-instruction').textContent = "Drag line to Trigger node";
+      document.querySelector('.drag-instruction').style.color = "var(--muted)";
+      cypherOut.innerHTML = \`MATCH (c:Client {id: '042'}) ...\`;
+    }
+  }
+  drawGraphBg();
+});
+document.addEventListener('mouseup', (e) => {
+  if (!isDraggingCanvas) return;
+  isDraggingCanvas = false;
+  
+  if (startNode === nClient) {
+    const c2 = nTrigger.getBoundingClientRect();
+    const tx = c2.left + c2.width/2; const ty = c2.top + c2.height/2;
+    if (Math.hypot(e.clientX - tx, e.clientY - ty) < 60) {
+      edgeDrawn = true;
+      cypherOut.innerHTML = \`MATCH <span style="color:var(--text)">(c:Client {id: '042'})</span><span style="color:var(--accent)">-[r:RESPONDED_TO]-></span><span style="color:var(--text)">(t:Trigger {name: 'humor'})</span><br>RETURN r\`;
+      document.querySelector('.drag-instruction').style.display = "none";
+      nClient.style.cursor = "default";
+      document.getElementById('canvas-lock-btn').disabled = false;
+    }
+  }
+  drawGraphBg();
+});
+
+window.addEventListener('resize', drawGraphBg);
+setTimeout(drawGraphBg, 100);
+
+function submitCanvas() {
+  document.getElementById('canvas-lock-btn').disabled = true;
+  const fb = document.getElementById('fb-canvas');
+  fb.classList.add('visible');
+  fb.className = 'feedback visible success';
+  fb.innerHTML = \`<div class="feedback-title">Cypher syntax validated</div>
+    Notice how Cypher visually mimics the graph structure. <code>()</code> for nodes. <code>[]</code> for edges. <code>-></code> for direction mapping.<br><br>
+    The python string is exactly equivalent to the physical geometry.\`;
+  setTimeout(() => unlock('mastery-content'), 1500);
+}
+
+/* ── UNLOCK HELPER ── */
+function unlock(id) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  }));
+}
+
+/* ── PREDICTION GATE 02 ── */
+function submitGate2() {
+  const inp = document.getElementById('pg2-inp');
+  const btn = document.getElementById('pg2-btn');
+  const raw = inp.value.replace(/\\s+/g, '').replace(/'/g, '"');
+  
+  inp.disabled = true; btn.disabled = true;
+  const fb = document.getElementById('fb-pg2');
+  fb.classList.add('visible');
+
+  // Expected: [{"trigger_name":"humor","score":0.95}]
+  const isTrap = raw.includes("0.30") || raw.includes("empathy");
+  const isCorrect = raw.includes("humor") && raw.includes("0.95") && raw.includes("trigger_name") && raw.includes("score");
+  
+  if (isTrap) {
+    fb.className = 'feedback visible trap';
+    fb.innerHTML = \`<div class="feedback-title">Data Leakage Trap</div>
+      You included the <code>empathy</code> trigger in your return payload. Look closely at the WHERE clause: <code>WHERE t.effectiveness > 0.8</code>. The query filters it out in the DB layer. This is why Cypher is powerful: you don't load useless memory into Python RAM. It never crosses the network boundary.\`;
+    setTimeout(() => {
+      inp.disabled = false; btn.disabled = false; fb.classList.remove('visible'); inp.value = '';
+    }, 4000);
+  } else if (isCorrect) {
+    fb.className = 'feedback visible success';
+    fb.innerHTML = \`<div class="feedback-title">Correct</div>
+      <code>[{"trigger_name": "humor", "score": 0.95}]</code><br><br>
+      The specific aliases <code>as trigger_name</code> and <code>as score</code> format the output dynamically. The Python comprehension transforms the Neo4j Record directly into a dictionary ready for Pydantic ingestion.\`;
+    setTimeout(() => unlock('gate2-content'), 2000);
+  } else {
+    fb.className = 'feedback visible error';
+    fb.innerHTML = \`<div class="feedback-title">Incorrect JSON Syntax</div>
+      Re-evaluate the Python list comprehension and the Cypher aliases. The output is a list of dictionaries with specific keys defined by <code>as</code> clauses. Resetting.\`;
+    setTimeout(() => {
+      inp.disabled = false; btn.disabled = false; fb.classList.remove('visible');
+    }, 3000);
+  }
+}
+
+/* ── PREDICTION GATE 03 ── */
+function submitGate3(btn, answer) {
+  const choices = document.querySelectorAll('#gate2-content .choice-btn');
+  choices.forEach(c => c.disabled = true);
+  const fb = document.getElementById('fb-pg3');
+  fb.classList.add('visible');
+
+  if (answer === 1) {
+    btn.classList.add('selected-right');
+    fb.className = 'feedback visible success';
+    fb.innerHTML = \`<div class="feedback-title">Correct — Idempotency Achieved</div>
+      <code>MERGE</code> operates geometrically: "Ensure this pattern exists." If it exists, it binds to it. If it doesn't, it creates it. Because the Pi agentic harness can timeout and retry multiple times, using <code>CREATE</code> would result in duplicate, overlapping relationships. <code>MERGE</code> makes the memory write completely safe over unreliable execution channels.\`;
+    setTimeout(() => renderGauntlet(), 1500);
+  } else {
+    btn.classList.add('selected-wrong');
+    fb.className = 'feedback visible error';
+    const context = answer === 3 ? "<code>CREATE</code> blindly inserts multiple times. <code>MERGE</code> checks for existence first. Therefore it cannot write three edges." : "Neo4j manages concurrent writes natively; it does not throw DeadlockExceptions for standard idempotent MERGE operations.";
+    fb.innerHTML = \`<div class="feedback-title">Incorrect Evaluation</div>\${context} Resetting.\`;
+    setTimeout(() => {
+      choices.forEach(c => { c.disabled = false; c.classList.remove('selected-wrong', 'selected-right'); });
+      fb.classList.remove('visible');
+    }, 3500);
+  }
+}
+
+/* ── GAUNTLET ENGINE ── */
+const G_DATA = [
+  {
+    q: "<code>query = 'MATCH (a:Coach)-[r:COACHES]->(b:Client) RETURN count(r) as total'</code><br>What specific Python primitive type does <code>await result.single()['total']</code> return?",
+    type: "text",
+    ans: "int",
+    exp: "The cypher aggregation function <code>count()</code> deterministically returns an integer representing the total number of relationships found."
+  },
+  {
+    q: "<code>MATCH (c:Client {id: 'NEW_GUY'})-[:REQUIRES]->(t:Trigger) RETURN t.name</code><br>If the client exists but has NO triggers registered, does `session.run()` immediately raise a Python Exception?",
+    type: "bool",
+    ans: false,
+    exp: "False. The MATCH clause acts as an inner join. If the path does not exist, it simply returns 0 traversing records. The Python loop effectively returns an empty list `[]` without crashing."
+  },
+  {
+    q: "What does the <code>*1..3</code> syntax tell the database to do in `MATCH (c)-[:KNOWS*1..3]->(t)`?",
+    sub: "Type a short phrase description.",
+    type: "text",
+    match: ["variable", "1 to 3", "hop", "depth", "distance"],
+    exp: "It commands a variable-length path traversal. It instructs the graph to find any Node connected within 1 to 3 relational hops. It is the architectural mechanism for finding n-th degree context inferences."
+  },
+  {
+    q: "<code>MATCH (n) DETACH DELETE n</code> executes on Production.<br>Is the CCP Context Premise Engine recoverable?",
+    type: "bool",
+    ans: false,
+    exp: "False. It is complete platform amnesia. MATCH (n) targets every node; DETACH destroys every edge; DELETE n permanently eradicates all data. Without backups, the architecture degrades to 0 state."
+  }
+];
+
+function renderGauntlet() {
+  unlock('gauntlet-content');
+  const c = document.getElementById('g-container');
+  let html = '';
+  G_DATA.forEach((item, idx) => {
+    html += \`<div class="q-block" id="gg-\${idx}">
+      <div class="q-num">Drill 0\${idx+1}</div>
+      <div class="q-text">\${item.q}</div>
+      \${item.sub ? \`<div class="q-sub">\${item.sub}</div>\` : ''}\`;
+    if (item.type === 'bool') {
+      html += \`<div style="display:flex;gap:.75rem;">
+        <button class="btn btn-outline" onclick="answerGauntlet(\${idx},true,this)">True / Yes</button>
+        <button class="btn btn-outline" onclick="answerGauntlet(\${idx},false,this)">False / No</button>
+      </div>\`;
+    } else {
+      html += \`<div style="display:flex;gap:.75rem;">
+        <input type="text" id="gi-\${idx}" class="input-text" placeholder="Type answer...">
+        <button class="btn" onclick="answerTextGauntlet(\${idx},this)">Lock</button>
+      </div>\`;
+    }
+    html += \`<div class="feedback" id="gf-\${idx}"></div></div>\`;
+  });
+  c.innerHTML = html;
+}
+
+function answerGauntlet(idx, val, btn) {
+  document.querySelectorAll(\`#gg-\${idx} button\`).forEach(b => b.disabled = true);
+  const fb = document.getElementById(\`gf-\${idx}\`);
+  fb.classList.add('visible');
+  if (val === G_DATA[idx].ans) {
+    btn.style.background = 'rgba(42,157,143,0.15)'; btn.style.borderColor = 'var(--green)'; btn.style.color = '#a7ece2';
+    fb.className = 'feedback visible success';
+    fb.innerHTML = \`<div class="feedback-title">Correct</div>\${G_DATA[idx].exp}\`;
+  } else {
+    btn.style.background = 'rgba(231,111,81,0.1)'; btn.style.borderColor = 'var(--red)'; btn.style.color = '#ffb3a1';
+    fb.className = 'feedback visible error';
+    fb.innerHTML = \`<div class="feedback-title">Incorrect</div>\${G_DATA[idx].exp}\`;
+  }
+}
+
+function answerTextGauntlet(idx, btn) {
+  const inp = document.getElementById(\`gi-\${idx}\`);
+  const val = inp.value.trim().toLowerCase();
+  if (!val) return;
+  inp.disabled = true; btn.disabled = true;
+  const fb = document.getElementById(\`gf-\${idx}\`);
+  fb.classList.add('visible');
+  
+  let correct = false;
+  const item = G_DATA[idx];
+  if (item.ans) correct = val === item.ans.toLowerCase();
+  if (item.match) correct = item.match.some(m => val.includes(m.toLowerCase()));
+  
+  if (correct) {
+    fb.className = 'feedback visible success';
+    fb.innerHTML = \`<div class="feedback-title">Correct</div>\${item.exp}\`;
+  } else {
+    fb.className = 'feedback visible error';
+    fb.innerHTML = \`<div class="feedback-title">Incorrect</div>\${item.exp}\`;
+  }
+}
+</script>
+</body>
+</html>

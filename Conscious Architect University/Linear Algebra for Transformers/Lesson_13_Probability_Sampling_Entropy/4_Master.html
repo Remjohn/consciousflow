@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Probability, Sampling & Entropy — Capstone Exam</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0A;--surface:#141414;--surface2:#1C1C1C;
+  --text:#FAFAFA;--muted:#909090;--border:#272727;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--serif:'Playfair Display',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.7;overflow-x:hidden;}
+.container{max-width:760px;margin:0 auto;padding:4rem 2rem 10rem;}
+
+/* ── Timer HUD ── */
+#timer-hud{
+  position:fixed;top:1.5rem;right:1.5rem;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:6px;padding:0.6rem 1.1rem;
+  font-family:var(--mono);font-size:1rem;
+  color:var(--muted);z-index:100;
+  transition:color 0.3s,border-color 0.3s;
+}
+#timer-hud.warn{color:var(--accent);border-color:var(--accent);}
+#timer-hud.critical{color:var(--red);border-color:var(--red);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+
+/* ── Header ── */
+.exam-header{margin-bottom:3rem;}
+.layer-tag{font-family:var(--mono);font-size:0.72rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;}
+h1{font-family:var(--serif);font-size:2.9rem;line-height:1.05;margin-bottom:1rem;letter-spacing:-0.02em;}
+.exam-meta{font-family:var(--mono);font-size:0.78rem;color:var(--muted);border-top:1px solid var(--border);padding-top:1rem;margin-top:1.5rem;display:flex;gap:2rem;flex-wrap:wrap;}
+.meta-item{display:flex;flex-direction:column;gap:0.2rem;}
+.meta-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:#555;}
+.meta-val{color:var(--text);}
+
+/* ── Question blocks ── */
+.q-block{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.75rem;margin-bottom:1.25rem;transition:border-color 0.2s;}
+.q-block.answered{border-color:#2A2A2A;}
+.q-block.answered-correct{border-color:rgba(42,157,143,0.3);}
+.q-block.answered-wrong{border-color:rgba(231,111,81,0.25);}
+.q-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.1rem;}
+.q-num{font-family:var(--mono);font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;}
+.q-pts{font-family:var(--mono);font-size:0.72rem;color:var(--border);background:var(--surface2);padding:0.2rem 0.5rem;border-radius:3px;border:1px solid var(--border);}
+.q-text{font-size:1rem;font-weight:500;color:#fff;line-height:1.6;margin-bottom:1.25rem;}
+.q-sub{font-family:var(--mono);font-size:0.8rem;color:var(--muted);margin-top:-0.75rem;margin-bottom:1.1rem;line-height:1.7;}
+.q-formula{font-family:var(--mono);font-size:0.85rem;color:var(--accent);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:0.6rem 0.9rem;margin-bottom:1.1rem;display:inline-block;}
+
+/* ── Inputs ── */
+.input-row{display:flex;gap:0.75rem;align-items:center;}
+.input-field{
+  background:var(--bg);border:2px solid var(--border);
+  color:#fff;font-family:var(--mono);font-size:1rem;
+  padding:0.65rem 1rem;flex:1;max-width:260px;border-radius:4px;
+  transition:border-color 0.2s;
+}
+.input-field:focus{outline:none;border-color:var(--accent);}
+.input-field:disabled{opacity:0.35;cursor:not-allowed;}
+.input-wide{max-width:none;width:100%;}
+textarea.input-field{
+  resize:vertical;min-height:140px;max-width:none;width:100%;
+  font-size:0.9rem;line-height:1.6;
+}
+
+/* ── Bool buttons ── */
+.bool-row{display:flex;gap:0.75rem;}
+.bool-btn{
+  background:transparent;border:1px solid var(--border);
+  color:var(--muted);font-family:var(--sans);font-size:0.95rem;
+  padding:0.65rem 1.5rem;border-radius:4px;cursor:pointer;transition:all 0.2s;
+}
+.bool-btn:hover:not(:disabled){border-color:var(--text);color:var(--text);}
+.bool-btn:disabled{pointer-events:none;opacity:0.4;}
+.bool-btn.locked-right{background:rgba(42,157,143,0.12);border-color:var(--green);color:#a7ece2;}
+.bool-btn.locked-wrong{background:rgba(231,111,81,0.1);border-color:var(--red);color:#ffb3a1;}
+.bool-btn.locked-neutral{opacity:0.3;}
+
+/* ── Lock buttons ── */
+.lock-btn{
+  background:var(--text);color:var(--bg);
+  border:none;padding:0.65rem 1.25rem;
+  font-family:var(--sans);font-weight:600;font-size:0.9rem;
+  border-radius:4px;cursor:pointer;transition:all 0.2s;white-space:nowrap;
+}
+.lock-btn:hover:not(:disabled){background:#fff;}
+.lock-btn:disabled{opacity:0.35;cursor:not-allowed;}
+
+/* ── Answer state tags ── */
+.ans-tag{
+  display:inline-block;font-family:var(--mono);font-size:0.68rem;
+  text-transform:uppercase;letter-spacing:0.08em;padding:0.2rem 0.55rem;
+  border-radius:3px;margin-top:0.9rem;
+}
+.ans-tag.correct{background:rgba(42,157,143,0.1);color:#a7ece2;border:1px solid rgba(42,157,143,0.25);}
+.ans-tag.wrong{background:rgba(231,111,81,0.08);color:#ffb3a1;border:1px solid rgba(231,111,81,0.2);}
+.ans-tag.partial{background:rgba(232,196,106,0.08);color:#f5e0a0;border:1px solid rgba(232,196,106,0.2);}
+.ans-explain{font-size:0.88rem;color:var(--muted);margin-top:0.6rem;line-height:1.6;}
+
+/* ── Feynman word counter ── */
+.feynman-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;}
+.word-count{font-family:var(--mono);font-size:0.72rem;color:var(--muted);}
+.word-count.ok{color:var(--green);}
+
+/* ── Submit button ── */
+.submit-area{text-align:center;margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border);}
+#submit-btn{
+  background:var(--text);color:var(--bg);
+  border:none;padding:1rem 3rem;
+  font-family:var(--sans);font-weight:700;font-size:1rem;
+  border-radius:4px;cursor:pointer;transition:all 0.2s;
+  letter-spacing:0.02em;
+}
+#submit-btn:hover{background:#fff;box-shadow:0 4px 20px rgba(255,255,255,0.12);}
+
+/* ── Results panel ── */
+#results-panel{display:none;}
+.score-display{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:3rem 2rem;text-align:center;margin-bottom:2rem;
+}
+.score-number{font-family:var(--serif);font-size:5rem;line-height:1;margin-bottom:0.5rem;}
+.score-number.pass{color:var(--green);}
+.score-number.fail{color:var(--red);}
+.score-denom{font-family:var(--mono);font-size:1rem;color:var(--muted);}
+.score-verdict{font-family:var(--mono);font-size:0.78rem;text-transform:uppercase;letter-spacing:0.12em;margin-top:1rem;}
+.score-verdict.pass{color:var(--green);}
+.score-verdict.fail{color:var(--red);}
+
+.result-rows{margin-top:2rem;}
+.result-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0.7rem 0;border-bottom:1px solid var(--border);
+  font-size:0.9rem;
+}
+.result-row:last-child{border-bottom:none;}
+.result-q{color:var(--muted);font-size:0.88rem;}
+.result-pts{font-family:var(--mono);font-size:0.88rem;}
+.result-pts.full{color:var(--green);}
+.result-pts.partial{color:var(--accent);}
+.result-pts.zero{color:var(--red);}
+
+.feynman-result{margin-top:1.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:1.5rem;}
+.feynman-result-title{font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:1rem;}
+.keyword-check{display:flex;align-items:flex-start;gap:0.75rem;margin-bottom:0.75rem;font-size:0.9rem;}
+.kw-dot{width:8px;height:8px;border-radius:50%;margin-top:0.35rem;flex-shrink:0;}
+.kw-dot.found{background:var(--green);}
+.kw-dot.missing{background:var(--red);}
+.kw-text{color:var(--muted);line-height:1.5;}
+.kw-text strong{color:var(--text);}
+
+hr.div{border:none;border-top:1px solid var(--border);margin:2.5rem 0;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.fadein{animation:fadein 0.4s ease forwards;}
+</style>
+</head>
+<body>
+
+<!-- ── TIMER HUD ── -->
+<div id="timer-hud">10:00</div>
+
+<div class="container">
+
+  <!-- ── EXAM HEADER ── -->
+  <div class="exam-header">
+    <div class="layer-tag">Lesson 13 · Capstone Examination</div>
+    <h1>Probability, Sampling<br>& Entropy</h1>
+    <p style="color:var(--muted);font-size:0.95rem;margin-top:0.75rem;">No references. No scaffolding. You are deploying.</p>
+    <div class="exam-meta">
+      <div class="meta-item"><span class="meta-label">Time Limit</span><span class="meta-val">10 minutes</span></div>
+      <div class="meta-item"><span class="meta-label">Questions</span><span class="meta-val">12 + Feynman</span></div>
+      <div class="meta-item"><span class="meta-label">Max Score</span><span class="meta-val">200 pts</span></div>
+      <div class="meta-item"><span class="meta-label">Passing</span><span class="meta-val">160 / 200</span></div>
+      <div class="meta-item"><span class="meta-label">Auto-submit</span><span class="meta-val">On expiry</span></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       QUESTIONS
+  ══════════════════════════════════════ -->
+  <div id="exam-body">
+
+    <!-- Q1 — bool, 12pts -->
+    <div class="q-block" id="qb-0">
+      <div class="q-header">
+        <span class="q-num">Question 01</span>
+        <span class="q-pts">12 pts</span>
+      </div>
+      <div class="q-text">As temperature T approaches 0, the sampling process converges to greedy decoding — always selecting the single highest-probability token.</div>
+      <div class="bool-row">
+        <button class="bool-btn" onclick="answerBool(0, true, this)">True</button>
+        <button class="bool-btn" onclick="answerBool(0, false, this)">False</button>
+      </div>
+      <div id="atag-0"></div>
+    </div>
+
+    <!-- Q2 — bool, 12pts -->
+    <div class="q-block" id="qb-1">
+      <div class="q-header">
+        <span class="q-num">Question 02</span>
+        <span class="q-pts">12 pts</span>
+      </div>
+      <div class="q-text">In top-p sampling, the nucleus is LARGER (more tokens included) when the model is uncertain and SMALLER when the model is confident. This adaptive behavior is automatic — it follows directly from the definition of cumulative probability.</div>
+      <div class="bool-row">
+        <button class="bool-btn" onclick="answerBool(1, true, this)">True</button>
+        <button class="bool-btn" onclick="answerBool(1, false, this)">False</button>
+      </div>
+      <div id="atag-1"></div>
+    </div>
+
+    <!-- Q3 — compute, 12pts -->
+    <div class="q-block" id="qb-2">
+      <div class="q-header">
+        <span class="q-num">Question 03</span>
+        <span class="q-pts">12 pts</span>
+      </div>
+      <div class="q-text">The CCP Voice DNA uses temperature T = 0.75. A raw logit score z = 6.0 is output by the unembedding matrix. Compute the temperature-scaled logit z′.</div>
+      <div class="q-sub">z′ = z / T. Give your answer as a decimal.</div>
+      <div class="input-row">
+        <input type="text" id="qi-2" class="input-field" placeholder="z′ = ?">
+        <button class="lock-btn" onclick="answerText(2, this)">Lock</button>
+      </div>
+      <div id="atag-2"></div>
+    </div>
+
+    <!-- Q4 — bool, 12pts -->
+    <div class="q-block" id="qb-3">
+      <div class="q-header">
+        <span class="q-num">Question 04</span>
+        <span class="q-pts">12 pts</span>
+      </div>
+      <div class="q-text">KL divergence KL(π_θ ‖ π_ref) in GRPO measures how far the trained model has drifted from its reference model — and acts as the tether that prevents reward hacking during training.</div>
+      <div class="bool-row">
+        <button class="bool-btn" onclick="answerBool(3, true, this)">True</button>
+        <button class="bool-btn" onclick="answerBool(3, false, this)">False</button>
+      </div>
+      <div id="atag-3"></div>
+    </div>
+
+    <!-- Q5 — text, 12pts -->
+    <div class="q-block" id="qb-4">
+      <div class="q-header">
+        <span class="q-num">Question 05</span>
+        <span class="q-pts">12 pts</span>
+      </div>
+      <div class="q-text">At entropy H = 1.5 nats, what is the approximate effective number of viable tokens the model is choosing between?</div>
+      <div class="q-sub">Use the formula: effective tokens = e^H. Round to one decimal place.</div>
+      <div class="input-row">
+        <input type="text" id="qi-4" class="input-field" placeholder="≈ ?">
+        <button class="lock-btn" onclick="answerText(4, this)">Lock</button>
+      </div>
+      <div id="atag-4"></div>
+    </div>
+
+    <!-- Q6 — bool, 12pts -->
+    <div class="q-block" id="qb-5">
+      <div class="q-header">
+        <span class="q-num">Question 06</span>
+        <span class="q-pts">12 pts</span>
+      </div>
+      <div class="q-text">In the CCP inference pipeline, the entropy check occurs AFTER the softmax step but BEFORE the top-p filter. The pipeline sequence is: softmax → entropy check → top-p → sample.</div>
+      <div class="bool-row">
+        <button class="bool-btn" onclick="answerBool(5, true, this)">True</button>
+        <button class="bool-btn" onclick="answerBool(5, false, this)">False</button>
+      </div>
+      <div id="atag-5"></div>
+    </div>
+
+    <!-- Q7 — bool, 12pts -->
+    <div class="q-block" id="qb-6">
+      <div class="q-header">
+        <span class="q-num">Question 07</span>
+        <span class="q-pts">12 pts</span>
+      </div>
+      <div class="q-text">In RLKV cache compression, attention heads with LOW entropy should be PROTECTED from compression. A head with H ≈ 0.2 carries specific, non-redundant information that cannot be inferred from other heads.</div>
+      <div class="bool-row">
+        <button class="bool-btn" onclick="answerBool(6, true, this)">True</button>
+        <button class="bool-btn" onclick="answerBool(6, false, this)">False</button>
+      </div>
+      <div id="atag-6"></div>
+    </div>
+
+    <!-- Q8 — text, 12pts -->
+    <div class="q-block" id="qb-7">
+      <div class="q-header">
+        <span class="q-num">Question 08</span>
+        <span class="q-pts">12 pts</span>
+      </div>
+      <div class="q-text">Before GRPO training, entropy variance across attention heads is low (σ²_H ≈ 0.3). After GRPO training, what happens to this variance — and what does the change represent architecturally?</div>
+      <div class="q-sub">Two words are sufficient: what happens to the variance, and the one-word architectural term for this change.</div>
+      <div class="input-row">
+        <input type="text" id="qi-7" class="input-field input-wide" placeholder="Variance ___, representing ___">
+        <button class="lock-btn" onclick="answerText(7, this)">Lock</button>
+      </div>
+      <div id="atag-7"></div>
+    </div>
+
+    <!-- Q9 — bool, 12pts -->
+    <div class="q-block" id="qb-8">
+      <div class="q-header">
+        <span class="q-num">Question 09</span>
+        <span class="q-pts">12 pts</span>
+      </div>
+      <div class="q-text">CCV steering is 3–5× more efficient at HIGH-entropy positions than at low-entropy positions, because the softmax is in its linear regime when the distribution is flat — and a small perturbation to the logits produces a large relative shift in probabilities.</div>
+      <div class="bool-row">
+        <button class="bool-btn" onclick="answerBool(8, true, this)">True</button>
+        <button class="bool-btn" onclick="answerBool(8, false, this)">False</button>
+      </div>
+      <div id="atag-8"></div>
+    </div>
+
+    <!-- Q10 — compute, 19pts -->
+    <div class="q-block" id="qb-9">
+      <div class="q-header">
+        <span class="q-num">Question 10</span>
+        <span class="q-pts">19 pts</span>
+      </div>
+      <div class="q-text">The repetition penalty of 1.15 multiplies any previously generated token's logit by 1 / 1.15 before softmax. What is this factor to two decimal places?</div>
+      <div class="q-sub">Round to 2 decimal places.</div>
+      <div class="input-row">
+        <input type="text" id="qi-9" class="input-field" placeholder="0.??">
+        <button class="lock-btn" onclick="answerText(9, this)">Lock</button>
+      </div>
+      <div id="atag-9"></div>
+    </div>
+
+    <!-- Q11 — text, 19pts -->
+    <div class="q-block" id="qb-10">
+      <div class="q-header">
+        <span class="q-num">Question 11</span>
+        <span class="q-pts">19 pts</span>
+      </div>
+      <div class="q-text">The Thinking Sparks paper (#52) reports that GRPO training DIFFERENTIATES the entropy landscape across attention heads. What is the single number that captures the degree of architectural specialization — and what is its approximate value after training?</div>
+      <div class="q-sub">Name the statistic and give the post-training value from the lesson.</div>
+      <div class="input-row">
+        <input type="text" id="qi-10" class="input-field input-wide" placeholder="Statistic: ___, Value: ___">
+        <button class="lock-btn" onclick="answerText(10, this)">Lock</button>
+      </div>
+      <div id="atag-10"></div>
+    </div>
+
+    <!-- Q12 — bool, 19pts -->
+    <div class="q-block" id="qb-11">
+      <div class="q-header">
+        <span class="q-num">Question 12</span>
+        <span class="q-pts">19 pts</span>
+      </div>
+      <div class="q-text">The CCP's optimal temperature for the opening line of a coaching response (tokens 1–20) is LOWER than the temperature used for the core content body (tokens 21–200). This is because Voice DNA consistency is the priority at the opening — lower T amplifies the probability ratio between the model's trained signature pattern and alternative openings.</div>
+      <div class="bool-row">
+        <button class="bool-btn" onclick="answerBool(11, true, this)">True</button>
+        <button class="bool-btn" onclick="answerBool(11, false, this)">False</button>
+      </div>
+      <div id="atag-11"></div>
+    </div>
+
+    <hr class="div">
+
+    <!-- Q13 — FEYNMAN COMPRESSION, 35pts -->
+    <div class="q-block" id="qb-12">
+      <div class="q-header">
+        <span class="q-num">Question 13 — Feynman Compression</span>
+        <span class="q-pts">35 pts</span>
+      </div>
+      <div class="q-text">Explain the complete deployment pipeline: how does a trained model go from hidden state to a sampled token, and how does entropy determine when and where CCV steering is injected? Write as if teaching someone who knows the math but has never seen the inference pipeline.</div>
+      <div class="q-sub">Minimum 60 words. Graded on structural fidelity — three load-bearing concepts must appear.</div>
+      <div class="feynman-meta">
+        <span style="font-family:var(--mono);font-size:0.7rem;color:#444;">60 word minimum</span>
+        <span class="word-count" id="wc-display">0 words</span>
+      </div>
+      <textarea id="qi-12" class="input-field" placeholder="The model outputs a distribution, not a token…" oninput="countWords()"></textarea>
+      <div style="margin-top:1rem;">
+        <button class="lock-btn" onclick="answerFeynman()">Submit Answer</button>
+      </div>
+      <div id="atag-12"></div>
+    </div>
+
+  </div><!-- /exam-body -->
+
+  <!-- ── SUBMIT ── -->
+  <div class="submit-area" id="submit-area">
+    <p style="font-family:var(--mono);font-size:0.78rem;color:var(--muted);margin-bottom:1.5rem;">All answers are final after locking. Exam auto-submits when timer expires.</p>
+    <button id="submit-btn" onclick="submitExam()">Submit Exam</button>
+  </div>
+
+  <!-- ── RESULTS PANEL ── -->
+  <div id="results-panel"></div>
+
+</div><!-- /container -->
+
+<script>
+/* ══════════════════════════════════════════════════════
+   EXAM STATE
+══════════════════════════════════════════════════════ */
+const TOTAL_QUESTIONS = 13;
+const PASSING = 160;
+
+// Question data: [type, points, correctAnswer, explanation, acceptFn?]
+// type: 'bool' | 'text' | 'feynman'
+const Q = [
+  // Q0: bool 12pts
+  { type:'bool', pts:12, ans:true,
+    exp:'Correct. As T→0, z/T→∞ for the top token and the softmax denominator is dominated entirely by e^(z_max/T). The distribution collapses to a spike on the argmax token — pure greedy decoding.' },
+
+  // Q1: bool 12pts
+  { type:'bool', pts:12, ans:true,
+    exp:'Correct. When the model is uncertain, probability mass is spread across many tokens — reaching the p=0.93 cumulative threshold requires including more of them. When the model is confident, a single token dominates and the threshold is reached quickly. Adaptive nucleus size is a direct consequence of top-p\'s definition.' },
+
+  // Q2: compute 12pts — z=6, T=0.75, z'=8
+  { type:'text', pts:12,
+    accept: v => { const n = parseFloat(v); return !isNaN(n) && Math.abs(n - 8.0) < 0.05; },
+    exp:'z′ = 6.0 / 0.75 = 8.0. Temperature division amplifies the gap between competing logits: a 33% reduction in T from 1.0 to 0.75 multiplies every logit by 1/0.75 = 1.33×. The softmax probability ratio between any two tokens scales as e^(Δz/T) — larger logit gaps produce exponentially more dominant top tokens.' },
+
+  // Q3: bool 12pts
+  { type:'bool', pts:12, ans:true,
+    exp:'Correct. KL(π_θ ‖ π_ref) = Σ π_θ(a) log(π_θ(a)/π_ref(a)) quantifies the information cost of replacing the reference distribution with the trained one. In GRPO, this term appears as a penalty in the reward: the optimization maximizes task reward MINUS β·KL, preventing the model from exploiting the reward signal while drifting arbitrarily far from the base policy.' },
+
+  // Q4: compute 12pts — e^1.5 ≈ 4.5
+  { type:'text', pts:12,
+    accept: v => { const n = parseFloat(v); return !isNaN(n) && n >= 4.3 && n <= 4.7; },
+    exp:'e^1.5 ≈ 4.48 ≈ 4.5 effective tokens. This is the entropy-to-diversity formula: H = log(n) for a uniform distribution over n outcomes. Inverting: n = e^H. At the CCP\'s CCV injection threshold H > 1.5, the model is choosing between roughly 4–5 legitimate alternatives — the meaningful decision point where steering shifts the outcome.' },
+
+  // Q5: bool 12pts
+  { type:'bool', pts:12, ans:true,
+    exp:'Correct. The full step 7 sequence in the CCP pipeline is: [6] softmax → [7] entropy check (H computed from softmax output p) → CCV injection if H > 1.5 → [8] top-p filter → [9] sample. Entropy cannot be computed before softmax (it requires the probability distribution p, not raw logits z). It precedes top-p because steering modifies the distribution before truncation.' },
+
+  // Q6: bool 12pts
+  { type:'bool', pts:12, ans:true,
+    exp:'Correct. RLKV empirically discovered this through RL reward gradients — but the underlying reason is information-theoretic. Low H means the head attends deterministically to 1–2 specific tokens: it carries unique, irreplaceable information about particular token relationships. Compressing this head destroys a specific reasoning pathway. High-H heads spread attention broadly; their contribution is averaged and recoverable from other heads.' },
+
+  // Q7: text 12pts — "increases" and "specialization"
+  { type:'text', pts:12,
+    accept: v => { const l = v.toLowerCase(); return (l.includes('increas') || l.includes('rises') || l.includes('higher') || l.includes('grows')) && (l.includes('specializ') || l.includes('differentiat')); },
+    exp:'Variance INCREASES (σ²_H rises from ≈0.3 to ≈1.2), representing architectural SPECIALIZATION. Some heads collapse to H≈0.3 (Thinking Sparks — focused, deterministic retrievers). Others expand to H≈1.8 (generic integrators). The growing spread across heads is the quantitative signature of specialization: a homogeneous system of similar heads becoming a heterogeneous system of specialists and generalists.' },
+
+  // Q8: bool 12pts
+  { type:'bool', pts:12, ans:true,
+    exp:'Correct. At high entropy, p_i ≈ 1/n for all tokens (flat distribution). The softmax Jacobian ∂p_i/∂z_j ≈ (1/n)(δ_ij − 1/n) is approximately uniform. A steering vector δh produces logit perturbation δz = W_unembed·δh, and the resulting Δp_i = p_i(δz_i − mean(δz)) is large in RELATIVE terms because p_i is small. At low entropy, p₁≈1 and the softmax is saturated — the same δh moves the dominant token\'s probability imperceptibly.' },
+
+  // Q9: compute 19pts — 1/1.15 = 0.87
+  { type:'text', pts:19,
+    accept: v => { const n = parseFloat(v); return !isNaN(n) && Math.abs(n - 0.87) < 0.015; },
+    exp:'1 / 1.15 ≈ 0.87. The repetition penalty applies a 13% reduction to any already-generated token\'s logit. In softmax terms, this reduces that token\'s probability by approximately e^(−0.13·Δz) relative to competitors. It is strong enough to break 2–3 word loops while being gentle enough to permit intentional repetition of coaching-relevant phrases.' },
+
+  // Q10: text 19pts — entropy variance, σ²_H ≈ 1.2
+  { type:'text', pts:19,
+    accept: v => { const l = v.toLowerCase(); return (l.includes('varian') || l.includes('sigma') || l.includes('σ')) && (l.includes('1.2') || l.includes('1.2')); },
+    exp:'The statistic is entropy VARIANCE (σ²_H), and its post-training value is approximately 1.2 (up from 0.3 before GRPO). This single number captures the degree of head specialization: a larger spread means more differentiation between focused low-H Thinking Sparks heads and broad high-H integrator heads. RLKV later uses this differentiation to decide which heads to protect and which to compress.' },
+
+  // Q11: bool 19pts
+  { type:'bool', pts:19, ans:true,
+    exp:'Correct. CCP temperature schedule: Opening line T=0.6 → Core content T=0.8 → Closing question T=0.7. Lower T at the opening amplifies the probability RATIO between the model\'s Voice DNA signature pattern and competing alternatives — e^(Δz/0.6) vs e^(Δz/0.8) is a 33% larger exponent, producing much stronger Voice DNA lock. The body T=0.8 allows natural variation while maintaining coaching quality.' },
+];
+
+// Feynman keywords — 3 structural load-bearing concepts:
+const FEYNMAN_KEYWORDS = [
+  {
+    key: 'distribution',
+    synonyms: ['distribution', 'probability', 'softmax', 'probabilities'],
+    label: 'Output is a distribution',
+    description: 'The model outputs a PROBABILITY DISTRIBUTION over all vocabulary tokens — not a token directly. Softmax converts raw logit scores into this distribution. Missing this concept means conflating "the model\'s output" with the sampled token.'
+  },
+  {
+    key: 'temperature',
+    synonyms: ['temperature', 'scaling', 'logit', 't=', 'divide', 'reshap'],
+    label: 'Temperature reshapes the distribution',
+    description: 'Temperature divides logits before softmax, geometrically reshaping the distribution — compressing or expanding the probability ratios between tokens. It is not an additive shift; it exponentially amplifies or reduces concentration. Missing this shows the temperature mechanism is not internalized.'
+  },
+  {
+    key: 'entropy',
+    synonyms: ['entropy', 'uncertain', 'flat', 'h >', 'h>', 'high entropy', 'low entropy', 'steer'],
+    label: 'Entropy gates CCV injection',
+    description: 'Entropy H(p) = −Σp·log(p) measures the distribution\'s flatness (uncertainty). High entropy = model is at a branching decision point = CCV steering is maximally effective. Low entropy = model is committed = steering is wasted. The entropy threshold is the real-time diagnostic that determines WHERE to inject steering vectors.'
+  }
+];
+
+const FEYNMAN_MIN_WORDS = 60;
+const FEYNMAN_PTS_FULL = 35;
+const FEYNMAN_PTS_PARTIAL = 20;
+const FEYNMAN_PTS_ZERO = 0;
+
+// State tracking
+const state = {
+  answers: new Array(TOTAL_QUESTIONS).fill(null),
+  locked: new Array(TOTAL_QUESTIONS).fill(false),
+  scores: new Array(TOTAL_QUESTIONS).fill(0),
+};
+
+/* ══════════════════════════════════════════════════════
+   TIMER
+══════════════════════════════════════════════════════ */
+const EXAM_SECONDS = 10 * 60;
+let timeLeft = EXAM_SECONDS;
+let timerInterval;
+
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+function startTimer() {
+  const hud = document.getElementById('timer-hud');
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    hud.textContent = formatTime(timeLeft);
+    if (timeLeft <= 120) hud.classList.add('warn');
+    if (timeLeft <= 30) { hud.classList.remove('warn'); hud.classList.add('critical'); }
+    if (timeLeft <= 0) { clearInterval(timerInterval); submitExam(); }
+  }, 1000);
+}
+
+/* ══════════════════════════════════════════════════════
+   ANSWER HANDLERS
+══════════════════════════════════════════════════════ */
+function answerBool(idx, val, btn) {
+  if (state.locked[idx]) return;
+  state.locked[idx] = true;
+  state.answers[idx] = val;
+
+  const qData = Q[idx];
+  const correct = val === qData.ans;
+  state.scores[idx] = correct ? qData.pts : 0;
+
+  // Style buttons
+  const row = document.querySelectorAll(`#qb-${idx} .bool-btn`);
+  row.forEach(b => {
+    b.disabled = true;
+    b.classList.add('locked-neutral');
+  });
+  btn.classList.remove('locked-neutral');
+  btn.classList.add(correct ? 'locked-right' : 'locked-wrong');
+
+  // State tag + explanation
+  showTag(idx, correct ? 'correct' : 'wrong', correct ? `+${qData.pts} pts` : '0 pts — ' + qData.exp.split('.')[0] + '.', qData.exp);
+  document.getElementById(`qb-${idx}`).classList.add(correct ? 'answered-correct' : 'answered-wrong');
+}
+
+function answerText(idx, btn) {
+  const inp = document.getElementById(`qi-${idx}`);
+  const val = inp.value.trim();
+  if (!val || state.locked[idx]) return;
+  state.locked[idx] = true;
+  state.answers[idx] = val;
+  inp.disabled = true; btn.disabled = true;
+
+  const qData = Q[idx];
+  const correct = qData.accept(val);
+  state.scores[idx] = correct ? qData.pts : 0;
+
+  showTag(idx, correct ? 'correct' : 'wrong', correct ? `+${qData.pts} pts` : '0 pts', qData.exp);
+  document.getElementById(`qb-${idx}`).classList.add(correct ? 'answered-correct' : 'answered-wrong');
+}
+
+function countWords() {
+  const txt = document.getElementById('qi-12').value.trim();
+  const count = txt === '' ? 0 : txt.split(/\s+/).length;
+  const el = document.getElementById('wc-display');
+  el.textContent = `${count} words`;
+  el.className = 'word-count' + (count >= FEYNMAN_MIN_WORDS ? ' ok' : '');
+}
+
+function answerFeynman() {
+  const inp = document.getElementById('qi-12');
+  const val = inp.value.trim();
+  if (!val || state.locked[12]) return;
+
+  const wordCount = val === '' ? 0 : val.split(/\s+/).length;
+  if (wordCount < FEYNMAN_MIN_WORDS) {
+    showTag(12, 'wrong', 'Minimum 60 words required.', 'Expand your explanation to cover the structural components.');
+    return;
+  }
+
+  state.locked[12] = true;
+  state.answers[12] = val;
+  inp.disabled = true;
+  document.querySelector('#qb-12 .lock-btn').disabled = true;
+
+  // Grade keywords
+  const lc = val.toLowerCase();
+  const found = FEYNMAN_KEYWORDS.map(k => k.synonyms.some(s => lc.includes(s)));
+  const foundCount = found.filter(Boolean).length;
+
+  let pts, tagClass, tagLabel;
+  if (foundCount >= 3) { pts = FEYNMAN_PTS_FULL; tagClass = 'correct'; tagLabel = `+${pts} pts — All 3 structural components present.`; }
+  else if (foundCount === 2) { pts = FEYNMAN_PTS_PARTIAL; tagClass = 'partial'; tagLabel = `+${pts} pts — 2/3 structural components present.`; }
+  else { pts = FEYNMAN_PTS_ZERO; tagClass = 'wrong'; tagLabel = `0 pts — fewer than 2 structural components identified.`; }
+
+  state.scores[12] = pts;
+  state.feynmanFound = found;
+
+  showTag(12, tagClass, tagLabel, '');
+  document.getElementById(`qb-12`).classList.add(tagClass === 'correct' ? 'answered-correct' : tagClass === 'partial' ? 'answered' : 'answered-wrong');
+}
+
+function showTag(idx, cls, label, explain) {
+  const container = document.getElementById(`atag-${idx}`);
+  let html = `<div class="ans-tag ${cls}">${label}</div>`;
+  if (explain && cls !== 'correct') {
+    html += `<div class="ans-explain">${explain}</div>`;
+  }
+  container.innerHTML = html;
+}
+
+/* ══════════════════════════════════════════════════════
+   SUBMIT + RESULTS
+══════════════════════════════════════════════════════ */
+function submitExam() {
+  clearInterval(timerInterval);
+  document.getElementById('timer-hud').textContent = '00:00';
+
+  // Lock any unanswered text/feynman questions
+  for (let i = 0; i < TOTAL_QUESTIONS; i++) {
+    if (!state.locked[i]) {
+      state.scores[i] = 0;
+      state.locked[i] = true;
+      // disable inputs
+      const inp = document.getElementById(`qi-${i}`);
+      if (inp) inp.disabled = true;
+      const bools = document.querySelectorAll(`#qb-${i} .bool-btn`);
+      bools.forEach(b => b.disabled = true);
+      const lockBtn = document.querySelector(`#qb-${i} .lock-btn`);
+      if (lockBtn) lockBtn.disabled = true;
+    }
+  }
+
+  const total = state.scores.reduce((a, b) => a + b, 0);
+  const passed = total >= PASSING;
+
+  // Build results HTML
+  const qLabels = [
+    'T→0 produces greedy decoding',
+    'Top-p nucleus is adaptive',
+    'Temperature scaling computation',
+    'KL divergence prevents reward hacking',
+    'Effective tokens at H=1.5',
+    'Pipeline step order: entropy after softmax',
+    'RLKV: low-entropy heads are protected',
+    'GRPO entropy variance change',
+    'CCV steering efficiency at high entropy',
+    'Repetition penalty factor',
+    'Entropy variance post-training value',
+    'Opening line temperature is lower',
+    'Feynman Compression'
+  ];
+
+  let rowsHTML = '';
+  state.scores.forEach((s, i) => {
+    const maxPts = i < 12 ? Q[i].pts : FEYNMAN_PTS_FULL;
+    const cls = s === maxPts ? 'full' : s > 0 ? 'partial' : 'zero';
+    rowsHTML += `<div class="result-row">
+      <span class="result-q">${String(i+1).padStart(2,'0')} — ${qLabels[i]}</span>
+      <span class="result-pts ${cls}">${s} / ${maxPts}</span>
+    </div>`;
+  });
+
+  // Feynman keyword breakdown
+  let feynmanHTML = '';
+  if (state.feynmanFound) {
+    feynmanHTML = `<div class="feynman-result">
+      <div class="feynman-result-title">Feynman Structural Analysis</div>`;
+    FEYNMAN_KEYWORDS.forEach((k, i) => {
+      const found = state.feynmanFound[i];
+      feynmanHTML += `<div class="keyword-check">
+        <div class="kw-dot ${found ? 'found' : 'missing'}"></div>
+        <div class="kw-text">
+          <strong>${k.label}</strong><br>
+          ${found ? '✓ Present in your explanation.' : `✗ Missing. ${k.description}`}
+        </div>
+      </div>`;
+    });
+    feynmanHTML += `</div>`;
+  } else {
+    feynmanHTML = `<div class="feynman-result">
+      <div class="feynman-result-title">Feynman — Not Submitted</div>
+      <p style="color:var(--muted);font-size:0.88rem;">The Feynman question was not answered. 0 / 35 pts.</p>
+    </div>`;
+  }
+
+  const panel = document.getElementById('results-panel');
+  panel.innerHTML = `
+    <hr class="div">
+    <div class="score-display fadein">
+      <div class="score-number ${passed ? 'pass' : 'fail'}">${total}</div>
+      <div class="score-denom">/ 200</div>
+      <div class="score-verdict ${passed ? 'pass' : 'fail'}">${passed ? '✓ PASSED — Curriculum Complete' : '✗ NOT PASSED — Review Required'}</div>
+      ${passed ? '<p style="color:var(--muted);font-size:0.88rem;margin-top:1rem;">The pipeline is complete. From raw mathematics to production inference. You are deploying.</p>' : `<p style="color:var(--muted);font-size:0.88rem;margin-top:1rem;">Score ${PASSING} or above to pass. Review the missed concepts before reattempting.</p>`}
+    </div>
+    <div class="result-rows">${rowsHTML}</div>
+    ${feynmanHTML}
+  `;
+  panel.style.display = 'block';
+
+  // Scroll to results
+  document.getElementById('submit-area').style.display = 'none';
+  setTimeout(() => panel.scrollIntoView({ behavior:'smooth', block:'start' }), 200);
+}
+
+/* ══════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', startTimer);
+</script>
+</body>
+</html>

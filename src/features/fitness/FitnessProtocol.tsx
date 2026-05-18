@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Play, Check, Clock, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { FitnessPomodoro } from './FitnessPomodoro';
+import { FitnessSession } from './FitnessSession';
 import { API_URL } from '../../lib/api';
 
 type SessionType = 'PUSHUPS' | 'ABS' | 'BICEPS' | 'CARDIO';
@@ -69,7 +69,7 @@ export const FitnessProtocol = () => {
             setActiveSession(existingSession);
             setActiveSessionType(type);
         } else {
-            // Create a temporary session object for the pomodoro timer
+            // Create a temporary session object for the session timer
             // It will be saved when completed
             setActiveSession(null);
             setActiveSessionType(type);
@@ -95,7 +95,7 @@ export const FitnessProtocol = () => {
                     sessionType: activeSessionType,
                     totalReps: data.totalReps,
                     perceivedExertion: data.perceivedExertion,
-                    durationMinutes: 25,
+                    durationMinutes: 15, // Era 3 Default Baseline
                     status: 'COMPLETED'
                 })
             });
@@ -117,7 +117,7 @@ export const FitnessProtocol = () => {
                 <div className="flex justify-between items-center mb-3">
                     <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-concrete flex items-center gap-2">
                         <Clock size={12} className="text-gold" />
-                        Fitness Protocol (4×25)
+                        Fitness Protocol
                     </span>
                     <div className="flex items-center gap-2">
                         {summary && (
@@ -179,9 +179,9 @@ export const FitnessProtocol = () => {
                 </div>
             </div>
 
-            {/* Full-Screen Pomodoro Timer */}
+            {/* Full-Screen Session Timer */}
             {activeSessionType && (
-                <FitnessPomodoro
+                <FitnessSession
                     sessionType={activeSessionType}
                     session={activeSession}
                     onClose={() => {

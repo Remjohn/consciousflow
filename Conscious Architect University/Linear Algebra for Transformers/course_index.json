@@ -1,0 +1,1610 @@
+{
+  "courseTitle": "Linear Algebra for Transformers",
+  "generatedBy": "build_offline_pwa.py",
+  "defaultDoc": "Course_Syllabus.md",
+  "lessons": [
+    {
+      "id": "Lesson_01_Vectors",
+      "title": "Lesson 01 Vectors",
+      "path": "Lesson_01_Vectors",
+      "defaultDoc": "Lesson_01_Vectors/1_Exposure.html",
+      "files": [
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_01_Vectors/1_Exposure.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_01_Vectors/1_Exposure.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_01_Vectors/2_Mechanistic.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_01_Vectors/2_Mechanistic.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic Notes",
+          "path": "Lesson_01_Vectors/2_Mechanistic_Notes.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": false
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_01_Vectors/3_Analogy.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_01_Vectors/3_Analogy.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_01_Vectors/4_Master.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_01_Vectors/4_Master.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "Chapter Syllabus",
+          "path": "Lesson_01_Vectors/Chapter_Syllabus.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": false
+        }
+      ]
+    },
+    {
+      "id": "Lesson_02_Dot_Product",
+      "title": "Lesson 02 Dot Product",
+      "path": "Lesson_02_Dot_Product",
+      "defaultDoc": "Lesson_02_Dot_Product/1_Exposure.html",
+      "files": [
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_02_Dot_Product/1_Exposure.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_02_Dot_Product/1_Exposure.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_02_Dot_Product/2_Mechanistic.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_02_Dot_Product/2_Mechanistic.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_02_Dot_Product/3_Analogy.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_02_Dot_Product/3_Analogy.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_02_Dot_Product/4_Master.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_02_Dot_Product/4_Master.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "Chapter Syllabus",
+          "path": "Lesson_02_Dot_Product/Chapter_Syllabus.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": false
+        }
+      ]
+    },
+    {
+      "id": "Lesson_03_Linear_Combinations_Spans",
+      "title": "Lesson 03 Linear Combinations Spans",
+      "path": "Lesson_03_Linear_Combinations_Spans",
+      "defaultDoc": "Lesson_03_Linear_Combinations_Spans/1_Exposure.html",
+      "files": [
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_03_Linear_Combinations_Spans/1_Exposure.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_03_Linear_Combinations_Spans/1_Exposure.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_03_Linear_Combinations_Spans/2_Mechanistic.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_03_Linear_Combinations_Spans/2_Mechanistic.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_03_Linear_Combinations_Spans/3_Analogy.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_03_Linear_Combinations_Spans/3_Analogy.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_03_Linear_Combinations_Spans/4_Master.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_03_Linear_Combinations_Spans/4_Master.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "Chapter Syllabus",
+          "path": "Lesson_03_Linear_Combinations_Spans/Chapter_Syllabus.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": false
+        }
+      ]
+    },
+    {
+      "id": "Lesson_04_Linear_Transformations",
+      "title": "Lesson 04 Linear Transformations",
+      "path": "Lesson_04_Linear_Transformations",
+      "defaultDoc": "Lesson_04_Linear_Transformations/1_Exposure.html",
+      "files": [
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_04_Linear_Transformations/1_Exposure.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_04_Linear_Transformations/1_Exposure.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_04_Linear_Transformations/2_Mechanistic.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_04_Linear_Transformations/2_Mechanistic.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_04_Linear_Transformations/3_Analogy.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_04_Linear_Transformations/3_Analogy.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_04_Linear_Transformations/4_Master.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_04_Linear_Transformations/4_Master.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "Chapter Syllabus",
+          "path": "Lesson_04_Linear_Transformations/Chapter_Syllabus.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": false
+        }
+      ]
+    },
+    {
+      "id": "Lesson_05_Matrix_Multiplication",
+      "title": "Lesson 05 Matrix Multiplication",
+      "path": "Lesson_05_Matrix_Multiplication",
+      "defaultDoc": "Lesson_05_Matrix_Multiplication/1_Exposure.html",
+      "files": [
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_05_Matrix_Multiplication/1_Exposure.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_05_Matrix_Multiplication/1_Exposure.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_05_Matrix_Multiplication/2_Mechanistic.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_05_Matrix_Multiplication/2_Mechanistic.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_05_Matrix_Multiplication/3_Analogy.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_05_Matrix_Multiplication/3_Analogy.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_05_Matrix_Multiplication/4_Master.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_05_Matrix_Multiplication/4_Master.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "Chapter Syllabus",
+          "path": "Lesson_05_Matrix_Multiplication/Chapter_Syllabus.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": false
+        }
+      ]
+    },
+    {
+      "id": "Lesson_06_Orthogonal_Projections",
+      "title": "Lesson 06 Orthogonal Projections",
+      "path": "Lesson_06_Orthogonal_Projections",
+      "defaultDoc": "Lesson_06_Orthogonal_Projections/1_Exposure.html",
+      "files": [
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_06_Orthogonal_Projections/1_Exposure.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_06_Orthogonal_Projections/1_Exposure.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_06_Orthogonal_Projections/2_Mechanistic.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_06_Orthogonal_Projections/2_Mechanistic.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_06_Orthogonal_Projections/3_Analogy.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_06_Orthogonal_Projections/3_Analogy.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_06_Orthogonal_Projections/4_Master.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_06_Orthogonal_Projections/4_Master.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "Chapter Syllabus",
+          "path": "Lesson_06_Orthogonal_Projections/Chapter_Syllabus.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": false
+        }
+      ]
+    },
+    {
+      "id": "Lesson_07_Change_of_Basis",
+      "title": "Lesson 07 Change of Basis",
+      "path": "Lesson_07_Change_of_Basis",
+      "defaultDoc": "Lesson_07_Change_of_Basis/1_Exposure.html",
+      "files": [
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_07_Change_of_Basis/1_Exposure.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_07_Change_of_Basis/1_Exposure.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_07_Change_of_Basis/2_Mechanistic.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_07_Change_of_Basis/2_Mechanistic.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_07_Change_of_Basis/3_Analogy.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_07_Change_of_Basis/3_Analogy.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_07_Change_of_Basis/4_Master.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_07_Change_of_Basis/4_Master.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "Chapter Syllabus",
+          "path": "Lesson_07_Change_of_Basis/Chapter_Syllabus.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": false
+        }
+      ]
+    },
+    {
+      "id": "Lesson_08_Eigen_Everything",
+      "title": "Lesson 08 Eigen Everything",
+      "path": "Lesson_08_Eigen_Everything",
+      "defaultDoc": "Lesson_08_Eigen_Everything/1_Exposure.html",
+      "files": [
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_08_Eigen_Everything/1_Exposure.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_08_Eigen_Everything/1_Exposure.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_08_Eigen_Everything/2_Mechanistic.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_08_Eigen_Everything/2_Mechanistic.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_08_Eigen_Everything/3_Analogy.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_08_Eigen_Everything/3_Analogy.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_08_Eigen_Everything/4_Master.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_08_Eigen_Everything/4_Master.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "Chapter Syllabus",
+          "path": "Lesson_08_Eigen_Everything/Chapter_Syllabus.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": false
+        }
+      ]
+    },
+    {
+      "id": "Lesson_09_Clustering",
+      "title": "Lesson 09 Clustering",
+      "path": "Lesson_09_Clustering",
+      "defaultDoc": "Lesson_09_Clustering/1_Exposure.html",
+      "files": [
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_09_Clustering/1_Exposure.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_09_Clustering/1_Exposure.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_09_Clustering/2_Mechanistic.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_09_Clustering/2_Mechanistic.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_09_Clustering/3_Analogy.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_09_Clustering/3_Analogy.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_09_Clustering/4_Master.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_09_Clustering/4_Master.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "Chapter Syllabus",
+          "path": "Lesson_09_Clustering/Chapter_Syllabus.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": false
+        }
+      ]
+    },
+    {
+      "id": "Lesson_1.5_Trigonometry",
+      "title": "Lesson 1.5 Trigonometry",
+      "path": "Lesson_1.5_Trigonometry",
+      "defaultDoc": "Lesson_1.5_Trigonometry/1_Exposure.html",
+      "files": [
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_1.5_Trigonometry/1_Exposure.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_1.5_Trigonometry/1_Exposure.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_1.5_Trigonometry/2_Mechanistic.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_1.5_Trigonometry/2_Mechanistic.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_1.5_Trigonometry/3_Analogy.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_1.5_Trigonometry/3_Analogy.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_1.5_Trigonometry/4_Master.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_1.5_Trigonometry/4_Master.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "Chapter Syllabus",
+          "path": "Lesson_1.5_Trigonometry/Chapter_Syllabus.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": false
+        }
+      ]
+    },
+    {
+      "id": "Lesson_10_Applied_Clustering",
+      "title": "Lesson 10 Applied Clustering",
+      "path": "Lesson_10_Applied_Clustering",
+      "defaultDoc": "Lesson_10_Applied_Clustering/1_Exposure.html",
+      "files": [
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_10_Applied_Clustering/1_Exposure.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_10_Applied_Clustering/1_Exposure.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_10_Applied_Clustering/2_Mechanistic.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_10_Applied_Clustering/2_Mechanistic.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_10_Applied_Clustering/3_Analogy.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_10_Applied_Clustering/3_Analogy.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_10_Applied_Clustering/4_Master.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_10_Applied_Clustering/4_Master.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "Chapter Syllabus",
+          "path": "Lesson_10_Applied_Clustering/Chapter_Syllabus.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": false
+        }
+      ]
+    },
+    {
+      "id": "Lesson_11_Gradients_Sensitivity",
+      "title": "Lesson 11 Gradients Sensitivity",
+      "path": "Lesson_11_Gradients_Sensitivity",
+      "defaultDoc": "Lesson_11_Gradients_Sensitivity/1_Exposure.html",
+      "files": [
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_11_Gradients_Sensitivity/1_Exposure.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_11_Gradients_Sensitivity/1_Exposure.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_11_Gradients_Sensitivity/2_Mechanistic.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_11_Gradients_Sensitivity/2_Mechanistic.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_11_Gradients_Sensitivity/3_Analogy.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_11_Gradients_Sensitivity/3_Analogy.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_11_Gradients_Sensitivity/4_Master.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_11_Gradients_Sensitivity/4_Master.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "Chapter Syllabus",
+          "path": "Lesson_11_Gradients_Sensitivity/Chapter_Syllabus.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": false
+        }
+      ]
+    },
+    {
+      "id": "Lesson_12_Optimization_Policy_Learning",
+      "title": "Lesson 12 Optimization Policy Learning",
+      "path": "Lesson_12_Optimization_Policy_Learning",
+      "defaultDoc": "Lesson_12_Optimization_Policy_Learning/1_Exposure.html",
+      "files": [
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_12_Optimization_Policy_Learning/1_Exposure.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_12_Optimization_Policy_Learning/1_Exposure.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_12_Optimization_Policy_Learning/2_Mechanistic.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_12_Optimization_Policy_Learning/2_Mechanistic.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_12_Optimization_Policy_Learning/3_Analogy.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_12_Optimization_Policy_Learning/3_Analogy.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_12_Optimization_Policy_Learning/4_Master.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_12_Optimization_Policy_Learning/4_Master.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "Chapter Syllabus",
+          "path": "Lesson_12_Optimization_Policy_Learning/Chapter_Syllabus.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": false
+        }
+      ]
+    },
+    {
+      "id": "Lesson_13_Probability_Sampling_Entropy",
+      "title": "Lesson 13 Probability Sampling Entropy",
+      "path": "Lesson_13_Probability_Sampling_Entropy",
+      "defaultDoc": "Lesson_13_Probability_Sampling_Entropy/1_Exposure.html",
+      "files": [
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_13_Probability_Sampling_Entropy/1_Exposure.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "1. Exposure",
+          "path": "Lesson_13_Probability_Sampling_Entropy/1_Exposure.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_13_Probability_Sampling_Entropy/2_Mechanistic.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "2. Mechanistic",
+          "path": "Lesson_13_Probability_Sampling_Entropy/2_Mechanistic.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_13_Probability_Sampling_Entropy/3_Analogy.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "3. Analogy",
+          "path": "Lesson_13_Probability_Sampling_Entropy/3_Analogy.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_13_Probability_Sampling_Entropy/4_Master.html",
+          "kind": "html",
+          "nativePreferred": true,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "4. Master",
+          "path": "Lesson_13_Probability_Sampling_Entropy/4_Master.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": true
+        },
+        {
+          "label": "Chapter Syllabus",
+          "path": "Lesson_13_Probability_Sampling_Entropy/Chapter_Syllabus.md",
+          "kind": "md",
+          "nativePreferred": false,
+          "hasHtmlPeer": false
+        }
+      ]
+    }
+  ],
+  "rootDocs": [
+    {
+      "label": "Course Syllabus",
+      "path": "Course_Syllabus.md",
+      "kind": "md",
+      "nativePreferred": false
+    },
+    {
+      "label": "learning framework",
+      "path": "learning_framework.html",
+      "kind": "html",
+      "nativePreferred": true
+    },
+    {
+      "label": "Omar Khattab on the State of DSPy",
+      "path": "Omar Khattab on the State of DSPy.md",
+      "kind": "md",
+      "nativePreferred": false
+    },
+    {
+      "label": "Recursive Language Models w  Alex Zhang",
+      "path": "Recursive Language Models w_ Alex Zhang.md",
+      "kind": "md",
+      "nativePreferred": false
+    },
+    {
+      "label": "Reinforcement Learning and calculus in our Program",
+      "path": "Reinforcement Learning and calculus in our Program.md",
+      "kind": "md",
+      "nativePreferred": false
+    },
+    {
+      "label": "RL for Agents Workshop - Deep Dive on Training Agents with RL and Open Source",
+      "path": "RL for Agents Workshop - Deep Dive on Training Agents with RL and Open Source.md",
+      "kind": "md",
+      "nativePreferred": false
+    },
+    {
+      "label": "SKILL",
+      "path": "SKILL.md",
+      "kind": "md",
+      "nativePreferred": false
+    },
+    {
+      "label": "vectors learning",
+      "path": "vectors_learning.html",
+      "kind": "html",
+      "nativePreferred": true
+    },
+    {
+      "label": "🔵 PROMPT 1 — EXPOSURE LAYER",
+      "path": "🔵 PROMPT 1 — EXPOSURE LAYER.md",
+      "kind": "md",
+      "nativePreferred": false
+    },
+    {
+      "label": "🚀 PROMPT 4 - MASTER PROMPT",
+      "path": "🚀 PROMPT 4 - MASTER PROMPT.md",
+      "kind": "md",
+      "nativePreferred": false
+    },
+    {
+      "label": "🟡 PROMPT 2 — MECHANISTIC   TRANSFORMER LAYER",
+      "path": "🟡 PROMPT 2 — MECHANISTIC _ TRANSFORMER LAYER.md",
+      "kind": "md",
+      "nativePreferred": false
+    },
+    {
+      "label": "🟣 PROMPT 3 — ANALOGY   MULTI-DOMAIN LAYER",
+      "path": "🟣 PROMPT 3 — ANALOGY _ MULTI-DOMAIN LAYER.md",
+      "kind": "md",
+      "nativePreferred": false
+    },
+    {
+      "label": "🧠 Linear Algebra for Conscious Coaching Platform",
+      "path": "🧠 Linear Algebra for Conscious Coaching Platform.md",
+      "kind": "md",
+      "nativePreferred": false
+    }
+  ],
+  "academicPapers": [
+    {
+      "label": "A Little Rank Goes a Long Way Random Scaffolds with LoRA",
+      "path": "Academic Papers/A Little Rank Goes a Long Way Random Scaffolds with LoRA.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "abstracts",
+      "path": "Academic Papers/abstracts.txt",
+      "kind": "txt",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "abstracts utf8",
+      "path": "Academic Papers/abstracts_utf8.txt",
+      "kind": "txt",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Adam's Law Textual Frequency Law on Large Language Models",
+      "path": "Academic Papers/Adam's Law Textual Frequency Law on Large Language Models.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Bootstrapping Language Models with DPO Implicit Rewards",
+      "path": "Academic Papers/Bootstrapping Language Models with DPO Implicit Rewards.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Building Effective AI Coding Agents for the Terminal Scaffolding, Harness, Context Engineering, and Lessons Learned",
+      "path": "Academic Papers/Building Effective AI Coding Agents for the Terminal Scaffolding, Harness, Context Engineering, and Lessons Learned.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Critical Inker Scaffolding Critical Thinking in AI-Assisted",
+      "path": "Academic Papers/Critical Inker Scaffolding Critical Thinking in AI-Assisted.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Curvature-Aligned Probing for Local Loss-Landscape Stabilization",
+      "path": "Academic Papers/Curvature-Aligned Probing for Local Loss-Landscape Stabilization.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Decision-Oriented Programming with Aporia",
+      "path": "Academic Papers/Decision-Oriented Programming with Aporia.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "DeepSeekMath Pushing the Limits of Mathematical",
+      "path": "Academic Papers/DeepSeekMath Pushing the Limits of Mathematical.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "DPO Meets PPO Reinforced Token Optimization for RLHF",
+      "path": "Academic Papers/DPO Meets PPO Reinforced Token Optimization for RLHF.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "DSPy  The End of Prompt Engineering - Kevin Madura, AlixPartners",
+      "path": "Academic Papers/DSPy_ The End of Prompt Engineering - Kevin Madura, AlixPartners.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Enhancing LLM Problem Solving via Tutor–Student Multi-Agent",
+      "path": "Academic Papers/Enhancing LLM Problem Solving via Tutor–Student Multi-Agent.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "From Passive Consumption to Active Interaction Exploring",
+      "path": "Academic Papers/From Passive Consumption to Active Interaction Exploring.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Inside the Scaffold A Source-Code Taxonomy of Coding Agent Architectures",
+      "path": "Academic Papers/Inside the Scaffold A Source-Code Taxonomy of Coding Agent Architectures.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "It Takes Two Your GRPO Is Secretly DPO",
+      "path": "Academic Papers/It Takes Two Your GRPO Is Secretly DPO.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Landscape of Thoughts Visualizing the Reasoning Process of Large Language Models",
+      "path": "Academic Papers/Landscape of Thoughts Visualizing the Reasoning Process of Large Language Models.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Ask, Answer, and Detect Role-Playing LLMs for Personality",
+      "path": "Academic Papers/md/Ask, Answer, and Detect Role-Playing LLMs for Personality.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers/md"
+    },
+    {
+      "label": "CAN WE GENERATE PORTABLE REPRESENTATIONS FOR",
+      "path": "Academic Papers/md/CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers/md"
+    },
+    {
+      "label": "Characterizing user archetypes and discussions on Scored.co",
+      "path": "Academic Papers/md/Characterizing user archetypes and discussions on Scored.co.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers/md"
+    },
+    {
+      "label": "Effective Clustering for Large Multi-Relational Graphs",
+      "path": "Academic Papers/md/Effective Clustering for Large Multi-Relational Graphs.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers/md"
+    },
+    {
+      "label": "Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins",
+      "path": "Academic Papers/md/Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers/md"
+    },
+    {
+      "label": "Identifying General Mechanism Shifts in Linear",
+      "path": "Academic Papers/md/Identifying General Mechanism Shifts in Linear.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers/md"
+    },
+    {
+      "label": "Integrating Graphs, Large Language Models, and",
+      "path": "Academic Papers/md/Integrating Graphs, Large Language Models, and.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers/md"
+    },
+    {
+      "label": "Interpretable Clustering A Survey",
+      "path": "Academic Papers/md/Interpretable Clustering A Survey.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers/md"
+    },
+    {
+      "label": "Learning Clustering-based Prototypes for Compositional Zero-shot Learning",
+      "path": "Academic Papers/md/Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers/md"
+    },
+    {
+      "label": "Measuring Human Behavior Through Controlled Perturbations A Framework",
+      "path": "Academic Papers/md/Measuring Human Behavior Through Controlled Perturbations A Framework.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers/md"
+    },
+    {
+      "label": "Mimetic Alignment with ASPECT Evaluation of AI-inferred",
+      "path": "Academic Papers/md/Mimetic Alignment with ASPECT Evaluation of AI-inferred.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers/md"
+    },
+    {
+      "label": "Semantic distance organizes social knowledge Insights from semantic dementia",
+      "path": "Academic Papers/md/Semantic distance organizes social knowledge Insights from semantic dementia.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers/md"
+    },
+    {
+      "label": "Talk2AI A Longitudinal Dataset of Human–AI Persuasive",
+      "path": "Academic Papers/md/Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers/md"
+    },
+    {
+      "label": "User Archetypes and Information Dynamics on Telegram COVID-19 and",
+      "path": "Academic Papers/md/User Archetypes and Information Dynamics on Telegram COVID-19 and.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers/md"
+    },
+    {
+      "label": "MY QUESTIONS TO CHATGPT ABOUT RLVR, RLM and DSPy",
+      "path": "Academic Papers/MY QUESTIONS TO CHATGPT ABOUT RLVR, RLM and DSPy.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Neural network optimization strategies and the topography of the loss landscape",
+      "path": "Academic Papers/Neural network optimization strategies and the topography of the loss landscape.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "OpenProse — A Programming Language for the Intelligent VM",
+      "path": "Academic Papers/OpenProse — A Programming Language for the Intelligent VM.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Recursive Language Models Meet Uncertainty The Surprising Effectiveness of Self-Reflective Program Search for Long Context",
+      "path": "Academic Papers/Recursive Language Models Meet Uncertainty The Surprising Effectiveness of Self-Reflective Program Search for Long Context.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Recursive Language Models",
+      "path": "Academic Papers/Recursive Language Models.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Recursive Models for Long-Horizon Reasoning",
+      "path": "Academic Papers/Recursive Models for Long-Horizon Reasoning.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Reward Hacking in the Era of Large Models Mechanisms, Emergent Misalignment, Challenges",
+      "path": "Academic Papers/Reward Hacking in the Era of Large Models Mechanisms, Emergent Misalignment, Challenges.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "RLMs Are The New Reasoning Models — Raymond A. Weitekamp (RAW.works)",
+      "path": "Academic Papers/RLMs Are The New Reasoning Models — Raymond A. Weitekamp (RAW.works).md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "RM-R1 Reward Modeling as Reasoning",
+      "path": "Academic Papers/RM-R1 Reward Modeling as Reasoning.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Scaf-GRPO Scaffolded Group Relative Policy Optimization for Enhancing LLM Reasoning",
+      "path": "Academic Papers/Scaf-GRPO Scaffolded Group Relative Policy Optimization for Enhancing LLM Reasoning.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Scaffolding Human-AI Collaboration A Field Experiment on Behavioral Protocols and Cognitive Reframing",
+      "path": "Academic Papers/Scaffolding Human-AI Collaboration A Field Experiment on Behavioral Protocols and Cognitive Reframing.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "State of LLMs 2026  RLVR, GRPO, Inference Scaling — Sebastian Raschka",
+      "path": "Academic Papers/State of LLMs 2026_ RLVR, GRPO, Inference Scaling — Sebastian Raschka.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Step-DPO Step-wise Preference Optimization for Long-chain Reasoning of LLMs",
+      "path": "Academic Papers/Step-DPO Step-wise Preference Optimization for Long-chain Reasoning of LLMs.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "Story2Proposal A Scaffold for Structured Scientific Paper Writing",
+      "path": "Academic Papers/Story2Proposal A Scaffold for Structured Scientific Paper Writing.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "TeachingCoach A Fine-Tuned Scaffolding Chatbot for Instructional Guidance to Instructors",
+      "path": "Academic Papers/TeachingCoach A Fine-Tuned Scaffolding Chatbot for Instructional Guidance to Instructors.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    },
+    {
+      "label": "What is the Alignment Objective of GRPO",
+      "path": "Academic Papers/What is the Alignment Objective of GRPO.md",
+      "kind": "md",
+      "nativePreferred": false,
+      "group": "Academic Papers"
+    }
+  ],
+  "allDocs": [
+    "Academic Papers/A Little Rank Goes a Long Way Random Scaffolds with LoRA.md",
+    "Academic Papers/Adam's Law Textual Frequency Law on Large Language Models.md",
+    "Academic Papers/Bootstrapping Language Models with DPO Implicit Rewards.md",
+    "Academic Papers/Building Effective AI Coding Agents for the Terminal Scaffolding, Harness, Context Engineering, and Lessons Learned.md",
+    "Academic Papers/Critical Inker Scaffolding Critical Thinking in AI-Assisted.md",
+    "Academic Papers/Curvature-Aligned Probing for Local Loss-Landscape Stabilization.md",
+    "Academic Papers/DPO Meets PPO Reinforced Token Optimization for RLHF.md",
+    "Academic Papers/DSPy_ The End of Prompt Engineering - Kevin Madura, AlixPartners.md",
+    "Academic Papers/Decision-Oriented Programming with Aporia.md",
+    "Academic Papers/DeepSeekMath Pushing the Limits of Mathematical.md",
+    "Academic Papers/Enhancing LLM Problem Solving via Tutor–Student Multi-Agent.md",
+    "Academic Papers/From Passive Consumption to Active Interaction Exploring.md",
+    "Academic Papers/Inside the Scaffold A Source-Code Taxonomy of Coding Agent Architectures.md",
+    "Academic Papers/It Takes Two Your GRPO Is Secretly DPO.md",
+    "Academic Papers/Landscape of Thoughts Visualizing the Reasoning Process of Large Language Models.md",
+    "Academic Papers/MY QUESTIONS TO CHATGPT ABOUT RLVR, RLM and DSPy.md",
+    "Academic Papers/Neural network optimization strategies and the topography of the loss landscape.md",
+    "Academic Papers/OpenProse — A Programming Language for the Intelligent VM.md",
+    "Academic Papers/RLMs Are The New Reasoning Models — Raymond A. Weitekamp (RAW.works).md",
+    "Academic Papers/RM-R1 Reward Modeling as Reasoning.md",
+    "Academic Papers/Recursive Language Models Meet Uncertainty The Surprising Effectiveness of Self-Reflective Program Search for Long Context.md",
+    "Academic Papers/Recursive Language Models.md",
+    "Academic Papers/Recursive Models for Long-Horizon Reasoning.md",
+    "Academic Papers/Reward Hacking in the Era of Large Models Mechanisms, Emergent Misalignment, Challenges.md",
+    "Academic Papers/Scaf-GRPO Scaffolded Group Relative Policy Optimization for Enhancing LLM Reasoning.md",
+    "Academic Papers/Scaffolding Human-AI Collaboration A Field Experiment on Behavioral Protocols and Cognitive Reframing.md",
+    "Academic Papers/State of LLMs 2026_ RLVR, GRPO, Inference Scaling — Sebastian Raschka.md",
+    "Academic Papers/Step-DPO Step-wise Preference Optimization for Long-chain Reasoning of LLMs.md",
+    "Academic Papers/Story2Proposal A Scaffold for Structured Scientific Paper Writing.md",
+    "Academic Papers/TeachingCoach A Fine-Tuned Scaffolding Chatbot for Instructional Guidance to Instructors.md",
+    "Academic Papers/What is the Alignment Objective of GRPO.md",
+    "Academic Papers/abstracts.txt",
+    "Academic Papers/abstracts_utf8.txt",
+    "Academic Papers/md/Ask, Answer, and Detect Role-Playing LLMs for Personality.md",
+    "Academic Papers/md/CAN WE GENERATE PORTABLE REPRESENTATIONS FOR.md",
+    "Academic Papers/md/Characterizing user archetypes and discussions on Scored.co.md",
+    "Academic Papers/md/Effective Clustering for Large Multi-Relational Graphs.md",
+    "Academic Papers/md/Elder-Sim A Psychometrically Validated PlatformforPersonality-Stable Elderly Digital Twins.md",
+    "Academic Papers/md/Identifying General Mechanism Shifts in Linear.md",
+    "Academic Papers/md/Integrating Graphs, Large Language Models, and.md",
+    "Academic Papers/md/Interpretable Clustering A Survey.md",
+    "Academic Papers/md/Learning Clustering-based Prototypes for Compositional Zero-shot Learning.md",
+    "Academic Papers/md/Measuring Human Behavior Through Controlled Perturbations A Framework.md",
+    "Academic Papers/md/Mimetic Alignment with ASPECT Evaluation of AI-inferred.md",
+    "Academic Papers/md/Semantic distance organizes social knowledge Insights from semantic dementia.md",
+    "Academic Papers/md/Talk2AI A Longitudinal Dataset of Human–AI Persuasive.md",
+    "Academic Papers/md/User Archetypes and Information Dynamics on Telegram COVID-19 and.md",
+    "Course_Syllabus.md",
+    "Lesson_01_Vectors/1_Exposure.html",
+    "Lesson_01_Vectors/1_Exposure.md",
+    "Lesson_01_Vectors/2_Mechanistic.html",
+    "Lesson_01_Vectors/2_Mechanistic.md",
+    "Lesson_01_Vectors/2_Mechanistic_Notes.md",
+    "Lesson_01_Vectors/3_Analogy.html",
+    "Lesson_01_Vectors/3_Analogy.md",
+    "Lesson_01_Vectors/4_Master.html",
+    "Lesson_01_Vectors/4_Master.md",
+    "Lesson_01_Vectors/Chapter_Syllabus.md",
+    "Lesson_02_Dot_Product/1_Exposure.html",
+    "Lesson_02_Dot_Product/1_Exposure.md",
+    "Lesson_02_Dot_Product/2_Mechanistic.html",
+    "Lesson_02_Dot_Product/2_Mechanistic.md",
+    "Lesson_02_Dot_Product/3_Analogy.html",
+    "Lesson_02_Dot_Product/3_Analogy.md",
+    "Lesson_02_Dot_Product/4_Master.html",
+    "Lesson_02_Dot_Product/4_Master.md",
+    "Lesson_02_Dot_Product/Chapter_Syllabus.md",
+    "Lesson_03_Linear_Combinations_Spans/1_Exposure.html",
+    "Lesson_03_Linear_Combinations_Spans/1_Exposure.md",
+    "Lesson_03_Linear_Combinations_Spans/2_Mechanistic.html",
+    "Lesson_03_Linear_Combinations_Spans/2_Mechanistic.md",
+    "Lesson_03_Linear_Combinations_Spans/3_Analogy.html",
+    "Lesson_03_Linear_Combinations_Spans/3_Analogy.md",
+    "Lesson_03_Linear_Combinations_Spans/4_Master.html",
+    "Lesson_03_Linear_Combinations_Spans/4_Master.md",
+    "Lesson_03_Linear_Combinations_Spans/Chapter_Syllabus.md",
+    "Lesson_04_Linear_Transformations/1_Exposure.html",
+    "Lesson_04_Linear_Transformations/1_Exposure.md",
+    "Lesson_04_Linear_Transformations/2_Mechanistic.html",
+    "Lesson_04_Linear_Transformations/2_Mechanistic.md",
+    "Lesson_04_Linear_Transformations/3_Analogy.html",
+    "Lesson_04_Linear_Transformations/3_Analogy.md",
+    "Lesson_04_Linear_Transformations/4_Master.html",
+    "Lesson_04_Linear_Transformations/4_Master.md",
+    "Lesson_04_Linear_Transformations/Chapter_Syllabus.md",
+    "Lesson_05_Matrix_Multiplication/1_Exposure.html",
+    "Lesson_05_Matrix_Multiplication/1_Exposure.md",
+    "Lesson_05_Matrix_Multiplication/2_Mechanistic.html",
+    "Lesson_05_Matrix_Multiplication/2_Mechanistic.md",
+    "Lesson_05_Matrix_Multiplication/3_Analogy.html",
+    "Lesson_05_Matrix_Multiplication/3_Analogy.md",
+    "Lesson_05_Matrix_Multiplication/4_Master.html",
+    "Lesson_05_Matrix_Multiplication/4_Master.md",
+    "Lesson_05_Matrix_Multiplication/Chapter_Syllabus.md",
+    "Lesson_06_Orthogonal_Projections/1_Exposure.html",
+    "Lesson_06_Orthogonal_Projections/1_Exposure.md",
+    "Lesson_06_Orthogonal_Projections/2_Mechanistic.html",
+    "Lesson_06_Orthogonal_Projections/2_Mechanistic.md",
+    "Lesson_06_Orthogonal_Projections/3_Analogy.html",
+    "Lesson_06_Orthogonal_Projections/3_Analogy.md",
+    "Lesson_06_Orthogonal_Projections/4_Master.html",
+    "Lesson_06_Orthogonal_Projections/4_Master.md",
+    "Lesson_06_Orthogonal_Projections/Chapter_Syllabus.md",
+    "Lesson_07_Change_of_Basis/1_Exposure.html",
+    "Lesson_07_Change_of_Basis/1_Exposure.md",
+    "Lesson_07_Change_of_Basis/2_Mechanistic.html",
+    "Lesson_07_Change_of_Basis/2_Mechanistic.md",
+    "Lesson_07_Change_of_Basis/3_Analogy.html",
+    "Lesson_07_Change_of_Basis/3_Analogy.md",
+    "Lesson_07_Change_of_Basis/4_Master.html",
+    "Lesson_07_Change_of_Basis/4_Master.md",
+    "Lesson_07_Change_of_Basis/Chapter_Syllabus.md",
+    "Lesson_08_Eigen_Everything/1_Exposure.html",
+    "Lesson_08_Eigen_Everything/1_Exposure.md",
+    "Lesson_08_Eigen_Everything/2_Mechanistic.html",
+    "Lesson_08_Eigen_Everything/2_Mechanistic.md",
+    "Lesson_08_Eigen_Everything/3_Analogy.html",
+    "Lesson_08_Eigen_Everything/3_Analogy.md",
+    "Lesson_08_Eigen_Everything/4_Master.html",
+    "Lesson_08_Eigen_Everything/4_Master.md",
+    "Lesson_08_Eigen_Everything/Chapter_Syllabus.md",
+    "Lesson_09_Clustering/1_Exposure.html",
+    "Lesson_09_Clustering/1_Exposure.md",
+    "Lesson_09_Clustering/2_Mechanistic.html",
+    "Lesson_09_Clustering/2_Mechanistic.md",
+    "Lesson_09_Clustering/3_Analogy.html",
+    "Lesson_09_Clustering/3_Analogy.md",
+    "Lesson_09_Clustering/4_Master.html",
+    "Lesson_09_Clustering/4_Master.md",
+    "Lesson_09_Clustering/Chapter_Syllabus.md",
+    "Lesson_1.5_Trigonometry/1_Exposure.html",
+    "Lesson_1.5_Trigonometry/1_Exposure.md",
+    "Lesson_1.5_Trigonometry/2_Mechanistic.html",
+    "Lesson_1.5_Trigonometry/2_Mechanistic.md",
+    "Lesson_1.5_Trigonometry/3_Analogy.html",
+    "Lesson_1.5_Trigonometry/3_Analogy.md",
+    "Lesson_1.5_Trigonometry/4_Master.html",
+    "Lesson_1.5_Trigonometry/4_Master.md",
+    "Lesson_1.5_Trigonometry/Chapter_Syllabus.md",
+    "Lesson_10_Applied_Clustering/1_Exposure.html",
+    "Lesson_10_Applied_Clustering/1_Exposure.md",
+    "Lesson_10_Applied_Clustering/2_Mechanistic.html",
+    "Lesson_10_Applied_Clustering/2_Mechanistic.md",
+    "Lesson_10_Applied_Clustering/3_Analogy.html",
+    "Lesson_10_Applied_Clustering/3_Analogy.md",
+    "Lesson_10_Applied_Clustering/4_Master.html",
+    "Lesson_10_Applied_Clustering/4_Master.md",
+    "Lesson_10_Applied_Clustering/Chapter_Syllabus.md",
+    "Lesson_11_Gradients_Sensitivity/1_Exposure.html",
+    "Lesson_11_Gradients_Sensitivity/1_Exposure.md",
+    "Lesson_11_Gradients_Sensitivity/2_Mechanistic.html",
+    "Lesson_11_Gradients_Sensitivity/2_Mechanistic.md",
+    "Lesson_11_Gradients_Sensitivity/3_Analogy.html",
+    "Lesson_11_Gradients_Sensitivity/3_Analogy.md",
+    "Lesson_11_Gradients_Sensitivity/4_Master.html",
+    "Lesson_11_Gradients_Sensitivity/4_Master.md",
+    "Lesson_11_Gradients_Sensitivity/Chapter_Syllabus.md",
+    "Lesson_12_Optimization_Policy_Learning/1_Exposure.html",
+    "Lesson_12_Optimization_Policy_Learning/1_Exposure.md",
+    "Lesson_12_Optimization_Policy_Learning/2_Mechanistic.html",
+    "Lesson_12_Optimization_Policy_Learning/2_Mechanistic.md",
+    "Lesson_12_Optimization_Policy_Learning/3_Analogy.html",
+    "Lesson_12_Optimization_Policy_Learning/3_Analogy.md",
+    "Lesson_12_Optimization_Policy_Learning/4_Master.html",
+    "Lesson_12_Optimization_Policy_Learning/4_Master.md",
+    "Lesson_12_Optimization_Policy_Learning/Chapter_Syllabus.md",
+    "Lesson_13_Probability_Sampling_Entropy/1_Exposure.html",
+    "Lesson_13_Probability_Sampling_Entropy/1_Exposure.md",
+    "Lesson_13_Probability_Sampling_Entropy/2_Mechanistic.html",
+    "Lesson_13_Probability_Sampling_Entropy/2_Mechanistic.md",
+    "Lesson_13_Probability_Sampling_Entropy/3_Analogy.html",
+    "Lesson_13_Probability_Sampling_Entropy/3_Analogy.md",
+    "Lesson_13_Probability_Sampling_Entropy/4_Master.html",
+    "Lesson_13_Probability_Sampling_Entropy/4_Master.md",
+    "Lesson_13_Probability_Sampling_Entropy/Chapter_Syllabus.md",
+    "OFFLINE_PWA_README.md",
+    "Omar Khattab on the State of DSPy.md",
+    "RL for Agents Workshop - Deep Dive on Training Agents with RL and Open Source.md",
+    "Recursive Language Models w_ Alex Zhang.md",
+    "Reinforcement Learning and calculus in our Program.md",
+    "SKILL.md",
+    "index.html",
+    "learning_framework.html",
+    "vectors_learning.html",
+    "🔵 PROMPT 1 — EXPOSURE LAYER.md",
+    "🚀 PROMPT 4 - MASTER PROMPT.md",
+    "🟡 PROMPT 2 — MECHANISTIC _ TRANSFORMER LAYER.md",
+    "🟣 PROMPT 3 — ANALOGY _ MULTI-DOMAIN LAYER.md",
+    "🧠 Linear Algebra for Conscious Coaching Platform.md"
+  ]
+}

@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 08 - Capability Layer (Async/Await)</title>
+  <style>
+    :root {
+      --bg: #08111a;
+      --panel: rgba(12, 20, 30, 0.88);
+      --line: rgba(255,255,255,0.08);
+      --text: #f3f7fb;
+      --muted: #9ab0c2;
+      --accent: #ff7a18;
+      --accent-2: #56c5ff;
+      --good: #2ecc71;
+      --bad: #ff5c73;
+      --gold: #ffd166;
+      --violet: #8f7cff;
+      --font-ui: "Space Grotesk", Arial, sans-serif;
+      --font-body: "DM Sans", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: var(--font-body);
+      line-height: 1.6;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(86,197,255,0.18), transparent 22%),
+        radial-gradient(circle at 82% 14%, rgba(255,122,24,0.16), transparent 24%),
+        linear-gradient(180deg, #071018 0%, #08111a 48%, #09131c 100%);
+    }
+
+    .progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: rgba(255,255,255,0.05);
+      z-index: 50;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #ff7a18, #ffd166, #56c5ff);
+      transition: width 0.35s ease;
+    }
+
+    .shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 42px 18px 80px;
+    }
+
+    .stage {
+      display: none;
+      animation: fadeUp 0.45s ease;
+    }
+
+    .stage.active { display: block; }
+
+    .hero, .card {
+      border-radius: 26px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015)),
+        linear-gradient(135deg, rgba(143,124,255,0.08), transparent 40%);
+      box-shadow: 0 26px 56px rgba(0,0,0,0.24);
+      overflow: hidden;
+    }
+
+    .hero { padding: 28px; }
+    .card { padding: 22px; margin-top: 18px; }
+
+    .eyebrow {
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font: 700 0.74rem/1.2 var(--font-ui);
+      margin-bottom: 12px;
+    }
+
+    .section-count {
+      color: #89a1b2;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font: 700 0.75rem/1.2 var(--font-ui);
+      margin-bottom: 10px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 14px;
+      line-height: 1.08;
+      font-weight: 700;
+      font-family: var(--font-ui);
+    }
+
+    h1 { font-size: clamp(2.5rem, 5vw, 4.8rem); line-height: 1; margin-bottom: 1.5rem; letter-spacing: -0.02em; }
+    h2 { font-size: clamp(1.55rem, 2.8vw, 2.35rem); }
+    h3 { font-size: 1.08rem; }
+    p { margin: 0 0 14px; }
+
+    .lede {
+      max-width: 54rem;
+      font-size: 1.12rem;
+      color: #d9e4ec;
+    }
+
+    .divider {
+      height: 1px;
+      margin: 24px 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    }
+
+    .hero-grid,
+    .grid-2,
+    .choices-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .hero-grid,
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    .mini-card {
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      padding: 16px;
+    }
+
+    .mini-title {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.78rem/1.2 var(--font-ui);
+      margin-bottom: 8px;
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: #a3e6ff;
+      background: rgba(255,255,255,0.05);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    
+    .code-block {
+      background: #0d151c;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: #e0e0e0;
+      overflow-x: auto;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    .code-hl-kw { color: #56c5ff; }
+    .code-hl-str { color: #ffd166; }
+    .code-hl-fn { color: #ff7a18; }
+    .code-hl-c { color: #6a7c8a; }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      padding: 14px 18px;
+      border-radius: 999px;
+      font: 700 0.94rem/1 var(--font-ui);
+      transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: linear-gradient(90deg, #ff7a18, #ff994d);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .visual-wrap {
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(5, 14, 22, 0.7);
+      padding: 12px;
+    }
+
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(5,14,22,0.98), rgba(11,22,33,0.96));
+    }
+
+    .choices {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .choice {
+      width: 100%;
+      text-align: left;
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      color: #e7eef5;
+      font: 400 1rem/1.45 var(--font-body);
+      cursor: pointer;
+      transition: border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .choice.selected {
+      border-color: rgba(255,122,24,0.78);
+      background: rgba(255,122,24,0.08);
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      font: 400 1rem/1.45 var(--font-body);
+      outline: none;
+    }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(255,122,24,0.55);
+      box-shadow: 0 0 0 4px rgba(255,122,24,0.12);
+    }
+
+    .locked {
+      margin-top: 12px;
+      color: #ffd7a6;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.76rem/1.2 var(--font-ui);
+    }
+
+    .feedback {
+      display: none;
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .feedback.show { display: block; animation: fadeUp 0.3s ease; }
+    .feedback.good { border-color: rgba(46,204,113,0.38); }
+    .feedback.bad { border-color: rgba(255,92,115,0.38); }
+
+    .gauntlet-grid {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .q-card {
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .q-card label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.76rem/1.2 var(--font-ui);
+    }
+
+    .final-box {
+      margin-top: 18px;
+      padding: 22px;
+      border-radius: 20px;
+      border: 1px solid rgba(86,197,255,0.28);
+      background: linear-gradient(180deg, rgba(86,197,255,0.08), rgba(255,255,255,0.02));
+    }
+
+    .hidden { display: none; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 820px) {
+      .hero-grid,
+      .grid-2 { grid-template-columns: 1fr; }
+      .shell { padding: 30px 14px 60px; }
+      .hero, .card { padding: 18px; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true">
+    <div id="progressFill" class="progress-fill"></div>
+  </div>
+
+  <main class="shell">
+    
+    <!-- STAGE 0 : HERO -->
+    <section id="stage-0" class="stage active">
+      <div class="hero">
+        <p class="eyebrow">Lesson 08 - Capability Layer</p>
+        <h1>Async/Await is not magic.<br>It is the Forklift Foreman.</h1>
+        <div class="divider"></div>
+        <p class="lede">A Python script executes linearly. When it encounters an LLM API call requiring 2 seconds to return, the CPU stops dead. For a Sovereign Architect running 500 simultaneous Pipecat audio streams, this synchronized blockade freezes the entire platform. The solution is explicit task delegation.</p>
+        <div class="hero-grid">
+          <div class="mini-card">
+            <p class="mini-title">The Factory Context</p>
+            <p>Imagine a factory floor with exactly ONE worker (the single Python thread). If a machine breaks and they order a replacement part from another state, they cannot stand idly by the loading dock for two days. They must work on a different machine while waiting.</p>
+          </div>
+          <div class="mini-card">
+            <p class="mini-title">What This Layer Does</p>
+            <p>You will evaluate code blocks representing CCP bottlenecks. You will predict what happens when the Foreman gets trapped. Then, the architectural necessity of the <span class="mono">await</span> keyword will be revealed.</p>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="goToStage(1)">Access the factory floor</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 1 : THE BLOCKADE -->
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="section-count">Scenario 1 of 4</p>
+        <h2>The Event Loop Starvation</h2>
+        <p>An agent writes a FastAPI WebSocket endpoint designed to handle hundreds of real-time audio conversations sequentially. Examine the core execution routine:</p>
+        <div class="code-block">
+<span class="code-hl-c"># The Chassis Event Loop</span>
+<span class="code-hl-kw">async def</span> <span class="code-hl-fn">handle_user</span>(client_id: <span class="code-hl-kw">str</span>):
+    context = fetch_trigger_state_from_neo4j(client_id) <span class="code-hl-c"># Takes 1.5 seconds</span>
+    script = execute_dspy_pipeline(context)             <span class="code-hl-c"># Takes 2.0 seconds</span>
+    <span class="code-hl-kw">await</span> send_audio(script)
+        </div>
+        <p>A sudden spike hits the CCP. 50 new clients connect instantly. Which of the following is true?</p>
+        <div class="grid-2">
+          <div class="visual-wrap">
+            <canvas id="s1Canvas" style="min-height:220px;"></canvas>
+          </div>
+          <div>
+            <div class="choices" data-group="s1">
+              <button class="choice" data-value="A" onclick="selectChoice('s1','A',this)">The framework handles them in parallel automatically because the function is defined with `async def`.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('s1','B',this)">The server completely freezes for 175 seconds. Nobody receives audio until the first person completes their 3.5 seconds of IO time.</button>
+              <button class="choice" data-value="C" onclick="selectChoice('s1','C',this)">The `await send_audio` line will correctly yield execution between each client's script generation.</button>
+            </div>
+            <div id="s1-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions">
+              <button id="s1-submit" class="btn btn-primary" onclick="submitChoice('s1','B',s1Feedback, () => drawCanvas1(true))">Commit prediction</button>
+            </div>
+            <div id="s1-feedback" class="feedback"></div>
+            <div id="s1-next" class="actions hidden">
+              <button class="btn btn-secondary" onclick="goToStage(2)">Next scenario</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 2 : TIMED BLOCKS -->
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="section-count">Scenario 2 of 4</p>
+        <h2>Sleep Paralysis</h2>
+        <p>An Architect wants to simulate a 3-second delay within a specific agent's cognitive loop without alerting the client to constant polling. They insert the following code:</p>
+        <div class="code-block">
+<span class="code-hl-kw">import</span> time
+
+<span class="code-hl-kw">async def</span> <span class="code-hl-fn">simulate_human_latency</span>():
+    <span class="code-hl-kw">await</span> websocket.send_text(<span class="code-hl-str">"Thinking..."</span>)
+    time.sleep(<span class="code-hl-kw">3</span>) <span class="code-hl-c"># Wait exactly 3 seconds</span>
+    <span class="code-hl-kw">await</span> websocket.send_text(<span class="code-hl-str">"I understand."</span>)
+        </div>
+        <p>What is the catastrophic architectural failure inside this coroutine?</p>
+        <div class="grid-2">
+          <div class="visual-wrap">
+            <canvas id="s2Canvas" style="min-height:220px;"></canvas>
+          </div>
+          <div>
+            <div class="choices" data-group="s2">
+              <button class="choice" data-value="A" onclick="selectChoice('s2','A',this)">time.sleep() is synchronous. It puts the single Python thread to sleep. Every connected user in the entire CCP will wait 3 seconds.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('s2','B',this)">The first await statement absorbs the sleep, making it non-blocking automatically.</button>
+              <button class="choice" data-value="C" onclick="selectChoice('s2','C',this)">The sleep command will timeout and crash the websocket protocol.</button>
+            </div>
+            <div id="s2-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions">
+              <button id="s2-submit" class="btn btn-primary" onclick="submitChoice('s2','A',s2Feedback, () => drawCanvas2(true))">Commit prediction</button>
+            </div>
+            <div id="s2-feedback" class="feedback"></div>
+            <div id="s2-next" class="actions hidden">
+              <button class="btn btn-secondary" onclick="goToStage(3)">Next scenario</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 3 : ZOMBIE TASKS -->
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="section-count">Scenario 3 of 4</p>
+        <h2>The Blueprint Without Execution</h2>
+        <p>The Machinist attempts to log the outcome of a coaching interaction asynchronously to avoid blocking the main audio loop.</p>
+        <div class="code-block">
+<span class="code-hl-kw">async def</span> <span class="code-hl-fn">log_interaction</span>(data):
+    <span class="code-hl-kw">pass</span> <span class="code-hl-c"># DB save logic</span>
+
+<span class="code-hl-kw">async def</span> <span class="code-hl-fn">run_agent</span>():
+    result = LLM_predict()
+    log_interaction(result) <span class="code-hl-c"># Fire off the log</span>
+    <span class="code-hl-kw">return</span> result
+        </div>
+        <p>What happens to the `log_interaction` logic when this executes?</p>
+        <div class="grid-2">
+          <div class="visual-wrap" style="display:flex;align-items:center;justify-content:center;color:#6a7c8a;font-style:italic;">
+            <p>No canvas here. Rely purely on structure.</p>
+          </div>
+          <div>
+            <div class="choices" data-group="s3">
+              <button class="choice" data-value="A" onclick="selectChoice('s3','A',this)">It executes in the background as an orphaned thread.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('s3','B',this)">Calling an async function without `await` merely creates a coroutine object. It never actually runs. The data is silently lost.</button>
+              <button class="choice" data-value="C" onclick="selectChoice('s3','C',this)">The system throws a fatal crashing syntax error stopping execution.</button>
+            </div>
+            <div id="s3-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions">
+              <button id="s3-submit" class="btn btn-primary" onclick="submitChoice('s3','B',s3Feedback, () => {})">Commit prediction</button>
+            </div>
+            <div id="s3-feedback" class="feedback"></div>
+            <div id="s3-next" class="actions hidden">
+              <button class="btn btn-secondary" onclick="goToStage(4)">Proceed to Mastery Gate</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 4 : MASTERY GATE -->
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="eyebrow">Mastery Gate</p>
+        <h2>The Architectural Necessity</h2>
+        <p>Async/Await is not inherently faster at running computations. It is just more efficient at organizing emptiness. Complete the conceptual analogy.</p>
+        <p>If Python is a chef in a restaurant, a synchronous network call to Neo4j is standing in front of the microwave for 3 minutes staring at a burrito. In this analogy, what does placing the <span class="mono">await</span> keyword in front of the call represent?</p>
+        <textarea id="masteryText" placeholder="Placing await represents the chef..."></textarea>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="submitMastery()">Lock Response</button>
+        </div>
+        <div id="mastery-feedback" class="feedback"></div>
+        <div id="mastery-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(5)">Enter the Capability Gauntlet</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 5 : GAUNTLET -->
+    <section id="stage-5" class="stage">
+      <div class="card">
+        <p class="eyebrow">Capability Gauntlet</p>
+        <h2>Seven rapid diagnostics</h2>
+        <p>The visual crutches are removed. Prove architectural internalization.</p>
+        <div class="gauntlet-grid">
+          <div class="q-card">
+            <label for="g1">1. Does Python's async utilize multiple CPU cores?</label>
+            <input id="g1" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g2">2. What Python keyword formally yields control back to the Event Loop?</label>
+            <input id="g2" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g3">3. What is the fundamental defect in writing: `time.sleep(1)` inside a websocket handler?</label>
+            <input id="g3" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g4">4. What type of object is created when you call `async def run():` without awaiting it?</label>
+            <input id="g4" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g5">5. What dictates that Pydantic `BaseModel` parsing should never be inside an async decorator?</label>
+            <input id="g5" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g6">6. In a factory metaphor, what is the role of the Event Loop?</label>
+            <input id="g6" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g7">7. Write the exact syntax to safely delay an async task without blocking.</label>
+            <input id="g7" type="text" placeholder="Short answer">
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="gradeGauntlet()">Submit Gauntlet</button>
+        </div>
+        <div id="gauntlet-feedback" class="feedback"></div>
+        <div id="final-box" class="final-box hidden">
+          <p class="eyebrow" style="margin-bottom:10px;">Layer 1 Complete</p>
+          <p id="final-text"></p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const totalStages = 6;
+    const selections = {};
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach((stage) => stage.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if(index === 1) drawCanvas1(false);
+      if(index === 2) drawCanvas2(false);
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = 'feedback show ' + type;
+      box.innerHTML = '<h3>' + title + '</h3><p>' + body + '</p>';
+    }
+
+    function selectChoice(groupId, value, element) {
+      if (document.querySelector('[data-group="' + groupId + '"]').dataset.locked === 'true') return;
+      selections[groupId] = value;
+      document.querySelectorAll('[data-group="' + groupId + '"] .choice').forEach((button) => button.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function submitChoice(groupId, correct, feedbackPack, revealFn) {
+      const selected = selections[groupId];
+      if (!selected) {
+        showFeedback(groupId + '-feedback', 'bad', 'Prediction required', 'You must commit to a structural outcome before the mechanics are revealed.');
+        return;
+      }
+      document.querySelector('[data-group="' + groupId + '"]').dataset.locked = 'true';
+      document.getElementById(groupId + '-submit').disabled = true;
+      document.getElementById(groupId + '-lock').classList.remove('hidden');
+      revealFn();
+      const isCorrect = selected === correct;
+      const payload = isCorrect ? feedbackPack.good : feedbackPack.bad;
+      showFeedback(groupId + '-feedback', isCorrect ? 'good' : 'bad', payload.title, payload.body);
+      document.getElementById(groupId + '-next').classList.remove('hidden');
+    }
+
+    const s1Feedback = {
+      good: {
+        title: 'Correct. The Event Loop starves.',
+        body: 'Writing `async def` does literally nothing unless you explicitly yield control inside the function. Because the IO components `fetch_trigger_state` and `execute_dspy_pipeline` are executed synchronously without `await`, the server thread is completely hijacked. 50 users multiply 3.5 seconds into 175 seconds of lethal latency.'
+      },
+      bad: {
+        title: 'Misconception exposed: Async functions are not magic threads.',
+        body: 'Simply placing `async def` in front of a function does not make its internal logic run in parallel. If the internal logic executes a blocking network call without the `await` keyword, the Python interpreter seizes. The 50 connections queue linearly, causing massive timeouts.'
+      }
+    };
+
+    const s2Feedback = {
+      good: {
+        title: 'Correct. The entire server sleeps.',
+        body: '`time.sleep()` is a relic of synchronous programming. It orders the operating system to completely suspend the Python execution thread. Any concurrent WebSocket heartbeat, DSPy optimization, or Neo4j write happening anywhere in the CCP is instantly halted.'
+      },
+      bad: {
+        title: 'Misconception exposed: Awaits cannot guard synchronous logic retroactively.',
+        body: 'Having an `await` before or after does not protect the event loop. When the interpreter hits `time.sleep`, it stops the process. The server dies for exactly 3 seconds.'
+      }
+    };
+    
+    const s3Feedback = {
+      good: {
+        title: 'Correct. The Zombie Coroutine.',
+        body: 'Executing an async function generates a blueprint (a coroutine object). By forgetting the `await` or not explicitly scheduling it via `create_task`, the blueprint is never handed over to the Factory Foreman (the Event Loop). The interaction data vanishes without raising an error.'
+      },
+      bad: {
+        title: 'Misconception exposed: Coroutines are not Background Threads.',
+        body: 'Python does not automatically spawn background threads. Without explicitly dispatching the function to the event loop, it never gets scheduled. The return value is merely an un-executed coroutine object in memory.'
+      }
+    };
+
+    function containsAny(value, options) {
+      return options.some((option) => value.includes(option));
+    }
+
+    function submitMastery() {
+      const value = document.getElementById('masteryText').value.trim().toLowerCase();
+      const checks = [
+        containsAny(value, ['other tasks', 'chop', 'prep', 'different machine', 'another order']),
+        containsAny(value, ['yields', 'walks away', 'hands over', 'stops waiting']),
+      ];
+      const hits = checks.filter(Boolean).length;
+      document.getElementById('masteryText').disabled = true;
+      if (hits >= 2) {
+        showFeedback('mastery-feedback', 'good', 'Gate passed', 'Exactly. The await keyword is the Chef explicitly stating: "This takes time, let me go chop vegetables (other tasks) rather than freeze, and I will resume the burrito when the microwave beeps (IO completes)."');
+        document.getElementById('mastery-next').classList.remove('hidden');
+      } else {
+        showFeedback('mastery-feedback', 'bad', 'Gate failed', 'The analogy is missing the core mechanism. It must explicitly include the concept of leaving the task to do other work, rather than standing idle.');
+        document.getElementById('masteryText').disabled = false;
+      }
+    }
+
+    function gradeGauntlet() {
+      const answers = {
+        g1: ['no', 'false', 'one core', 'single threading'],
+        g2: ['await'],
+        g3: ['blocks the server', 'stops thread', 'halts execution', 'kills event loop'],
+        g4: ['coroutine', 'coroutine object', 'blueprint'],
+        g5: ['synchronous', 'cpu bound', 'math', 'instant', 'no network'],
+        g6: ['foreman', 'manager', 'traffic controller', 'scheduler'],
+        g7: ['await asyncio.sleep']
+      };
+      let score = 0;
+      Object.entries(answers).forEach(([id, keywords]) => {
+        const value = document.getElementById(id).value.trim().toLowerCase();
+        if (value && containsAny(value, keywords)) score += 1;
+      });
+
+      if (score >= 5) {
+        showFeedback('gauntlet-feedback', 'good', 'Gauntlet cleared: ' + score + '/7', 'You have achieved architectural stability. You understand that async Python is a single worker pivoting with extreme efficiency, guided by explicit `await` boundaries.');
+        document.getElementById('final-box').classList.remove('hidden');
+        document.getElementById('final-text').textContent = 'The syntax is secondary. Event Loop integrity is absolute. A Sovereign Architect knows that executing code is cheap, but waiting blindly for an LLM response is the architecture killer.';
+      } else {
+        showFeedback('gauntlet-feedback', 'bad', 'Gauntlet failed: ' + score + '/7', 'The structural intuition is weak. Review the difference between CPU tasks and Network IO. `await` separates the two.');
+        document.getElementById('final-box').classList.add('hidden');
+      }
+    }
+
+    // CANVAS ANIMATIONS
+    let req1, req2;
+
+    function drawCanvas1(revealed) {
+      const canvas = document.getElementById('s1Canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      // Ensure specific aspect ratio
+      canvas.width = canvas.offsetWidth;
+      canvas.height = 220; 
+      
+      let x = 30;
+      function render() {
+        ctx.fillStyle = '#0a1016';
+        ctx.fillRect(0,0,canvas.width, canvas.height);
+        
+        ctx.fillStyle = "rgba(255,255,255,0.8)";
+        ctx.font = "14px Arial";
+        ctx.fillText("Event Loop Control Pipeline", 20, 20);
+        
+        // Draw queue
+        for(let i=0; i<8; i++){
+           ctx.strokeStyle = "rgba(86,197,255,0.4)";
+           ctx.strokeRect(30 + i*40, 80, 20, 20);
+        }
+        
+        if (!revealed) {
+           ctx.fillStyle = "rgba(255,122,24,0.6)"; 
+           ctx.fillRect(x, 80, 20, 20);
+           x += 1;
+           if (x > 330) x = 30;
+        } else {
+           // Show blockade
+           ctx.fillStyle = "red";
+           ctx.fillRect(70, 75, 30, 30);
+           ctx.fillStyle = "white";
+           ctx.fillText("Synchronous IO BLOCKADE", 30, 140);
+           ctx.fillStyle = "rgba(255,0,0,0.4)";
+           for(let i=2; i<8; i++){
+               ctx.fillRect(30 + i*40, 80, 20, 20);
+           }
+        }
+        req1 = requestAnimationFrame(render);
+      }
+      cancelAnimationFrame(req1);
+      render();
+    }
+    
+    function drawCanvas2(revealed) {
+      const canvas = document.getElementById('s2Canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.offsetWidth;
+      canvas.height = 220; 
+      
+      let opacity = 1.0;
+      let shrinking = true;
+
+      function render() {
+        ctx.fillStyle = '#0a1016';
+        ctx.fillRect(0,0,canvas.width, canvas.height);
+        
+        ctx.fillStyle = "rgba(255,255,255,0.8)";
+        ctx.font = "14px Arial";
+        ctx.fillText("System Thread Health", 20, 20);
+        
+        if (!revealed) {
+           if(shrinking){ opacity -= 0.05; if(opacity <= 0.2) shrinking = false;}
+           else { opacity += 0.05; if (opacity >= 1.0) shrinking = true;}
+           ctx.fillStyle = `rgba(46,204,113,${opacity})`;
+           ctx.beginPath();
+           ctx.arc(canvas.width/2, 110, 40, 0, 2*Math.PI);
+           ctx.fill();
+        } else {
+           // Show complete death
+           ctx.fillStyle = `rgba(255,92,115,1.0)`;
+           ctx.beginPath();
+           ctx.arc(canvas.width/2, 110, 40, 0, 2*Math.PI);
+           ctx.fill();
+           ctx.fillStyle = "white";
+           ctx.textAlign = "center";
+           ctx.fillText("OS THREAD FROZEN (time.sleep)", canvas.width/2, 180);
+           ctx.textAlign = "left";
+        }
+        req2 = requestAnimationFrame(render);
+      }
+      cancelAnimationFrame(req2);
+      render();
+    }
+
+    // Default init
+    setProgress(0);
+  </script>
+</body>
+</html>

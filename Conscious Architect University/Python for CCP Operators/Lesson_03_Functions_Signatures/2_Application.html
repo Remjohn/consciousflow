@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 03 - Functions & Signatures: Application Layer</title>
+  <style>
+    :root {
+      --bg: #08111a;
+      --panel: rgba(12, 20, 30, 0.88);
+      --line: rgba(255,255,255,0.08);
+      --text: #f3f7fb;
+      --muted: #9ab0c2;
+      --accent: #56c5ff;
+      --accent-alt: #ff7a18;
+      --good: #2ecc71;
+      --bad: #ff5c73;
+      --gold: #ffd166;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+      background: #08111a;
+      overflow-x: hidden;
+    }
+
+    .bg-mesh {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      z-index: -1;
+      background:
+        radial-gradient(circle at 10% 20%, rgba(86,197,255,0.1), transparent 30%),
+        radial-gradient(circle at 90% 80%, rgba(255,122,24,0.1), transparent 30%);
+    }
+
+    .progress {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: rgba(255,255,255,0.05);
+      z-index: 50;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #56c5ff, #8f7cff, #ff7a18);
+      transition: width 0.35s ease;
+    }
+
+    .shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 42px 18px 80px;
+      opacity: 1;
+      transition: opacity 0.5s ease;
+    }
+
+    .shell.locked {
+      opacity: 0;
+      pointer-events: none;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Spaced Retrieval Modal */
+    .srm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 8, 12, 0.95);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.4s ease;
+    }
+
+    .srm-box {
+      background: var(--panel);
+      border: 1px solid var(--accent-alt);
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 0 40px rgba(255, 122, 24, 0.2);
+    }
+    
+    .srm-box.cleared { display: none; }
+
+    .eyebrow {
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 12px;
+    }
+
+    h1, h2, h3 { margin: 0 0 14px; line-height: 1.1; font-weight: 500; }
+    h1 { font-size: clamp(2.5rem, 5vw, 4rem); }
+    h2 { font-size: clamp(1.5rem, 2.5vw, 2.2rem); }
+    h3 { font-size: 1.1rem; }
+    p { margin: 0 0 14px; }
+
+    .stage { display: none; animation: fadeUp 0.4s ease; margin-bottom: 24px; }
+    .stage.active { display: block; }
+
+    .card {
+      border-radius: 26px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+    
+    .hero {
+      background: linear-gradient(135deg, rgba(86,197,255,0.08), transparent 40%);
+    }
+
+    .grid-2 {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    pre {
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: #050e16;
+      padding: 16px;
+      margin: 0;
+      overflow-x: auto;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .kw { color: #56c5ff; }
+    .type { color: #ff7a18; }
+    .str { color: #2ecc71; }
+    .cls { color: #ffd166; }
+    .comment { color: #89a1b2; font-style: italic; }
+
+    /* Interactive Defect Tracing Code Lines */
+    .code-line {
+      display: block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .code-line:hover { background: rgba(255,255,255,0.1); }
+    .code-line.selected { background: rgba(255,122,24,0.3); outline: 1px solid var(--accent-alt); }
+    .code-line.correct { background: rgba(46,204,113,0.3); outline: 1px solid var(--good); }
+    .code-line.incorrect { background: rgba(255,92,115,0.3); outline: 1px solid var(--bad); }
+
+    /* Logic Tracing Toggle buttons */
+    .trace-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 14px;
+      margin-bottom: 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      color: var(--text);
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+      font-size: 0.95rem;
+      transition: 0.2s;
+    }
+    .trace-btn:hover { background: rgba(255,255,255,0.08); }
+    .trace-btn.active { border-color: var(--accent); background: rgba(86,197,255,0.1); }
+
+    .code-highlight {
+      background: transparent;
+      transition: background 0.3s ease;
+    }
+    .code-highlight.active {
+      background: rgba(86,197,255,0.3);
+    }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      padding: 14px 20px;
+      border-radius: 999px;
+      font: 700 0.9rem/1 Arial, Helvetica, sans-serif;
+      transition: 0.2s;
+      margin-top: 10px;
+    }
+    .btn-primary { background: linear-gradient(90deg, #56c5ff, #0088ff); color: white; }
+    .btn-alt { background: linear-gradient(90deg, #ff7a18, #ff994d); color: white; }
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.15); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .choices { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+    .choice {
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.02);
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      font-family: Arial, sans-serif;
+    }
+    .choice.selected { border-color: var(--accent-alt); background: rgba(255,122,24,0.1); }
+
+    .hidden { display: none !important; }
+    .locked-text { color: var(--gold); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; margin-top:10px; }
+
+    .feedback {
+      margin-top: 15px;
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+      display: none;
+      font-family: Arial, sans-serif;
+    }
+    .feedback.show { display: block; }
+    .feedback.good { border-color: var(--good); background: rgba(46,204,113,0.05); }
+    .feedback.bad { border-color: var(--bad); background: rgba(255,92,115,0.05); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-mesh"></div>
+  <div class="progress"><div id="progressFill" class="progress-fill"></div></div>
+
+  <!-- Spaced Retrieval Interrupt -->
+  <div id="srm-overlay" class="srm-overlay">
+    <div class="srm-box">
+      <p class="eyebrow" style="color:var(--bad)">Spaced Retrieval Interrupt</p>
+      <h2>Verify Capability Integrity</h2>
+      <p style="font-family: Arial">Before unlocking Application layer frameworks, retrieve the core architectural truth from your memory.</p>
+      <p style="font-family: Arial"><strong>What happens in Python if a component expects a dictionary, but an untyped function hands it a string?</strong></p>
+      <div class="choices" id="srm-choices">
+        <button class="choice" onclick="unlockSRM(false)">It automatically wraps the string in a dictionary.</button>
+        <button class="choice" onclick="unlockSRM(true)">It causes a TypeError and crashes the assembly line.</button>
+        <button class="choice" onclick="unlockSRM(false)">It skips the component and proceeds down the pipeline.</button>
+      </div>
+      <div id="srm-feedback" class="feedback"></div>
+    </div>
+  </div>
+
+  <main class="shell locked" id="main-content">
+    <section id="stage-0" class="stage active card hero">
+      <p class="eyebrow">Lesson 03 - Application Layer</p>
+      <h1>From Protocol to Platform</h1>
+      <p class="lede" style="font-family:Arial">The theory of signatures is irrelevant if you cannot identify them in Sovereign code. In the Conscious Coaching Platform (CCP), three distinct subsystems rely entirely on the signature to function: <strong>FastAPI</strong>, <strong>Pydantic</strong>, and <strong>DSPy</strong>.</p>
+      <p style="font-family:Arial">We are moving from the abstract factory floor to actual production manifests.</p>
+      <button class="btn btn-primary" onclick="goToStage(1)" style="margin-top:20px;">Engage Framework Trace</button>
+    </section>
+
+    <!-- Stage 1: Fast API Tracing -->
+    <section id="stage-1" class="stage card">
+      <p class="eyebrow">Framework 1: The External Gateway</p>
+      <h2>Tracing the FastAPI Signature</h2>
+      <p style="font-family:Arial">FastAPI uses Python's type hints directly as a security checkpoint against external API requests. Click through the routing logic to see how the signature forces compliance.</p>
+      <div class="grid-2">
+        <div style="font-family:Arial">
+          <button class="trace-btn t1" onclick="traceCode('.h1', 't1')">1. The Route Path ignores types; it just maps a URL.</button>
+          <button class="trace-btn t2" onclick="traceCode('.h2', 't2')">2. Fast API checks the signature constraint.</button>
+          <button class="trace-btn t3" onclick="traceCode('.h3', 't3')">3. It expects exactly an integer in the path.</button>
+          <button class="trace-btn t4" onclick="traceCode('.h4', 't4')">4. It promises to return a dictionary object.</button>
+        </div>
+        <div>
+<pre>
+<span class="kw">from</span> fastapi <span class="kw">import</span> FastAPI
+app = FastAPI()
+
+<span class="code-highlight h1">@app.get(<span class="str">"/trigger/{trigger_id}"</span>)</span>
+<span class="kw">def</span> <span class="cls">execute_trigger</span>(<span class="code-highlight h2">trigger_id</span>: <span class="code-highlight h3"><span class="type">int</span></span>) <span class="code-highlight h4">-> <span class="type">dict</span></span>:
+    <span class="comment"># If user sends /trigger/alpha, FastAPI </span>
+    <span class="comment"># intercepts it and returns a 422 Error </span>
+    <span class="comment"># before this code even runs.</span>
+    <span class="kw">return</span> {<span class="str">"status"</span>: <span class="str">"success"</span>, <span class="str">"id"</span>: trigger_id}
+</pre>
+          <button id="s1-next" class="btn btn-primary hidden" onclick="goToStage(2)" style="margin-top: 15px;">Next Framework</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stage 2: Defect Identification (Pydantic) -->
+    <section id="stage-2" class="stage card">
+      <p class="eyebrow">Framework 2: The QA Department</p>
+      <h2>Defect Execution: Pydantic Boundaries</h2>
+      <p style="font-family:Arial">Pydantic <span class="mono">BaseModels</span> are essentially massive, structured signature plaques verifying every attribute of an object. The engineer below made a critical omission allowing an untyped dictionary to contaminate the pipeline.</p>
+      <p style="font-family:Arial; color:var(--gold);"><strong>Task: Click specifically on the line of code that creates a vulnerability by failing to enforce a type boundary.</strong></p>
+      
+      <div class="grid-2">
+        <div>
+<pre id="defect-code">
+<span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel
+
+<span class="kw">class</span> <span class="cls">VideoGenerationPayload</span>(BaseModel):
+    <span class="code-line" onclick="checkDefect(this, false)">video_length_seconds: <span class="type">int</span></span>
+    <span class="code-line" onclick="checkDefect(this, false)">target_platform: <span class="type">str</span></span>
+    <span class="code-line" onclick="checkDefect(this, true, true)">metadata  <span class="comment"># &lt;-- Defect</span></span>
+    <span class="code-line" onclick="checkDefect(this, false)">premium_account: <span class="type">bool</span> = <span class="cls">False</span></span>
+
+<span class="kw">def</span> <span class="cls">process_render</span>(payload: VideoGenerationPayload):
+    <span class="code-line" onclick="checkDefect(this, false)">print(payload.target_platform)</span>
+</pre>
+        </div>
+        <div>
+          <div id="d1-feedback" class="feedback"></div>
+          <button id="s2-next" class="btn btn-primary hidden" onclick="goToStage(3)">Next Framework</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stage 3: DSPy Contracts -->
+    <section id="stage-3" class="stage card">
+      <p class="eyebrow">Framework 3: The LLM Contract</p>
+      <h2>DSPy Signatures</h2>
+      <p style="font-family:Arial">DSPy takes the function signature concept and scales it directly to Large Language Models. In DSPy, the signature replaces the prompt. It enforces input strings and forces output structures without writing rules.</p>
+      
+      <div class="grid-2">
+        <div>
+<pre>
+<span class="kw">import</span> dspy
+
+<span class="kw">class</span> <span class="cls">GenerateTweet</span>(dspy.Signature):
+    <span class="str">"""Convert a raw concept into a high-engagement tweet."""</span>
+    raw_concept = dspy.InputField(desc=<span class="str">"unstructured idea"</span>)
+    tweet_text = dspy.OutputField(desc=<span class="str">"max 280 chars"</span>)
+</pre>
+        </div>
+        <div>
+          <p style="font-family:Arial">What happens if the LLM tries to generate three output paragraphs instead of adhering to the signature?</p>
+          <div class="choices" id="c3-choices">
+            <button class="choice" onclick="answerC3(false, this)">The prompt automatically expands to accept paragraphs.</button>
+            <button class="choice" onclick="answerC3(true, this)">DSPy's executor fails the generation structurally and retries.</button>
+            <button class="choice" onclick="answerC3(false, this)">The Python interpreter crashes instantly.</button>
+          </div>
+          <div id="c3-feedback" class="feedback"></div>
+          <button id="s3-next" class="btn btn-primary hidden" onclick="goToStage(4)">Proceed to Application Gauntlet</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stage 4: Mastery Gauntlet -->
+    <section id="stage-4" class="stage card">
+      <p class="eyebrow">Application Gauntlet</p>
+      <h2>Verify Integration Mapping</h2>
+      <p style="font-family:Arial">Map the architectural concept of "Signatures" to the correct CCP Subsystem.</p>
+      
+      <div class="choices" id="g-choices">
+        <label style="font-family:Arial; color:var(--muted); font-size:0.8rem; text-transform:uppercase;">1. Which system uses signatures to enforce API endpoints?</label>
+        <select class="choice" id="g-q1" style="background:var(--bg); border-color:rgba(255,255,255,0.1); margin-bottom:15px; font-size:16px;">
+          <option value="">Select Subsystem...</option>
+          <option value="dspy">DSPy</option>
+          <option value="pydantic">Pydantic</option>
+          <option value="fastapi">FastAPI</option>
+        </select>
+
+        <label style="font-family:Arial; color:var(--muted); font-size:0.8rem; text-transform:uppercase;">2. Which system acts as the QA Department enforcing strict Data Models?</label>
+        <select class="choice" id="g-q2" style="background:var(--bg); border-color:rgba(255,255,255,0.1); margin-bottom:15px; font-size:16px;">
+          <option value="">Select Subsystem...</option>
+          <option value="dspy">DSPy</option>
+          <option value="pydantic">Pydantic</option>
+          <option value="fastapi">FastAPI</option>
+        </select>
+
+        <label style="font-family:Arial; color:var(--muted); font-size:0.8rem; text-transform:uppercase;">3. Which system enforces Input/Output constraints on Large Language Models?</label>
+        <select class="choice" id="g-q3" style="background:var(--bg); border-color:rgba(255,255,255,0.1); margin-bottom:15px; font-size:16px;">
+          <option value="">Select Subsystem...</option>
+          <option value="dspy">DSPy</option>
+          <option value="pydantic">Pydantic</option>
+          <option value="neo4j">Neo4j</option>
+        </select>
+      </div>
+      
+      <button class="btn btn-primary" onclick="gradeApplicationGauntlet()" style="margin-top:20px;">Submit Matrix</button>
+      <div id="g-feedback" class="feedback"></div>
+      
+      <div id="final-box" class="feedback hidden" style="border-color:var(--accent); background:rgba(86,197,255,0.05); margin-top:20px;">
+        <p class="eyebrow" style="margin-bottom:10px; color:var(--accent);">Layer 2 Complete</p>
+        <p style="font-family:Arial">You have successfully mapped the abstract signature boundary to FastAPI (Routing), Pydantic (QA), and DSPy (Execution). You are ready for the Orchestration Layer.</p>
+      </div>
+
+    </section>
+  </main>
+
+  <script>
+    const totalStages = 5; // 0 to 4
+    let currentTraces = 0;
+    let defectFound = false;
+
+    // SRM Logic
+    function unlockSRM(isCorrect) {
+      const fb = document.getElementById('srm-feedback');
+      if (isCorrect) {
+        fb.className = 'feedback show good';
+        fb.innerHTML = '<strong>Correct.</strong> The TypeError is the system protecting itself. Initializing main sequence...';
+        setTimeout(() => {
+          document.getElementById('srm-overlay').style.opacity = '0';
+          setTimeout(() => {
+            document.getElementById('srm-overlay').classList.add('cleared');
+            document.getElementById('main-content').classList.remove('locked');
+          }, 400);
+        }, 1200);
+      } else {
+        fb.className = 'feedback show bad';
+        fb.innerHTML = '<strong>Incorrect.</strong> Python strictly errors out on invalid shape operations. Re-calibrate your structural understanding.';
+      }
+    }
+
+    // Navigation
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Trace Code (Stage 1)
+    function traceCode(hlClass, btnClass) {
+      document.querySelectorAll('.code-highlight').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.trace-btn').forEach(btn => btn.classList.remove('active'));
+      
+      document.querySelector(hlClass).classList.add('active');
+      document.querySelector('.' + btnClass).classList.add('active');
+      currentTraces++;
+      
+      if(currentTraces >= 3) {
+        document.getElementById('s1-next').classList.remove('hidden');
+      }
+    }
+
+    // Defect Clicker (Stage 2)
+    function checkDefect(element, isDefect, isRealDefect = false) {
+      if(defectFound) return; // lock
+
+      document.querySelectorAll('.code-line').forEach(el => el.classList.remove('selected', 'incorrect'));
+      
+      if(isDefect) {
+        element.classList.add('correct');
+        defectFound = true;
+        const fb = document.getElementById('d1-feedback');
+        fb.className = 'feedback show good';
+        fb.innerHTML = '<h3>Boundary Vulnerability Found</h3><p>You identified `metadata` lying open without a type hint (like `: dict`). Pydantic cannot enforce this, meaning garbage data can pass through QA undetected.</p>';
+        document.getElementById('s2-next').classList.remove('hidden');
+      } else {
+        element.classList.add('incorrect');
+        const fb = document.getElementById('d1-feedback');
+        fb.className = 'feedback show bad';
+        fb.innerHTML = '<h3>False Positive</h3><p>That line has a rigid boundary or valid logic. Find the missing type declaration.</p>';
+      }
+    }
+
+    // DSPy Contract (Stage 3)
+    function answerC3(isCorrect, element) {
+      if (document.getElementById('c3-choices').dataset.locked) return;
+      
+      document.querySelectorAll('#c3-choices .choice').forEach(el => el.classList.remove('selected'));
+      element.classList.add('selected');
+
+      const fb = document.getElementById('c3-feedback');
+      if (isCorrect) {
+        document.getElementById('c3-choices').dataset.locked = 'true';
+        fb.className = 'feedback show good';
+        fb.innerHTML = '<h3>Correct: The executor stops it.</h3><p>DSPy parses the LLM output. If it does not match the signature specifications, it blocks the payload, throws an exception, and mechanically prompts the LLM to fix its own hallucination.</p>';
+        document.getElementById('s3-next').classList.remove('hidden');
+      } else {
+        fb.className = 'feedback show bad';
+        fb.innerHTML = '<h3>Incorrect Execution Profile</h3><p>Remember, DSPy creates rigid mechanical boundaries. It does not automatically loosen them, but it also handles the execution inside its framework before base Python crashes.</p>';
+      }
+    }
+
+    // Application Gauntlet (Stage 4)
+    function gradeApplicationGauntlet() {
+      const q1 = document.getElementById('g-q1').value;
+      const q2 = document.getElementById('g-q2').value;
+      const q3 = document.getElementById('g-q3').value;
+      const fb = document.getElementById('g-feedback');
+
+      if (q1 === 'fastapi' && q2 === 'pydantic' && q3 === 'dspy') {
+        fb.className = 'feedback show good hidden'; 
+        document.getElementById('final-box').classList.remove('hidden');
+      } else {
+        fb.className = 'feedback show bad';
+        fb.innerHTML = '<h3>Routing Error</h3><p>One or more integrations are misaligned. Review the domain bounds for FastAPI (routes), Pydantic (data objects), and DSPy (AI).</p>';
+      }
+    }
+
+  </script>
+</body>
+</html>

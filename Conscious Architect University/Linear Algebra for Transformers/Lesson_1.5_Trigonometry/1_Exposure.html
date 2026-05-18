@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trigonometry — The Clock and The Shadow</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-dim:#92400e;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-dim:#0f766e;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-dim:#9f1239;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-dim:#065f46;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:var(--border-light);}
+
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;cursor:crosshair;}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-amber{background:var(--amber);color:#000;}
+.btn-amber:hover{background:#fbbf24;transform:translateY(-1px);}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text-muted);color:var(--text);}
+.btn-outline.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow);}
+.btn-sm{padding:.4rem .8rem;font-size:.78rem;}
+
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+
+.quiz-option{display:block;width:100%;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:.88rem;color:var(--text-muted);transition:all .25s;text-align:left;font-family:'DM Sans',sans-serif;}
+.quiz-option:hover{border-color:var(--border-light);color:var(--text);}
+.quiz-option.correct{border-color:var(--emerald);color:var(--emerald);background:var(--emerald-glow);}
+.quiz-option.wrong{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+.quiz-option.disabled{pointer-events:none;opacity:.6;}
+.quiz-explanation{max-height:0;overflow:hidden;transition:max-height .5s ease;font-size:.85rem;color:var(--text-muted);line-height:1.6;}
+.quiz-explanation.show{max-height:300px;}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1;min-width:280px;}
+.visual-col{flex:1.2;min-width:320px;}
+
+input[type=range]{-webkit-appearance:none;background:transparent;width:100%;}
+input[type=range]::-webkit-slider-track{height:4px;background:var(--border);border-radius:2px;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--amber);border-radius:50%;margin-top:-6px;cursor:pointer;}
+
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+.scroll-hint{animation:bounce 2s ease infinite;}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column!important;}
+  .canvas-wrap{min-height:300px!important;}
+  .nav-links{gap:.6rem;}
+  .nav-link{font-size:.72rem;}
+}
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:0.01ms!important;transition-duration:0.01ms!important;}
+}
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">TRIGONOMETRY</span>
+    <div class="nav-links">
+      <a href="#clock" class="nav-link active" data-section="clock">The Clock</a>
+      <a href="#unitcircle" class="nav-link" data-section="unitcircle">Unit Circle</a>
+      <a href="#similarity" class="nav-link" data-section="similarity">Cosine Sim</a>
+      <a href="#encoding" class="nav-link" data-section="encoding">Pos. Encoding</a>
+      <a href="#checkpoint" class="nav-link" data-section="checkpoint">Checkpoint</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 1.5 — EXPOSURE LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Trigonometry<br><span style="color:var(--text-muted);font-weight:300;">The Clock and The Shadow</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      How rotating hands cast perpendicular shadows that give Transformers the power to perceive time, position, and pure semantic alignment.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: The Clock — Sine & Cosine as Shadows -->
+<section id="clock" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — THE CLOCK AND THE SHADOW</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Sine and Cosine as Perpendicular Shadows</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          A Transformer swallows your entire sentence in one instantaneous geometric gulp — every word processed perfectly in parallel. But if the first word and the last word arrive at the same millisecond, how does the model know that <em>"the cat sat on the mat"</em> differs from <em>"the mat sat on the cat"</em>?
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          The solution is the oldest math humanity used to track time: <strong style="color:var(--text);">rotation</strong>. Imagine a clock with a single hand sweeping in a perfect circle.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          Shine a spotlight from the right — the shadow on the wall moves <strong style="color:var(--teal);">up and down</strong>. That's <strong style="color:var(--teal);">Sine</strong>. Shine a spotlight from the ceiling — the shadow on the floor moves <strong style="color:var(--amber);">left and right</strong>. That's <strong style="color:var(--amber);">Cosine</strong>.
+        </p>
+        <div class="insight" style="margin-bottom:1rem;">
+          <strong>Two perpendicular perspectives of the same rotation.</strong> When cos hits 0, sin hits 1. They oscillate perfectly out of phase — providing two non-interfering signals that create an unbreakable cryptographic signature for each token's position.
+        </div>
+        <p style="color:var(--text-dim);font-size:.82rem;"><i class="fas fa-hand-pointer" style="margin-right:.25rem;"></i> Watch the live shadow projections as the hand rotates. Drag the angle slider to explore manually.</p>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:400px;">
+          <canvas id="clockCanvas"></canvas>
+        </div>
+        <div style="padding:.75rem 1rem;">
+          <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:.5rem;">Angle θ</label>
+          <input type="range" id="angleSlider" min="0" max="360" value="45" style="width:100%;">
+          <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--text-dim);margin-top:.25rem;">
+            <span>0°</span>
+            <span id="angleValue" style="color:var(--amber);font-weight:600;">45°</span>
+            <span>360°</span>
+          </div>
+          <div style="display:flex;gap:1rem;margin-top:.5rem;">
+            <div style="font-size:.82rem;"><span style="color:var(--amber);">cos(θ)</span> = <span id="cosVal" style="color:var(--amber);font-weight:700;">0.707</span></div>
+            <div style="font-size:.82rem;"><span style="color:var(--teal);">sin(θ)</span> = <span id="sinVal" style="color:var(--teal);font-weight:700;">0.707</span></div>
+          </div>
+          <div style="margin-top:.5rem;">
+            <button id="autoRotateBtn" class="btn btn-outline btn-sm"><i class="fas fa-play"></i> Auto-Rotate</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: Unit Circle Explorer -->
+<section id="unitcircle" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">02 — THE UNIT CIRCLE</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">The Rosetta Stone of Trigonometry</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          Draw a circle centered at the origin (0,0) with radius exactly 1. Any vector arrow from the origin to a point on this circle has magnitude exactly 1. The only thing differentiating vectors is the <strong style="color:var(--text);">angle θ</strong> from the horizontal x-axis.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          The coordinates of any point on the unit circle are <strong style="color:var(--amber);">(cos θ, sin θ)</strong>. Because the radius is 1, these values are forever trapped between -1 and +1.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          This generates the fundamental identity: <strong style="color:var(--text);">sin²θ + cos²θ = 1</strong>. This isn't a formula to memorize — it's the Pythagorean theorem proving that decomposing a unit vector into horizontal and vertical shadows doesn't create or destroy energy.
+        </p>
+        <div class="insight">
+          <strong>Click anywhere on the canvas</strong> to place the vector on the unit circle. Watch both coordinates update live — they are literally the horizontal and vertical shadow projections.
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:400px;">
+          <canvas id="unitCircleCanvas"></canvas>
+        </div>
+        <div style="display:flex;gap:1.5rem;padding:.75rem 1rem;">
+          <div class="card" style="flex:1;padding:.75rem;text-align:center;">
+            <div style="font-size:.72rem;color:var(--text-dim);margin-bottom:.25rem;">COORDINATES</div>
+            <div style="font-size:1rem;font-weight:700;font-family:'Space Grotesk';">
+              (<span id="ucCos" style="color:var(--amber);">0.71</span>, <span id="ucSin" style="color:var(--teal);">0.71</span>)
+            </div>
+          </div>
+          <div class="card" style="flex:1;padding:.75rem;text-align:center;">
+            <div style="font-size:.72rem;color:var(--text-dim);margin-bottom:.25rem;">sin² + cos²</div>
+            <div id="ucIdentity" style="font-size:1rem;font-weight:700;font-family:'Space Grotesk';color:var(--emerald);">1.000</div>
+          </div>
+          <div class="card" style="flex:1;padding:.75rem;text-align:center;">
+            <div style="font-size:.72rem;color:var(--text-dim);margin-bottom:.25rem;">ANGLE</div>
+            <div id="ucAngle" style="font-size:1rem;font-weight:700;font-family:'Space Grotesk';color:var(--violet);">45.0°</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: Cosine Similarity -->
+<section id="similarity" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--rose);margin-bottom:.5rem;">03 — COSINE SIMILARITY</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Measuring Pure Directional Alignment</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          If two vectors represent embeddings for two words, how do we know if they mean the same thing? We could measure raw distance — but magnitude distorts this. One word might be a loud whisper, another a quiet shout of the same concept.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          <strong style="color:var(--text);">Cosine Similarity</strong> grabs both vectors, forces them onto the unit circle (stripping magnitude), and measures the cosine of the angle between them. It returns a single number:
+        </p>
+        <ul style="color:var(--text-muted);line-height:1.8;padding-left:1.2rem;margin-bottom:1rem;font-size:.9rem;">
+          <li><strong style="color:var(--emerald);">+1</strong> → Perfect alignment (identical meaning)</li>
+          <li><strong style="color:var(--text-dim);">0</strong> → Completely independent (orthogonal)</li>
+          <li><strong style="color:var(--rose);">-1</strong> → Hostile opposition (opposite meaning)</li>
+        </ul>
+        <div class="insight">
+          <strong>Drag the arrow tips</strong> of Vector A (amber) and Vector B (teal) to explore how the cosine similarity changes. Notice: it doesn't matter how long or short you make them — only the angle matters.
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:400px;">
+          <canvas id="simCanvas"></canvas>
+        </div>
+        <div style="display:flex;gap:1rem;padding:.75rem 1rem;">
+          <div class="card" style="flex:1;padding:.75rem;text-align:center;">
+            <div style="font-size:.72rem;color:var(--text-dim);margin-bottom:.25rem;">COSINE SIMILARITY</div>
+            <div id="cosSim" style="font-size:1.5rem;font-weight:800;font-family:'Space Grotesk';color:var(--emerald);">0.80</div>
+          </div>
+          <div class="card" style="flex:1;padding:.75rem;text-align:center;">
+            <div style="font-size:.72rem;color:var(--text-dim);margin-bottom:.25rem;">ANGLE BETWEEN</div>
+            <div id="simAngle" style="font-size:1.5rem;font-weight:800;font-family:'Space Grotesk';color:var(--violet);">36.9°</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 4: Positional Encoding Waves -->
+<section id="encoding" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:.5rem;">04 — POSITIONAL ENCODING</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Stamping Time Onto Static Vectors</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          A Transformer doesn't just attach a raw number like "Position 5" to a word. It attaches <strong style="color:var(--text);">a combination of sine and cosine waves rotating at different speeds</strong>. The high-frequency waves distinguish nearby tokens; the low-frequency waves distinguish distant tokens.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          At the extreme edge — if the slowest sine wave completes a full 360° rotation — the model experiences <strong style="color:var(--rose);">rotational phase shift collapse</strong>. Token 8000 gets the same fingerprint as Token 0. The geometry folds on itself and the model's memory hallucinates.
+        </p>
+        <div class="insight" style="margin-bottom:1rem;">
+          <strong>Select a token position</strong> below to highlight it across all frequency waves. Each wave encodes the same position at a different resolution — together they form a unique fingerprint.
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;">
+          <button class="btn btn-outline btn-sm pos-btn active" data-pos="0">Pos 0</button>
+          <button class="btn btn-outline btn-sm pos-btn" data-pos="3">Pos 3</button>
+          <button class="btn btn-outline btn-sm pos-btn" data-pos="7">Pos 7</button>
+          <button class="btn btn-outline btn-sm pos-btn" data-pos="15">Pos 15</button>
+          <button class="btn btn-outline btn-sm pos-btn" data-pos="31">Pos 31</button>
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:420px;">
+          <canvas id="encodingCanvas"></canvas>
+        </div>
+        <p style="font-size:.75rem;color:var(--text-dim);text-align:center;margin-top:.5rem;">
+          4 frequency bands: high-freq (top) to low-freq (bottom). Sine = solid, Cosine = dashed.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 5: Checkpoint Quiz -->
+<section id="checkpoint" class="section">
+  <div class="section-inner" style="max-width:720px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">05 — CHECKPOINT</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Test Your Understanding</h2>
+    <p style="color:var(--text-muted);line-height:1.7;margin-bottom:2rem;">
+      Four questions to check whether the shadows and waves have landed. Click an option for immediate feedback.
+    </p>
+    <div id="quizContainer" style="display:flex;flex-direction:column;gap:1.5rem;"></div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);">
+  Interactive Visual Learning — Trigonometry: The Exposure Layer
+</footer>
+
+<script>
+/* ================================================
+   UTILITIES
+   ================================================ */
+const DPR = window.devicePixelRatio || 1;
+function setupCanvas(canvas) {
+  const rect = canvas.parentElement ? canvas.parentElement.getBoundingClientRect() : canvas.getBoundingClientRect();
+  canvas.width = rect.width * DPR;
+  canvas.height = rect.height * DPR;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+  return { ctx, w: rect.width, h: rect.height };
+}
+function toRad(deg){ return deg * Math.PI / 180; }
+function toDeg(rad){ return rad * 180 / Math.PI; }
+
+/* ================================================
+   HERO — floating sine wave background
+   ================================================ */
+(function(){
+  const c = document.getElementById('heroCanvas');
+  let W, H, ctx;
+  function resize(){
+    const p = c.parentElement;
+    W = p.offsetWidth; H = p.offsetHeight;
+    c.width = W * DPR; c.height = H * DPR;
+    c.style.width = W+'px'; c.style.height = H+'px';
+    ctx = c.getContext('2d');
+    ctx.scale(DPR, DPR);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  let t = 0;
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    for(let wave=0;wave<4;wave++){
+      ctx.beginPath();
+      const freq = 0.005 + wave*0.003;
+      const amp = 30 + wave*15;
+      const yBase = H*0.3 + wave * H*0.15;
+      const alpha = 0.06 - wave*0.012;
+      for(let x=0;x<W;x++){
+        const y = yBase + Math.sin(x*freq + t*0.02 + wave*1.2)*amp;
+        x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle = wave%2===0 ? `rgba(245,158,11,${alpha})` : `rgba(20,184,166,${alpha})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    t++;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ================================================
+   SECTION 1: Clock / Shadow Canvas
+   ================================================ */
+(function(){
+  const canvas = document.getElementById('clockCanvas');
+  const slider = document.getElementById('angleSlider');
+  const angleValEl = document.getElementById('angleValue');
+  const cosValEl = document.getElementById('cosVal');
+  const sinValEl = document.getElementById('sinVal');
+  const autoBtn = document.getElementById('autoRotateBtn');
+  let autoRotate = false, autoAngle = 45;
+
+  function draw(){
+    const { ctx, w, h } = setupCanvas(canvas);
+    const angle = autoRotate ? autoAngle : parseFloat(slider.value);
+    const rad = toRad(angle);
+    const cx = w * 0.5, cy = h * 0.5;
+    const R = Math.min(w, h) * 0.3;
+    const cosV = Math.cos(rad), sinV = Math.sin(rad);
+    const tipX = cx + R * cosV, tipY = cy - R * sinV;
+
+    ctx.clearRect(0,0,w,h);
+
+    // Circle
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1; ctx.stroke();
+
+    // Axes
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(w,cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx,0); ctx.lineTo(cx,h); ctx.stroke();
+
+    // Cos shadow (horizontal projection) - floor
+    ctx.save();
+    ctx.shadowColor = '#f59e0b'; ctx.shadowBlur = 8;
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(cx, cy+R+30); ctx.lineTo(tipX, cy+R+30); ctx.stroke();
+    ctx.beginPath(); ctx.arc(tipX, cy+R+30, 4, 0, Math.PI*2);
+    ctx.fillStyle = '#f59e0b'; ctx.fill();
+    ctx.restore();
+    // Dashed drop line
+    ctx.setLineDash([4,4]); ctx.strokeStyle='rgba(245,158,11,0.25)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(tipX,tipY); ctx.lineTo(tipX,cy+R+30); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Sin shadow (vertical projection) - wall
+    ctx.save();
+    ctx.shadowColor = '#14b8a6'; ctx.shadowBlur = 8;
+    ctx.strokeStyle = '#14b8a6'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(cx-R-30, cy); ctx.lineTo(cx-R-30, tipY); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx-R-30, tipY, 4, 0, Math.PI*2);
+    ctx.fillStyle = '#14b8a6'; ctx.fill();
+    ctx.restore();
+    // Dashed drop line
+    ctx.setLineDash([4,4]); ctx.strokeStyle='rgba(20,184,166,0.25)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(tipX,tipY); ctx.lineTo(cx-R-30,tipY); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // The hand (vector)
+    ctx.save();
+    ctx.shadowColor = '#fafafa'; ctx.shadowBlur = 6;
+    ctx.strokeStyle = '#fafafa'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(tipX,tipY); ctx.stroke();
+    ctx.beginPath(); ctx.arc(tipX,tipY, 5, 0, Math.PI*2);
+    ctx.fillStyle = '#fafafa'; ctx.fill();
+    ctx.restore();
+
+    // Angle arc
+    ctx.beginPath(); ctx.arc(cx,cy, 25, 0, -rad, rad > 0);
+    ctx.strokeStyle = 'rgba(139,92,246,0.6)'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Labels
+    ctx.font = '600 11px Space Grotesk';
+    ctx.fillStyle = '#f59e0b'; ctx.textAlign = 'center';
+    ctx.fillText('cos θ = ' + cosV.toFixed(3), (cx + tipX)/2, cy + R + 50);
+    ctx.fillStyle = '#14b8a6'; ctx.textAlign = 'center';
+    ctx.save(); ctx.translate(cx - R - 50, (cy + tipY)/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText('sin θ = ' + sinV.toFixed(3), 0, 0);
+    ctx.restore();
+
+    // Update readouts
+    angleValEl.textContent = Math.round(angle) + '°';
+    cosValEl.textContent = cosV.toFixed(3);
+    sinValEl.textContent = sinV.toFixed(3);
+  }
+
+  slider.addEventListener('input', ()=>{ autoRotate = false; draw(); });
+
+  autoBtn.addEventListener('click', ()=>{
+    autoRotate = !autoRotate;
+    autoBtn.innerHTML = autoRotate ? '<i class="fas fa-pause"></i> Pause' : '<i class="fas fa-play"></i> Auto-Rotate';
+  });
+
+  function tick(){
+    if(autoRotate){
+      autoAngle = (autoAngle + 0.5) % 360;
+      slider.value = autoAngle;
+      draw();
+    }
+    requestAnimationFrame(tick);
+  }
+  draw(); tick();
+  window.addEventListener('resize', draw);
+})();
+
+/* ================================================
+   SECTION 2: Unit Circle Explorer
+   ================================================ */
+(function(){
+  const canvas = document.getElementById('unitCircleCanvas');
+  let angle = Math.PI/4;
+
+  function draw(){
+    const { ctx, w, h } = setupCanvas(canvas);
+    const cx = w*0.5, cy = h*0.5;
+    const R = Math.min(w,h)*0.35;
+    const cosV = Math.cos(angle), sinV = Math.sin(angle);
+    const tipX = cx + R*cosV, tipY = cy - R*sinV;
+
+    ctx.clearRect(0,0,w,h);
+
+    // Grid
+    ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
+    for(let i=-1;i<=1;i+=0.5){
+      const x=cx+i*R, y=cy-i*R;
+      ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();
+    }
+
+    // Axes
+    ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(w,cy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,0);ctx.lineTo(cx,h);ctx.stroke();
+
+    // Unit circle
+    ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,255,255,0.12)';ctx.lineWidth=1;ctx.stroke();
+
+    // Cos projection (on x-axis)
+    ctx.fillStyle='rgba(245,158,11,0.15)';
+    ctx.fillRect(cx,cy,cosV*R,-4);
+    ctx.fillStyle='#f59e0b';
+    ctx.beginPath();ctx.arc(cx+cosV*R,cy,4,0,Math.PI*2);ctx.fill();
+
+    // Sin projection (on y-axis)
+    ctx.fillStyle='rgba(20,184,166,0.15)';
+    ctx.fillRect(cx-4,cy,4,-sinV*R);
+    ctx.fillStyle='#14b8a6';
+    ctx.beginPath();ctx.arc(cx,cy-sinV*R,4,0,Math.PI*2);ctx.fill();
+
+    // Dashed lines
+    ctx.setLineDash([4,3]);ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(tipX,tipY);ctx.lineTo(tipX,cy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(tipX,tipY);ctx.lineTo(cx,tipY);ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Vector
+    ctx.save();ctx.shadowColor='#fafafa';ctx.shadowBlur=8;
+    ctx.strokeStyle='#fafafa';ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(tipX,tipY);ctx.stroke();
+    ctx.beginPath();ctx.arc(tipX,tipY,5,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+    ctx.restore();
+
+    // Angle arc
+    ctx.beginPath();ctx.arc(cx,cy,30,0,-angle,true);
+    ctx.strokeStyle='rgba(139,92,246,0.7)';ctx.lineWidth=2;ctx.stroke();
+
+    // Labels
+    ctx.font='600 11px Space Grotesk';
+    ctx.fillStyle='#f59e0b';ctx.textAlign='center';
+    ctx.fillText('cos',cx+cosV*R,cy+18);
+    ctx.fillStyle='#14b8a6';
+    ctx.fillText('sin',cx-18,cy-sinV*R+4);
+
+    // Tick labels
+    ctx.font='10px DM Sans';ctx.fillStyle='#3f3f46';ctx.textAlign='center';
+    ctx.fillText('-1',cx-R,cy+14);ctx.fillText('1',cx+R,cy+14);
+    ctx.fillText('-1',cx-12,cy+R+4);ctx.fillText('1',cx-12,cy-R+4);
+
+    // Update DOM
+    document.getElementById('ucCos').textContent = cosV.toFixed(3);
+    document.getElementById('ucSin').textContent = sinV.toFixed(3);
+    document.getElementById('ucIdentity').textContent = (cosV*cosV+sinV*sinV).toFixed(3);
+    document.getElementById('ucAngle').textContent = toDeg(angle).toFixed(1)+'°';
+  }
+
+  canvas.addEventListener('click', (e)=>{
+    const rect=canvas.getBoundingClientRect();
+    const px=(e.clientX-rect.left), py=(e.clientY-rect.top);
+    const {w,h} = {w:rect.width,h:rect.height};
+    const cx=w*0.5,cy=h*0.5;
+    angle = Math.atan2(cy-py, px-cx);
+    if(angle<0) angle += Math.PI*2;
+    draw();
+  });
+
+  draw();
+  window.addEventListener('resize', draw);
+})();
+
+/* ================================================
+   SECTION 3: Cosine Similarity — Draggable Vectors
+   ================================================ */
+(function(){
+  const canvas = document.getElementById('simCanvas');
+  let vecA = {x:6,y:4}, vecB = {x:2,y:8};
+  let dragging = null;
+
+  function draw(){
+    const {ctx,w,h} = setupCanvas(canvas);
+    const cx=w*0.5, cy=h*0.5, scale=Math.min(w,h)/24;
+
+    ctx.clearRect(0,0,w,h);
+
+    // Grid
+    for(let i=-10;i<=10;i++){
+      const alpha=i===0?0:0.06;
+      ctx.strokeStyle=`rgba(255,255,255,${alpha})`;ctx.lineWidth=1;
+      const x=cx+i*scale,y=cy-i*scale;
+      ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();
+    }
+    ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(w,cy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,0);ctx.lineTo(cx,h);ctx.stroke();
+
+    // Draw vectors
+    function drawVec(v,color,label){
+      const tx=cx+v.x*scale, ty=cy-v.y*scale;
+      const dx=tx-cx,dy=ty-cy,len=Math.sqrt(dx*dx+dy*dy);
+      if(len<2)return;
+      const ang=Math.atan2(dy,dx), hl=Math.min(14,len*0.3);
+      ctx.save();ctx.shadowColor=color;ctx.shadowBlur=8;
+      ctx.strokeStyle=color;ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(tx,ty);ctx.stroke();
+      ctx.restore();
+      ctx.beginPath();
+      ctx.moveTo(tx,ty);
+      ctx.lineTo(tx-hl*Math.cos(ang-0.35),ty-hl*Math.sin(ang-0.35));
+      ctx.lineTo(tx-hl*Math.cos(ang+0.35),ty-hl*Math.sin(ang+0.35));
+      ctx.closePath();ctx.fillStyle=color;ctx.fill();
+      ctx.beginPath();ctx.arc(tx,ty,5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
+      ctx.font='600 12px Space Grotesk';ctx.fillStyle=color;ctx.textAlign='left';
+      ctx.fillText(label+' ('+v.x.toFixed(1)+', '+v.y.toFixed(1)+')',tx+10,ty-10);
+    }
+
+    // Angle arc
+    const angA=Math.atan2(vecA.y,vecA.x), angB=Math.atan2(vecB.y,vecB.x);
+    ctx.beginPath();ctx.arc(cx,cy,30,-angA,-angB,angA>angB);
+    ctx.strokeStyle='rgba(139,92,246,0.5)';ctx.lineWidth=2;ctx.stroke();
+
+    drawVec(vecA,'#f59e0b','A');
+    drawVec(vecB,'#14b8a6','B');
+
+    // Compute similarity
+    const dot = vecA.x*vecB.x + vecA.y*vecB.y;
+    const magA = Math.sqrt(vecA.x**2+vecA.y**2);
+    const magB = Math.sqrt(vecB.x**2+vecB.y**2);
+    const sim = (magA>0.01&&magB>0.01) ? dot/(magA*magB) : 0;
+    const angleBetween = Math.acos(Math.max(-1,Math.min(1,sim)));
+
+    document.getElementById('cosSim').textContent = sim.toFixed(3);
+    document.getElementById('cosSim').style.color = sim>0.5?'var(--emerald)':sim>0?'var(--amber)':'var(--rose)';
+    document.getElementById('simAngle').textContent = toDeg(angleBetween).toFixed(1)+'°';
+  }
+
+  function getMouseMath(e){
+    const rect=canvas.getBoundingClientRect();
+    const w=rect.width,h=rect.height;
+    const scale=Math.min(w,h)/24;
+    return {
+      x: (e.clientX-rect.left - w*0.5)/scale,
+      y: (h*0.5 - (e.clientY-rect.top))/scale
+    };
+  }
+
+  canvas.addEventListener('mousedown',(e)=>{
+    const m=getMouseMath(e);
+    if(Math.hypot(m.x-vecA.x,m.y-vecA.y)<1.5) dragging='A';
+    else if(Math.hypot(m.x-vecB.x,m.y-vecB.y)<1.5) dragging='B';
+  });
+  canvas.addEventListener('mousemove',(e)=>{
+    if(!dragging)return;
+    const m=getMouseMath(e);
+    if(dragging==='A'){vecA.x=m.x;vecA.y=m.y;}
+    else{vecB.x=m.x;vecB.y=m.y;}
+    draw();
+  });
+  canvas.addEventListener('mouseup',()=>{dragging=null;});
+  canvas.addEventListener('mouseleave',()=>{dragging=null;});
+
+  draw();
+  window.addEventListener('resize',draw);
+})();
+
+/* ================================================
+   SECTION 4: Positional Encoding Waves
+   ================================================ */
+(function(){
+  const canvas = document.getElementById('encodingCanvas');
+  let highlightPos = 0;
+  const maxPos = 48;
+  const frequencies = [1, 4, 16, 64];
+  const colors = ['#f43f5e','#f59e0b','#14b8a6','#8b5cf6'];
+
+  function draw(){
+    const {ctx,w,h} = setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+    const bandH = h / frequencies.length;
+    const padL = 40, padR = 20;
+    const plotW = w - padL - padR;
+
+    frequencies.forEach((freq, fi)=>{
+      const yBase = fi * bandH;
+      const yMid = yBase + bandH*0.5;
+      const amp = bandH * 0.32;
+
+      // Band label
+      ctx.font='600 10px Space Grotesk';ctx.fillStyle=colors[fi];ctx.textAlign='left';
+      ctx.fillText('f='+freq, 4, yMid+4);
+
+      // Zero line
+      ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(padL,yMid);ctx.lineTo(w-padR,yMid);ctx.stroke();
+
+      // Sine wave (solid)
+      ctx.beginPath();
+      for(let p=0;p<=maxPos;p++){
+        const x = padL + (p/maxPos)*plotW;
+        const y = yMid - Math.sin(p/freq)*amp;
+        p===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle=colors[fi];ctx.lineWidth=1.5;ctx.globalAlpha=0.7;ctx.stroke();ctx.globalAlpha=1;
+
+      // Cosine wave (dashed)
+      ctx.beginPath();ctx.setLineDash([5,3]);
+      for(let p=0;p<=maxPos;p++){
+        const x = padL + (p/maxPos)*plotW;
+        const y = yMid - Math.cos(p/freq)*amp;
+        p===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle=colors[fi];ctx.lineWidth=1;ctx.globalAlpha=0.4;ctx.stroke();
+      ctx.setLineDash([]);ctx.globalAlpha=1;
+
+      // Highlight position dot on sine
+      const hx = padL + (highlightPos/maxPos)*plotW;
+      const hySin = yMid - Math.sin(highlightPos/freq)*amp;
+      const hyCos = yMid - Math.cos(highlightPos/freq)*amp;
+      ctx.beginPath();ctx.arc(hx,hySin,5,0,Math.PI*2);ctx.fillStyle=colors[fi];ctx.fill();
+      ctx.beginPath();ctx.arc(hx,hyCos,4,0,Math.PI*2);ctx.fillStyle=colors[fi];ctx.globalAlpha=0.5;ctx.fill();ctx.globalAlpha=1;
+
+      // Separator
+      if(fi < frequencies.length-1){
+        ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(padL,yBase+bandH);ctx.lineTo(w-padR,yBase+bandH);ctx.stroke();
+      }
+    });
+
+    // Vertical highlight line
+    const hx = padL + (highlightPos/maxPos)*plotW;
+    ctx.strokeStyle='rgba(250,250,250,0.2)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(hx,0);ctx.lineTo(hx,h);ctx.stroke();ctx.setLineDash([]);
+    ctx.font='600 11px Space Grotesk';ctx.fillStyle='#fafafa';ctx.textAlign='center';
+    ctx.fillText('pos '+highlightPos, hx, 14);
+  }
+
+  document.querySelectorAll('.pos-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.pos-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      highlightPos = parseInt(btn.dataset.pos);
+      draw();
+    });
+  });
+
+  draw();
+  window.addEventListener('resize', draw);
+})();
+
+/* ================================================
+   SECTION 5: Quiz
+   ================================================ */
+(function(){
+  const questions = [
+    {
+      q: "A RAG system returns a match with Cosine Similarity of exactly 0.000. Does this mean the premise actively disagrees with your query?",
+      opts: [
+        "Yes — zero means the concepts cancel each other out",
+        "No — zero means pristine orthogonal independence. They are completely unrelated, not hostile.",
+        "It means the system errored — cosine can never be exactly 0",
+        "It means the vectors are identical but have opposite magnitudes"
+      ],
+      correct: 1,
+      explanation: "A Cosine Similarity of 0 means the vectors are at exactly 90°. They share zero alignment — not opposition. Opposition would be -1. Zero means geometric irrelevance: the concepts live in completely independent dimensions."
+    },
+    {
+      q: "If Positional Encoding only used a single fast Sine wave (no Cosine, no slower frequencies), how would the Transformer fail on a 500-word prompt?",
+      opts: [
+        "It would work fine — one wave is sufficient for positioning",
+        "The fast wave would repeat its cycle many times, causing distant tokens to get identical fingerprints. The model confuses position 5 with position 505.",
+        "The model would crash due to numerical overflow",
+        "The attention mechanism would still work but slightly slower"
+      ],
+      correct: 1,
+      explanation: "A single fast sine wave completes many full rotations across 500 tokens. Tokens separated by exactly one wavelength get identical sin values — the model cannot distinguish them. Multiple frequencies at different speeds, plus cosine, create unique fingerprints for every position."
+    },
+    {
+      q: "Can Cosine Similarity ever exceed +1.5 if one vector has massively high magnitude?",
+      opts: [
+        "Yes — if the magnitude is extreme enough, the score inflates past 1",
+        "Yes — but only in spaces with more than 768 dimensions",
+        "No — Cosine Similarity is geometrically bounded between -1 and +1 regardless of magnitude.",
+        "No — but it can reach exactly 1.5 in edge cases"
+      ],
+      correct: 2,
+      explanation: "Cosine Similarity forcibly divides out magnitude. It measures only the angle between two directions. Because the cosine of any angle is always between -1 and +1, the metric is permanently capped. This is scale-invariance — the core property that distinguishes it from the Dot Product."
+    },
+    {
+      q: "When Cosine (horizontal projection) is at its absolute maximum, what is Sine (vertical projection) doing?",
+      opts: [
+        "Also at maximum — they peak together",
+        "Sine is at its minimum (most negative)",
+        "Sine is exactly 0 — they are perfectly out of phase.",
+        "Sine is undefined at that point"
+      ],
+      correct: 2,
+      explanation: "When cos θ = 1 (θ = 0°), the vector lies flat along the x-axis. The vertical shadow is zero: sin 0° = 0. They oscillate perfectly out of phase — this orthogonal independence is what makes them ideal for positional encoding."
+    }
+  ];
+
+  const container = document.getElementById('quizContainer');
+  let answered = 0;
+
+  questions.forEach((q, qi)=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.padding = '1.25rem';
+    let optsHTML = '';
+    q.opts.forEach((o, oi)=>{
+      optsHTML += `<button class="quiz-option" data-q="${qi}" data-o="${oi}" style="margin-bottom:.5rem;">${o}</button>`;
+    });
+    card.innerHTML = `
+      <p style="font-size:.82rem;font-weight:600;color:var(--text-dim);margin-bottom:.75rem;">Question ${qi+1}</p>
+      <p style="font-size:.92rem;line-height:1.6;margin-bottom:1rem;">${q.q}</p>
+      <div id="qOpts${qi}">${optsHTML}</div>
+      <div class="quiz-explanation" id="qExp${qi}" style="margin-top:.75rem;">
+        <div class="insight">${q.explanation}</div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  container.addEventListener('click',(e)=>{
+    const btn = e.target.closest('.quiz-option');
+    if(!btn) return;
+    const qi = parseInt(btn.dataset.q);
+    const oi = parseInt(btn.dataset.o);
+    const opts = document.querySelectorAll(`#qOpts${qi} .quiz-option`);
+    if(opts[0].classList.contains('disabled')) return;
+    opts.forEach((o,i)=>{
+      o.classList.add('disabled');
+      if(i === questions[qi].correct) o.classList.add('correct');
+      else if(i === oi && oi !== questions[qi].correct) o.classList.add('wrong');
+    });
+    document.getElementById(`qExp${qi}`).classList.add('show');
+    answered++;
+  });
+})();
+
+/* ================================================
+   NAV: Active state on scroll
+   ================================================ */
+(function(){
+  const links = document.querySelectorAll('.nav-link');
+  const sections = ['clock','unitcircle','similarity','encoding','checkpoint'];
+  window.addEventListener('scroll',()=>{
+    const y = window.scrollY + 100;
+    let active = sections[0];
+    sections.forEach(id=>{
+      const el = document.getElementById(id);
+      if(el && el.offsetTop <= y) active = id;
+    });
+    links.forEach(l=>{
+      l.classList.toggle('active', l.dataset.section === active);
+    });
+  });
+})();
+</script>
+</body>
+</html>

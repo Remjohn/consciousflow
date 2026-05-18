@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 06 - Orchestration Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+  --cyan:#06b6d4;--cyan-glow:rgba(6,182,212,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--cyan);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--cyan);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1.2;min-width:320px;}
+.visual-col{flex:1;min-width:280px;}
+
+.insight{border-left:3px solid var(--cyan);padding:.8rem 1rem;background:var(--cyan-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--cyan);}
+
+.tab-btn{padding:.6rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-dim);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.85rem;transition:all .2s;}
+.tab-btn:hover{color:var(--text);border-color:var(--border-light);}
+.tab-btn.active{background:var(--cyan-glow);color:var(--cyan);border-color:var(--cyan);}
+
+.domain-content{display:none;}
+.domain-content.active{display:block;animation:fadeIn 0.3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+
+.puzzle-card{border:1px solid var(--border);background:var(--bg-card);border-radius:8px;margin-bottom:.75rem;overflow:hidden;}
+.puzzle-header{padding:1rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:600;color:var(--text);background:var(--bg-elevated);}
+.puzzle-header:hover{background:rgba(255,255,255,0.05);}
+.puzzle-body{padding:0 1rem;max-height:0;overflow:hidden;transition:all 0.3s ease;color:var(--text-muted);font-size:.9rem;line-height:1.6;}
+.puzzle-card.open .puzzle-body{padding:1rem;max-height:600px;}
+.puzzle-card.open .puzzle-icon{transform:rotate(180deg);}
+.puzzle-icon{transition:transform 0.3s;}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text-muted);color:var(--text);}
+.btn-outline.active{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-glow);}
+
+.code-block {
+    font-family: Consolas, Monaco, "Courier New", monospace;
+    font-size: 0.85rem;
+    padding: 16px;
+    border-radius: 8px;
+    background: #060d13;
+    border: 1px solid var(--border);
+    color: #d9e4ec;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+.code-highlight { color: #56c5ff; }
+.code-comment { color: #89a1b2; }
+
+.scroll-hint{animation:bounce 2s ease infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column-reverse!important;}
+  .canvas-wrap{min-height:300px!important;}
+  .nav-links{display:none;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--cyan);">LISTS & GENERATORS</span>
+    <div class="nav-links">
+      <a href="#subsystems" class="nav-link active" data-section="subsystems">6 Subsystems</a>
+      <a href="#crosscontext" class="nav-link" data-section="crosscontext">Cross-Context Comparison</a>
+      <a href="#puzzles" class="nav-link" data-section="puzzles">Logic Puzzles</a>
+      <a href="#builder" class="nav-link" data-section="builder">Builder Task</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--cyan);margin-bottom:1rem;">LESSON 06 — ORCHESTRATION LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Sovereign Boundaries<br><span style="color:var(--text-muted);font-weight:300;">Across the Six Departments</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      Watch the identical mathematical sequence primitive map flawlessly into validation walls, compilation speedruns, zero-latency harnesses, and physical graph memories.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: The 6 CCP Subsystems -->
+<section id="subsystems" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — MULTI-CONTEXT TRANSFER</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">The 6 CCP Subsystems</h2>
+
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.5rem;">
+      <button class="tab-btn active" data-target="chassis"><i class="fas fa-server"></i> The Chassis</button>
+      <button class="tab-btn" data-target="qa"><i class="fas fa-clipboard-check"></i> QA Dept.</button>
+      <button class="tab-btn" data-target="machinist"><i class="fas fa-microchip"></i> Machinist</button>
+      <button class="tab-btn" data-target="robot"><i class="fas fa-robot"></i> Robot Arm</button>
+      <button class="tab-btn" data-target="memory"><i class="fas fa-database"></i> Memory</button>
+      <button class="tab-btn" data-target="compiler"><i class="fas fa-bolt"></i> Skill Compiler</button>
+    </div>
+
+    <div class="flex-layout">
+      <div class="reading-col">
+        <!-- Chassis -->
+        <div id="chassis" class="domain-content active">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--cyan);">The Chassis: FastAPI Streaming</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            When handling massive I/O loads, the Chassis cannot block waiting for inference to finish. Real-time connections depend on <code>yield</code> logic.
+          </p>
+          <div class="code-block">
+<span class="code-highlight">async def</span> event_generator():<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">while True</span>:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;packet = <span class="code-highlight">await</span> queue.get()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">yield</span> <span class="code-highlight">f</span>"data: {packet}\n\n"
+          </div>
+          <div class="insight">
+            <strong>The Mechanism:</strong> This generator never closes. An infinite loop inside a list <code>[packet for packet in queue]</code> would crash instantly. The <code>yield</code> continuously purges local state while preserving the continuous client socket.
+          </div>
+        </div>
+
+        <!-- QA -->
+        <div id="qa" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--cyan);">The QA Dept: Pydantic Validation</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            QA is the exact opposite of the Chassis. Data cannot be "streamed" into a memory database. It must be rigidly analyzed, sized, and blocked.
+          </p>
+          <div class="code-block">
+<span class="code-highlight">class</span> AuditLog(BaseModel):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;violations: <span class="code-highlight">list[str]</span> = Field(..., max_length=10)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">@field_validator</span>("violations")<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">def</span> ensure_all_strings(cls, v):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">return</span> [<span class="code-highlight">str</span>(i) <span class="code-highlight">for</span> i <span class="code-highlight">in</span> v]
+          </div>
+          <div class="insight">
+            <strong>The Mechanism:</strong> Pydantic requires explicit <code>list</code> boundaries so <code>max_length</code> can be accurately evaluated. A comprehension inside QA converts messy external inputs into tight C-verified lists before saving.
+          </div>
+        </div>
+
+        <!-- Machinist -->
+        <div id="machinist" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--cyan);">The Machinist: DSPy Context Assembly</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            DSPy pipelines process thousands of context chunks. Iterating over them via Python loops adds unacceptable overhead. Fast inline comprehensions are mandated.
+          </p>
+          <div class="code-block">
+<span class="code-highlight">def</span> pack_context(raw_transcripts):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;packed_array = [<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;node.payload <span class="code-highlight">for</span> node <span class="code-highlight">in</span> raw_transcripts <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">if</span> node.weight > 0.85<br>
+&nbsp;&nbsp;&nbsp;&nbsp;]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">return</span> "\n".join(packed_array)
+          </div>
+          <div class="insight">
+            <strong>The Mechanism:</strong> List Comprehensions aren't just syntax sugar here; they push the loop down into the C implementation layer of Python, saving critical microseconds when DSPy is compiling nested traces.
+          </div>
+        </div>
+
+        <!-- Robot Arm -->
+        <div id="robot" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--cyan);">The Robot Arm: Subprocess Monitoring</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            When Pi runs a background script (e.g., executing a system command), the stdout lines must be monitored continuously, not loaded at the very end.
+          </p>
+          <div class="code-block">
+<span class="code-highlight">def</span> read_process(process):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">for</span> line <span class="code-highlight">in</span> iter(process.stdout.readline, b''):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">yield</span> line.decode("utf-8")
+          </div>
+          <div class="insight">
+            <strong>The Mechanism:</strong> `process.stdout.readline` is unbounded. The generator structure (`yield`) guarantees we see output immediately line-by-line while keeping the memory footprint at ~1 KB, regardless of whether the script outputs 10 lines or 10 million.
+          </div>
+        </div>
+
+        <!-- Memory -->
+        <div id="memory" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--cyan);">Memory Engine: Neo4j Batch Loads</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            Neo4j transactions are costly. Executing 1,000 queries individually destroys the connection pool. We compile a structured list constraint before executing.
+          </p>
+          <div class="code-block">
+<span class="code-highlight">def</span> upload_nodes(tx, node_list: <span class="code-highlight">list[dict]</span>):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;tx.run(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"UNWIND $batch AS data CREATE (n:Node {id: data.id})", <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;batch=node_list<br>
+&nbsp;&nbsp;&nbsp;&nbsp;)
+          </div>
+          <div class="insight">
+            <strong>The Mechanism:</strong> Neo4j UNWIND queries require explicit size limitations and structured List batches. Streaming a generator directly into a transaction would break the query optimizer.
+          </div>
+        </div>
+
+        <!-- Compiler -->
+        <div id="compiler" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--cyan);">Skill Compiler: Voice DNA Token Streams</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            When parsing out new Skills from a 45-minute Voice DNA track, holding all parsed tokens in RAM risks out-of-bounds array faults.
+          </p>
+          <div class="code-block">
+<span class="code-highlight">def</span> chunk_voice_tokens(audio_path):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;with open(audio_path, 'rb') as f:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">while</span> chunk := f.read(1024):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-highlight">yield</span> chunk
+          </div>
+          <div class="insight">
+            <strong>The Mechanism:</strong> JIT Compilation requires lazy evaluation. Reading the raw bytes lazily and passing them sequentially to the speech-to-text pipeline prevents memory inflation while keeping compilation times lightning-fast.
+          </div>
+        </div>
+      </div>
+
+      <!-- Visual Column -->
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:450px;">
+          <canvas id="domainCanvas"></canvas>
+        </div>
+        <p id="canvasCaption" style="font-size:.78rem;color:var(--text-dim);text-align:center;margin-top:.75rem;padding:0 .5rem;">
+          Select a system to observe its memory/latency topology.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: Architecture Breaks -->
+<section id="crosscontext" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:.5rem;">02 — CROSS-CONTEXT COMPARISON</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">When Good Constructs Misfire</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:1.5rem;">
+      <div class="card" style="flex:1;min-width:250px;padding:1.5rem;border-left:3px solid var(--rose);">
+        <h4 style="color:var(--rose);margin-bottom:.5rem;">🤖 Robot Arm vs Pydantic</h4>
+        <p style="font-size:.88rem;color:var(--text-muted);line-height:1.6;">
+          Why does the Robot Arm (subprocess) feel perfectly natural executing an endless `yield` while the Pydantic QA boundaries instantly crash if presented with one? <strong style="color:var(--text);">Length enforcement.</strong> Pydantic needs to evaluate schema length constraint. Generators have <code>len() == undefined</code>.
+        </p>
+      </div>
+      <div class="card" style="flex:1;min-width:250px;padding:1.5rem;border-left:3px solid var(--teal);">
+        <h4 style="color:var(--teal);margin-bottom:.5rem;">⚙️ Machinist vs Chassis</h4>
+        <p style="font-size:.88rem;color:var(--text-muted);line-height:1.6;">
+          Machinist (DSPy) loves Comprehensions. Chassis (FastAPI) hates them. A list comprehension compiles everything sequentially before releasing the block. If FastAPI waited for DSPy to run an 8,000-token comprehension before replying to a client, <strong style="color:var(--text);">socket timeout</strong> occurs. FastAPI commands Generator yields.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: Logic Puzzles -->
+<section id="puzzles" class="section">
+  <div class="section-inner" style="max-width:800px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">03 — REASONING TRAPS</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Orchestration Defect Puzzles</h2>
+
+    <div class="puzzle-card">
+      <div class="puzzle-header"><span>1. The Infinite Stream Trap</span><i class="fas fa-chevron-down puzzle-icon"></i></div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Setup:</strong> You capture a Pi Audio stream `generator = pi_tts.stream()`. Then immediately you pass it directly to Neo4j: `neo4j.save(list(generator))`.</p>
+        <div class="insight">
+          <strong>Resolution:</strong> OOM Detonation. Utilizing `list()` explicitly converts a lazy generator into an eager batch sequence. Because the stream never fundamentally concludes, the list grows logarithmically into physical memory until the server explodes. 
+        </div>
+      </div>
+    </div>
+
+    <div class="puzzle-card">
+      <div class="puzzle-header"><span>2. The Phantom Validation</span><i class="fas fa-chevron-down puzzle-icon"></i></div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Setup:</strong> A Pydantic field is defined as: `historic_cache: Iterator[str]`. You pass an active generator to this field. Pydantic accepts it. But the data vanishes.</p>
+        <div class="insight" style="border-color:var(--rose);background:var(--rose-glow);">
+          <strong style="color:var(--rose);">Resolution:</strong> Generators empty themselves when iterated. If Pydantic accepted an Iterator, any downstream logic that later tries to read that cache will find the generator totally exhausted (empty). Lists persist; Generators evaporate once consumed.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Section 4: Build Your Own -->
+<section id="builder" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">04 — KINESTHETIC TASK</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Build-Your-Own Case Study</h2>
+
+    <div style="background:var(--bg-elevated);border:1px dashed var(--amber);border-radius:12px;padding:2rem;">
+      <p style="color:var(--text-muted);font-size:.95rem;line-height:1.7;margin-bottom:1.5rem;">
+        Construct your own implementation strategy for a novel CCP Subsystem: <strong>The Real-Time Logging Monitor</strong>. Assuming thousands of error-strings are spawned continuously... Specify the exact mechanism.
+      </p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:1rem;">
+        <div>
+          <label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Structure Choice</label>
+          <select style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';">
+            <option>List / Batching Array</option>
+            <option>Yield / Unbounded Generator</option>
+            <option>Inline Comprehension</option>
+          </select>
+        </div>
+        <div style="grid-column: span 2;">
+          <label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Architectural Defense</label>
+          <textarea rows="3" placeholder="Why would you use that sequence type? Explain the OOM threat or latency need..." style="width:100%;padding:.8rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';resize:vertical;"></textarea>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:1rem;">
+        <button class="btn" style="background:var(--amber);color:#000;" onclick="alert('Submission Locked.')"><i class="fas fa-save"></i> Lock Thesis</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem 4rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);margin-top:2rem;">
+  <p style="max-width:600px;margin:0 auto 1.5rem;line-height:1.6;">
+    <strong>Orchestrational Conclusion:</strong> A beginner learns syntax. An Architect sees memory footprints, bounding boxes, and infinite pipes mapping to real-world physics.
+  </p>
+  Interactive Visual Learning — Lesson 06: Orchestration Layer
+</footer>
+
+<script>
+const DPR=window.devicePixelRatio||1;
+
+// Hero Canvas
+(function(){const c=document.getElementById('heroCanvas');let W,H,ctx;
+function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+resize();window.addEventListener('resize',resize);
+let t=0;
+function draw(){ctx.clearRect(0,0,W,H);
+  // Grid lines
+  ctx.strokeStyle = 'rgba(6, 182, 212, 0.05)';
+  ctx.lineWidth = 1;
+  for(let x=0; x<W; x+=40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for(let y=0; y<H; y+=40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+  
+  // Streaming dots
+  for(let i=0; i<30; i++) {
+     let ox = (t * (i%3 + 1)) % W;
+     let oy = (i * 25) % H;
+     ctx.fillStyle = `rgba(6, 182, 212, ${0.4 - (ox/W)*0.3})`;
+     ctx.fillRect(ox, oy, 2, 2);
+  }
+  t+=2;requestAnimationFrame(draw);}
+draw();})();
+
+// Domain Canvas
+(function(){
+  const canvas=document.getElementById('domainCanvas');
+  let currentDomain='chassis';
+  let cW=0,cH=0,cCtx=null;
+  let t=0;
+
+  function resizeCanvas(){const p=canvas.parentElement,r=p.getBoundingClientRect();canvas.width=r.width*DPR;canvas.height=r.height*DPR;canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';cW=r.width;cH=r.height;cCtx=canvas.getContext('2d');cCtx.scale(DPR,DPR);}
+  resizeCanvas();window.addEventListener('resize',resizeCanvas);
+
+  function draw(){
+    const ctx=cCtx,w=cW,h=cH;
+    if(!ctx)return;
+    ctx.clearRect(0,0,w,h);
+    
+    // Abstract representations
+    if(currentDomain === 'chassis' || currentDomain === 'robot' || currentDomain === 'compiler') {
+       // Generator animation (endless wave)
+       ctx.strokeStyle = '#06b6d4';
+       ctx.lineWidth = 3;
+       ctx.beginPath();
+       for(let x=0; x<w; x+=10) {
+           let y = h/2 + Math.sin(x*0.05 + t*0.1) * 40;
+           if(x==0) ctx.moveTo(x,y);
+           else ctx.lineTo(x,y);
+       }
+       ctx.stroke();
+       ctx.fillStyle = '#fff';
+       ctx.font = '14px consolas';
+       ctx.fillText("yield (infinite processing bounds)", 20, 30);
+    } else {
+       // List animation (bounded batch boxes)
+       ctx.fillStyle = 'rgba(245, 158, 11, 0.4)';
+       ctx.strokeStyle = '#f59e0b';
+       ctx.lineWidth = 2;
+       let boxCount = Math.floor((t*0.5)%10) + 1; // fills up and resets
+       for(let i=0; i<boxCount; i++) {
+           ctx.fillRect(20 + i*35, h/2 - 20, 30, 40);
+           ctx.strokeRect(20 + i*35, h/2 - 20, 30, 40);
+       }
+       ctx.fillStyle = '#fff';
+       ctx.font = '14px consolas';
+       ctx.fillText("list() (heap allocation boundary)", 20, 30);
+       ctx.fillText("len() = " + boxCount, 20, 50);
+    }
+    
+    t+=1;
+    requestAnimationFrame(draw);
+  }
+
+  // Tab events
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentDomain=btn.dataset.target;
+      document.querySelectorAll('.domain-content').forEach(c=>c.classList.remove('active'));
+      document.getElementById(currentDomain).classList.add('active');
+    });
+  });
+
+  draw();
+})();
+
+/* Puzzles */
+(function(){
+  document.querySelectorAll('.puzzle-header').forEach(hdr=>{
+    hdr.addEventListener('click',()=>{
+      const c=hdr.parentElement;
+      const isOpen=c.classList.contains('open');
+      document.querySelectorAll('.puzzle-card').forEach(p=>p.classList.remove('open'));
+      if(!isOpen) c.classList.add('open');
+    });
+  });
+})();
+
+/* Nav */
+(function(){
+  const links=document.querySelectorAll('.nav-link');
+  const ids=['subsystems','crosscontext','puzzles','builder'];
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+100;let active=ids[0];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+    links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));
+  });
+})();
+</script>
+</body>
+</html>

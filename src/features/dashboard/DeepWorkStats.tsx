@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Crown, Zap, Target, Focus, Repeat, Star, ChevronDown, ChevronUp } from 'lucide-react';
 import { API_URL } from '../../lib/api';
+import { useUserStore } from '../../store/useUserStore';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface DeepWorkStatsData {
     period: string;
@@ -64,6 +66,10 @@ const PILLARS = [
 ];
 
 export const DeepWorkStats = () => {
+    const { today } = useUserStore();
+    const dailyPoints = today.production.points || 0;
+    const maxPoints = 200;
+    const pointsProgress = Math.min((dailyPoints / maxPoints) * 100, 100);
     const [todayStats, setTodayStats] = useState<DeepWorkStatsData | null>(null);
     const [yesterdayStats, setYesterdayStats] = useState<DeepWorkStatsData | null>(null);
     const [weekStats, setWeekStats] = useState<DeepWorkStatsData | null>(null);
@@ -72,6 +78,7 @@ export const DeepWorkStats = () => {
     const [records, setRecords] = useState<RecordsData | null>(null);
     const [todaySessions, setTodaySessions] = useState<SessionData[]>([]);
     const [expandedSession, setExpandedSession] = useState<number | null>(null);
+    const [momentumData, setMomentumData] = useState<{ date: string; score: number }[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -80,13 +87,20 @@ export const DeepWorkStats = () => {
 
     const fetchAllStats = async () => {
         try {
-            const [today, yesterday, week, month, alltime, recs] = await Promise.all([
+            const todayDate = new Date();
+            const past14Days = new Date(todayDate);
+            past14Days.setDate(past14Days.getDate() - 14);
+            const fromDate = past14Days.toISOString().split('T')[0];
+            const toDate = todayDate.toISOString().split('T')[0];
+
+            const [today, yesterday, week, month, alltime, recs, range] = await Promise.all([
                 fetch(`${API_URL}/api/deepwork/stats/today`).then(r => r.json()),
                 fetch(`${API_URL}/api/deepwork/stats/yesterday`).then(r => r.json()),
                 fetch(`${API_URL}/api/deepwork/stats/week`).then(r => r.json()),
                 fetch(`${API_URL}/api/deepwork/stats/month`).then(r => r.json()),
                 fetch(`${API_URL}/api/deepwork/stats/alltime`).then(r => r.json()),
                 fetch(`${API_URL}/api/deepwork/stats/records`).then(r => r.json()),
+                fetch(`${API_URL}/api/deepwork/stats/range?from=${fromDate}&to=${toDate}`).then(r => r.json()),
             ]);
 
             setTodayStats(today.stats);
@@ -96,6 +110,28 @@ export const DeepWorkStats = () => {
             setMonthStats(month.stats);
             setAllTimeStats(alltime.stats);
             setRecords(recs);
+
+            // Process momentum data (aggregate score per day)
+            if (range.sessions) {
+                const dateMap: Record<string, number> = {};
+                
+                // Initialize map with 0 for all 14 days to ensure continuous line
+                for (let i = 0; i <= 14; i++) {
+                    const d = new Date(past14Days);
+                    d.setDate(d.getDate() + i);
+                    dateMap[d.toISOString().split('T')[0].substring(5)] = 0; // use MM-DD
+                }
+
+                range.sessions.forEach((s: any) => {
+                    const shortDate = s.date.substring(5);
+                    if (dateMap[shortDate] !== undefined) {
+                        dateMap[shortDate] += s.totalScore;
+                    }
+                });
+
+                setMomentumData(Object.entries(dateMap).map(([date, score]) => ({ date, score })));
+            }
+
         } catch (error) {
             console.error('Failed to fetch deep work stats:', error);
         } finally {
@@ -130,17 +166,25 @@ export const DeepWorkStats = () => {
                 <div className={`border rounded-lg p-4 ${TIER_CONFIG[todayStats.performanceTier].border} ${TIER_CONFIG[todayStats.performanceTier].bg}`}>
                     <div className="flex justify-between items-start mb-4">
                         <div>
-                            <p className="text-xs uppercase tracking-widest text-concrete/50 mb-1">Today's War Report</p>
-                            <div className="flex items-center gap-2">
-                                <span className="text-3xl">{TIER_CONFIG[todayStats.performanceTier].emoji}</span>
-                                <span className={`text-4xl font-mono font-black ${TIER_CONFIG[todayStats.performanceTier].color}`}>
-                                    {formatScore(todayStats.totalScore)} pts
+                            <p className="text-xs uppercase tracking-widest text-concrete/50 mb-1">Daily Points</p>
+                            <div className="flex items-end gap-2">
+                                <span className={`text-4xl font-mono font-black ${TIER_CONFIG[todayStats.performanceTier as keyof typeof TIER_CONFIG]?.color || 'text-concrete'}`}>
+                                    {dailyPoints.toFixed(1)}
                                 </span>
+                                <span className="text-xl font-mono text-concrete/50 pb-1">/ 200</span>
                             </div>
                         </div>
-                        <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${TIER_CONFIG[todayStats.performanceTier].bg} ${TIER_CONFIG[todayStats.performanceTier].color}`}>
-                            {todayStats.performanceTier} DAY
+                        <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${TIER_CONFIG[todayStats.performanceTier as keyof typeof TIER_CONFIG]?.bg || 'bg-steel/10'} ${TIER_CONFIG[todayStats.performanceTier as keyof typeof TIER_CONFIG]?.color || 'text-concrete'}`}>
+                            {todayStats.performanceTier || 'NONE'}
                         </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="w-full h-2 bg-steel/20 rounded-full mb-6 overflow-hidden">
+                        <div
+                            className={`h-full transition-all duration-1000 ${dailyPoints >= 150 ? 'bg-gold' : dailyPoints >= 100 ? 'bg-emerald-500' : 'bg-blue-400'}`}
+                            style={{ width: `${pointsProgress}%` }}
+                        />
                     </div>
 
                     <div className="grid grid-cols-4 gap-2 mb-4">
@@ -169,16 +213,48 @@ export const DeepWorkStats = () => {
                             return (
                                 <div
                                     key={pillar.key}
-                                    className={`flex-1 text-center py-2 rounded ${avg >= 0.5 ? 'bg-gold/20 text-gold' :
-                                        avg >= 0 ? 'bg-steel/20 text-concrete' :
+                                    className={`flex-1 text-center py-2 rounded ${avg >= 1.5 ? 'bg-gold/20 text-gold' :
+                                        avg >= 0.8 ? 'bg-steel/20 text-concrete' :
                                             'bg-blood/20 text-blood'
                                         }`}
                                 >
                                     <pillar.icon size={14} className="mx-auto mb-1" />
-                                    <p className="text-xs font-bold">{formatScore(avg)}</p>
+                                    <p className="text-xs font-bold">{avg.toFixed(1)}</p>
                                 </div>
                             );
                         })}
+                    </div>
+                </div>
+            )}
+
+            {/* MOMENTUM GRAPH */}
+            {momentumData.length > 0 && (
+                <div className="bg-steel/5 border border-steel/20 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Zap size={16} className="text-gold" />
+                        <p className="text-xs uppercase tracking-widest text-concrete/50">14-Day Momentum</p>
+                    </div>
+                    <div className="h-40 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={momentumData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+                                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#737373', fontFamily: 'monospace' }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#737373', fontFamily: 'monospace' }} />
+                                <Tooltip 
+                                    contentStyle={{ backgroundColor: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '2px' }}
+                                    itemStyle={{ fontFamily: 'monospace', fontSize: '12px' }}
+                                    labelStyle={{ fontFamily: 'monospace', fontSize: '10px', color: '#737373', marginBottom: '4px' }}
+                                    formatter={(value: number) => [value > 0 ? `+${value}` : value, 'Score']}
+                                />
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="score" 
+                                    stroke="#eab308" 
+                                    strokeWidth={2} 
+                                    dot={{ fill: '#0a0a0a', stroke: '#eab308', strokeWidth: 2, r: 3 }} 
+                                    activeDot={{ r: 5, fill: '#eab308' }} 
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
             )}
@@ -272,12 +348,12 @@ export const DeepWorkStats = () => {
                                                 return (
                                                     <div
                                                         key={pillar.key}
-                                                        className={`flex-1 text-center py-1 rounded text-xs ${score === 1 ? 'bg-gold/20 text-gold' :
-                                                            score === 0 ? 'bg-steel/20 text-concrete' :
+                                                        className={`flex-1 text-center py-1 rounded text-xs ${score === 2 ? 'bg-gold/20 text-gold' :
+                                                            score === 1 ? 'bg-steel/20 text-concrete' :
                                                                 'bg-blood/20 text-blood'
                                                             }`}
                                                     >
-                                                        {score === 1 ? '+1' : score === 0 ? '0' : '-2'}
+                                                        {score}
                                                     </div>
                                                 );
                                             })}

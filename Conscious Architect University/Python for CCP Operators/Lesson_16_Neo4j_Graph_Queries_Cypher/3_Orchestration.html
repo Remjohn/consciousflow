@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 16 — Neo4j & Graph Queries — Orchestration</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0A0A0A; --surface: #151515; --surface2: #1E1E1E; --surface3: #2A2A2A;
+  --text: #FAFAFA; --muted: #A0A0A0; --border: #2E2E2E;
+  --accent: #22d3ee; --red: #E76F51; --green: #2A9D8F; --blue: #4A90D9; --orange: #f97316; --purple: #a78bfa;
+  --mono: 'IBM Plex Mono', monospace; --sans: 'Inter', sans-serif; --serif: 'Playfair Display', serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.7; overflow-x: hidden; }
+.container { max-width: 800px; margin: 0 auto; padding: 4rem 2rem 8rem; }
+
+/* — Typography — */
+h1 { font-family: var(--serif); font-size: 3.2rem; line-height: 1.05; margin-bottom: 1.5rem; letter-spacing: -0.02em; }
+h2 { font-family: var(--serif); font-size: 1.75rem; margin: 2.5rem 0 1rem; color: var(--accent); }
+h3 { font-family: var(--mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin: 2rem 0 0.75rem; }
+p { margin-bottom: 1.25rem; color: var(--muted); font-size: 1rem; }
+p strong { color: var(--text); }
+code { font-family: var(--mono); font-size: 0.9em; color: var(--accent); background: rgba(34,211,238,0.08); padding: 0.2rem 0.4rem; border-radius: 4px; }
+
+/* — Code Blocks — */
+.code-block { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 1.25rem 1.5rem; margin: 1.25rem 0; font-family: var(--mono); font-size: 0.85rem; line-height: 1.6; overflow-x: auto; color: #e4e4e4; }
+.code-block .kw { color: #c678dd; } 
+.code-block .fn { color: #61afef; } 
+.code-block .str { color: #98c379; } 
+.code-block .var { color: #e06c75; } 
+.code-block .comment { color: #5c6370; font-style: italic; }
+
+/* — Interaction boxes — */
+.interaction-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2.5rem; margin: 2rem 0; position: relative; }
+.interaction-header { font-family: var(--mono); font-size: 0.7rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: .5rem; }
+.question-text { font-size: 1.05rem; font-weight: 500; margin-bottom: 1.75rem; color: #fff; line-height: 1.6; }
+
+/* — Inputs & Buttons — */
+.input-row { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.input-text { background: var(--bg); border: 2px solid var(--border); color: #fff; font-family: var(--mono); font-size: 0.95rem; padding: 0.65rem 1rem; flex: 1; min-width: 180px; border-radius: 4px; }
+.input-text:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn { background: var(--text); color: var(--bg); border: none; padding: 0.7rem 1.5rem; font-family: var(--sans); font-weight: 600; font-size: 0.95rem; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+.btn:hover:not(:disabled) { background: #fff; box-shadow: 0 4px 14px rgba(255,255,255,0.12); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.btn-outline:hover:not(:disabled) { background: var(--surface2); border-color: var(--text); color: var(--text); }
+
+/* — Feedback — */
+.feedback { display: none; margin-top: 1.5rem; padding: 1.25rem 1.5rem; border-radius: 4px; font-size: 0.92rem; line-height: 1.65; }
+.feedback.visible { display: block; animation: fadein 0.35s; }
+.feedback.error { background: rgba(231,111,81,0.08); border-left: 3px solid var(--red); color: #ffb3a1; }
+.feedback.success { background: rgba(42,157,143,0.08); border-left: 3px solid var(--green); color: #a7ece2; }
+.feedback.trap { background: rgba(232,196,106,0.08); border-left: 3px solid var(--orange); color: #f5e0a0; }
+.feedback-title { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.4rem; font-weight: 600; }
+
+/* — Choice buttons — */
+.choices { display: flex; flex-direction: column; gap: 0.875rem; margin-bottom: 1.5rem; }
+.choice-btn { text-align: left; padding: 1.1rem 1.25rem; background: var(--bg); border: 1px solid var(--border); color: var(--muted); border-radius: 6px; cursor: pointer; transition: all 0.2s; font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+.choice-btn:hover { border-color: var(--text); color: var(--text); }
+.choice-btn.selected-wrong { border-color: var(--red); color: var(--red); background: rgba(231,111,81,0.05); pointer-events: none; }
+.choice-btn.selected-right { border-color: var(--green); color: var(--green); background: rgba(42,157,143,0.05); pointer-events: none; }
+.choice-btn:disabled { pointer-events: none; opacity: 0.5; }
+
+/* — Gated content & Callouts — */
+.gated-content { display: none; opacity: 0; transform: translateY(16px); transition: opacity 0.45s ease, transform 0.45s ease; }
+.gated-content.unlocked { display: block; animation: reveal 0.45s ease forwards; }
+
+.callout { background: var(--surface2); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; padding: 1.1rem 1.5rem; margin: 1.5rem 0; }
+.callout p { margin: 0; color: var(--text); font-size: 0.95rem; }
+.callout .callout-label { font-family: var(--mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin-bottom: 0.4rem; }
+
+/* — Gauntlet — */
+.gauntlet-wrap { margin-top: 4rem; border-top: 2px solid var(--border); padding-top: 3rem; }
+.q-block { background: var(--surface2); padding: 1.5rem; border-radius: 6px; margin-bottom: 1.25rem; border: 1px solid var(--border); }
+.q-num { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+.q-text { font-size: 1rem; margin-bottom: 1.25rem; font-weight: 500; color: #fff; line-height: 1.55; }
+.q-sub { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); margin-top: -0.75rem; margin-bottom: 1rem; line-height: 1.7; }
+
+/* — Circuit Board Canvas — */
+.topology-wrap { position: relative; width: 100%; height: 380px; background: #060606; border: 1px solid var(--border); border-radius: 6px; margin: 1.5rem 0; padding: 2rem; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 1rem; user-select: none; }
+.topo-node { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s; position: relative; z-index: 10; }
+.topo-node:hover { border-color: var(--muted); }
+.topo-node.active { border-color: var(--accent); box-shadow: 0 0 20px rgba(34,211,238,0.15); background: rgba(34,211,238,0.05); }
+.topo-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+.topo-label { font-family: var(--mono); font-size: 0.75rem; font-weight: 600; color: var(--text); }
+.topo-sub { font-family: var(--sans); font-size: 0.65rem; color: var(--muted); }
+
+.cypher-live { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.9); padding: 1rem 1.5rem; border-top: 1px solid var(--border); z-index: 20; min-height: 80px; display: flex; flex-direction: column; justify-content: center; }
+.live-title { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); text-transform: uppercase; margin-bottom: 0.3rem; }
+.live-code { font-family: var(--mono); font-size: 0.85rem; color: var(--accent); }
+
+@keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes reveal { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ═══════════════════════════════════════════════════
+       SPACED INTERRUPT
+  ═══════════════════════════════════════════════════ -->
+  <div class="interaction-box" id="interrupt-box" style="border-left: 3px solid var(--red);">
+    <div class="interaction-header" style="color:var(--red)">System Interrupt · The SQL Mindset</div>
+    <div class="question-text">
+      To establish that a Coach favors a specific psychological Trigger, an architect transitioning from an SQL mindset might write:<br><br>
+      <code style="color:var(--orange)">MATCH (c:Coach), (t:Trigger) WHERE c.favored_id = t.id RETURN c</code><br><br>
+      Why does this fundamentally violate Graph Database architecture?
+    </div>
+    <div class="choices">
+      <button class="choice-btn" onclick="submitInterrupt(this, 'edge')">It simulates connections via foreign-key matching rather than traversing a physical edge.</button>
+      <button class="choice-btn" onclick="submitInterrupt(this, 'inject')">It fails to bind the `$id` parameter natively, opening SQL injection vectors.</button>
+      <button class="choice-btn" onclick="submitInterrupt(this, 'merge')">It utilizes <code>MATCH</code> instead of <code>MERGE</code> to define state.</button>
+    </div>
+    <div class="feedback" id="int-fb"></div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════
+       MAIN CONTENT
+  ═══════════════════════════════════════════════════ -->
+  <div class="gated-content" id="main-content">
+
+    <div style="font-family:var(--mono);font-size:0.72rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;">Lesson 16 · Orchestration Layer</div>
+    <h1>The Topology Matrix</h1>
+    
+    <p>Cypher is the native, declarative query language for graph databases like Neo4j. Instead of joining flat tables, Cypher performs multi-dimensional mathematical traversals across discrete nodes defined by explicit relationships.</p>
+
+    <p>To truly master a concept as architecturally dense as graph queries, you must witness its behavioral properties refracting across multiple, entirely disconnected execution environments. Cypher is the structural glue of the CCP's memory matrix. Watch how it operates across all six orchestration topologies.</p>
+
+    <!-- INTERACTIVE CANVAS -->
+    <div class="interaction-box">
+      <div class="interaction-header">6-Subsystem Factory Floor Topology</div>
+      <div class="question-text" style="font-size:0.95rem;">
+        Click on any subsystem in the architecture matrix to reveal how it leverages Cypher logic to orchestrate sovereign memory. Unlock the progression gate by interacting with elements.
+      </div>
+      
+      <div class="topology-wrap" id="topo-wrap">
+        
+        <div class="topo-node" onclick="triggerTopo('chassis')">
+          <div class="topo-icon">🏗️</div>
+          <div class="topo-label">The Chassis</div>
+          <div class="topo-sub">FastAPI Router</div>
+        </div>
+        
+        <div class="topo-node" onclick="triggerTopo('qa')">
+          <div class="topo-icon">📋</div>
+          <div class="topo-label">The QA Dept</div>
+          <div class="topo-sub">Pydantic Schemas</div>
+        </div>
+        
+        <div class="topo-node" onclick="triggerTopo('machinist')">
+          <div class="topo-icon">⚙️</div>
+          <div class="topo-label">The Machinist</div>
+          <div class="topo-sub">DSPy Pipeline</div>
+        </div>
+        
+        <div class="topo-node" onclick="triggerTopo('arm')">
+          <div class="topo-icon">🤖</div>
+          <div class="topo-label">The Robot Arm</div>
+          <div class="topo-sub">Pi Harness / OS Shell</div>
+        </div>
+        
+        <div class="topo-node" onclick="triggerTopo('memory')">
+          <div class="topo-icon">🧠</div>
+          <div class="topo-label">Memory Engine</div>
+          <div class="topo-sub">Neo4j State Context</div>
+        </div>
+        
+        <div class="topo-node" onclick="triggerTopo('compiler')">
+          <div class="topo-icon">🎯</div>
+          <div class="topo-label">Skill Compiler</div>
+          <div class="topo-sub">Voice DNA Execution</div>
+        </div>
+        
+        <div class="cypher-live" id="live-box" style="display:none;">
+          <div class="live-title" id="live-title">AWAITING INTERACTION</div>
+          <div class="live-code" id="live-code">...</div>
+        </div>
+        
+      </div>
+      
+      <div class="feedback" id="topo-fb"></div>
+      <button class="btn" id="topo-unlock-btn" disabled onclick="unlock('gate2-content');this.style.display='none';">Initialize Case Studies</button>
+
+    </div>
+
+  </div><!-- /main-content -->
+
+
+  <!-- ═══════════════════════════════════════════════════
+       GATED CONTENT 2
+  ═══════════════════════════════════════════════════ -->
+  <div class="gated-content" id="gate2-content">
+    
+    <hr style="border:none;border-top:1px solid var(--border);margin:3rem 0;">
+
+    <h2>I. Cross-Context Intuition</h2>
+    <p>How does identical architectural structure (Cypher) behave in fundamentally distinct manners under differing CCP laws?</p>
+    
+    <div class="callout" style="border-left-color: var(--blue);">
+      <div class="callout-label" style="color: var(--blue);">FastAPI Strictness vs Neo4j Sandbox</div>
+      <p><strong>Why does Cypher feel strict in FastAPI but flexible in Neo4j drivers?</strong><br>FastAPI acts as an immediate perimeter shield (`Depends()`, Validation Errors). It must either definitively authorize or definitively reject. Neo4j Drivers tolerate flexibility: if a pattern `MATCH` fails, it returns `0 records`. FastAPI must be strict because it is facing the Client; the driver is flexible because it is mathematically querying empty matrices.</p>
+    </div>
+
+    <!-- PREDICTION GATE 1 -->
+    <div class="interaction-box">
+      <div class="interaction-header">Prediction Gate 01 — Subprocess Starvation</div>
+      <div class="question-text">
+        <code style="font-size:0.85em;">subprocess.run(["update_graph_node.sh", "--user", "042"], timeout=120)</code><br><br>
+        The Pi execution harness attempts to mutate the graph via an OS shell script, wrapping it in a `120` second timeout. What breaks in an interactive real-time API loop?
+      </div>
+      <div class="choices">
+        <button class="choice-btn" onclick="submitGate1(this, false)">Neo4j rejects shell script mutations unless explicitly authenticated inside Python memory.</button>
+        <button class="choice-btn" onclick="submitGate1(this, true)">120 seconds guarantees client disconnection. The OS thread blocks the async loop.</button>
+        <button class="choice-btn" onclick="submitGate1(this, false)">Pydantic intercepts the shell call because it cannot validate standard output variables.</button>
+      </div>
+      <div class="feedback" id="fb-pg1"></div>
+    </div>
+
+  </div><!-- /gate2 -->
+
+
+  <!-- ═══════════════════════════════════════════════════
+       GATED CONTENT 3
+  ═══════════════════════════════════════════════════ -->
+  <div class="gated-content" id="gate3-content">
+
+    <div class="callout" style="border-left-color: var(--orange);">
+      <div class="callout-label" style="color: var(--orange);">The Syntactic Hallucination (Trap)</div>
+      <p><strong>Scenario:</strong> The LLM outputs `cypher_command = "UPDATE Client SET status='active'"`<br>
+      <strong>Failure:</strong> If the Pi Harness executes this raw string against the Memory Engine, the Neo4j driver violently crashes with a syntax exception. `UPDATE ... SET` is an SQL structure. `MATCH ... SET` is valid Cypher. Exposing raw execution strings without rigid structural compilation parameters invariably leads to multi-language model confusion.</p>
+    </div>
+
+    <div style="text-align:center;margin:3rem 0;">
+      <button class="btn" style="background:var(--accent);color:var(--bg);" onclick="renderGauntlet();this.style.display='none';">Initialize Orchestration Gauntlet</button>
+    </div>
+
+  </div><!-- /gate3 -->
+
+
+  <!-- ═══════════════════════════════════════════════════
+       GAUNTLET
+  ═══════════════════════════════════════════════════ -->
+  <div class="gated-content" id="gauntlet-content">
+    <div class="gauntlet-wrap">
+      <h2>Systemic Orchestration Gauntlet</h2>
+      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:2rem;">Reason through these multi-node execution schemas. Identify the subsystem failure points.</p>
+      <div id="g-container"></div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+/* ── INTERRUPT GATE ── */
+function submitInterrupt(btn, answer) {
+  const choices = document.querySelectorAll('#interrupt-box .choice-btn');
+  choices.forEach(c => c.disabled = true);
+  const fb = document.getElementById('int-fb');
+  fb.classList.add('visible');
+
+  if (answer === 'edge') {
+    btn.classList.add('selected-right');
+    fb.className = 'feedback visible success';
+    fb.innerHTML = `<div class="feedback-title">Correct Architecture</div>
+      Graphs do not use foreign keys. They use literal, mathematical edges. The correct pattern is <code>MATCH (c:Coach)-[:FAVORS]->(t:Trigger) RETURN c</code>. Do not simulate relationships with string comparisons; traverse the graph architecture physically.`;
+    setTimeout(() => unlock('main-content'), 1500);
+  } else {
+    btn.classList.add('selected-wrong');
+    fb.className = 'feedback visible error';
+    fb.innerHTML = `<div class="feedback-title">Incorrect Evaluation</div>
+      While parameter binding is important, the foundational architectural error is the SQL mindset of evaluating arbitrary variable matches over node linkage traversals. Resetting.`;
+    setTimeout(() => {
+      choices.forEach(c => { c.disabled = false; c.classList.remove('selected-wrong', 'selected-right'); });
+      fb.classList.remove('visible');
+    }, 3500);
+  }
+}
+
+/* ── INTERACTIVE CANVAS: TOPOLOGY ── */
+let interactedNodes = new Set();
+const TOPO_DATA = {
+  chassis: {
+    title: "The Chassis | Fast Authorization",
+    code: `result = await db.run("MATCH (c:Client {id: $cid})-[:MAINTAINS_SUBSCRIPTION]->(s:Subscription) RETURN s.active", cid=client_id)`
+  },
+  qa: {
+    title: "The QA Dept | Schema Enforcer",
+    code: `if len(data.get('trigger_sequence', [])) < 1:\n    raise ValueError("Cypher query failed to extract valid interaction paths.")`
+  },
+  machinist: {
+    title: "The Machinist | DSPy State Compilation",
+    code: `resolved_graph_edges: str = dspy.InputField(desc="JSON list of valid path traversals from Client to Trigger")`
+  },
+  arm: {
+    title: "The Robot Arm | Shell Confinement",
+    code: `subprocess.run(["python", "update_graph.py", "--cypher", "MATCH (c:Client) SET c.status='active'"], timeout=10)`
+  },
+  memory: {
+    title: "Memory Engine | Immutable State",
+    code: `MERGE (c)-[rel:MUST_HONOR]->(r)\nON CREATE SET rel.established_at = datetime()\nON MATCH SET rel.updated_at = datetime()`
+  },
+  compiler: {
+    title: "Skill Compiler | Parallel Pathing",
+    code: `MATCH (c:Coach {id: $cid})-[:USES_ADAPTER]->(a:LoRA_Adapter)\nMATCH (c)-[:FAVORS_HUMOR]->(h:HumorPrimitive)\nRETURN a.filepath, h.style`
+  }
+};
+
+function triggerTopo(key) {
+  document.querySelectorAll('.topo-node').forEach(n => n.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  
+  interactedNodes.add(key);
+  
+  const box = document.getElementById('live-box');
+  const title = document.getElementById('live-title');
+  const code = document.getElementById('live-code');
+  
+  box.style.display = 'flex';
+  box.style.animation = 'none';
+  void box.offsetWidth; /* trigger reflow */
+  box.style.animation = 'fadein 0.3s';
+  
+  title.innerText = TOPO_DATA[key].title;
+  code.innerHTML = TOPO_DATA[key].code.replace(/\n/g, '<br>');
+  
+  if (interactedNodes.size >= 4) {
+    document.getElementById('topo-unlock-btn').disabled = false;
+    const fb = document.getElementById('topo-fb');
+    fb.className = 'feedback visible success';
+    fb.innerHTML = `Topology exploration sufficient. You may proceed.`;
+  }
+}
+
+/* ── PREDICTION GATE 1 ── */
+function submitGate1(btn, isCorrect) {
+  const choices = document.querySelectorAll('#gate2-content .choice-btn');
+  choices.forEach(c => c.disabled = true);
+  const fb = document.getElementById('fb-pg1');
+  fb.classList.add('visible');
+
+  if (isCorrect) {
+    btn.classList.add('selected-right');
+    fb.className = 'feedback visible success';
+    fb.innerHTML = `<div class="feedback-title">Correct</div>
+      A 120-second timeout is safe for a cron job, but lethal in an interactive socket loop. If the database acquires a lock and hangs for 100 seconds, the client assumes they have been abandoned and disconnects. Always use aggressive timeouts (e.g., 5 seconds) inside the Pi Agentic Harness.`;
+    setTimeout(() => unlock('gate3-content'), 2000);
+  } else {
+    btn.classList.add('selected-wrong');
+    fb.className = 'feedback visible error';
+    fb.innerHTML = `<div class="feedback-title">Incorrect Assessment</div>
+      The shell script operates independently of the asyncio loop. The sheer length of the synchronous wait is what triggers a cascaded system failure in a real-time platform. Resetting.`;
+    setTimeout(() => {
+      choices.forEach(c => { c.disabled = false; c.classList.remove('selected-wrong', 'selected-right'); });
+      fb.classList.remove('visible');
+    }, 3500);
+  }
+}
+
+/* ── GAUNTLET ENGINE ── */
+const G_DATA = [
+  {
+    q: "If the QA Department vanishes, Pydantic no longer validates Cypher return keys. What happens to the DSPy Machinist compilation layer?",
+    type: "text",
+    match: ["keyerror", "crash", "null", "hallucination", "empty", "fail"],
+    exp: "DSPy's rigid string templating will throw silent KeyErrors or insert 'null' string interpolation payloads, utterly destroying the LLM execution logic."
+  },
+  {
+    q: "<code>async with driver.session() as s:<br>&nbsp;&nbsp;res = yield s.run(\"MATCH... RETURN c\")</code><br>What catastrophic error is present in this async driver initialization?",
+    sub: "Look at the suspension syntax.",
+    type: "text",
+    match: ["yield", "await"],
+    exp: "You must use <code>await</code>, not <code>yield</code>, when waiting for asynchronous driver execution. <code>yield</code> turns the execution block into a generator."
+  },
+  {
+    q: "What FastAPI failure occurs if a route calls <code>db.run()</code> directly without using <code>await db.run()</code>?",
+    type: "text",
+    match: ["sync", "block", "freeze", "loop", "halt", "hang"],
+    exp: "FastAPI treats it as a synchronous method. The entire asyncio event loop grinds to a halt while awaiting network transit. Single node lookup destroys all multi-user parallelism."
+  },
+  {
+    q: "True or False: The Python application layer (The Chassis) should cache active graph psychological relationships in local Python dictionaries to speed up memory access and reduce Neo4j loads.",
+    type: "bool",
+    ans: false,
+    exp: "False. The Chassis is deterministic but fundamentally stateless. If the chassis restarts, local variables vanish. The graph is sovereign and permanent; caching state in Python violates the orchestration dichotomy."
+  }
+];
+
+function renderGauntlet() {
+  unlock('gauntlet-content');
+  const c = document.getElementById('g-container');
+  let html = '';
+  G_DATA.forEach((item, idx) => {
+    html += `<div class="q-block" id="gg-${idx}">
+      <div class="q-num">Drill 0${idx+1}</div>
+      <div class="q-text">${item.q}</div>
+      ${item.sub ? `<div class="q-sub">${item.sub}</div>` : ''}`;
+    if (item.type === 'bool') {
+      html += `<div style="display:flex;gap:.75rem;">
+        <button class="btn btn-outline" onclick="answerGauntlet(${idx},true,this)">True / Yes</button>
+        <button class="btn btn-outline" onclick="answerGauntlet(${idx},false,this)">False / No</button>
+      </div>`;
+    } else {
+      html += `<div style="display:flex;gap:.75rem;">
+        <input type="text" id="gi-${idx}" class="input-text" placeholder="Type answer...">
+        <button class="btn" onclick="answerTextGauntlet(${idx},this)">Lock</button>
+      </div>`;
+    }
+    html += `<div class="feedback" id="gf-${idx}"></div></div>`;
+  });
+  c.innerHTML = html;
+}
+
+function answerGauntlet(idx, val, btn) {
+  document.querySelectorAll(`#gg-${idx} button`).forEach(b => b.disabled = true);
+  const fb = document.getElementById(`gf-${idx}`);
+  fb.classList.add('visible');
+  if (val === G_DATA[idx].ans) {
+    btn.style.background = 'rgba(42,157,143,0.15)'; btn.style.borderColor = 'var(--green)'; btn.style.color = '#a7ece2';
+    fb.className = 'feedback visible success';
+    fb.innerHTML = `<div class="feedback-title">Correct</div>${G_DATA[idx].exp}`;
+  } else {
+    btn.style.background = 'rgba(231,111,81,0.1)'; btn.style.borderColor = 'var(--red)'; btn.style.color = '#ffb3a1';
+    fb.className = 'feedback visible error';
+    fb.innerHTML = `<div class="feedback-title">Incorrect</div>${G_DATA[idx].exp}`;
+  }
+}
+
+function answerTextGauntlet(idx, btn) {
+  const inp = document.getElementById(`gi-${idx}`);
+  const val = inp.value.trim().toLowerCase();
+  if (!val) return;
+  inp.disabled = true; btn.disabled = true;
+  const fb = document.getElementById(`gf-${idx}`);
+  fb.classList.add('visible');
+  
+  let correct = false;
+  const item = G_DATA[idx];
+  if (item.ans) correct = val === item.ans.toLowerCase();
+  if (item.match) correct = item.match.some(m => val.includes(m.toLowerCase()));
+  
+  if (correct) {
+    fb.className = 'feedback visible success';
+    fb.innerHTML = `<div class="feedback-title">Correct</div>${item.exp}`;
+  } else {
+    fb.className = 'feedback visible error';
+    fb.innerHTML = `<div class="feedback-title">Incorrect</div>${item.exp}`;
+  }
+}
+
+/* ── UNLOCK HELPER ── */
+function unlock(id) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  }));
+}
+</script>
+</body>
+</html>

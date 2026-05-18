@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 13 - DSPy: Orchestration Layer</title>
+  <style>
+    :root {
+      --bg: #08111a; --panel: rgba(12, 20, 30, 0.88); --line: rgba(255,255,255,0.08); 
+      --text: #f3f7fb; --muted: #9ab0c2; --accent: #ff7a18; --accent-2: #56c5ff; 
+      --good: #2ecc71; --bad: #ff5c73; --gold: #ffd166;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--text);
+      font-family: Georgia, "Times New Roman", serif; line-height: 1.6;
+      background: radial-gradient(circle at 15% 10%, rgba(86,197,255,0.08), transparent 30%),
+                  radial-gradient(circle at 85% 90%, rgba(255,122,24,0.08), transparent 30%),
+                  linear-gradient(180deg, #050a0f 0%, #0a111a 100%);
+    }
+
+    .progress { position: fixed; top: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.05); z-index: 50; }
+    .progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, #ff7a18, #ffd166, #56c5ff); transition: width 0.35s ease; }
+    .shell { max-width: 1120px; margin: 0 auto; padding: 42px 18px 80px; }
+
+    .stage { display: none; animation: fadeUp 0.4s ease; }
+    .stage.active { display: block; }
+    
+    .card {
+      border-radius: 20px; border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+      box-shadow: 0 16px 40px rgba(0,0,0,0.2); padding: 28px; margin-top: 18px;
+    }
+
+    .eyebrow { color: var(--gold); text-transform: uppercase; letter-spacing: 0.15em; font: 700 0.75rem/1.2 Arial, sans-serif; margin-bottom: 12px; }
+    h1, h2, h3 { margin: 0 0 12px; font-weight: 500; font-family: -apple-system, sans-serif; }
+    h1 { font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.1; }
+    h2 { font-size: 1.6rem; color: #fff; }
+    h3 { font-size: 1.2rem; margin-top: 18px; color: var(--accent-2); }
+    p { margin: 0 0 16px; color: #d9e4ec; font-size: 1.08rem; }
+    
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .divider { height: 1px; margin: 24px 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    .btn { border: 0; cursor: pointer; padding: 12px 20px; border-radius: 8px; font: 700 0.9rem/1 Arial, sans-serif; transition: 0.2s; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.2); }
+
+    .choices { display: grid; gap: 10px; margin-top: 16px; }
+    .choice { text-align: left; padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); color: #fff; font: 400 0.95rem/1.4 Arial, sans-serif; cursor: pointer; }
+    .choice.selected { border-color: var(--accent); background: rgba(255,122,24,0.1); }
+
+    .feedback { display: none; margin-top: 16px; padding: 16px; border-radius: 8px; border: 1px solid var(--line); }
+    .feedback.show { display: block; animation: fadeUp 0.3s ease; }
+    .feedback.good { border-color: rgba(46,204,113,0.4); background: rgba(46,204,113,0.05); }
+    .feedback.bad { border-color: rgba(255,92,115,0.4); background: rgba(255,92,115,0.05); }
+    
+    .locked { margin-top: 12px; color: var(--gold); font-size: 0.75rem; font-family: Arial, sans-serif; text-transform: uppercase; font-weight: bold; }
+    .hidden { display: none !important; }
+
+    .code-window { border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: #0c141e; overflow: hidden; margin-bottom: 20px; font-family: Consolas, monospace; font-size: 0.85rem; }
+    .code-header { background: rgba(255,255,255,0.05); padding: 6px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #89a1b2; font-size: 0.7rem; }
+    .code-body { padding: 16px; color: #d6deeb; margin: 0; line-height: 1.5; overflow-x: auto; }
+    
+    .syn-kw { color: #c792ea; } .syn-cls { color: #ffcb6b; } .syn-str { color: #ecc48d; } .syn-cm { color: #637777; font-style: italic; } .syn-fn { color: #82aaff; } .syn-op { color: #89ddff; } .syn-type { color: #addb67; } .syn-dec { color: #f07178; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="progress"><div id="progressFill" class="progress-fill"></div></div>
+
+  <main class="shell">
+    
+    <!-- STAGE 0: Intro -->
+    <section id="stage-0" class="stage active">
+      <div class="card">
+        <p class="eyebrow">Lesson 13 - Orchestration Layer</p>
+        <h1>The 6-Context Factory Tour</h1>
+        <div class="divider"></div>
+        <p>You have seen DSPy operate in isolation. However, actual architectural mastery requires transfer mapping. You must recognize the exact same syntax performing wildly different structural roles across the CCP payload.</p>
+        <p>You will now physically tour the 6 CCP Subsystems. In every single one, DSPy is present, but its failure consequences mutate wildly depending on which subsystem it is shielding.</p>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="goToStage(1)">Begin the Tour</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 1: Chassis & QA -->
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="eyebrow">Contexts 1 & 2</p>
+        <h2>The Chassis & The QA Department</h2>
+        <div class="grid-2">
+          <div>
+            <h3>🏗️ The Chassis (FastAPI)</h3>
+            <div class="code-window">
+              <pre class="code-body">
+<span class="syn-dec">@app.post</span>(<span class="syn-str">"/api/v1/analyze-intent"</span>)
+<span class="syn-kw">async def</span> <span class="syn-fn">intent_endpoint</span>(transcript: <span class="syn-type">str</span>):
+    intent_module <span class="syn-op">=</span> dspy.Predict(ParseClientIntent)
+    <span class="syn-kw">try</span>:
+        prediction <span class="syn-op">=</span> intent_module(raw_speech<span class="syn-op">=</span>transcript)
+        <span class="syn-kw">return</span> {<span class="syn-str">"intent"</span>: prediction.mapped_intent}
+    <span class="syn-kw">except</span> dspy.primitives.assertions.DSPyAssertionError:
+        <span class="syn-kw">raise</span> HTTPException(status_code<span class="syn-op">=</span><span class="syn-type">422</span>)
+              </pre>
+            </div>
+            <p><strong>Role:</strong> Defends the web server from processing conversational junk via boundary rejection.</p>
+          </div>
+          <div>
+            <h3>📋 The QA Department (Pydantic)</h3>
+            <div class="code-window">
+              <pre class="code-body">
+<span class="syn-kw">class</span> <span class="syn-cls">IntentValidationGate</span>(BaseModel):
+    mapped_intent: <span class="syn-type">str</span> <span class="syn-op">=</span> Field(pattern<span class="syn-op">=</span><span class="syn-str">r'^(escalate|deescalate)$'</span>)
+
+<span class="syn-kw">def</span> <span class="syn-fn">validate</span>(prediction_object):
+    <span class="syn-cm"># Micro-measures the exact string DSPy pulled</span>
+    <span class="syn-kw">return</span> IntentValidationGate(
+        mapped_intent<span class="syn-op">=</span>prediction_object.mapped_intent
+    )
+              </pre>
+            </div>
+            <p><strong>Role:</strong> Ensures the string DSPy extracted maps precisely to geometrical enum requirements.</p>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <p style="font-weight:bold;">Predict the failure: What happens if we delete Context 2 (Pydantic), but keep Context 1 (DSPy) functioning perfectly?</p>
+
+        <div class="choices" data-group="cr1">
+          <button class="choice" onclick="selectChoice('cr1','A',this)">The connection drops immediately because DSPy is incapable of returning strings natively.</button>
+          <button class="choice" onclick="selectChoice('cr1','B',this)">DSPy extracts the LLM's text successfully, but if the LLM hallucinated the word "Escalated" instead of "escalate", the downstream database will silently become corrupted.</button>
+          <button class="choice" onclick="selectChoice('cr1','C',this)">The LLM will refuse to generate output because Pydantic is missing from the underlying prompt.</button>
+        </div>
+
+        <div id="cr1-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions">
+          <button id="cr1-submit" class="btn btn-primary" onclick="submitChoice('cr1', 'B', fbkCR1)">Lock prediction</button>
+        </div>
+        <div id="cr1-feedback" class="feedback"></div>
+        <div id="cr1-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(2)">Next Contexts</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 2: Robot & Memory -->
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="eyebrow">Contexts 3 & 4</p>
+        <h2>The Robot Arm & The Memory Engine</h2>
+        <div class="grid-2">
+          <div>
+            <h3>🤖 The Robot Arm (Pi Harness)</h3>
+            <div class="code-window">
+              <pre class="code-body">
+<span class="syn-kw">class</span> <span class="syn-cls">ExecutionSignature</span>(dspy.Signature):
+    observations: <span class="syn-type">str</span> <span class="syn-op">=</span> dspy.InputField()
+    command_payload: <span class="syn-type">str</span> <span class="syn-op">=</span> dspy.OutputField()
+
+<span class="syn-kw">def</span> <span class="syn-fn">agent_OODA_step</span>(obs: <span class="syn-type">str</span>):
+    action <span class="syn-op">=</span> dspy.Predict(ExecutionSignature)(observations<span class="syn-op">=</span>obs)
+    subprocess.run(action.command_payload, shell<span class="syn-op">=</span><span class="syn-type">True</span>)
+              </pre>
+            </div>
+            <p><strong>Role:</strong> Strips conversational filler away from UNIX commands so the OS isn't compromised.</p>
+          </div>
+          <div>
+            <h3>🧠 The Memory (Neo4j)</h3>
+            <div class="code-window">
+              <pre class="code-body">
+<span class="syn-kw">class</span> <span class="syn-cls">GraphInjector</span>(dspy.Signature):
+    event: <span class="syn-type">str</span> <span class="syn-op">=</span> dspy.InputField()
+    relationship_type: <span class="syn-type">str</span> <span class="syn-op">=</span> dspy.OutputField(desc<span class="syn-op">=</span><span class="syn-str">"e.g., RESPONDED_POORLY"</span>)
+
+<span class="syn-kw">def</span> <span class="syn-fn">inject</span>(event_text: <span class="syn-type">str</span>):
+    map <span class="syn-op">=</span> dspy.Predict(GraphInjector)(event<span class="syn-op">=</span>event_text)
+    cypher <span class="syn-op">=</span> <span class="syn-str">f"MERGE (c)-[:{map.relationship_type}]->(n)"</span>
+              </pre>
+            </div>
+            <p><strong>Role:</strong> Isolates relationships into exact uppercase strings for Graph mapping.</p>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <p style="font-weight:bold;">Predict the failure: If the Robot Arm (Context 3) removes DSPy and passes raw LLM output strings straight into <code>subprocess.run()</code>, what specific execution pathology emerges?</p>
+
+        <div class="choices" data-group="cr2">
+          <button class="choice" onclick="selectChoice('cr2','A',this)">The agent generates "Here is the command: ls -la", which isn't a valid command, resulting in a bash syntax error or unexpected execution trajectory that crashes the node.</button>
+          <button class="choice" onclick="selectChoice('cr2','B',this)">The LLM fundamentally forgets how to write bash scripts without DSPy.</button>
+          <button class="choice" onclick="selectChoice('cr2','C',this)">The Neo4j memory engine throws a syntax fault because nodes have to be strings.</button>
+        </div>
+
+        <div id="cr2-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions">
+          <button id="cr2-submit" class="btn btn-primary" onclick="submitChoice('cr2', 'A', fbkCR2)">Lock prediction</button>
+        </div>
+        <div id="cr2-feedback" class="feedback"></div>
+        <div id="cr2-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(3)">Final Contexts</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 3: Machinist & JIT Compiler -->
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="eyebrow">Contexts 5 & 6</p>
+        <h2>The Machinist Internal & The JIT Compiler</h2>
+        <div class="grid-2">
+          <div>
+            <h3>⚙️ The Machinist (DSPy Core)</h3>
+            <div class="code-window">
+              <pre class="code-body">
+<span class="syn-kw">class</span> <span class="syn-cls">AdaptiveModule</span>(dspy.Module):
+    <span class="syn-kw">def</span> <span class="syn-fn">__init__</span>(<span class="syn-kw">self</span>):
+        <span class="syn-fn">super</span>().<span class="syn-fn">__init__</span>()
+        <span class="syn-cm"># Allocating reasoning space dynamically</span>
+        <span class="syn-kw">self</span>.reasoning <span class="syn-op">=</span> dspy.ChainOfThought(DiagnosticSig)
+              </pre>
+            </div>
+          </div>
+          <div>
+            <h3>🎯 The JIT Skill Compiler</h3>
+            <div class="code-window">
+              <pre class="code-body">
+<span class="syn-kw">from</span> dspy.teleprompt <span class="syn-kw">import</span> BootstrapFewShot
+
+<span class="syn-kw">def</span> <span class="syn-fn">compile_skill</span>(raw_module: dspy.Module, dataset):
+    <span class="syn-cm"># Offline metric-driven prompt training</span>
+    optimizer <span class="syn-op">=</span> BootstrapFewShot(metric<span class="syn-op">=</span>validate_alignment)
+    optimized_skill <span class="syn-op">=</span> optimizer.compile(raw_module, trainset<span class="syn-op">=</span>dataset)
+    <span class="syn-kw">return</span> optimized_skill
+              </pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <p style="font-weight:bold;">Subtle Defect Challenge: A developer injects the `compile_skill()` function dynamically directly inside a live FastAPI web route, training it synchronously every time a user hits the endpoint. Why is this a fatal architectural defect?</p>
+
+        <div class="choices" data-group="cr3">
+          <button class="choice" onclick="selectChoice('cr3','A',this)">Because FastAPI uses HTTP, which cannot transfer compiled Python objects.</button>
+          <button class="choice" onclick="selectChoice('cr3','B',this)">Compilation uses the Bootstrap optimizer which conducts heavy multi-shot GPU inference offline. Running this inline inside a realtime HTTP route will permanently hang the web thread and DDoS the server.</button>
+          <button class="choice" onclick="selectChoice('cr3','C',this)">The JIT compiler relies on Pydantic to compile, so placing it in FastAPI violates the syntax hierarchy.</button>
+        </div>
+
+        <div id="cr3-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions">
+          <button id="cr3-submit" class="btn btn-primary" onclick="submitChoice('cr3', 'B', fbkCR3)">Lock prediction</button>
+        </div>
+        <div id="cr3-feedback" class="feedback"></div>
+        <div id="cr3-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(4)">Complete Orchestration</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 4: Conclusion -->
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="eyebrow">Layer 3 Complete</p>
+        <h2>Cross-Context Compression</h2>
+        <p>Across all 6 CCP subsystems, DSPy acts as the identical mechanical boundary.</p>
+        <p>It is rigidly inflexible when projecting data into FastAPI or Pydantic, but internally massive fluid when deployed inside the JIT Compiler tracking dataset alignment metrics.</p>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="alert('Proceed to the Terminal Capstone in 4_Master.html')">Proceed to Layer 4 Capstone</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const totalStages = 5;
+    const selections = {};
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function selectChoice(groupId, value, element) {
+      if (document.querySelector(`[data-group="${groupId}"]`).dataset.locked === 'true') return;
+      selections[groupId] = value;
+      document.querySelectorAll(`[data-group="${groupId}"] .choice`).forEach(b => b.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = `feedback show ${type}`;
+      box.innerHTML = `<h3>${title}</h3><p>${body}</p>`;
+    }
+
+    function submitChoice(groupId, correct, feedbackPack) {
+      const selected = selections[groupId];
+      if (!selected) {
+        showFeedback(groupId + '-feedback', 'bad', 'Prediction required', 'Commit to what breaks.');
+        return;
+      }
+      document.querySelector(`[data-group="${groupId}"]`).dataset.locked = 'true';
+      document.getElementById(groupId + '-submit').disabled = true;
+      document.getElementById(groupId + '-lock').classList.remove('hidden');
+      
+      const isCorrect = selected === correct;
+      const payload = isCorrect ? feedbackPack.good : feedbackPack.bad;
+      showFeedback(groupId + '-feedback', isCorrect ? 'good' : 'bad', payload.title, payload.body);
+      
+      const nextBtn = document.getElementById(groupId + '-next');
+      if(nextBtn) nextBtn.classList.remove('hidden');
+    }
+
+    const fbkCR1 = {
+      good: { title: 'Correct: The Silent Database Mutation.', body: 'DSPy extraction guarantees the output is a `str`, dropping markdown. But it does NOT evaluate semantic truth. Without Pydantic boundaries validating exact formatting constraints natively, the system functions normally but saves silently corrupted memory states over time.' },
+      bad: { title: 'Architectural Misconception.', body: 'You fundamentally misunderstood the extraction barrier. DSPy is heavily capable of returning exact strings, so the connection won\'t drop. The danger is that without QA Department boundaries, subtly incorrect enumerations ("Escalated" vs "escalate") destroy database schemas.' }
+    };
+
+    const fbkCR2 = {
+      good: { title: 'Correct: The Execution Hallucination.', body: 'The non-deterministic brain hallucinates conversational wrappers like "Sure, I will execute:". Subprocess cannot natively isolate "ls -la" from conversational noise. This creates terminal execution collisions. DSPy mechanically guarantees the text is stripped away prior to execution.' },
+      bad: { title: 'Architectural Misconception.', body: 'LLMs never "forget" formats; they just lack binding contracts. And Neo4j memory is irrelevant to Robot Arm execution subsystems. The threat is injecting conversational text directly into bash interpreters.' }
+    };
+
+    const fbkCR3 = {
+      good: { title: 'Correct: Latency Death Spiral.', body: 'Optimization is offline compilation. You never train a model synchronously inside an edge API handler. FastAPI merely calls the pre-baked DSPy `Prediction` object instantly.' },
+      bad: { title: 'Architectural Misconception.', body: 'You missed the operational flow. Compilation happens asynchronously using the `BootstrapFewShot` optimizer. Dropping that mechanism directly inside a live FastAPI route forces the backend to run 15+ reasoning cycles just to reply to one ping.' }
+    };
+  </script>
+</body>
+</html>

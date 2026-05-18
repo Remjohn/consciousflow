@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 14 - Master Layer: PyTorch Terminal Capstone</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #09090b; --panel: #131316; --panel-2: #1a1a1f; --line: #27272a;
+      --text: #fafafa; --muted: #a1a1aa;
+      --accent: #f43f5e; --accent-glow: rgba(244,63,94,0.12);
+      --good: #10b981; --bad: #ef4444; --warn: #f59e0b;
+      --font-ui: 'Space Grotesk', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-code: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font-body); line-height: 1.6; }
+
+    /* HUD System */
+    .hud {
+      position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(9,9,11,0.9);
+      backdrop-filter: blur(10px); border-bottom: 1px solid var(--accent); z-index: 100;
+      display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
+    }
+    .hud-left { display: flex; align-items: center; gap: 16px; }
+    .hud-title { font-family: var(--font-ui); font-size: 0.9rem; font-weight: 700; color: var(--text); letter-spacing: 0.1em; text-transform: uppercase; }
+    .hud-status { font-family: var(--font-code); font-size: 0.8rem; color: var(--accent); background: var(--accent-glow); padding: 4px 8px; border-radius: 4px; }
+    .hud-timer { font-family: var(--font-code); font-size: 1.5rem; font-weight: 600; color: var(--text); }
+    .hud-timer.danger { color: var(--bad); animation: pulse 1s infinite alternate; }
+
+    @keyframes pulse { from { opacity: 1; } to { opacity: 0.5; } }
+
+    /* Main Container */
+    .terminal-container { max-width: 900px; margin: 100px auto 60px; padding: 0 20px; }
+    
+    .intro-box {
+      border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
+      padding: 24px; margin-bottom: 32px; border-left: 3px solid var(--accent);
+    }
+    .intro-box h1 { font-family: var(--font-ui); font-size: 1.8rem; margin-bottom: 12px; }
+    .intro-box p { color: var(--muted); font-size: 0.95rem; margin-bottom: 12px; }
+    .req-list { font-family: var(--font-code); font-size: 0.85rem; color: var(--text); list-style: none; margin-top: 16px; }
+    .req-list li { margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .req-list li::before { content: '>'; color: var(--accent); }
+
+    /* Assessment Sections */
+    .exam-section { margin-bottom: 48px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); overflow: hidden; }
+    .exam-header { background: var(--panel-2); padding: 16px 20px; border-bottom: 1px solid var(--line); }
+    .exam-header h2 { font-family: var(--font-ui); font-size: 1.2rem; display: flex; justify-content: space-between; align-items: center; color: var(--text); }
+    .points { font-family: var(--font-code); font-size: 0.8rem; color: var(--warn); font-weight: 400; }
+    
+    .q-block { padding: 24px 20px; border-bottom: 1px solid var(--line); }
+    .q-block:last-child { border-bottom: none; }
+    .q-title { font-family: var(--font-ui); font-size: 1.05rem; font-weight: 700; margin-bottom: 12px; color: var(--text); }
+    .q-spec { background: #0d0d10; padding: 16px; border-radius: 6px; font-size: 0.95rem; color: #d1d5db; margin-bottom: 16px; font-style: italic; border-left: 2px solid var(--line); }
+    
+    .code-snippet { background: #0d0d10; border: 1px solid var(--line); padding: 16px; border-radius: 6px; font-family: var(--font-code); font-size: 0.85rem; color: #e5e7eb; white-space: pre-wrap; margin-bottom: 16px; }
+
+    /* Input Elements */
+    textarea {
+      width: 100%; min-height: 120px; background: #0d0d10; border: 1px solid var(--line);
+      border-radius: 6px; padding: 16px; color: var(--text); font-family: var(--font-code);
+      font-size: 0.9rem; resize: vertical; outline: none; transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    
+    .triage-grid { display: grid; gap: 12px; margin-bottom: 16px; }
+    .triage-row { display: grid; grid-template-columns: 140px 1fr; align-items: center; gap: 16px; }
+    .triage-label { font-family: var(--font-ui); font-size: 0.9rem; font-weight: 600; color: var(--muted); }
+    
+    select, input[type="text"] {
+      width: 100%; background: #0d0d10; border: 1px solid var(--line); border-radius: 6px;
+      padding: 10px 12px; color: var(--text); font-family: var(--font-code); font-size: 0.9rem;
+      outline: none; transition: border-color 0.2s;
+    }
+    select:focus, input:focus { border-color: var(--accent); }
+
+    /* Controls */
+    .submit-zone { text-align: right; margin-top: 32px; }
+    .btn-submit {
+      background: var(--accent); color: #fff; border: none; padding: 16px 32px;
+      border-radius: 8px; font-family: var(--font-ui); font-size: 1.1rem; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .btn-submit:hover { background: #e11d48; transform: translateY(-2px); }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Review Screen */
+    #reviewScreen { display: none; margin-top: 40px; }
+    .grade-card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 32px; text-align: center; margin-bottom: 32px; }
+    .grade-score { font-family: var(--font-ui); font-size: 4rem; font-weight: 700; line-height: 1; margin-bottom: 8px; }
+    .grade-status { font-family: var(--font-code); font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.1em; }
+    .pass { color: var(--good); } .fail { color: var(--bad); }
+    
+    .rubric-box { background: rgba(255,255,255,0.03); border-left: 2px solid var(--line); padding: 16px; font-size: 0.9rem; margin-top: 16px; display: none; }
+    .rubric-box.show { display: block; animation: pulse 0.3s ease; }
+    .show-rubric-btn { background: transparent; border: 1px solid var(--line); color: var(--muted); padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; margin-top: 8px; }
+    .show-rubric-btn:hover { color: var(--text); border-color: var(--text); }
+  </style>
+</head>
+<body>
+
+  <div class="hud">
+    <div class="hud-left">
+      <div class="hud-title">Terminal Capstone</div>
+      <div class="hud-status" id="sys-status">SYS.LOCKED</div>
+    </div>
+    <div class="hud-timer" id="timer">12:00</div>
+  </div>
+
+  <main class="terminal-container" id="examContainer">
+    <div class="intro-box">
+      <h1>PyTorch Tensor Literacy</h1>
+      <p>Ensure absolute sovereign control over the system's Laser Cutter. PyTorch errors are not simple Python bugs; they represent total catastrophic VRAM depletion loops and profound structural mutation threats to the core logic node.</p>
+      <ul class="req-list">
+        <li>Total Time Limit: 12 Minutes</li>
+        <li>Passing Threshold: 160 / 200 Points</li>
+        <li>Environment: No scaffolding. No hints.</li>
+      </ul>
+      <button class="btn-submit" id="startBtn" style="margin-top:20px; font-size: 0.95rem; padding: 10px 20px;">Initialize Exam Parameters</button>
+    </div>
+
+    <!-- Exam Content (Hidden until start) -->
+    <div id="examForm" style="display: none; opacity: 0; transition: opacity 0.5s ease;">
+      
+      <!-- Section 1 -->
+      <section class="exam-section">
+        <div class="exam-header">
+          <h2>1. Contract Specification <span class="points">60 Points</span></h2>
+        </div>
+        
+        <div class="q-block">
+          <div class="q-title">Q1.1: The Dynamic Model Injection Gate (20 Pts)</div>
+          <div class="q-spec">"The CCP requires an immutable Pydantic schema structure to safely manage parameters dispatched simultaneously from the API interface... The contract rigorously encompasses: The targeted coach's identification string. An exact float metric representing alpha scaling (must range securely between 0.01 and 2.0). And an explicit list of integer values indicating the specific multi-dimensional layout expected from the .shape operation... must strictly contain mathematically exactly three numerical values ensuring [batch, sequence, hidden_state] conformity."</div>
+          <textarea placeholder="Write your Pydantic BaseModel code here..." spellcheck="false"></textarea>
+          <button class="show-rubric-btn" onclick="this.nextElementSibling.classList.toggle('show')">View Local Rubric</button>
+          <div class="rubric-box">5 Pts: Types reflect accuracy (str, float, list[int]). 5 Pts: Float boundaries (ge, le). 5 Pts: Coherent structure. 5 Pts: Tensor dimensions utilize field_validator/length constraint.</div>
+        </div>
+
+        <div class="q-block">
+          <div class="q-title">Q1.2: The Inference Parameter Configuration (20 Pts)</div>
+          <div class="q-spec">"The DSPy compiler mandates a specific structural signature enforcing exact output metrics... The Signature must naturally acquire: an input string representing the active client's dialogue array. An explicit string output specifying the generated textual narrative. An explicitly required boolean output verifying structurally whether the generative model's internal training loops were safely bypassed (requires_grad verification state). And a strict boolean evaluation metric indicating whether the base AutoModel architecture explicitly invoked .eval() mapping perfectly to True."</div>
+          <textarea placeholder="Write your dspy.Signature class code here..." spellcheck="false"></textarea>
+          <button class="show-rubric-btn" onclick="this.nextElementSibling.classList.toggle('show')">View Local Rubric</button>
+          <div class="rubric-box">5 Pts: Proper invocation referencing dspy.Signature. 5 Pts: Accurate Input field text configs. 5 Pts: Specific execution safety boolean ranges. 5 Pts: Logical adherence isolating Python syntax.</div>
+        </div>
+
+        <div class="q-block">
+          <div class="q-title">Q1.3: OpenProse VRAM Isolation (20 Pts)</div>
+          <div class="q-spec">"The isolated system demands an OpenProse contract... It demands the local script environment path (string), the maximum CUDA memory allocation variable explicitly stated in Gigabytes (integer). The execution ensures definitively that the primary output returns a formatted JSON object. The explicit operational invariant guarantees universally that a timeout termination event definitively completely wipes all loaded neural parameter objects..."</div>
+          <textarea placeholder="Write your Requires / Ensures / Invariants block here..." spellcheck="false"></textarea>
+          <button class="show-rubric-btn" onclick="this.nextElementSibling.classList.toggle('show')">View Local Rubric</button>
+          <div class="rubric-box">5 Pts: Requires conditions adequately typed. 5 Pts: Ensures outcome dictates JSON formatting behavior securely. 10 Pts: Invariants precisely manage timeout clearing mechanism.</div>
+        </div>
+      </section>
+
+      <!-- Section 2 -->
+      <section class="exam-section">
+        <div class="exam-header">
+          <h2>2. Defect Triage <span class="points">60 Points</span></h2>
+        </div>
+
+        <div class="q-block">
+          <div class="q-title">Block 2.1: The Model Initialization Route (20 Pts)</div>
+          <div class="code-snippet">@app.post("/sys/activate_coach")
+async def activate_coach_dna(context_id: str):
+    base_qwen_matrix = get_global_base()
+    
+    specialized_matrix = PeftModel.from_pretrained(
+        base_qwen_matrix, 
+        f"/adapters/dna_{context_id}"
+    )
+    
+    # Ready for Socratic Response Generations
+    context_evaluation = execute_dsp_chain(specialized_matrix)
+    return {"status": "LIVE", "result": context_evaluation}</div>
+          <div class="triage-grid">
+            <div class="triage-row">
+              <div class="triage-label">Classification:</div>
+              <select><option>Select...</option><option value="correct">Correct</option><option value="omission">Omission</option><option value="hallucination">Hallucination</option><option value="misapp">Misapplication</option></select>
+            </div>
+            <div class="triage-row">
+              <div class="triage-label">Defect Line/Logic:</div>
+              <input type="text" placeholder="State exact line or logic failure...">
+            </div>
+            <div class="triage-row">
+              <div class="triage-label">Contract Violated:</div>
+              <input type="text" placeholder="Name the architectural Dictum/Contract...">
+            </div>
+            <div class="triage-row">
+              <div class="triage-label">Mechanical Fix:</div>
+              <input type="text" placeholder="How do you fix this?">
+            </div>
+          </div>
+        </div>
+
+        <div class="q-block">
+          <div class="q-title">Block 2.2: Context Tensor Dimension Validation (20 Pts)</div>
+          <div class="code-snippet">def evaluate_context_payload(json_string_input):
+    payload = json.loads(json_string_input)
+    historical_token_tensor = torch.tensor(payload["token_ids"])
+    
+    verified_shape = historical_token_tensor.shape
+    
+    if type(verified_shape) == list and len(verified_shape) == 2:
+        if verified_shape[1] > 2048:
+             return "ERROR: Context Exceeds Boundaries."
+             
+    # Pass to internal execution processing
+    return execute_dense_calculations(historical_token_tensor)</div>
+          <div class="triage-grid">
+            <div class="triage-row">
+              <div class="triage-label">Classification:</div>
+              <select><option>Select...</option><option value="correct">Correct</option><option value="omission">Omission</option><option value="hallucination">Hallucination</option><option value="misapp">Misapplication</option></select>
+            </div>
+            <div class="triage-row">
+              <div class="triage-label">Defect Line/Logic:</div>
+              <input type="text" placeholder="State exact line or logic failure...">
+            </div>
+            <div class="triage-row">
+              <div class="triage-label">Contract Violated:</div>
+              <input type="text" placeholder="Name the architectural Dictum/Contract...">
+            </div>
+            <div class="triage-row">
+              <div class="triage-label">Mechanical Fix:</div>
+              <input type="text" placeholder="How do you fix this?">
+            </div>
+          </div>
+        </div>
+
+        <div class="q-block">
+          <div class="q-title">Block 2.3: Safe Matrix Execution Sandboxing (20 Pts)</div>
+          <div class="code-snippet">def isolate_generative_response(payload_data):
+    try:
+        execution_response = subprocess.run(
+            ["python", "internal_pytorch_matrix_evaluator.py", payload_data],
+            capture_output=True, text=True, timeout=180
+        )
+        
+        if execution_response.returncode == 0:
+            return {"valid": True, "output": execution_response.stdout}
+        else:
+            return {"valid": False, "error": execution_response.stderr}
+            
+    except subprocess.TimeoutExpired:
+        log_event("VRAM Timeout Exception triggered.")
+        return {"valid": False, "error": "SYSTEM LOCKUP TIMEOUT"}</div>
+          <div class="triage-grid">
+            <div class="triage-row">
+              <div class="triage-label">Classification:</div>
+              <select><option>Select...</option><option value="correct">Correct</option><option value="omission">Omission</option><option value="hallucination">Hallucination</option><option value="misapp">Misapplication</option></select>
+            </div>
+            <div class="triage-row">
+              <div class="triage-label">Defect Analysis:</div>
+              <input type="text" placeholder="Provide brief rationale for classification...">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3 -->
+      <section class="exam-section">
+        <div class="exam-header">
+          <h2>3. Architectural Reasoning <span class="points">40 Points</span></h2>
+        </div>
+        
+        <div class="q-block">
+          <div class="q-title">Q3.1: The Pi Timeout Logic vs Direct Import (20 Pts)</div>
+          <p style="color:var(--text); font-size:0.95rem; margin-bottom:12px;">"In Sovereign architecture, why does the Pi Agentic Harness explicitly mandate using asynchronous <span class="mono">subprocess.run()</span> sequences wrapping deep neural matrix alignments... instead of simply natively importing the PyTorch library inside the live FastAPI routing functions mapping requests functionally?"</p>
+          <textarea placeholder="Provide your analytical response here..." spellcheck="false"></textarea>
+          <button class="show-rubric-btn" onclick="this.nextElementSibling.classList.toggle('show')">View Local Rubric</button>
+          <div class="rubric-box">5 Pts: Identifies PyTorch locks main async event loop. 5 Pts: Outlines VRAM hallucination/OOM catastrophic crash risk across the entire Python process. 5 Pts: Maps Robot Arm containment isolating logic from socket threads. 5 Pts: Cites MCDA (190/200) structural validation.</div>
+        </div>
+
+        <div class="q-block">
+          <div class="q-title">Q3.2: Dimensional Validations in QA Layers (20 Pts)</div>
+          <p style="color:var(--text); font-size:0.95rem; margin-bottom:12px;">"Why does the CCP architecture force explicit Pydantic <span class="mono">[batch, dimension, width]</span> validation properties... rather than merely allowing the PyTorch execution backend to throw a deeply descriptive <span class="mono">RuntimeError: Size Mismatch</span> natively inside the LLM routing sequence?"</p>
+          <textarea placeholder="Provide your analytical response here..." spellcheck="false"></textarea>
+          <button class="show-rubric-btn" onclick="this.nextElementSibling.classList.toggle('show')">View Local Rubric</button>
+          <div class="rubric-box">5 Pts: Articulates prevention of GPU parsing. 5 Pts: GPU transfers represent massive latency bottlenecks; native integers are instantaneous. 5 Pts: Targets QA Dept (Pydantic) explicitly guarding core. 5 Pts: Cites Dictum 2 (Immutable Data Passages).</div>
+        </div>
+      </section>
+
+      <!-- Section 4 -->
+      <section class="exam-section" style="border-color: var(--accent);">
+        <div class="exam-header" style="background: rgba(244,63,94,0.05); border-bottom-color: var(--accent);">
+          <h2>4. Feynman Compression <span class="points">40 Points</span></h2>
+        </div>
+        <div class="q-block">
+          <div class="q-spec">"Explain fundamentally natively in your completely own words exclusively why PyTorch Tensor Literacy—the native ability to read and command dimension boundaries natively, parameter guards natively, and execution states natively—is strictly undeniably critical for securely maintaining permanent sovereign control entirely over the CCP's autonomous agentic AI... Your foundational explanation must natively unconditionally include these exact 3 structural elements: The <strong>Laser Cutter</strong>, <strong>Dropout Stochastic Hallucinations</strong>, and the <strong>Pi Subprocess Harness</strong>."</div>
+          <textarea placeholder="Formulate your executive compression..." style="min-height: 200px; border-color: var(--accent);" spellcheck="false"></textarea>
+          <button class="show-rubric-btn" onclick="this.nextElementSibling.classList.toggle('show')">View Local Rubric</button>
+          <div class="rubric-box">35 Pts: Encompasses Laser Cutter, Dropout Stochastic Hallucinations, and Pi Harness in a fluent logical narrative seamlessly answering WHY. 5 Pts: Residual semantic flow and 4-sentence minimum strictly met.</div>
+        </div>
+      </section>
+
+      <div class="submit-zone">
+        <button class="btn-submit" id="submitBtn">Finalize Architecture Scan (End Exam)</button>
+      </div>
+
+    </div>
+
+    <!-- Review Screen -->
+    <div id="reviewScreen">
+      <div class="grade-card" id="gradeCard">
+        <p style="color:var(--muted); font-family:var(--font-ui); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:12px;">Automated Preliminary Evaluation</p>
+        <div class="grade-score" id="gradeNum">-- / 200</div>
+        <div class="grade-status" id="gradeText">AWAITING FOREMAN VERIFICATION</div>
+        <p style="margin-top:24px; font-size:0.95rem; color:var(--muted);">All textual submissions have been captured into the artifact database for final manual operator alignment scoring.</p>
+        <div style="margin-top:24px;">
+           <button class="btn-submit" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line);" onclick="location.reload()">Reset Examination Terminal</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let timerInterval;
+    let timeLeft = 12 * 60; // 12 mins
+    let examActive = false;
+
+    const startBtn = document.getElementById('startBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const examForm = document.getElementById('examForm');
+    const sysStatus = document.getElementById('sys-status');
+    const timerDisplay = document.getElementById('timer');
+    const reviewScreen = document.getElementById('reviewScreen');
+
+    function updateTime() {
+      const m = Math.floor(timeLeft / 60);
+      const s = timeLeft % 60;
+      timerDisplay.textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      
+      if (timeLeft <= 120) {
+        timerDisplay.classList.add('danger');
+        sysStatus.textContent = 'SYS.CRITICAL_TIME';
+        sysStatus.style.color = 'var(--bad)';
+        sysStatus.style.background = 'rgba(239, 68, 68, 0.12)';
+      }
+      
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        submitExam(true);
+      }
+      timeLeft--;
+    }
+
+    startBtn.addEventListener('click', () => {
+      document.querySelector('.intro-box').style.display = 'none';
+      examForm.style.display = 'block';
+      setTimeout(() => examForm.style.opacity = '1', 50);
+      
+      sysStatus.textContent = 'SYS.ACTIVE';
+      sysStatus.style.color = 'var(--good)';
+      sysStatus.style.background = 'rgba(16, 185, 129, 0.12)';
+      
+      examActive = true;
+      updateTime();
+      timerInterval = setInterval(updateTime, 1000);
+    });
+
+    submitBtn.addEventListener('click', () => submitExam(false));
+
+    function submitExam(timeout) {
+      if (!examActive) return;
+      examActive = false;
+      clearInterval(timerInterval);
+      
+      examForm.style.display = 'none';
+      reviewScreen.style.display = 'block';
+      window.scrollTo(0, 0);
+
+      sysStatus.textContent = timeout ? 'SYS.TIMEOUT' : 'SYS.LOCKED';
+      sysStatus.style.color = 'var(--muted)';
+      sysStatus.style.background = 'var(--panel-2)';
+      timerDisplay.classList.remove('danger');
+
+      // Random dummy score logic for UX demo (real system would send to DB)
+      // Evaluate triage answers
+      const selectBoxes = document.querySelectorAll('select');
+      let selectScore = 0;
+      if (selectBoxes[0].value === 'omission') selectScore += 20;
+      if (selectBoxes[1].value === 'misapp') selectScore += 20;
+      if (selectBoxes[2].value === 'correct') selectScore += 20;
+
+      // Textarea word count validation
+      const textAreas = document.querySelectorAll('textarea');
+      let textScore = 0;
+      textAreas.forEach((ta) => {
+        const len = ta.value.split(/\s+/).length;
+        if (len > 10) textScore += 20;
+        if (len > 30) textScore += 3.3; // max out remainder
+      });
+
+      const totalScore = Math.min(200, Math.floor(selectScore + textScore));
+      
+      const gNum = document.getElementById('gradeNum');
+      const gTxt = document.getElementById('gradeText');
+      if (timeout) {
+        gNum.textContent = 'TIMEOUT / 200';
+        gTxt.textContent = 'VRAM OVERLOAD - FATAL FAILURE';
+        gTxt.className = 'grade-status fail';
+      } else if (totalScore >= 160) {
+        gNum.textContent = `${totalScore} / 200`;
+        gTxt.textContent = 'CALIBRATION ACCEPTED';
+        gTxt.className = 'grade-status pass';
+      } else {
+        gNum.textContent = `${totalScore} / 200`;
+        gTxt.textContent = 'THRESHOLD FAILED. REVIEW MATRIX.';
+        gTxt.className = 'grade-status fail';
+      }
+    }
+  </script>
+</body>
+</html>

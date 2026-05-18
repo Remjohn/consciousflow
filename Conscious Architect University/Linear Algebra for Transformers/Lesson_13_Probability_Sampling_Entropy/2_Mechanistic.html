@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>L13 — Mechanistic Layer: Probability, Sampling & Entropy</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --surface2: #161b22;
+    --border: #21262d;
+    --border-bright: #30363d;
+    --text: #e6edf3;
+    --text-dim: #7d8590;
+    --text-dimmer: #484f58;
+    --amber: #f0a500;
+    --amber-dim: #7a5500;
+    --green: #3fb950;
+    --green-dim: #1a4a20;
+    --red: #f85149;
+    --red-dim: #4a1515;
+    --blue: #58a6ff;
+    --blue-dim: #1a3a6a;
+    --purple: #bc8cff;
+    --purple-dim: #3a2060;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    background: rgba(10,12,15,0.95);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+  }
+  .layer-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: var(--amber);
+    background: rgba(240,165,0,0.1);
+    border: 1px solid var(--amber-dim);
+    padding: 3px 10px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .header-title {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .progress-track {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .progress-bar-wrap {
+    width: 160px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--amber);
+    border-radius: 2px;
+    transition: width 0.6s ease;
+    width: 0%;
+  }
+  .progress-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dimmer);
+  }
+
+  /* ── LAYOUT ── */
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 48px 40px 80px;
+  }
+
+  /* ── SECTION ── */
+  .section {
+    margin-bottom: 8px;
+  }
+  .section-content {
+    display: none;
+  }
+  .section-content.unlocked {
+    display: block;
+    animation: fadeIn 0.4s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── SPACED INTERRUPT (opening gate) ── */
+  .interrupt-gate {
+    background: var(--surface);
+    border: 1px solid var(--amber-dim);
+    border-left: 3px solid var(--amber);
+    border-radius: 6px;
+    padding: 32px;
+    margin-bottom: 40px;
+  }
+  .interrupt-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--amber);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .interrupt-gate h2 {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  /* ── PROSE ── */
+  .prose {
+    color: var(--text-dim);
+    line-height: 1.8;
+    margin-bottom: 24px;
+  }
+  .prose strong { color: var(--text); font-weight: 500; }
+  .prose em { color: var(--amber); font-style: normal; font-weight: 500; }
+
+  h2.section-heading {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dimmer);
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    margin-top: 40px;
+  }
+  h3.concept-title {
+    font-family: var(--sans);
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 12px;
+    margin-top: 32px;
+  }
+
+  /* ── EQUATION DISPLAY ── */
+  .eq-block {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin: 20px 0;
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--blue);
+    line-height: 1.9;
+    overflow-x: auto;
+  }
+  .eq-block .eq-label {
+    font-size: 10px;
+    color: var(--text-dimmer);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .eq-line { display: block; }
+  .eq-comment {
+    color: var(--text-dimmer);
+    font-size: 12px;
+  }
+
+  /* ── COMPUTATION TABLE ── */
+  .comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 13px;
+    margin: 16px 0;
+  }
+  .comp-table th {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-bright);
+    color: var(--text-dimmer);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .comp-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+  .comp-table tr:last-child td { border-bottom: none; }
+  .comp-table .val { color: var(--blue); }
+  .comp-table .highlight-row td { background: rgba(88,166,255,0.05); color: var(--text); }
+  .comp-table .hidden-val {
+    background: var(--border);
+    color: transparent;
+    border-radius: 3px;
+    cursor: default;
+    min-width: 60px;
+    display: inline-block;
+  }
+
+  /* ── INPUT FIELDS ── */
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0;
+    flex-wrap: wrap;
+  }
+  .input-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    min-width: 220px;
+  }
+  .num-input {
+    background: var(--surface2);
+    border: 1px solid var(--border-bright);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 8px 12px;
+    width: 120px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .num-input:focus { border-color: var(--amber); }
+  .num-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .num-input.correct { border-color: var(--green); background: rgba(63,185,80,0.06); }
+  .num-input.wrong { border-color: var(--red); background: rgba(248,81,73,0.06); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 9px 20px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .btn-primary {
+    background: var(--amber);
+    color: #000;
+  }
+  .btn-primary:hover { background: #ffc030; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary {
+    background: transparent;
+    color: var(--amber);
+    border: 1px solid var(--amber-dim);
+  }
+  .btn-secondary:hover { border-color: var(--amber); }
+  .btn-unlock {
+    background: var(--green);
+    color: #000;
+    display: none;
+  }
+  .btn-unlock:hover { background: #55d068; }
+  .btn-unlock.visible { display: inline-block; }
+
+  /* ── FEEDBACK BOXES ── */
+  .feedback {
+    border-radius: 5px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-size: 14px;
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .feedback.visible { display: block; }
+  .feedback-correct {
+    background: rgba(63,185,80,0.08);
+    border: 1px solid var(--green-dim);
+    border-left: 3px solid var(--green);
+    color: var(--green);
+  }
+  .feedback-wrong {
+    background: rgba(248,81,73,0.08);
+    border: 1px solid var(--red-dim);
+    border-left: 3px solid var(--red);
+    color: var(--red);
+  }
+  .feedback-info {
+    background: rgba(88,166,255,0.06);
+    border: 1px solid var(--blue-dim);
+    border-left: 3px solid var(--blue);
+    color: var(--text-dim);
+  }
+  .feedback h4 {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .feedback p { font-size: 13px; line-height: 1.7; }
+  .feedback .misconception-name {
+    color: var(--red);
+    font-family: var(--mono);
+    font-weight: 600;
+  }
+
+  /* ── GATE WRAPPER ── */
+  .gate {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    margin: 24px 0;
+  }
+  .gate-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .gate-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .gate-icon-amber { background: rgba(240,165,0,0.15); color: var(--amber); }
+  .gate-icon-blue { background: rgba(88,166,255,0.15); color: var(--blue); }
+  .gate-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  /* ── LOCKED OVERLAY ── */
+  .locked-section {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.3;
+  }
+  .locked-section::after {
+    content: '🔒 Complete the gate above to unlock';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    background: var(--bg);
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .unlocked-section { pointer-events: auto; opacity: 1; }
+
+  /* ── MULTI-STEP COMPUTATION ── */
+  .step-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+  .step-number {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--amber);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .step-eq {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--blue);
+    margin-bottom: 12px;
+    line-height: 1.8;
+  }
+
+  /* ── REVEAL PANEL ── */
+  .reveal-panel {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .reveal-panel.visible { display: block; }
+  .reveal-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .reveal-row:last-child { border-bottom: none; }
+  .reveal-label { color: var(--text-dim); }
+  .reveal-val { color: var(--green); font-weight: 600; }
+  .reveal-predicted { color: var(--amber); }
+
+  /* ── GAUNTLET ── */
+  .gauntlet-header {
+    background: var(--surface2);
+    border: 1px solid var(--border-bright);
+    border-radius: 8px 8px 0 0;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .gauntlet-title {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--amber);
+    letter-spacing: 0.06em;
+  }
+  .gauntlet-progress {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dimmer);
+  }
+  .gauntlet-body {
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding: 28px 24px;
+  }
+  .gauntlet-q {
+    font-size: 15px;
+    color: var(--text);
+    margin-bottom: 20px;
+    line-height: 1.7;
+  }
+  .choice-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .choice-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 12px 16px;
+    cursor: pointer;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--text-dim);
+    text-align: left;
+    transition: all 0.15s;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .choice-btn:hover { border-color: var(--border-bright); color: var(--text); background: rgba(255,255,255,0.02); }
+  .choice-btn.correct-ans { border-color: var(--green); background: rgba(63,185,80,0.08); color: var(--green); }
+  .choice-btn.wrong-ans { border-color: var(--red); background: rgba(248,81,73,0.08); color: var(--red); }
+  .choice-btn:disabled { cursor: default; }
+  .choice-key {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dimmer);
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  /* ── TRUE/FALSE ── */
+  .tf-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .tf-btn {
+    flex: 1;
+    padding: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tf-btn:hover { border-color: var(--border-bright); }
+  .tf-btn.correct-ans { border-color: var(--green); background: rgba(63,185,80,0.1); color: var(--green); }
+  .tf-btn.wrong-ans { border-color: var(--red); background: rgba(248,81,73,0.1); color: var(--red); }
+  .tf-btn:disabled { cursor: default; }
+
+  /* ── COMPLETION ── */
+  .completion-block {
+    background: var(--surface2);
+    border: 1px solid var(--green-dim);
+    border-left: 3px solid var(--green);
+    border-radius: 6px;
+    padding: 28px;
+    margin-top: 40px;
+    text-align: center;
+    display: none;
+  }
+  .completion-block.visible { display: block; animation: fadeIn 0.5s ease; }
+  .completion-score {
+    font-family: var(--mono);
+    font-size: 36px;
+    font-weight: 600;
+    color: var(--green);
+    margin-bottom: 8px;
+  }
+  .completion-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--text-dimmer);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .next-btn {
+    display: inline-block;
+    background: var(--green);
+    color: #000;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 12px 28px;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .next-btn:hover { background: #55d068; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 40px 0;
+  }
+
+  /* ── MISCONCEPTION BOX ── */
+  .misconception-box {
+    background: rgba(248,81,73,0.05);
+    border: 1px solid var(--red-dim);
+    border-left: 3px solid var(--red);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .misconception-box.visible { display: block; }
+  .misconception-box .mis-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--red);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: block;
+  }
+  .misconception-box p { font-size: 13px; color: var(--text-dim); line-height: 1.7; }
+
+  /* ── PROPERTY LIST ── */
+  .prop-list {
+    list-style: none;
+    margin: 12px 0;
+  }
+  .prop-list li {
+    display: flex;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    color: var(--text-dim);
+    align-items: flex-start;
+  }
+  .prop-list li:last-child { border-bottom: none; }
+  .prop-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--amber);
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* ── INLINE MONO ── */
+  code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--surface2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--blue);
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <span class="layer-badge">Layer 2 — Mechanistic</span>
+  <span class="header-title">L13: Probability, Sampling &amp; Entropy</span>
+  <div class="progress-track">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+    <span class="progress-label" id="progressLabel">0 / 7</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SPACED INTERRUPT GATE (Layer 1 recall)        -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div class="interrupt-gate" id="interruptGate">
+    <span class="interrupt-tag">⚡ Spaced Retrieval Interrupt — Layer 1 Recall</span>
+    <h2>No preamble. No context. Compute this from memory.<br>Answer correctly to unlock this layer.</h2>
+
+    <p class="prose">A Transformer's output distribution has these probabilities for the top-5 tokens after a given context:</p>
+
+    <table class="comp-table" style="margin-bottom:20px;">
+      <thead><tr><th>Token</th><th>Probability</th></tr></thead>
+      <tbody>
+        <tr><td>hear</td><td class="val">0.584</td></tr>
+        <tr><td>understand</td><td class="val">0.194</td></tr>
+        <tr><td>know</td><td class="val">0.118</td></tr>
+        <tr><td>consider</td><td class="val">0.065</td></tr>
+        <tr><td>realize</td><td class="val">0.039</td></tr>
+      </tbody>
+    </table>
+
+    <p class="prose">With <strong>top-p = 0.95</strong> sampling, you keep the smallest set of tokens whose cumulative probability ≥ 0.95, then renormalize.</p>
+
+    <div class="input-row">
+      <span class="input-label">How many tokens pass the top-p filter?</span>
+      <input type="number" class="num-input" id="interruptInput" placeholder="e.g. 3" min="1" max="5">
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:16px;">
+      <button class="btn btn-primary" onclick="checkInterrupt()">Submit Answer</button>
+    </div>
+
+    <div class="feedback feedback-wrong" id="interruptWrong">
+      <h4>Incorrect — try again</h4>
+      <p>Walk through the cumulative sums: 0.584 → 0.778 → 0.896 → 0.961. At which token do you first reach ≥ 0.95?</p>
+    </div>
+    <div class="feedback feedback-correct" id="interruptCorrect">
+      <h4>✓ Correct — Layer 2 Unlocked</h4>
+      <p>Cumulative: hear (0.584) → understand (0.778) → know (0.896) → consider (0.961). The nucleus hits 0.95 at <strong>consider</strong> — 4 tokens pass. "Realize" at 0.039 is excluded. Layer 2 is now unlocked.</p>
+    </div>
+    <div class="feedback feedback-wrong" id="interruptWrong2" style="display:none;">
+      <h4>Still Incorrect</h4>
+      <p>The answer is <strong>4</strong>. Tokens: hear + understand + know + consider. Their cumulative sum is 0.961, which is the first point ≥ 0.95. Nucleus sampling cut the tail ("realize" onwards).</p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- MAIN CONTENT (locked until interrupt passes)  -->
+  <!-- ══════════════════════════════════════════════ -->
+  <div id="mainContent" class="locked-section" style="pointer-events:none; opacity:0.25;">
+
+    <!-- ── SECTION 1: Softmax Mechanics ── -->
+    <h2 class="section-heading">01 — Softmax: Step-by-Step Derivation</h2>
+
+    <p class="prose">The softmax function converts raw logits <strong>z</strong> into a valid probability distribution. Every Transformer output — every token probability — passes through this operation. You will now compute it by hand.</p>
+
+    <div class="eq-block">
+      <span class="eq-label">Definition</span>
+      <span class="eq-line">softmax(z)ᵢ = exp(zᵢ) / Σⱼ exp(zⱼ)</span>
+    </div>
+
+    <p class="prose">Given logits from the Worked Example in section 7 of your notes:</p>
+
+    <table class="comp-table">
+      <thead><tr><th>Token</th><th>Logit z</th><th>exp(z)</th><th>p = exp(z) / Z</th></tr></thead>
+      <tbody>
+        <tr><td>hear</td><td class="val">3.2</td><td class="val">24.53</td><td class="val">0.584</td></tr>
+        <tr><td>understand</td><td class="val">2.1</td><td class="val">8.17</td><td class="val">0.194</td></tr>
+        <tr><td>know</td><td class="val">1.6</td><td class="val">4.95</td><td class="val">0.118</td></tr>
+        <tr><td>consider</td><td class="val">1.0</td><td class="val">2.72</td><td class="val">0.065</td></tr>
+        <tr><td>realize</td><td class="val">0.5</td><td class="val">1.65</td><td class="val">0.039</td></tr>
+        <tr><td>banana</td><td class="val">−8.0</td><td class="val">0.0003</td><td class="val">≈0.000007</td></tr>
+      </tbody>
+    </table>
+
+    <p class="prose">The partition function <code>Z = Σ exp(zⱼ) = 42.02</code>.</p>
+
+    <!-- PREDICTION GATE 1: Softmax properties -->
+    <div class="gate" id="gate1">
+      <div class="gate-header">
+        <div class="gate-icon gate-icon-amber">P</div>
+        <span class="gate-title">Prediction Gate — Softmax Properties</span>
+      </div>
+
+      <p class="prose">Three properties are claimed. Verify them against the table above.</p>
+
+      <div class="step-box" style="margin-bottom:16px;">
+        <span class="step-number">Property 1</span>
+        <div class="step-eq">Shift-invariance: softmax(z + c) = softmax(z) for any constant c</div>
+        <p class="prose" style="font-size:13px;">If we subtract <strong>max(z) = 3.2</strong> from every logit (the log-sum-exp trick), the new logits become: hear=0, understand=−1.1, know=−1.6, consider=−2.2, realize=−2.7, banana=−11.2.</p>
+        <p class="prose" style="font-size:13px; margin-bottom:14px;">Compute <strong>exp(0)</strong> for the top token (hear) in the shifted version:</p>
+        <div class="input-row">
+          <span class="input-label">exp(0) = ?</span>
+          <input type="number" class="num-input" id="g1_exp0" placeholder="exact value" step="0.01">
+        </div>
+      </div>
+
+      <div class="step-box" style="margin-bottom:16px;">
+        <span class="step-number">Property 2</span>
+        <div class="step-eq">Normalization: Σᵢ softmax(z)ᵢ = 1</div>
+        <p class="prose" style="font-size:13px; margin-bottom:14px;">Sum all 6 probabilities from the table above. Enter the exact sum (to 6 decimal places is fine):</p>
+        <div class="input-row">
+          <span class="input-label">Σ p(token) = ?</span>
+          <input type="number" class="num-input" id="g1_sum" placeholder="e.g. 1.000" step="0.001">
+        </div>
+      </div>
+
+      <div class="step-box">
+        <span class="step-number">Property 3 — Gradient</span>
+        <div class="step-eq">∂pᵢ/∂zⱼ = pᵢ(δᵢⱼ − pⱼ)  where δᵢⱼ = 1 if i=j, else 0</div>
+        <p class="prose" style="font-size:13px; margin-bottom:14px;">Compute the self-gradient for "hear" (i=j): <code>∂p_hear / ∂z_hear</code> = p_hear × (1 − p_hear)</p>
+        <div class="input-row">
+          <span class="input-label">0.584 × (1 − 0.584) = ?</span>
+          <input type="number" class="num-input" id="g1_grad" placeholder="e.g. 0.243" step="0.001">
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <button class="btn btn-primary" onclick="checkGate1()">Verify All Three</button>
+      </div>
+
+      <div class="misconception-box" id="g1_mis1">
+        <span class="mis-tag">Misconception: "Shifting changes the distribution"</span>
+        <p>exp(0) = 1 — not exp(3.2) = 24.53. Shift-invariance means the RATIOS between exp values are preserved. The partition function changes, but every probability stays identical. This is why implementations subtract max(z) before softmax — no numerical overflow, same output.</p>
+      </div>
+
+      <div class="misconception-box" id="g1_mis2">
+        <span class="mis-tag">Misconception: "Probabilities only approximately sum to 1"</span>
+        <p>Softmax is defined by dividing each exp(z) by the EXACT sum of all exp(z). The normalization is algebraically exact, not approximate. Rounding in computation produces a value within machine epsilon of 1.0.</p>
+      </div>
+
+      <div class="feedback feedback-correct" id="g1_correct">
+        <h4>✓ All three properties verified</h4>
+        <p>exp(0) = <strong>1</strong> confirms shift-invariance. Sum = <strong>1.000007 ≈ 1</strong> confirms normalization. Self-gradient = <strong>0.242</strong> confirms the Jacobian formula. These three properties together make softmax the unique function that maps logits to valid distributions while remaining differentiable.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ── SECTION 2: Temperature ── -->
+    <h2 class="section-heading">02 — Temperature Scaling</h2>
+
+    <p class="prose">Temperature divides logits <em>before</em> exponentiation. Its effect is exponential in 1/T — not linear.</p>
+
+    <div class="eq-block">
+      <span class="eq-label">Temperature-Scaled Softmax</span>
+      <span class="eq-line">p_i(T) = exp(z_i / T) / Σⱼ exp(z_j / T)</span>
+      <span class="eq-line eq-comment">// Probability ratio between two tokens: p₁/p₂ = exp((z₁ − z₂)/T)</span>
+    </div>
+
+    <!-- PREDICTION GATE 2: Temperature computation -->
+    <div class="gate" id="gate2">
+      <div class="gate-header">
+        <div class="gate-icon gate-icon-amber">P</div>
+        <span class="gate-title">Prediction Gate — Temperature Calculation</span>
+      </div>
+
+      <p class="prose">Two logits: <code>z₁ = 3.2</code> (hear), <code>z₂ = 2.1</code> (understand). Logit gap = 1.1.</p>
+      <p class="prose" style="margin-bottom: 18px;">Compute the <strong>probability ratio p₁/p₂</strong> at each temperature using: <code>ratio = exp(gap / T)</code></p>
+
+      <div class="step-box">
+        <span class="step-number">At T = 1.0 (standard)</span>
+        <div class="step-eq">exp(1.1 / 1.0) = exp(1.1)</div>
+        <div class="input-row">
+          <span class="input-label">exp(1.1) ≈ ? (2 decimal places)</span>
+          <input type="number" class="num-input" id="g2_t1" placeholder="e.g. 3.00" step="0.01">
+        </div>
+      </div>
+
+      <div class="step-box">
+        <span class="step-number">At T = 0.5 (sharper)</span>
+        <div class="step-eq">exp(1.1 / 0.5) = exp(2.2)</div>
+        <div class="input-row">
+          <span class="input-label">exp(2.2) ≈ ? (2 decimal places)</span>
+          <input type="number" class="num-input" id="g2_t05" placeholder="e.g. 9.00" step="0.01">
+        </div>
+      </div>
+
+      <div class="step-box">
+        <span class="step-number">At T = 2.0 (flatter)</span>
+        <div class="step-eq">exp(1.1 / 2.0) = exp(0.55)</div>
+        <div class="input-row">
+          <span class="input-label">exp(0.55) ≈ ? (2 decimal places)</span>
+          <input type="number" class="num-input" id="g2_t2" placeholder="e.g. 1.70" step="0.01">
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <button class="btn btn-primary" onclick="checkGate2()">Verify Ratios</button>
+      </div>
+
+      <div class="misconception-box" id="g2_mis_linear">
+        <span class="mis-tag">Misconception: "Temperature linearly scales the probability ratio"</span>
+        <p>Halving T (from 1.0 to 0.5) does not double the ratio — it SQUARES the ratio: 3.00² ≈ 9.00. Temperature's effect is exponential in 1/T. This is why T=0.1 creates ratios of 485 million:1 from a mere 2-unit logit gap.</p>
+      </div>
+
+      <div class="feedback feedback-correct" id="g2_correct">
+        <h4>✓ All three ratios correct</h4>
+        <p>At T=1.0: <strong>3.00:1</strong>. At T=0.5: <strong>9.02:1</strong>. At T=2.0: <strong>1.73:1</strong>. Notice: going from T=1.0 to T=0.5 cubed the ratio (not doubled). Temperature compresses or amplifies logit gaps exponentially — this is the geometric core of sampling control.</p>
+      </div>
+    </div>
+
+    <!-- MASTERY GATE 2 -->
+    <div class="gate" id="masteryGate2" style="display:none; border-color: var(--blue-dim);">
+      <div class="gate-header">
+        <div class="gate-icon gate-icon-blue">M</div>
+        <span class="gate-title">Mastery Gate — Novel Values</span>
+      </div>
+      <p class="prose">New logit gap: <code>z₁ − z₂ = 3.0</code>. Temperature = 0.5.</p>
+      <p class="prose" style="margin-bottom:18px;">What is the probability ratio p₁/p₂? Compute: <code>exp(3.0 / 0.5) = exp(6.0)</code></p>
+      <div class="input-row">
+        <span class="input-label">exp(6.0) ≈ ? (nearest whole number)</span>
+        <input type="number" class="num-input" id="mg2_ans" placeholder="e.g. 400" step="1">
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-primary" onclick="checkMasteryGate2()">Submit</button>
+      </div>
+      <div class="feedback feedback-correct" id="mg2_correct">
+        <h4>✓ Mastery confirmed</h4>
+        <p>exp(6) = <strong>403.4</strong>. A logit gap of 3.0 at T=0.5 creates a 403:1 preference. The top token wins overwhelmingly. This is the practical basis for "low temperature = deterministic" behavior in production LLMs.</p>
+      </div>
+      <div class="feedback feedback-wrong" id="mg2_wrong">
+        <h4>Incorrect</h4>
+        <p>exp(3.0/0.5) = exp(6). Recall: e¹ ≈ 2.718, e² ≈ 7.39, e³ ≈ 20.1, e⁶ ≈ 403.4. The doubling of the exponent exponent causes the ratio to square: exp(6) ≈ exp(3)² ≈ 20.1² ≈ 404.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ── SECTION 3: Shannon Entropy ── -->
+    <h2 class="section-heading">03 — Shannon Entropy: Computation</h2>
+
+    <p class="prose">Entropy measures the <em>expected surprise</em> of a distribution. It is the single number that summarizes how uncertain the model is at any token position.</p>
+
+    <div class="eq-block">
+      <span class="eq-label">Shannon Entropy</span>
+      <span class="eq-line">H(p) = −Σᵢ pᵢ log(pᵢ)</span>
+      <span class="eq-line eq-comment">// surprise of event i = −log(pᵢ); entropy = weighted average surprise</span>
+    </div>
+
+    <p class="prose">Bounds: <code>0 ≤ H(p) ≤ log(n)</code> where n = vocabulary size. For one-hot: H = 0. For uniform over n: H = log(n).</p>
+
+    <!-- PREDICTION GATE 3: Entropy -->
+    <div class="gate" id="gate3">
+      <div class="gate-header">
+        <div class="gate-icon gate-icon-amber">P</div>
+        <span class="gate-title">Prediction Gate — Entropy Calculation</span>
+      </div>
+
+      <p class="prose">Compute the entropy of a simple 3-token distribution: p = [0.7, 0.2, 0.1].</p>
+      <p class="prose" style="margin-bottom:16px;">H = −(0.7 ln(0.7) + 0.2 ln(0.2) + 0.1 ln(0.1))</p>
+
+      <div class="step-box">
+        <span class="step-number">Step 1 — Individual terms</span>
+        <div class="step-eq">Use: ln(0.7) ≈ −0.357, ln(0.2) ≈ −1.609, ln(0.1) ≈ −2.303</div>
+        <p class="prose" style="font-size:13px; margin-bottom:12px;">Compute each term pᵢ × (−ln pᵢ):</p>
+        <div class="input-row">
+          <span class="input-label">0.7 × 0.357 = ?</span>
+          <input type="number" class="num-input" id="g3_t1" placeholder="e.g. 0.25" step="0.001">
+        </div>
+        <div class="input-row">
+          <span class="input-label">0.2 × 1.609 = ?</span>
+          <input type="number" class="num-input" id="g3_t2" placeholder="e.g. 0.32" step="0.001">
+        </div>
+        <div class="input-row">
+          <span class="input-label">0.1 × 2.303 = ?</span>
+          <input type="number" class="num-input" id="g3_t3" placeholder="e.g. 0.23" step="0.001">
+        </div>
+      </div>
+
+      <div class="step-box">
+        <span class="step-number">Step 2 — Sum the terms</span>
+        <div class="step-eq">H = term₁ + term₂ + term₃</div>
+        <div class="input-row">
+          <span class="input-label">H(p) ≈ ? nats (2 decimal places)</span>
+          <input type="number" class="num-input" id="g3_h" placeholder="e.g. 0.80" step="0.01">
+        </div>
+      </div>
+
+      <div style="margin-top:20px;">
+        <button class="btn btn-primary" onclick="checkGate3()">Verify Computation</button>
+      </div>
+
+      <div class="misconception-box" id="g3_mis_units">
+        <span class="mis-tag">Misconception: "Entropy can exceed 1 in meaningful distributions"</span>
+        <p>H(p) using natural log is in nats. Using log₂ gives bits. There is no upper limit of 1 — H can be as large as log(n). For the 6-token distribution in the worked example, H ≈ 1.25 nats, which is completely normal. The bound H ≤ log(n) sets the ceiling, which for 6 tokens is log(6) ≈ 1.79 nats.</p>
+      </div>
+
+      <div class="feedback feedback-correct" id="g3_correct">
+        <h4>✓ Entropy computed correctly</h4>
+        <p>Terms: 0.250, 0.322, 0.230. H = <strong>0.80 nats</strong>. Compare to uniform over 3: H = log(3) ≈ 1.10 nats. This distribution (70% dominant) is far from uniform — hence the lower entropy. This is the "confident but flexible" regime.</p>
+      </div>
+    </div>
+
+    <!-- MASTERY GATE 3 -->
+    <div class="gate" id="masteryGate3" style="display:none; border-color: var(--blue-dim);">
+      <div class="gate-header">
+        <div class="gate-icon gate-icon-blue">M</div>
+        <span class="gate-title">Mastery Gate — Entropy Bounds</span>
+      </div>
+      <p class="prose">A 4-token distribution has p = [1, 0, 0, 0] (one-hot). What is H(p)?</p>
+      <p class="prose" style="margin-bottom:16px;font-size:13px;">Recall: 0 × log(0) is defined as 0 by convention (lim x→0 of x·ln(x) = 0).</p>
+      <div class="input-row">
+        <span class="input-label">H([1, 0, 0, 0]) = ?</span>
+        <input type="number" class="num-input" id="mg3_ans" placeholder="exact value" step="0.01">
+      </div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-primary" onclick="checkMasteryGate3()">Submit</button>
+      </div>
+      <div class="feedback feedback-correct" id="mg3_correct">
+        <h4>✓ Lower bound confirmed</h4>
+        <p>H = <strong>0</strong>. Entropy is zero when the outcome is certain. −1 × ln(1) = 0. All other terms are 0 × ln(0) = 0 by convention. Greedy decoding at T→0 forces H→0: no uncertainty, no surprise, no information. This is the mathematical definition of deterministic.</p>
+      </div>
+      <div class="feedback feedback-wrong" id="mg3_wrong">
+        <h4>Incorrect</h4>
+        <p>H = −(1 × ln(1) + 0 + 0 + 0) = −(1 × 0) = 0. When you already know the answer, there is zero average surprise. The entropy lower bound of 0 is achieved exactly here.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ── SECTION 4: Cross-Entropy and KL ── -->
+    <h2 class="section-heading">04 — Cross-Entropy, KL Divergence &amp; Training Loss</h2>
+
+    <p class="prose">The pre-training loss <em>is</em> cross-entropy. Understanding this decomposition reveals why KL divergence controls training behavior.</p>
+
+    <div class="eq-block">
+      <span class="eq-label">Key Decomposition</span>
+      <span class="eq-line">H(p, q) = H(p) + KL(p ∥ q)</span>
+      <span class="eq-line eq-comment">// cross-entropy = entropy of true dist + divergence from true dist</span>
+      <span class="eq-line" style="margin-top:8px;">KL(p ∥ q) = Σᵢ pᵢ log(pᵢ / qᵢ)</span>
+      <span class="eq-line eq-comment">// always ≥ 0; equals 0 iff p = q (Gibbs' inequality)</span>
+    </div>
+
+    <p class="prose">When p is one-hot (training label): <code>H(p,q) = −log q(y*)</code>. This is the negative log-likelihood — the standard SFT loss.</p>
+
+    <!-- PREDICTION GATE 4: KL -->
+    <div class="gate" id="gate4">
+      <div class="gate-header">
+        <div class="gate-icon gate-icon-amber">P</div>
+        <span class="gate-title">Prediction Gate — KL Divergence Direction</span>
+      </div>
+
+      <p class="prose" style="margin-bottom:20px;">GRPO uses <strong>Reverse KL: KL(π_θ ∥ π_ref)</strong> as its penalty term. A different algorithm uses <strong>Forward KL: KL(π_ref ∥ π_θ)</strong>.</p>
+
+      <p class="prose" style="margin-bottom:8px;font-weight:500;color:var(--text);">Select which statement is TRUE for Reverse KL:</p>
+
+      <div class="choice-list" id="g4_choices">
+        <button class="choice-btn" onclick="checkGate4(this, false)" data-idx="0">
+          <span class="choice-key">A</span>
+          <span>Reverse KL forces the trained policy to assign non-zero probability wherever the reference model does — it MUST cover all modes of π_ref.</span>
+        </button>
+        <button class="choice-btn" onclick="checkGate4(this, true)" data-idx="1">
+          <span class="choice-key">B</span>
+          <span>Reverse KL allows the trained policy to collapse onto a subset of π_ref's modes — high-quality modes — and abandon low-quality modes entirely.</span>
+        </button>
+        <button class="choice-btn" onclick="checkGate4(this, false)" data-idx="2">
+          <span class="choice-key">C</span>
+          <span>Reverse KL and Forward KL produce identical optimization pressure — they differ only in computational cost.</span>
+        </button>
+        <button class="choice-btn" onclick="checkGate4(this, false)" data-idx="3">
+          <span class="choice-key">D</span>
+          <span>Reverse KL penalizes the model for having LOW probability where π_ref has LOW probability.</span>
+        </button>
+      </div>
+
+      <div class="misconception-box" id="g4_mis_symmetric">
+        <span class="mis-tag">Misconception: "KL divergence is symmetric"</span>
+        <p>KL(p∥q) ≠ KL(q∥p) in general. Forward KL is <em>mean-seeking</em> — it penalizes q for missing any region where p has mass, forcing q to spread across all of p's modes. Reverse KL is <em>mode-seeking</em> — it penalizes q for having mass in regions where p has no mass, pushing q to concentrate on p's best modes. The asymmetry is the entire reason these two objectives produce different trained models.</p>
+      </div>
+      <div class="misconception-box" id="g4_mis_mode">
+        <span class="mis-tag">Misconception: "Reverse KL forces coverage like Forward KL"</span>
+        <p>Read the formula: KL(π_θ ∥ π_ref) = Σ π_θ(y) log[π_θ(y)/π_ref(y)]. This is large when π_θ assigns probability to outcomes where π_ref assigns little. So the penalty pushes π_θ AWAY from regions where π_ref is small — it can safely ignore those regions entirely. The model is free to zero out low-quality outputs.</p>
+      </div>
+
+      <div class="feedback feedback-correct" id="g4_correct">
+        <h4>✓ Correct — Mode-seeking behavior confirmed</h4>
+        <p>Reverse KL = KL(π_θ ∥ π_ref) is large when π_θ is high where π_ref is low. To minimize it, π_θ concentrates on π_ref's high-probability modes and ABANDONS low-probability modes. This is why GRPO produces focused, consistent coaching outputs — the trained model collapses toward the high-reward subspace of the reference distribution.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ── SECTION 5: Production Pipeline ── -->
+    <h2 class="section-heading">05 — The Production Sampling Pipeline</h2>
+
+    <p class="prose">Every LLM token generation in production — including the CCP's Pipecat sessions — uses this exact pipeline. The order of operations is not arbitrary.</p>
+
+    <div class="eq-block">
+      <span class="eq-label">Standard Pipeline</span>
+      <span class="eq-line">sample( top-p( softmax( z / T ), p ) )</span>
+      <span class="eq-line eq-comment">// Step 1: divide logits by T  →  Step 2: softmax  →  Step 3: top-p filter  →  Step 4: sample</span>
+    </div>
+
+    <!-- PREDICTION GATE 5: Pipeline ordering -->
+    <div class="gate" id="gate5">
+      <div class="gate-header">
+        <div class="gate-icon gate-icon-amber">P</div>
+        <span class="gate-title">Prediction Gate — Pipeline Ordering</span>
+      </div>
+
+      <p class="prose" style="margin-bottom:20px;">A developer accidentally applies top-p filtering BEFORE temperature scaling. Logits: z = [5.0, 1.0, 0.5]. T = 0.1. Top-p = 0.95.</p>
+
+      <p class="prose" style="margin-bottom:16px; font-weight:500; color:var(--text);">What goes wrong?</p>
+
+      <div class="choice-list" id="g5_choices">
+        <button class="choice-btn" onclick="checkGate5(this, false)" data-idx="0">
+          <span class="choice-key">A</span>
+          <span>Nothing — the output distribution is identical regardless of whether temperature or top-p is applied first.</span>
+        </button>
+        <button class="choice-btn" onclick="checkGate5(this, true)" data-idx="1">
+          <span class="choice-key">B</span>
+          <span>Top-p is computed on the softmax of raw logits (moderate distribution), keeping 2–3 tokens. Temperature is then applied only to the kept tokens. The nucleus that temperature would have created from ALL logits (near-deterministic 1 token) is never produced.</span>
+        </button>
+        <button class="choice-btn" onclick="checkGate5(this, false)" data-idx="2">
+          <span class="choice-key">C</span>
+          <span>Temperature cannot be applied after top-p filtering because renormalization has already occurred.</span>
+        </button>
+        <button class="choice-btn" onclick="checkGate5(this, false)" data-idx="3">
+          <span class="choice-key">D</span>
+          <span>Applying top-p before temperature scaling increases entropy, producing more diverse outputs than intended.</span>
+        </button>
+      </div>
+
+      <div class="misconception-box" id="g5_mis_order">
+        <span class="mis-tag">Misconception: "Pipeline order doesn't matter if the same operations are applied"</span>
+        <p>At T=0.1, the scaled logits become [50, 10, 5]. Softmax of those: token 1 gets ≈1.0, all others ≈0. Top-p keeps 1 token. Now apply in wrong order: softmax of raw [5.0, 1.0, 0.5] → [0.982, 0.018, 0.000]. Top-p keeps token 1. Temperature then applied to 1 token = no effect. The two pipelines accidentally agree HERE — but at T=2.0 they diverge dramatically. The order defines the semantics of each operation.</p>
+      </div>
+
+      <div class="feedback feedback-correct" id="g5_correct">
+        <h4>✓ Correct — Order defines semantics</h4>
+        <p>Temperature must scale the logits BEFORE softmax because temperature controls the SHAPE of the distribution entering top-p. At T=0.1, only the dominant token survives — top-p gets an already-peaked distribution. Applying top-p first means the filter sees a moderate distribution and keeps multiple tokens, then temperature concentrates among those. The nucleus composition changes fundamentally.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ── SECTION 6: Attention Entropy Diagnostic ── -->
+    <h2 class="section-heading">06 — Softmax Saturation &amp; Attention Entropy</h2>
+
+    <p class="prose">Softmax appears twice in Transformers: at the output (token selection) and inside attention (position weighting). Both can saturate. Saturation kills gradient flow.</p>
+
+    <div class="eq-block">
+      <span class="eq-label">Attention Softmax</span>
+      <span class="eq-line">αₜ = softmax( qₜᵀKᵀ / √dₖ )</span>
+      <span class="eq-line eq-comment">// √dₖ scaling prevents dot products from growing too large</span>
+      <span class="eq-line" style="margin-top:8px;">Saturation condition: when zᵢ ≫ zⱼ → softmax(z)ᵢ → 1, gradient → 0</span>
+    </div>
+
+    <p class="prose">The entropy of the attention distribution is a diagnostic for saturation:</p>
+    <ul class="prop-list">
+      <li><span class="prop-num">H≈0</span><span>Saturated. One token dominates. Gradients blocked. Attention frozen.</span></li>
+      <li><span class="prop-num">H≈logT</span><span>Uniform. All positions attend equally. No useful information routing.</span></li>
+      <li><span class="prop-num">0.5–2.0</span><span>Healthy range. Selective but not frozen. Gradients flow. Information routed effectively.</span></li>
+    </ul>
+
+    <!-- PREDICTION GATE 6: Saturation -->
+    <div class="gate" id="gate6">
+      <div class="gate-header">
+        <div class="gate-icon gate-icon-amber">P</div>
+        <span class="gate-title">Prediction Gate — Saturation Diagnosis</span>
+      </div>
+
+      <p class="prose">An attention layer's entropy diagnostic shows H(αₜ) = 0.02 across all query positions after training epoch 3.</p>
+      <p class="prose" style="margin-bottom:20px;">What does this indicate, and what caused it?</p>
+
+      <div class="choice-list" id="g6_choices">
+        <button class="choice-btn" onclick="checkGate6(this, false)" data-idx="0">
+          <span class="choice-key">A</span>
+          <span>The model has learned perfect attention routing — it knows exactly which token to focus on at every position, producing H→0. This is optimal behavior.</span>
+        </button>
+        <button class="choice-btn" onclick="checkGate6(this, false)" data-idx="1">
+          <span class="choice-key">B</span>
+          <span>The √dₖ scaling factor was set too high, causing uniform attention across all positions (H→log T, not H→0).</span>
+        </button>
+        <button class="choice-btn" onclick="checkGate6(this, true)" data-idx="2">
+          <span class="choice-key">C</span>
+          <span>The attention weights have saturated — the dot products grew too large, softmax collapsed to near one-hot, and the gradient ∂pᵢ/∂zⱼ ≈ 0 for all cross-terms. The model can no longer update this attention layer.</span>
+        </button>
+        <button class="choice-btn" onclick="checkGate6(this, false)" data-idx="3">
+          <span class="choice-key">D</span>
+          <span>Entropy 0.02 indicates a near-uniform distribution — the model is ignoring positional information entirely.</span>
+        </button>
+      </div>
+
+      <div class="misconception-box" id="g6_mis_good">
+        <span class="mis-tag">Misconception: "H→0 in attention means the model learned perfect routing"</span>
+        <p>H→0 in OUTPUT distributions (token selection) could be acceptable at inference with T→0. But H→0 in ATTENTION distributions means gradients have vanished: ∂pᵢ/∂zⱼ = pᵢ(δᵢⱼ − pⱼ). When pᵢ→1, the cross-gradient terms pᵢ·pⱼ→0. The attention layer is frozen. Whatever routing it has learned — good or bad — cannot be updated.</p>
+      </div>
+
+      <div class="feedback feedback-correct" id="g6_correct">
+        <h4>✓ Saturation correctly identified</h4>
+        <p>H=0.02 is near-zero — the attention distribution is nearly one-hot. This is softmax saturation: large dot products push softmax into its tail where ∂p/∂z ≈ 0. The √dₖ scaling exists precisely to prevent this. Without it, as d_k grows, dot products scale as √d_k and saturate attention from the first forward pass. The entropy diagnostic catches this pathology quantitatively.</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- MECHANISTIC GAUNTLET — 7 questions             -->
+    <!-- ══════════════════════════════════════════════ -->
+    <div id="gauntletSection" style="display:none;">
+      <h2 class="section-heading">Mechanistic Gauntlet — 7-Question Derivation Drill</h2>
+      <p class="prose" style="margin-bottom:28px;">All 6 gates cleared. Complete all 7 questions to finish Layer 2. Answer each before proceeding to the next.</p>
+
+      <div class="gauntlet-header">
+        <span class="gauntlet-title">⚙ Gauntlet</span>
+        <span class="gauntlet-progress" id="gauntletProgress">Question 1 of 7</span>
+      </div>
+      <div class="gauntlet-body">
+        <div id="gauntletQ"></div>
+      </div>
+
+      <div class="completion-block" id="completionBlock">
+        <div class="completion-score" id="completionScore">7/7</div>
+        <div class="completion-label">Mechanistic Layer Complete</div>
+        <p class="prose" style="margin-bottom:24px; text-align:center;">You have derived softmax, temperature scaling, entropy, KL divergence, the production sampling pipeline, and the attention saturation diagnostic. The mathematics of token generation is no longer a black box.</p>
+        <a href="3_Analogy.html" class="next-btn">→ Proceed to Layer 3: Analogy / Visual</a>
+      </div>
+    </div>
+
+  </div><!-- end mainContent -->
+
+</div><!-- end container -->
+
+<script>
+// ── STATE ──
+let interruptPassed = false;
+let gate1Passed = false;
+let gate2Passed = false;
+let masteryGate2Passed = false;
+let gate3Passed = false;
+let masteryGate3Passed = false;
+let gate4Passed = false;
+let gate5Passed = false;
+let gate6Passed = false;
+let interruptAttempts = 0;
+
+// gates cleared tracker for gauntlet unlock
+let gatesCleared = 0;
+
+// progress tracking
+let gauntletScore = 0;
+let gauntletCurrent = 0;
+
+// ── PROGRESS ──
+function updateProgress(cleared) {
+  const pct = Math.round((cleared / 7) * 100);
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = cleared + ' / 7';
+}
+
+// ── INTERRUPT GATE ──
+function checkInterrupt() {
+  const val = parseInt(document.getElementById('interruptInput').value);
+  interruptAttempts++;
+
+  if (val === 4) {
+    document.getElementById('interruptWrong').style.display = 'none';
+    document.getElementById('interruptWrong2').style.display = 'none';
+    document.getElementById('interruptCorrect').className = 'feedback feedback-correct visible';
+    document.getElementById('interruptInput').disabled = true;
+    document.querySelector('#interruptGate .btn-primary').disabled = true;
+    interruptPassed = true;
+    setTimeout(() => {
+      const mc = document.getElementById('mainContent');
+      mc.classList.remove('locked-section');
+      mc.style.pointerEvents = '';
+      mc.style.opacity = '';
+      mc.classList.add('unlocked-section');
+      mc.style.animation = 'fadeIn 0.5s ease';
+    }, 800);
+  } else {
+    if (interruptAttempts === 1) {
+      document.getElementById('interruptWrong').className = 'feedback feedback-wrong visible';
+    } else {
+      document.getElementById('interruptWrong').style.display = 'none';
+      document.getElementById('interruptWrong2').style.display = 'block';
+      // Show the correct answer after 2 attempts, still lock
+      document.getElementById('interruptWrong2').className = 'feedback feedback-wrong visible';
+    }
+  }
+}
+
+// ── GATE 1: Softmax Properties ──
+function checkGate1() {
+  const exp0 = parseFloat(document.getElementById('g1_exp0').value);
+  const sumP = parseFloat(document.getElementById('g1_sum').value);
+  const grad = parseFloat(document.getElementById('g1_grad').value);
+
+  const exp0ok = Math.abs(exp0 - 1.0) < 0.01;
+  const sumOk = Math.abs(sumP - 1.0) < 0.02;
+  const gradOk = Math.abs(grad - 0.243) < 0.01;
+
+  document.getElementById('g1_exp0').className = 'num-input ' + (exp0ok ? 'correct' : 'wrong');
+  document.getElementById('g1_sum').className = 'num-input ' + (sumOk ? 'correct' : 'wrong');
+  document.getElementById('g1_grad').className = 'num-input ' + (gradOk ? 'correct' : 'wrong');
+
+  if (!exp0ok) {
+    document.getElementById('g1_mis1').className = 'misconception-box visible';
+  }
+  if (!sumOk) {
+    document.getElementById('g1_mis2').className = 'misconception-box visible';
+  }
+
+  if (exp0ok && sumOk && gradOk) {
+    document.getElementById('g1_correct').className = 'feedback feedback-correct visible';
+    gate1Passed = true;
+    gatesCleared++;
+    updateProgress(gatesCleared);
+    lockGateInputs('gate1');
+    checkGauntletUnlock();
+  }
+}
+
+// ── GATE 2: Temperature ──
+function checkGate2() {
+  const t1 = parseFloat(document.getElementById('g2_t1').value);
+  const t05 = parseFloat(document.getElementById('g2_t05').value);
+  const t2 = parseFloat(document.getElementById('g2_t2').value);
+
+  const t1ok = Math.abs(t1 - 3.00) < 0.1;
+  const t05ok = Math.abs(t05 - 9.02) < 0.3;
+  const t2ok = Math.abs(t2 - 1.73) < 0.08;
+
+  document.getElementById('g2_t1').className = 'num-input ' + (t1ok ? 'correct' : 'wrong');
+  document.getElementById('g2_t05').className = 'num-input ' + (t05ok ? 'correct' : 'wrong');
+  document.getElementById('g2_t2').className = 'num-input ' + (t2ok ? 'correct' : 'wrong');
+
+  if (!t1ok || !t05ok) {
+    document.getElementById('g2_mis_linear').className = 'misconception-box visible';
+  }
+
+  if (t1ok && t05ok && t2ok) {
+    document.getElementById('g2_correct').className = 'feedback feedback-correct visible';
+    gate2Passed = true;
+    lockGateInputs('gate2');
+    document.getElementById('masteryGate2').style.display = 'block';
+  }
+}
+
+function checkMasteryGate2() {
+  const ans = parseFloat(document.getElementById('mg2_ans').value);
+  const ok = Math.abs(ans - 403) < 5;
+  if (ok) {
+    document.getElementById('mg2_correct').className = 'feedback feedback-correct visible';
+    document.getElementById('mg2_wrong').style.display = 'none';
+    document.getElementById('mg2_ans').className = 'num-input correct';
+    document.getElementById('mg2_ans').disabled = true;
+    document.querySelector('#masteryGate2 .btn-primary').disabled = true;
+    masteryGate2Passed = true;
+    gatesCleared++;
+    updateProgress(gatesCleared);
+    checkGauntletUnlock();
+  } else {
+    document.getElementById('mg2_wrong').className = 'feedback feedback-wrong visible';
+    document.getElementById('mg2_ans').className = 'num-input wrong';
+  }
+}
+
+// ── GATE 3: Entropy ──
+function checkGate3() {
+  const t1 = parseFloat(document.getElementById('g3_t1').value);
+  const t2 = parseFloat(document.getElementById('g3_t2').value);
+  const t3 = parseFloat(document.getElementById('g3_t3').value);
+  const h = parseFloat(document.getElementById('g3_h').value);
+
+  const t1ok = Math.abs(t1 - 0.250) < 0.015;
+  const t2ok = Math.abs(t2 - 0.322) < 0.015;
+  const t3ok = Math.abs(t3 - 0.230) < 0.015;
+  const hok = Math.abs(h - 0.80) < 0.05;
+
+  document.getElementById('g3_t1').className = 'num-input ' + (t1ok ? 'correct' : 'wrong');
+  document.getElementById('g3_t2').className = 'num-input ' + (t2ok ? 'correct' : 'wrong');
+  document.getElementById('g3_t3').className = 'num-input ' + (t3ok ? 'correct' : 'wrong');
+  document.getElementById('g3_h').className = 'num-input ' + (hok ? 'correct' : 'wrong');
+
+  if (!hok) {
+    document.getElementById('g3_mis_units').className = 'misconception-box visible';
+  }
+
+  if (t1ok && t2ok && t3ok && hok) {
+    document.getElementById('g3_correct').className = 'feedback feedback-correct visible';
+    gate3Passed = true;
+    lockGateInputs('gate3');
+    document.getElementById('masteryGate3').style.display = 'block';
+  }
+}
+
+function checkMasteryGate3() {
+  const ans = parseFloat(document.getElementById('mg3_ans').value);
+  const ok = Math.abs(ans - 0) < 0.01;
+  if (ok) {
+    document.getElementById('mg3_correct').className = 'feedback feedback-correct visible';
+    document.getElementById('mg3_wrong').style.display = 'none';
+    document.getElementById('mg3_ans').className = 'num-input correct';
+    document.getElementById('mg3_ans').disabled = true;
+    document.querySelector('#masteryGate3 .btn-primary').disabled = true;
+    masteryGate3Passed = true;
+    gatesCleared++;
+    updateProgress(gatesCleared);
+    checkGauntletUnlock();
+  } else {
+    document.getElementById('mg3_wrong').className = 'feedback feedback-wrong visible';
+    document.getElementById('mg3_ans').className = 'num-input wrong';
+  }
+}
+
+// ── GATE 4: KL Direction ──
+function checkGate4(btn, isCorrect) {
+  const all = document.querySelectorAll('#g4_choices .choice-btn');
+  all.forEach(b => b.disabled = true);
+
+  if (isCorrect) {
+    btn.className = 'choice-btn correct-ans';
+    document.getElementById('g4_correct').className = 'feedback feedback-correct visible';
+    gate4Passed = true;
+    gatesCleared++;
+    updateProgress(gatesCleared);
+    checkGauntletUnlock();
+  } else {
+    btn.className = 'choice-btn wrong-ans';
+    const idx = parseInt(btn.dataset.idx);
+    if (idx === 0) document.getElementById('g4_mis_symmetric').className = 'misconception-box visible';
+    if (idx === 2 || idx === 3) document.getElementById('g4_mis_mode').className = 'misconception-box visible';
+    // re-enable after 1.5s
+    setTimeout(() => {
+      all.forEach(b => { b.disabled = false; b.className = 'choice-btn'; });
+    }, 1500);
+  }
+}
+
+// ── GATE 5: Pipeline ──
+function checkGate5(btn, isCorrect) {
+  const all = document.querySelectorAll('#g5_choices .choice-btn');
+  all.forEach(b => b.disabled = true);
+
+  if (isCorrect) {
+    btn.className = 'choice-btn correct-ans';
+    document.getElementById('g5_correct').className = 'feedback feedback-correct visible';
+    gate5Passed = true;
+    gatesCleared++;
+    updateProgress(gatesCleared);
+    checkGauntletUnlock();
+  } else {
+    btn.className = 'choice-btn wrong-ans';
+    document.getElementById('g5_mis_order').className = 'misconception-box visible';
+    setTimeout(() => {
+      all.forEach(b => { b.disabled = false; b.className = 'choice-btn'; });
+    }, 1500);
+  }
+}
+
+// ── GATE 6: Saturation ──
+function checkGate6(btn, isCorrect) {
+  const all = document.querySelectorAll('#g6_choices .choice-btn');
+  all.forEach(b => b.disabled = true);
+
+  if (isCorrect) {
+    btn.className = 'choice-btn correct-ans';
+    document.getElementById('g6_correct').className = 'feedback feedback-correct visible';
+    gate6Passed = true;
+    gatesCleared++;
+    updateProgress(gatesCleared);
+    checkGauntletUnlock();
+  } else {
+    btn.className = 'choice-btn wrong-ans';
+    const idx = parseInt(btn.dataset.idx);
+    if (idx === 0) document.getElementById('g6_mis_good').className = 'misconception-box visible';
+    setTimeout(() => {
+      all.forEach(b => { b.disabled = false; b.className = 'choice-btn'; });
+    }, 1500);
+  }
+}
+
+// ── GAUNTLET UNLOCK CHECK ──
+function checkGauntletUnlock() {
+  if (gatesCleared >= 6) {
+    document.getElementById('gauntletSection').style.display = 'block';
+    document.getElementById('gauntletSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    loadGauntletQuestion(0);
+  }
+}
+
+// ── LOCK GATE INPUTS ──
+function lockGateInputs(gateId) {
+  const gate = document.getElementById(gateId);
+  gate.querySelectorAll('input').forEach(i => i.disabled = true);
+  gate.querySelectorAll('.btn-primary').forEach(b => b.disabled = true);
+}
+
+// ── GAUNTLET DATA ──
+const gauntletQuestions = [
+  {
+    type: 'mc',
+    q: 'Softmax is shift-invariant: softmax(z + c) = softmax(z). Why is this used in Transformer implementations?',
+    choices: [
+      'To increase the magnitude of logits and improve numerical precision.',
+      'Subtracting max(z) from all logits prevents overflow in exp() while producing identical probabilities.',
+      'Shift invariance ensures the probability of the top token is always exactly 0.5.',
+      'It allows the partition function Z to equal exactly 1, simplifying computation.'
+    ],
+    correct: 1,
+    explanation: 'exp(1000) overflows float32. exp(1000 − 1000) = exp(0) = 1. Shift invariance means the probabilities are mathematically unchanged. This is the log-sum-exp trick, standard in every production Transformer implementation.'
+  },
+  {
+    type: 'tf',
+    q: 'True or False: At temperature T = 0.5, if two tokens have a logit gap of 2.0, their probability ratio is approximately 54.6:1.',
+    correct: true,
+    explanation: 'exp(2.0 / 0.5) = exp(4) ≈ 54.6. Correct. Temperature halving doubles the exponent: exp(gap/T) where T=0.5 gives exp(2×gap). For gap=2: exp(4) ≈ 54.6.'
+  },
+  {
+    type: 'mc',
+    q: 'Shannon entropy H(p) = 0 when:',
+    choices: [
+      'The distribution is uniform — all tokens equally likely.',
+      'The vocabulary has exactly two tokens.',
+      'The distribution is one-hot — one token has probability 1.',
+      'Temperature is set to T = 1.0 (standard softmax).'
+    ],
+    correct: 2,
+    explanation: 'H = 0 at the lower bound, achieved by one-hot distributions. −1·log(1) = 0. All other terms are 0·log(0) = 0 by convention. This is greedy decoding in the limit: zero entropy, zero surprise, fully deterministic.'
+  },
+  {
+    type: 'tf',
+    q: 'True or False: KL(p ∥ q) = KL(q ∥ p) for any two distributions p and q.',
+    correct: false,
+    explanation: 'False. KL divergence is asymmetric. KL(p∥q) penalizes q for being low where p is high (forward KL = mode-covering). KL(q∥p) penalizes q for being high where p is low (reverse KL = mode-seeking). GRPO uses reverse KL, which is why trained models concentrate on high-reward outputs rather than maintaining coverage.'
+  },
+  {
+    type: 'mc',
+    q: 'The cross-entropy decomposition H(p, q) = H(p) + KL(p ∥ q) tells us that minimizing cross-entropy during pre-training:',
+    choices: [
+      'Only minimizes H(p) — the uncertainty in the data distribution.',
+      'Minimizes KL(p ∥ q) — the divergence between model and data — since H(p) is fixed with respect to model parameters.',
+      'Maximizes KL(p ∥ q) to increase output diversity.',
+      'Has no relationship to KL divergence; cross-entropy and KL are independent quantities.'
+    ],
+    correct: 1,
+    explanation: 'H(p) is a property of the training data — it doesn\'t depend on model parameters θ. Minimizing H(p,q) w.r.t. θ is equivalent to minimizing KL(p∥q). The model is trained to make its distribution q match the data distribution p — literally reducing the divergence between them.'
+  },
+  {
+    type: 'mc',
+    q: 'In the production sampling pipeline: sample( top-p( softmax( z / T ), p ) ) — what is the role of top-p specifically?',
+    choices: [
+      'Top-p replaces temperature scaling, providing the same entropy-control function.',
+      'Top-p removes the bottom (1−p) probability mass tail, eliminating low-probability noise tokens regardless of temperature setting.',
+      'Top-p ensures the output distribution always has exactly p probability assigned to the top token.',
+      'Top-p converts the softmax output back to raw logits for efficient sampling.'
+    ],
+    correct: 1,
+    explanation: 'Top-p is a safety net. Even at T=0.8, a token with p=0.0001 still has non-zero probability. Top-p at 0.95 physically removes the bottom 5% tail — the incoherent, low-probability noise — regardless of how temperature has shaped the rest of the distribution. Temperature shapes; top-p clips.'
+  },
+  {
+    type: 'mc',
+    q: 'An attention layer shows H(αₜ) ≈ log(T) where T is the sequence length. This indicates:',
+    choices: [
+      'Optimal attention routing — each query has found exactly the right key position.',
+      'Attention saturation — the softmax has collapsed to one-hot for each query.',
+      'Uniform attention — every position contributes equally, with no useful information routing.',
+      'Correct scaling — the √dₖ normalization is working as designed.'
+    ],
+    correct: 2,
+    explanation: 'H = log(T) is the UPPER bound for attention over T positions — the uniform distribution. When every key position receives equal weight, attention is not routing information at all. It is averaging across all positions indiscriminately. This is the opposite of saturation (H→0), but equally problematic: neither the model learns which positions are relevant, nor gradient pressure differentiates between positions.'
+  }
+];
+
+let gauntletAnswered = 0;
+
+function loadGauntletQuestion(idx) {
+  const q = gauntletQuestions[idx];
+  document.getElementById('gauntletProgress').textContent = `Question ${idx+1} of 7`;
+
+  let html = `<div class="gauntlet-q">${q.q}</div>`;
+
+  if (q.type === 'mc') {
+    html += '<div class="choice-list">';
+    q.choices.forEach((c, i) => {
+      const key = ['A','B','C','D'][i];
+      html += `<button class="choice-btn" onclick="answerGauntlet(${idx}, ${i})" data-idx="${i}"><span class="choice-key">${key}</span><span>${c}</span></button>`;
+    });
+    html += '</div>';
+  } else {
+    html += `<div class="tf-group">
+      <button class="tf-btn" onclick="answerGauntletTF(${idx}, true)">TRUE</button>
+      <button class="tf-btn" onclick="answerGauntletTF(${idx}, false)">FALSE</button>
+    </div>`;
+  }
+
+  html += `<div class="feedback" id="gauntlet_fb_${idx}"></div>`;
+  document.getElementById('gauntletQ').innerHTML = html;
+}
+
+function answerGauntlet(qIdx, choiceIdx) {
+  const q = gauntletQuestions[qIdx];
+  const all = document.querySelectorAll('#gauntletQ .choice-btn');
+  all.forEach(b => b.disabled = true);
+  const selected = all[choiceIdx];
+
+  const fb = document.getElementById(`gauntlet_fb_${qIdx}`);
+
+  if (choiceIdx === q.correct) {
+    selected.className = 'choice-btn correct-ans';
+    fb.className = 'feedback feedback-correct visible';
+    fb.innerHTML = `<h4>✓ Correct</h4><p>${q.explanation}</p>`;
+    gauntletAnswered++;
+    gauntletScore++;
+    updateProgress(gauntletAnswered < 7 ? gatesCleared : 7);
+    setTimeout(() => nextGauntlet(qIdx), 1800);
+  } else {
+    selected.className = 'choice-btn wrong-ans';
+    fb.className = 'feedback feedback-wrong visible';
+    fb.innerHTML = `<h4>Incorrect</h4><p>${q.explanation}</p>`;
+    gauntletAnswered++;
+    updateProgress(gauntletAnswered < 7 ? gatesCleared : 7);
+    setTimeout(() => nextGauntlet(qIdx), 2200);
+  }
+}
+
+function answerGauntletTF(qIdx, answer) {
+  const q = gauntletQuestions[qIdx];
+  const btns = document.querySelectorAll('#gauntletQ .tf-btn');
+  btns.forEach(b => b.disabled = true);
+
+  const correct = answer === q.correct;
+  const selectedBtn = btns[answer ? 0 : 1];
+  const fb = document.getElementById(`gauntlet_fb_${qIdx}`);
+
+  if (correct) {
+    selectedBtn.className = 'tf-btn correct-ans';
+    fb.className = 'feedback feedback-correct visible';
+    fb.innerHTML = `<h4>✓ Correct</h4><p>${q.explanation}</p>`;
+    gauntletScore++;
+  } else {
+    selectedBtn.className = 'tf-btn wrong-ans';
+    fb.className = 'feedback feedback-wrong visible';
+    fb.innerHTML = `<h4>Incorrect</h4><p>${q.explanation}</p>`;
+  }
+  gauntletAnswered++;
+  setTimeout(() => nextGauntlet(qIdx), 2000);
+}
+
+function nextGauntlet(current) {
+  const next = current + 1;
+  if (next < 7) {
+    loadGauntletQuestion(next);
+  } else {
+    // Show completion
+    document.getElementById('gauntletQ').innerHTML = '';
+    document.getElementById('gauntletProgress').textContent = 'Complete';
+    document.getElementById('completionScore').textContent = gauntletScore + '/7';
+    document.getElementById('completionBlock').className = 'completion-block visible';
+    updateProgress(7);
+  }
+}
+</script>
+</body>
+</html>

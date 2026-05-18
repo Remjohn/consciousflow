@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCP Skill Node | Lesson 15: HuggingFace - Orchestration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0c0a08;
+            --card-color: #151210;
+            --text-main: #e2dcd0;
+            --text-muted: #8b8378;
+            --accent-purple: #b05cff;
+            --accent-green: #00ffaa;
+            --accent-blue: #3291ff;
+            --accent-red: #ff3366;
+            --border-color: #2a2520;
+            --font-main: 'Inter', sans-serif;
+            --font-code: 'Space Mono', monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.5rem;
+            color: var(--accent-purple);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        h2 { margin-top: 3rem; color: #fff; }
+        
+        pre {
+            background-color: #000;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            font-family: var(--font-code);
+            font-size: 0.95rem;
+            color: #56B6C2;
+        }
+        
+        code {
+            font-family: var(--font-code);
+            background-color: #1a1a1a;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            color: #ff8800;
+            font-size: 0.9em;
+        }
+
+        /* Subsystem Case Study Styles */
+        .subsystem-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .subsystem-card {
+            background-color: var(--card-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .subsystem-header {
+            background-color: #1a1714;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .subsystem-header h3 {
+            margin: 0;
+            color: #fff;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        
+        .subsystem-icon { font-size: 1.5rem; }
+        .subsystem-toggle { color: var(--accent-purple); font-weight: bold; }
+
+        .subsystem-body {
+            padding: 1.5rem;
+            display: none;
+        }
+
+        .subsystem-body.active {
+            display: block;
+            animation: fadeIn 0.4s;
+        }
+
+        .principle-box {
+            background-color: rgba(176, 92, 255, 0.1);
+            border-left: 4px solid var(--accent-purple);
+            padding: 1rem;
+            margin-top: 1rem;
+            font-weight: 600;
+        }
+
+        /* Challenge Gates */
+        .challenge-block {
+            background-color: #000;
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .challenge-block h4 {
+            color: var(--accent-red);
+            margin-top: 0;
+            font-family: var(--font-code);
+            font-size: 1.1rem;
+        }
+
+        textarea.critical-input {
+            width: 100%;
+            background-color: #151210;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            font-family: var(--font-code);
+            padding: 1rem;
+            border-radius: 6px;
+            min-height: 80px;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+        }
+
+        button.action-btn {
+            background-color: var(--accent-purple);
+            color: #000;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            font-family: var(--font-code);
+            font-weight: 700;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button.action-btn:hover { background-color: #c98cff; }
+
+        .revelation-box {
+            display: none;
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background-color: rgba(0, 255, 170, 0.05);
+            border-left: 3px solid var(--accent-green);
+        }
+        .revelation-box.active { display: block; animation: fadeIn 0.5s; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🟣 ORCHESTRATION / MULTI-CONTEXT CASE STUDY LAYER</h1>
+    <p>HuggingFace is not merely a library; it is the <strong>Heavy Machinery Warehouse</strong> of the CCP architecture. It provides the mechanical capability to download, manifest, and command raw PyTorch neural physics directly on sovereign hardware. Without it, we would be reduced to an API wrapper.</p>
+
+    <!-- CASE STUDY SYSTEM -->
+    <h2>1. MULTI-CONTEXT CASE STUDY SYSTEM</h2>
+    <p>To build an indestructible mental model of HuggingFace's architectural gravity, you must see it operating across every layer of the factory floor. Click each subsystem to inspect the physical tensor mathematics in context.</p>
+
+    <div class="subsystem-grid">
+        <!-- The Chassis -->
+        <div class="subsystem-card">
+            <div class="subsystem-header" onclick="toggleSubsystem('chassis')">
+                <h3><span class="subsystem-icon">🏗️</span> THE CHASSIS — FastAPI Route Context</h3>
+                <span class="subsystem-toggle">+</span>
+            </div>
+            <div class="subsystem-body" id="sys-chassis">
+                <p><strong>Subsystem Focus:</strong> FastAPI Request Handler — Token Truncation Pre-Check</p>
+                <pre><code>from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
+class PromptPayload(BaseModel):
+    raw_text: str
+
+router = APIRouter()
+
+@router.post("/tokenize-check")
+async def check_token_length(payload: PromptPayload):
+    # 'session_tokenizer' injected globally at Chassis startup
+    tokens = session_tokenizer(payload.raw_text, return_tensors="pt")
+    token_count = tokens["input_ids"].shape[1]
+    
+    if token_count > 30000:
+        raise HTTPException(status_code=413, detail="Context overflow")
+        
+    return {"token_count": token_count, "valid": True}</code></pre>
+                <ul>
+                    <li><strong style="color:var(--accent-green)">When it WORKS:</strong> Massive junk text is rejected in 5 milliseconds, saving 20 seconds of compute.</li>
+                    <li><strong style="color:var(--accent-red)">When it is WRONG:</strong> The Chassis blindly passes 40,000 tokens to the GPU, causing a PyTorch CUDA OOM crash, killing the node.</li>
+                </ul>
+                <div class="principle-box">Unified Principle: HuggingFace mathematics structure the strict boundary conditions of the factory.</div>
+            </div>
+        </div>
+
+        <!-- The QA Department -->
+        <div class="subsystem-card">
+            <div class="subsystem-header" onclick="toggleSubsystem('qa')">
+                <h3><span class="subsystem-icon">📋</span> THE QA DEPARTMENT — Pydantic Context</h3>
+                <span class="subsystem-toggle">+</span>
+            </div>
+            <div class="subsystem-body" id="sys-qa">
+                <p><strong>Subsystem Focus:</strong> Strict Enforcement of NLP Generation Parameters</p>
+                <pre><code>from pydantic import BaseModel, root_validator
+from transformers import GenerationConfig
+
+class HFGenerationContract(BaseModel):
+    temperature: float
+    top_p: float
+    
+    @root_validator
+    def compile_hf_config(cls, values):
+        config = GenerationConfig(
+            temperature=values["temperature"],
+            top_p=values["top_p"],
+            do_sample=True
+        )
+        values["hf_config_obj"] = config
+        return values</code></pre>
+                <ul>
+                    <li><strong style="color:var(--accent-green)">When it WORKS:</strong> The Laser Cutter receives exclusively valid, typed configuration objects.</li>
+                    <li><strong style="color:var(--accent-red)">When it is WRONG:</strong> A malformed float slips into the native loops, throwing obscure PyTorch downstream errors.</li>
+                </ul>
+                <div class="principle-box">Unified Principle: HuggingFace objects act as the immutable payload format the QA department enforces.</div>
+            </div>
+        </div>
+
+        <!-- The Machinist -->
+        <div class="subsystem-card">
+            <div class="subsystem-header" onclick="toggleSubsystem('machinist')">
+                <h3><span class="subsystem-icon">⚙️</span> THE MACHINIST — DSPy Pipeline Context</h3>
+                <span class="subsystem-toggle">+</span>
+            </div>
+            <div class="subsystem-body" id="sys-machinist">
+                <p><strong>Subsystem Focus:</strong> The DSPy Evaluation Metric Engine</p>
+                <pre><code>import dspy
+from transformers import pipeline
+
+reward_classifier = pipeline("text-classification", model="ccp-val/trigger-evaluator-v1")
+
+def hf_reward_metric(example, pred, trace=None) -> float:
+    result = reward_classifier(pred.script_text)[0]
+    return result["score"] if result["label"] == "VALID_HUMOR" else 0.0
+
+optimizer = dspy.teleprompt.BootstrapFewShotWithRandomSearch(metric=hf_reward_metric)</code></pre>
+                <div class="principle-box">Unified Principle: HuggingFace enables structural intelligence at the compiler level, not just the output generation level.</div>
+            </div>
+        </div>
+
+        <!-- The Robot Arm -->
+        <div class="subsystem-card">
+            <div class="subsystem-header" onclick="toggleSubsystem('robot')">
+                <h3><span class="subsystem-icon">🤖</span> THE ROBOT ARM — Pi Subprocess Context</h3>
+                <span class="subsystem-toggle">+</span>
+            </div>
+            <div class="subsystem-body" id="sys-robot">
+                <p><strong>Subsystem Focus:</strong> Out-of-Process Quantization Validation</p>
+                <pre><code>import subprocess
+
+def verify_safetensors_integrity(adapter_path: str):
+    cmd = ["python", "-c", f"from safetensors import safe_open; print(list(safe_open('{adapter_path}/adapter.safetensors', framework='pt').keys())[:5])"]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+    
+    if result.returncode != 0:
+        raise ValueError("Adapter file is physically corrupt.")
+    return result.stdout.strip()</code></pre>
+                <div class="principle-box">Unified Principle: HuggingFace format (.safetensors) represents physical hardware consequence requiring isolated physical layer validation.</div>
+            </div>
+        </div>
+
+        <!-- The Memory Engine -->
+        <div class="subsystem-card">
+            <div class="subsystem-header" onclick="toggleSubsystem('memory')">
+                <h3><span class="subsystem-icon">🧠</span> THE MEMORY ENGINE — Neo4j Context</h3>
+                <span class="subsystem-toggle">+</span>
+            </div>
+            <div class="subsystem-body" id="sys-memory">
+                <p><strong>Subsystem Focus:</strong> Context Premise Graph Routing</p>
+                <pre><code>async def route_hf_dna(driver, client_id: str) -> str:
+    query = """
+    MATCH (c:Client {id: $cid})-[:ASSIGNED_TO]->(coach:Coach)
+    RETURN coach.hf_peft_repo_id AS repo_path
+    """
+    # Returns raw string: "ccp-adapters/jean_pierre_v4"</code></pre>
+                <div class="principle-box">Unified Principle: HuggingFace dictates the vocabulary and strict nomenclature of the entire semantic graph.</div>
+            </div>
+        </div>
+
+        <!-- The Skill Compiler -->
+        <div class="subsystem-card">
+            <div class="subsystem-header" onclick="toggleSubsystem('skill')">
+                <h3><span class="subsystem-icon">🎯</span> THE SKILL COMPILER — JIT Voice DNA Context</h3>
+                <span class="subsystem-toggle">+</span>
+            </div>
+            <div class="subsystem-body" id="sys-skill">
+                <p><strong>Subsystem Focus:</strong> Multi-LoRA Merging</p>
+                <pre><code>from peft import PeftModel
+
+def compile_custom_dna_engine(base_engine, base_adapter: str, cognitive_adapter: str):
+    # Dynamically load base and tactical arrays side by side
+    model = PeftModel.from_pretrained(base_engine, base_adapter, adapter_name="voice")
+    model.load_adapter(cognitive_adapter, adapter_name="strain")
+    
+    # Fuse mathematical weights together 
+    model.set_adapter(["voice", "strain"])
+    return model</code></pre>
+                <div class="principle-box">Unified Principle: HuggingFace enables extreme compositional sovereignty, treating gigabyte matrices like interchangeable logic blocks.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CRITICAL THINKING CHALLENGES -->
+    <h2>2. CRITICAL THINKING CHALLENGES</h2>
+    <p>Analyze these hidden architectural defects. State exactly what layer fails and why.</p>
+
+    <div class="challenge-block" id="task-1">
+        <h4>Challenge 1: The Subtle Inference Defect</h4>
+        <pre><code>from transformers import AutoModelForCausalLM
+engine = AutoModelForCausalLM.from_pretrained("Qwen/Qwen1.5-14B", device_map="auto")
+# -> Engine ready. Session initialized.</code></pre>
+        <p><strong>Constraint:</strong> This code runs within the FastAPI initialization hook.</p>
+        <textarea class="critical-input" placeholder="Predict what breaks during identical sequential requests..."></textarea>
+        <button class="action-btn" onclick="revealTask(1)">Lock Hypothesis</button>
+        <div class="revelation-box" id="rev-task-1">
+            <strong>REVELATION:</strong> Notice <code>.eval()</code> is missing. 
+            The model defaults to <code>.train()</code> mode. Dropout pathways fire randomly during inference. Responses to identical prompts fluctuate wildly. The sovereign determinism contract is broken.
+        </div>
+    </div>
+
+    <div class="challenge-block" id="task-2">
+        <h4>Challenge 2: The Pipeline Illusion</h4>
+        <pre><code>def analyze_intent(text: str):
+    tokens = tokenizer(text, return_tensors="tf")  
+    return model.generate(**tokens)</code></pre>
+        <textarea class="critical-input" placeholder="Identify the fatal syntax..."></textarea>
+        <button class="action-btn" onclick="revealTask(2)">Lock Hypothesis</button>
+        <div class="revelation-box" id="rev-task-2">
+            <strong>REVELATION:</strong> Returning <code>return_tensors="tf"</code> formats tokens for TensorFlow. 
+            The CCP relies entirely on PyTorch (<code>pt</code>). Python will crash with a severe TypeError matching tensors to non-matching framework engines.
+        </div>
+    </div>
+
+    <div class="challenge-block" id="task-3">
+        <h4>Challenge 3: Subprocess Misuse</h4>
+        <pre><code>result = subprocess.run(["python", "-c", "from transformers import AutoModelForCausalLM; AutoModelForCausalLM.from_pretrained('Gemma', device_map='auto')"])</code></pre>
+        <textarea class="critical-input" placeholder="Explain why the Robot Arm fails the Chassis here..."></textarea>
+        <button class="action-btn" onclick="revealTask(3)">Lock Hypothesis</button>
+        <div class="revelation-box" id="rev-task-3">
+            <strong>REVELATION:</strong> Loading 14GB of VRAM inside a temporary subprocess achieves nothing for the main server. The moment the subprocess zeroes (exit 0), the OS garbage collects the process, dumping the 14GB instantly. The main FastAPI app remains without a model.
+        </div>
+    </div>
+
+    <!-- BUILD-YOUR-OWN CASE STUDY -->
+    <h2>3. BUILD YOUR OWN CASE STUDY</h2>
+    <div style="background-color:var(--card-color); border:1px solid var(--accent-blue); padding:2rem; border-radius:8px;">
+        <h3 style="margin-top:0; color:var(--accent-blue);">Mission: The Broadcaster Subsystem</h3>
+        <p>Select the <strong>Pipecat WebSocket Streaming (The Broadcaster)</strong> subsystem. Describe how HuggingFace <code>TextIteratorStreamer</code> operates in real-time context. Identify the consequence if the streamer fails to correctly decode intermediate yield sequences. Validate against Dictum 2.</p>
+        <textarea id="byo-input" class="critical-input" style="min-height: 150px;" placeholder="Assemble your architectural case study..."></textarea>
+        <button class="action-btn" style="background-color:var(--accent-blue);" onclick="submitBYO()">Commit Case Study to Memory</button>
+        <div id="byo-success" style="display:none; color:var(--accent-green); margin-top:1rem; font-weight:bold;">
+            [✓] Case Study Registered. Synthesis of physics and stream processing acknowledged.
+        </div>
+    </div>
+
+    <!-- COMPRESSION LAYER -->
+    <h2>4. COMPRESSION LAYER</h2>
+    <p>Across all 6 subsystems, HuggingFace serves exactly one structural purpose. It is the orchestrator of physical neural mass. The math must fit the VRAM, the text must fit the tensors, and the LoRA must map seamlessly.</p>
+    
+    <div style="background-color:#151210; border-left:4px solid var(--accent-purple); padding:1.5rem; margin-top:2rem;">
+        <h3 style="margin-top:0; color:var(--accent-purple);">SINGLE-SENTENCE TRUTH</h3>
+        <p style="margin-bottom:0;">HuggingFace enforces the ultimate architectural truth of the CCP: We deploy the weights, we command the memory, and we own the physical computational consequences.</p>
+    </div>
+
+</div>
+
+<script>
+    function toggleSubsystem(id) {
+        const body = document.getElementById('sys-' + id);
+        const active = body.classList.contains('active');
+        // Close all
+        document.querySelectorAll('.subsystem-body').forEach(el => el.classList.remove('active'));
+        if(!active) {
+            body.classList.add('active');
+        }
+    }
+
+    function revealTask(id) {
+        const input = document.querySelector(`#task-${id} textarea`);
+        if(input.value.length < 15) {
+            alert("Architect, provide an actual structural hypothesis before demanding validation.");
+            return;
+        }
+        input.disabled = true;
+        document.querySelector(`#task-${id} button`).style.display = 'none';
+        document.getElementById(`rev-task-${id}`).classList.add('active');
+    }
+
+    function submitBYO() {
+        const input = document.getElementById('byo-input');
+        if(input.value.length < 40) {
+            alert("Insufficient depth. A case study requires thorough mechanistic reasoning.");
+            return;
+        }
+        input.disabled = true;
+        document.querySelector('button[onclick="submitBYO()"]').style.display = 'none';
+        document.getElementById('byo-success').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>

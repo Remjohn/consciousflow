@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Layer 1 — Exposure: Applied Clustering Pipeline</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050505;
+  --surface: #0f0f0f;
+  --surface2: #151515;
+  --surface3: #1c1c1c;
+  --text: #FAFAFA;
+  --muted: #777;
+  --dim: #444;
+  --border: #1f1f1f;
+  --border2: #2a2a2a;
+  --accent: #E8C46A;
+  --red: #E76F51;
+  --green: #2A9D8F;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Inter', sans-serif;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.65;
+  overflow-x: hidden;
+}
+
+.page { max-width: 780px; margin: 0 auto; padding: 3.5rem 2rem 10rem; }
+
+/* ── Typography ── */
+.layer-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1.2rem;
+}
+h1 {
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #fff;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.02em;
+}
+.lead {
+  font-size: 1.1rem;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 1.2rem;
+  max-width: 680px;
+}
+.lead strong { color: #d0d0d0; }
+
+/* ── Failure anchor block ── */
+.failure-anchor {
+  border-left: 3px solid var(--red);
+  background: rgba(231,111,81,0.05);
+  padding: 1.4rem 1.6rem;
+  margin: 2rem 0 2.5rem;
+  border-radius: 0 4px 4px 0;
+}
+.failure-anchor .fa-label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 0.6rem;
+}
+.failure-anchor p {
+  font-size: 1rem;
+  color: #c0c0c0;
+  line-height: 1.65;
+}
+.failure-anchor p + p { margin-top: 0.8rem; }
+.failure-anchor strong { color: #f0f0f0; }
+
+/* ── Interaction blocks ── */
+.trap-block {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 2rem;
+  margin: 2.5rem 0;
+}
+.trap-label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--border);
+}
+.trap-q {
+  font-size: 1.08rem;
+  font-weight: 500;
+  color: #f0f0f0;
+  margin-bottom: 1.6rem;
+  line-height: 1.6;
+}
+.trap-q .mono {
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  padding: 0.15rem 0.45rem;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.trap-q .data-row {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.9rem 1.1rem;
+  margin: 1rem 0;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: #ccc;
+  line-height: 1.8;
+}
+
+/* Choice buttons */
+.choices { display: flex; flex-direction: column; gap: 0.65rem; }
+.btn-choice {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: #d0d0d0;
+  font-family: var(--sans);
+  font-size: 0.92rem;
+  font-weight: 400;
+  padding: 0.85rem 1.1rem;
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.45;
+  transition: border-color 0.15s, background 0.15s;
+}
+.btn-choice:hover:not(:disabled) { border-color: #888; background: var(--surface2); }
+.btn-choice:disabled { cursor: not-allowed; }
+.btn-choice.selected-correct { border-color: var(--green); background: rgba(42,157,143,0.08); color: #fff; }
+.btn-choice.selected-wrong { border-color: var(--red); background: rgba(231,111,81,0.07); color: #ffb3a1; }
+
+/* Text input */
+.input-row { display: flex; gap: 0.75rem; align-items: flex-start; margin-bottom: 0; }
+.q-input {
+  flex: 1;
+  max-width: 360px;
+  background: var(--bg);
+  border: 1.5px solid var(--border2);
+  border-radius: 3px;
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  padding: 0.6rem 0.85rem;
+  transition: border-color 0.15s;
+}
+.q-input:focus { outline: none; border-color: var(--accent); }
+.q-input:disabled { opacity: 0.45; }
+.btn-lock {
+  background: transparent;
+  border: 1px solid var(--dim);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 0.6rem 1.2rem;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, background 0.15s;
+}
+.btn-lock:hover:not(:disabled) { border-color: #fff; background: var(--surface3); }
+.btn-lock:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Feedback boxes */
+.feedback {
+  display: none;
+  margin-top: 1.4rem;
+  padding: 1.2rem 1.3rem;
+  border-radius: 3px;
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+.feedback.show { display: block; animation: fadein 0.35s ease; }
+.feedback.wrong {
+  background: rgba(231,111,81,0.07);
+  border-left: 2px solid var(--red);
+  color: #ffb3a1;
+}
+.feedback.right {
+  background: rgba(42,157,143,0.07);
+  border-left: 2px solid var(--green);
+  color: #a7ece2;
+}
+.feedback .fb-label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+.feedback.wrong .fb-label { color: var(--red); }
+.feedback.right .fb-label { color: var(--green); }
+.feedback strong { color: inherit; }
+
+/* Retry button inside feedback */
+.btn-retry {
+  margin-top: 0.9rem;
+  background: transparent;
+  border: 1px solid var(--dim);
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 0.45rem 1rem;
+  border-radius: 3px;
+  cursor: pointer;
+  display: inline-block;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-retry:hover { border-color: #888; color: #ccc; }
+
+/* Gated sections */
+.gate {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(16px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  display: none;
+}
+.gate.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  display: block;
+}
+
+/* Bridge text between traps */
+.bridge {
+  margin: 2rem 0;
+  padding: 1.2rem 1.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.bridge p {
+  font-size: 0.97rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+.bridge p + p { margin-top: 0.7rem; }
+.bridge strong { color: #d0d0d0; }
+
+/* Section divider */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 3rem 0;
+}
+
+/* Gauntlet */
+.gauntlet-header {
+  margin-bottom: 0.5rem;
+}
+.gauntlet-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.4rem;
+}
+.gauntlet-sub {
+  font-size: 0.88rem;
+  color: var(--muted);
+  margin-bottom: 2rem;
+}
+.g-block {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 1.6rem 1.8rem;
+  margin-bottom: 1.4rem;
+}
+.g-meta {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 0.8rem;
+}
+.g-q {
+  font-size: 1.02rem;
+  font-weight: 500;
+  color: #f0f0f0;
+  margin-bottom: 1.2rem;
+  line-height: 1.55;
+}
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── LAYER LABEL ── -->
+  <div class="layer-label">Lesson 10 · Layer 1 — Exposure</div>
+
+  <!-- ── REAL FAILURE ANCHOR ── -->
+  <h1>Engineering the Space</h1>
+
+  <div class="failure-anchor">
+    <div class="fa-label">What actually went wrong</div>
+    <p>A coaching platform deployed K-Means directly on its raw client database. The algorithm converged cleanly. Silhouette Score: 0.81. The team celebrated.</p>
+    <p>Six weeks later, they discovered the system had been grouping clients by <strong>message volume</strong> — not by psychological profile. A hyper-engaged client in crisis was routed to the same passive "maintenance" protocol as a disengaged client who happened to send the same number of messages. The AI gave wrong coaching to hundreds of people for six weeks, confident and auditable the entire time.</p>
+    <p>The algorithm had not failed. <strong>The engineering before the algorithm had failed.</strong> The pipeline was missing one step — normalization — and that omission silently corrupted every downstream decision.</p>
+  </div>
+
+  <p class="lead">K-Means is a solved problem. It runs in under a second. A computer science undergraduate can implement it in forty lines of Python. <strong>The extraordinarily hard part</strong> — the part that determines whether your intelligent system produces genuine behavioral intelligence or confident garbage — is everything that happens before the algorithm runs.</p>
+
+  <p class="lead">This lesson exposes the failure modes that live in the pipeline. Not the algorithm. The pipeline.</p>
+
+  <!-- ══════════════════════════════════════════
+       TRAP 1 — Normalization Blindness
+  ══════════════════════════════════════════ -->
+  <div class="trap-block" id="trap1-block">
+    <div class="trap-label">Trap 01 — The Normalization Disaster</div>
+    <div class="trap-q">
+      Two CCP clients are measured on two raw features pulled directly from the database — no preprocessing applied.
+
+      <div class="data-row">
+        Client X: Intimacy Index = 0.9 &nbsp;|&nbsp; Message Count = 30<br>
+        Client Y: Intimacy Index = 0.1 &nbsp;|&nbsp; Message Count = 28
+      </div>
+
+      Raw Euclidean distance is computed: <span class="mono">d = √((0.9−0.1)² + (30−28)²) = √(0.64 + 4.0) ≈ 2.15</span><br><br>
+
+      The algorithm declares these clients "moderately similar." What has been silently destroyed in this computation?
+    </div>
+    <div class="choices" id="trap1-choices">
+      <button class="btn-choice" onclick="answerTrap1(this, false)">The Intimacy dimension had too large a range, making it dominate the Message signal.</button>
+      <button class="btn-choice" onclick="answerTrap1(this, true)">Message Count contributed 4.0 to squared distance; Intimacy contributed only 0.64. The algorithm is now functionally blind to psychological variation — it clusters by message volume.</button>
+      <button class="btn-choice" onclick="answerTrap1(this, false)">K-Means failed to converge because the floating-point gap between the two feature scales exceeded the algorithm's tolerance threshold.</button>
+    </div>
+    <div class="feedback" id="trap1-fb"></div>
+  </div>
+
+  <!-- GATE 1 — bridge + explanation, unlocks after trap1 correct -->
+  <div class="gate" id="gate1">
+    <div class="bridge">
+      <p>Correct. Message Count (range: up to hundreds) overwhelmed Intimacy (range: 0–1) by a factor of roughly 200. The algorithm found the geometrically nearest center — but it searched in a space where psychology was essentially invisible. The clients were grouped by attendance, not by inner life.</p>
+      <p>The fix is <strong>Z-Score normalization</strong>: subtract the population mean and divide by standard deviation. Every feature is rescaled to mean 0, standard deviation 1. After normalization, the same two clients produce a distance of ≈ 3.20 — and Intimacy now contributes 10.24 to the squared distance while Messages contributes only 0.01. The behavioral distinction is revealed. The algorithm can finally see what matters.</p>
+      <p>There is a second normalization method — <strong>Min-Max scaling</strong> — that compresses all values to [0, 1]. Choosing between them is not arbitrary: Z-Score preserves extreme outliers; Min-Max compresses them. In the CCP, hyper-engaged clients at the 90th percentile of Change Talk are the exact signal the system hunts for. Min-Max would squash them toward the boundary.</p>
+    </div>
+
+    <!-- TRAP 2 — Z-Score vs Min-Max -->
+    <div class="trap-block" id="trap2-block">
+      <div class="trap-label">Trap 02 — Z-Score vs. Min-Max</div>
+      <div class="trap-q">
+        The CCP pipeline uses Z-Score normalization. A new engineer argues: <em>"Min-Max is simpler — everything goes to [0, 1]. Let's switch."</em><br><br>
+        For the CCP's purpose of detecting <strong>hyper-engaged breakthrough clients</strong>, why would switching to Min-Max specifically harm detection accuracy?
+      </div>
+      <div class="choices" id="trap2-choices">
+        <button class="btn-choice" onclick="answerTrap2(this, false)">Min-Max is computationally slower, adding latency to the pipeline.</button>
+        <button class="btn-choice" onclick="answerTrap2(this, false)">Min-Max produces negative values that K-Means cannot process.</button>
+        <button class="btn-choice" onclick="answerTrap2(this, true)">Min-Max compresses all values to [0, 1], squashing extreme outliers toward the boundary. Hyper-engaged clients — the exact signal the system hunts — would be pushed toward the average and become invisible to K-Means.</button>
+      </div>
+      <div class="feedback" id="trap2-fb"></div>
+    </div>
+  </div>
+
+  <!-- GATE 2 — unlocks after trap2 correct -->
+  <div class="gate" id="gate2">
+    <div class="bridge">
+      <p>Correct. Z-Score does not compress the range. It rescales relative to the population distribution, so an outlier 3 standard deviations above the mean stays visibly 3 standard deviations above the mean. In Min-Max, that same outlier would be pushed toward 1.0 — indistinguishable from clients merely at the 85th percentile.</p>
+      <p>The normalization choice is not a formatting decision. It is an engineering decision about which behavioral signals your system is allowed to see.</p>
+    </div>
+
+    <!-- MASTERY GATE — novel values, different from worked example -->
+    <div class="trap-block" id="gate-challenge-block">
+      <div class="trap-label">Mastery Gate — Pipeline Injection</div>
+      <div class="trap-q">
+        The full CCP pipeline — extraction, normalization, PCA, K-Means — culminates in a result injection step. The JIT Skill Compiler loads a compact set of pre-computed numbers that replace the raw client context entirely.<br><br>
+        The raw context contains approximately 2,300 tokens. The injected result contains exactly how many fixed numerical / categorical values that replace this payload? (Reference: <span class="mono">CLUSTER_ID, TRAJECTORY, CENTROID_DISTANCE, MOOD</span>)
+      </div>
+      <div class="input-row">
+        <input type="text" class="q-input" id="gate-input" placeholder="Enter integer…" autocomplete="off">
+        <button class="btn-lock" id="gate-btn" onclick="checkGate()">COMMIT</button>
+      </div>
+      <div class="feedback" id="gate-fb"></div>
+    </div>
+  </div>
+
+  <!-- GAUNTLET — unlocks after gate correct -->
+  <div class="gate" id="gauntlet-gate">
+    <hr class="divider">
+    <div class="gauntlet-header">
+      <div class="layer-label" style="margin-bottom:0.4rem;">Exposure Gauntlet</div>
+      <div class="gauntlet-title">Pipeline Engineering: 7 Constraints</div>
+      <div class="gauntlet-sub">No preamble. No hints. Each question covers one failure mode in the pipeline.</div>
+    </div>
+    <div id="gauntlet-container"></div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+/* ════════════════════════════════════════
+   TRAP 1 — Normalization Blindness
+════════════════════════════════════════ */
+function answerTrap1(btn, correct) {
+  const btns = document.querySelectorAll('#trap1-choices .btn-choice');
+  btns.forEach(b => b.disabled = true);
+  btn.classList.add(correct ? 'selected-correct' : 'selected-wrong');
+
+  const fb = document.getElementById('trap1-fb');
+  fb.classList.add('show');
+
+  if (correct) {
+    fb.classList.add('right');
+    fb.innerHTML = `
+      <div class="fb-label">Dimensional Blindness — Confirmed</div>
+      Message Count (range 0–hundreds) contributed <strong>4.0</strong> to the squared distance. Intimacy (range 0–1) contributed only <strong>0.64</strong>. The algorithm used the geometry you gave it — and you gave it a space where psychology barely exists. This is not an algorithm bug. It is a pipeline architecture failure.
+    `;
+    setTimeout(() => unlock('gate1'), 1200);
+  } else {
+    fb.classList.add('wrong');
+    fb.innerHTML = `
+      <div class="fb-label">Misconception — "Scale determines which axis dominates"</div>
+      The failure is not about which axis has the larger range in isolation — it is about the <em>relative contribution</em> to the distance computation. Message Count contributed 4.0 squared units; Intimacy contributed 0.64. The algorithm weights them by their numerical contribution to the distance formula, not by their conceptual importance. The pipeline is blind to psychology because the numbers said psychology barely varies.
+      <br><button class="btn-retry" onclick="retryTrap1()">Retry</button>
+    `;
+  }
+}
+
+function retryTrap1() {
+  const btns = document.querySelectorAll('#trap1-choices .btn-choice');
+  btns.forEach(b => { b.disabled = false; b.classList.remove('selected-correct', 'selected-wrong'); });
+  const fb = document.getElementById('trap1-fb');
+  fb.className = 'feedback';
+}
+
+/* ════════════════════════════════════════
+   TRAP 2 — Z-Score vs. Min-Max
+════════════════════════════════════════ */
+function answerTrap2(btn, correct) {
+  const btns = document.querySelectorAll('#trap2-choices .btn-choice');
+  btns.forEach(b => b.disabled = true);
+  btn.classList.add(correct ? 'selected-correct' : 'selected-wrong');
+
+  const fb = document.getElementById('trap2-fb');
+  fb.classList.add('show');
+
+  if (correct) {
+    fb.classList.add('right');
+    fb.innerHTML = `
+      <div class="fb-label">Normalization Method — Correctly Evaluated</div>
+      Min-Max collapses the full distribution into [0, 1]. An outlier at 3σ above the mean maps to ~0.9; an average client maps to ~0.5. The gap between them is compressed. Z-Score preserves the gap. In a system whose purpose is detecting behavioral extremes, that compression is not a simplification — it is signal destruction.
+    `;
+    setTimeout(() => unlock('gate2'), 1200);
+  } else {
+    fb.classList.add('wrong');
+    fb.innerHTML = `
+      <div class="fb-label">Misconception — "Normalization method is a technical implementation detail"</div>
+      The choice between Z-Score and Min-Max is a strategic engineering decision about which signals your system can detect. Min-Max is not slower or mathematically invalid — it simply destroys the very signal the CCP is hunting for. Hyper-engaged clients are defined by their extremity. Any normalization that compresses extremes removes the system's ability to identify them.
+      <br><button class="btn-retry" onclick="retryTrap2()">Retry</button>
+    `;
+  }
+}
+
+function retryTrap2() {
+  const btns = document.querySelectorAll('#trap2-choices .btn-choice');
+  btns.forEach(b => { b.disabled = false; b.classList.remove('selected-correct', 'selected-wrong'); });
+  const fb = document.getElementById('trap2-fb');
+  fb.className = 'feedback';
+}
+
+/* ════════════════════════════════════════
+   MASTERY GATE — Pipeline Injection
+════════════════════════════════════════ */
+function checkGate() {
+  const raw = document.getElementById('gate-input').value.trim().toLowerCase();
+  if (!raw) return;
+  document.getElementById('gate-input').disabled = true;
+  document.getElementById('gate-btn').disabled = true;
+
+  const fb = document.getElementById('gate-fb');
+  fb.classList.add('show');
+
+  const correct = raw === '4' || raw === 'four';
+  if (correct) {
+    fb.classList.add('right');
+    fb.innerHTML = `
+      <div class="fb-label">Gate Cleared</div>
+      Correct. The 2,300-token raw payload compresses to exactly <strong>4</strong> values: <code style="font-family:var(--mono);font-size:0.85rem;color:var(--accent);">CLUSTER_ID, TRAJECTORY, CENTROID_DISTANCE, MOOD</code>. The agent reads geometry, not transcripts. Four numbers replace four thousand tokens of ambiguous linguistic data. This is not merely efficiency — it is the mechanism that prevents LLM hallucination: the model cannot speculate about what a client "feels like" when it is given a precise coordinate.
+    `;
+    setTimeout(() => unlock('gauntlet-gate', renderGauntlet), 900);
+  } else {
+    fb.classList.add('wrong');
+    fb.innerHTML = `
+      <div class="fb-label">Incorrect</div>
+      Review the JIT Compiler injection step: the pipeline writes exactly four values — a cluster label, a distance from centroid, a trajectory label, and a mood state. Each encodes a distinct behavioral dimension without token overhead.
+      <br><button class="btn-retry" onclick="retryGate()">Retry</button>
+    `;
+  }
+}
+
+function retryGate() {
+  document.getElementById('gate-input').disabled = false;
+  document.getElementById('gate-input').value = '';
+  document.getElementById('gate-btn').disabled = false;
+  const fb = document.getElementById('gate-fb');
+  fb.className = 'feedback';
+}
+
+/* ════════════════════════════════════════
+   GATE UNLOCK UTILITY
+════════════════════════════════════════ */
+function unlock(id, callback) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      el.classList.add('open');
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (callback) callback();
+      }, 500);
+    });
+  });
+}
+
+/* ════════════════════════════════════════
+   GAUNTLET DATA — 7 questions from MD
+════════════════════════════════════════ */
+const GAUNTLET = [
+  {
+    label: 'Constraint 01 — Feature Selection',
+    q: 'The CBCS collects over 100 data points per client interaction. A developer proposes including <code style="font-family:var(--mono);font-size:0.85rem;color:var(--accent);">Telegram_User_ID</code> as a clustering feature because it uniquely identifies every client. Why does this guarantee a high Silhouette Score while producing zero actionable intelligence?',
+    type: 'text',
+    match: ['identif', 'uniqu', 'id', 'demograph'],
+    exp: 'User IDs are unique integers — K-Means trivially separates them into near-perfect clusters because the numbers are cleanly spread. But the resulting archetypes encode identity, not behavior. A Silhouette Score of 0.99 on User IDs proves the algorithm can count, not that it understands psychology. The rule is absolute: features must encode behavioral variation, never demographic uniqueness.',
+    misconception: 'Misconception — "A high Silhouette Score validates the clustering." Silhouette measures geometric tightness, not behavioral meaning. K-Means will separate any set of unique numbers into clean clusters. The score cannot distinguish meaningful archetypes from meaningless demographic artifacts.'
+  },
+  {
+    label: 'Constraint 02 — Normalization Choice',
+    q: 'A teammate wants to track hyper-engaged breakthrough clients — those in the top 5% of Change Talk intensity. She argues Z-Score and Min-Max normalization produce equivalent results because "both normalize the data." Which normalization method must be used, and what is the one-word property of Z-Score that makes it the only valid choice here?',
+    type: 'text',
+    match: ['z-score', 'z score', 'zscore', 'outlier', 'standard deviation', 'sigma'],
+    exp: 'Z-Score. It preserves the full distribution shape, including outliers. Min-Max compresses everything to [0, 1], squashing extreme values toward the boundary and making outliers indistinguishable from moderate performers. The hyper-engaged clients ARE the signal — their extremity is their behavioral identity. Any normalization that removes extremes removes the detection capability.',
+    misconception: 'Misconception — "Z-Score and Min-Max produce the same results because both normalize data." They produce geometrically different spaces. Z-Score asks "how many standard deviations from average?" — preserving relative extremity. Min-Max asks "where in the [min, max] range?" — compressing extremity. For outlier-detection tasks, these are not interchangeable.'
+  },
+  {
+    label: 'Constraint 03 — Dimensionality Reduction',
+    q: 'The LIWC-22 engine extracts 90 linguistic features per client interaction. Before running K-Means, the pipeline applies a linear compression that projects all 90 dimensions onto the top 20 directions of maximum variance, retaining 85% of total variance. What is the abbreviated name of this compression operation?',
+    type: 'text',
+    match: ['pca', 'principal component'],
+    exp: 'PCA — Principal Component Analysis. It finds the eigenvectors of the feature covariance matrix (the directions of maximum variance) and projects the entire dataset onto the top M of them. The result: a 90D vector becomes a 20D vector that retains 85%+ of behavioral information while restoring the geometric separation K-Means needs to function. Without PCA, the Curse of Dimensionality causes all pairwise distances to converge — the algorithm cannot distinguish near from far.',
+    misconception: 'Misconception — "More dimensions always provide more information." In high-dimensional spaces (beyond ~20D for typical datasets), all pairwise Euclidean distances converge toward a constant. The nearest and farthest neighbors become equidistant. K-Means loses all discriminative power. PCA compression is not a simplification — it is a prerequisite for meaningful clustering.'
+  },
+  {
+    label: 'Constraint 04 — PCA Failure Mode',
+    q: 'After applying PCA to 12 LIWC features, the pipeline retains 4 components capturing 90% of variance. A behavioral analyst later notices that <strong>Confrontation Tolerance</strong> — a critical coaching axis — has near-zero loading on all 4 retained components. What specific catastrophic outcome has silently occurred?',
+    type: 'text',
+    match: ['discard', 'lost', 'eras', 'gone', 'remov', 'missing', 'invisible', 'vanish', 'silent'],
+    exp: 'Confrontation Tolerance was silently erased. It loaded exclusively onto the 5th or later principal component — the first one discarded. From this point forward, no amount of K-Means sophistication can recover this axis. Every archetype produced by the pipeline is blind to how clients respond to direct challenge. The failure is completely invisible in the output: the algorithm converges, the clusters look valid, and the Silhouette Score reports healthy values. Nothing in the downstream output signals the missing dimension.',
+    misconception: 'Misconception — "Retaining 90% of variance means no important information was lost." The 10% discarded is not uniformly distributed across all features. If a behaviorally critical feature loads exclusively onto a discarded component, it is gone — regardless of how small its variance contribution was. Always inspect the loading matrix after PCA to verify that every critical feature has non-zero loading on the retained components.'
+  },
+  {
+    label: 'Constraint 05 — Concept Drift',
+    q: 'After 6 months of production operation, the Guardian Agent reports that the "Resistant Deflector" archetype has shrunk from 30% to 8% of the client population, and a new behavioral cluster has emerged that no centroid currently represents. The Silhouette Score has trended downward for 6 consecutive weekly audits. What is the precise technical term for this phenomenon?',
+    type: 'text',
+    match: ['drift', 'concept drift'],
+    exp: 'Concept Drift. The client population has genuinely evolved — the behavioral landscape the original clustering was trained on no longer matches the current population. The archetypes are a stale photograph. The correct response is to trigger a full re-clustering: re-run K-Means on the latest 90 days of data, compute new centroids, rewrite the Neo4j labels, and update the JIT Compiler constraints. Without this, the coaching system applies outdated protocols to a population that has changed.',
+    misconception: 'Misconception — "Once the clusters are set, they are correct until manually reviewed." Clusters are snapshots of a moment in time. Clients evolve. New clients arrive with different baselines. Seasonal effects shift behavior. Any production system without lifecycle monitoring will silently deliver wrong intelligence to an evolving population. The Guardian Agent\'s weekly Silhouette audit is not optional hygiene — it is the mechanism that prevents silent accumulation of error.'
+  },
+  {
+    label: 'Constraint 06 — Drift vs. Influx',
+    q: 'A marketing campaign drives 200 new clients into the CCP in a single week. The Guardian fires a Concept Drift alert: Silhouette Score dropped from 0.72 to 0.38. You check the stored centroids — they have not moved. Is this genuine Concept Drift? What is the most likely actual cause?',
+    type: 'text',
+    match: ['influx', 'new client', 'demograph', 'boundary', 'not drift', 'false', 'temporary', 'newcomer', 'new user'],
+    exp: 'Not genuine Concept Drift — most likely a demographic influx. The centroids are structurally intact; the existing archetypes have not evolved. The 200 new clients have not yet developed distinct behavioral patterns and cluster near the boundaries between existing archetypes, depressing the average Silhouette Score. The fix is not re-clustering — it is waiting for the new clients to develop behavioral signals, then re-auditing. The operator must distinguish between genuine population evolution (centroids should move) and temporary boundary noise (centroids are correct, the new clients just need time).',
+    misconception: 'Misconception — "A Silhouette drop always means the clustering model is wrong." The Silhouette Score measures how well the current population fits the current cluster boundaries. A drop can mean the boundaries are wrong (genuine drift) or that new members near the boundaries are temporarily ambiguous (demographic noise). Centroid movement is the diagnostic: if centroids have not moved, the model is intact.'
+  },
+  {
+    label: 'Constraint 07 — Why the Pipeline Exists',
+    q: 'Without the pre-computed clustering pipeline, the CCP\'s AI agent would need to analyze raw client data from scratch at every interaction. Specifically, the LLM would read thousands of tokens of transcript history and make a real-time judgment call about the client\'s type. What is the most operationally dangerous failure mode of this approach — more dangerous than latency or cost?',
+    type: 'text',
+    match: ['hallucin', 'wrong', 'speculate', 'feel', 'guess', 'imagine', 'invent', 'fabricat'],
+    exp: 'Hallucination. An LLM analyzing raw transcripts can "feel" that a client is ready for direct confrontation when their behavioral data says otherwise. It has no structural memory, no trajectory tracking, no auditable coordinate — only pattern-matching over ambiguous linguistic input. This produces confident-sounding interventions based on fabricated behavioral assessments. The pipeline replaces this speculative inference with a deterministic coordinate: CLUSTER_ID=2, DIST=0.31, TRAJECTORY=Approaching. The agent reads geometry, not mood. Hallucination requires ambiguity — the pipeline eliminates the ambiguity.',
+    misconception: 'Misconception — "The main problem with real-time LLM analysis is speed." Speed and cost are real costs, but recoverable ones. Hallucination is not — a wrong archetype assignment triggers the wrong coaching protocol, which can cause irreversible harm in a vulnerable client\'s therapeutic trajectory. The pipeline\'s primary value is not efficiency. It is determinism.'
+  }
+];
+
+function renderGauntlet() {
+  const container = document.getElementById('gauntlet-container');
+  let html = '';
+  GAUNTLET.forEach((item, i) => {
+    html += `
+      <div class="g-block" id="gb-${i}">
+        <div class="g-meta">${item.label}</div>
+        <div class="g-q">${item.q}</div>
+        <div class="input-row">
+          <input type="text" class="q-input" id="gi-${i}" placeholder="Enter answer…" autocomplete="off" spellcheck="false">
+          <button class="btn-lock" id="gbtn-${i}" onclick="answerGauntlet(${i})">LOCK</button>
+        </div>
+        <div class="feedback" id="gfb-${i}"></div>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+
+  // Enter key support
+  GAUNTLET.forEach((_, i) => {
+    const inp = document.getElementById(`gi-${i}`);
+    if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') answerGauntlet(i); });
+  });
+}
+
+function answerGauntlet(i) {
+  const inp = document.getElementById(`gi-${i}`);
+  const btn = document.getElementById(`gbtn-${i}`);
+  const val = (inp.value || '').toLowerCase().trim();
+  if (!val) return;
+
+  inp.disabled = true;
+  btn.disabled = true;
+
+  const item = GAUNTLET[i];
+  const correct = item.match.some(m => val.includes(m));
+  const fb = document.getElementById(`gfb-${i}`);
+  fb.classList.add('show');
+
+  if (correct) {
+    fb.classList.add('right');
+    fb.innerHTML = `<div class="fb-label">Valid</div>${item.exp}`;
+  } else {
+    fb.classList.add('wrong');
+    fb.innerHTML = `<div class="fb-label">Architecture Flaw</div>${item.misconception}<br><br><strong>Correct reasoning:</strong> ${item.exp}`;
+  }
+}
+</script>
+</body>
+</html>

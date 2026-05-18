@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCP Skill Node | Lesson 15: HuggingFace - Master Capstone</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0c0a08;
+            --card-color: #151210;
+            --text-main: #e2dcd0;
+            --text-muted: #8b8378;
+            --accent-red: #ff3366;
+            --accent-green: #00ffaa;
+            --accent-blue: #3291ff;
+            --accent-yellow: #ffcc00;
+            --border-color: #2a2520;
+            --font-main: 'Inter', sans-serif;
+            --font-code: 'Space Mono', monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            padding-top: 80px; /* Space for HUD */
+        }
+
+        .hud-timer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: #000;
+            border-bottom: 2px solid var(--accent-red);
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(255, 51, 102, 0.2);
+        }
+
+        .hud-timer > div {
+            font-family: var(--font-code);
+            font-size: 2rem;
+            color: var(--accent-red);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            letter-spacing: 2px;
+        }
+
+        .hud-timer.warning { animation: pulse 1s infinite alternate; }
+        @keyframes pulse { from { background-color: #000; } to { background-color: rgba(255, 51, 102, 0.2); } }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            color: var(--accent-red);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        h2 { margin-top: 3rem; color: #fff; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
+        h3 { color: var(--accent-blue); font-family: var(--font-code); }
+
+        pre {
+            background-color: #000;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            font-family: var(--font-code);
+            font-size: 0.95rem;
+            color: #56B6C2;
+        }
+        
+        code {
+            font-family: var(--font-code);
+            background-color: #1a1a1a;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            color: #ff8800;
+        }
+
+        .instruction-pane {
+            background-color: rgba(255, 51, 102, 0.05);
+            border-left: 4px solid var(--accent-red);
+            padding: 1.5rem; margin-bottom: 2rem;
+            font-family: var(--font-code);
+        }
+
+        .task-card {
+            background-color: var(--card-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .task-quote {
+            background-color: #000;
+            border-left: 3px solid var(--accent-blue);
+            padding: 1rem 1.5rem;
+            font-style: italic;
+            color: #ccc;
+            margin-bottom: 1.5rem;
+        }
+
+        textarea.contract-input {
+            width: 100%;
+            background-color: #151210;
+            border: 1px solid var(--border-color);
+            color: #00ffaa;
+            font-family: var(--font-code);
+            padding: 1rem;
+            border-radius: 6px;
+            min-height: 120px;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+
+        textarea.contract-input:focus { outline: none; border-color: var(--accent-red); }
+
+        button.action-btn {
+            background-color: var(--accent-red);
+            color: #fff;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            font-family: var(--font-code);
+            font-weight: 700;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button.action-btn:hover { background-color: #ff5c85; }
+        button.action-btn:disabled { background-color: #333; color: #666; cursor: not-allowed; }
+
+        .rubric-box {
+            display: none;
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background-color: rgba(255,255,255,0.05);
+            border-left: 3px solid #ccc;
+            animation: fadeIn 0.5s;
+        }
+
+        .rubric-box.active { display: block; }
+        .rubric-item { margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.8rem; }
+        .rubric-score { color: var(--accent-blue); font-weight: bold; font-family: var(--font-code); }
+
+        /* Triage Buttons */
+        .triage-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .triage-btn {
+            background-color: #000;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 1rem;
+            border-radius: 6px;
+            font-family: var(--font-code);
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+        }
+
+        .triage-btn:hover { border-color: #666; }
+        .triage-btn.selected { border-color: var(--text-main); background-color: #222; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .terminal-btn {
+            display: block; width: 100%;
+            background-color: var(--accent-red);
+            color: #fff; padding: 1.5rem;
+            font-size: 1.5rem; text-align: center;
+            border: none; border-radius: 8px;
+            margin-top: 4rem; cursor: pointer;
+            font-family: var(--font-code); font-weight: 700;
+            text-transform: uppercase;
+        }
+        .terminal-btn:hover { background-color: #cc0033; }
+        
+        .frozen-overlay {
+            position: fixed; top:0; left:0; right:0; bottom:0;
+            background-color: rgba(0,0,0,0.9); z-index: 2000;
+            display: none; justify-content: center; align-items: center;
+            flex-direction: column; text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="hud-timer" id="hud">
+    <div>
+        <span>TF</span>
+        <span id="timer">12:00</span>
+    </div>
+</div>
+
+<div class="frozen-overlay" id="time-up">
+    <h1 style="border:none; font-size:4rem; margin-bottom:1rem;">TIME EXPIRED</h1>
+    <p style="font-family:var(--font-code); font-size:1.5rem; color:var(--text-muted);">The Architect failed to secure the cognitive layer in time.</p>
+</div>
+
+<div class="frozen-overlay" id="success-screen">
+    <h1 style="border:none; font-size:4rem; margin-bottom:1rem; color:var(--accent-green);">ORCHESTRATION TERMINATED</h1>
+    <p style="font-family:var(--font-code); font-size:1.5rem; color:var(--accent-blue);">Evaluation Data Logged for Audit.</p>
+</div>
+
+<div class="container">
+    <h1>🚀 MASTER LAYER: Terminal Capstone</h1>
+    
+    <div class="instruction-pane">
+        <strong>INSTRUCTIONS: THE FOREMAN'S ASSESSMENT</strong><br>
+        You are the Sovereign Architect. The pipelines are attempting to write orchestration code for the CCP’s HuggingFace execution layer. You have exactly 12 minutes. 
+        <ul>
+            <li>No reference materials permitted.</li>
+            <li>Passing threshold: 160/200.</li>
+            <li>Auto-submit on timer expiration.</li>
+        </ul>
+    </div>
+
+    <!-- SECTION 1 -->
+    <h2>SECTION 1: CONTRACT SPECIFICATION (60 points)</h2>
+    <p><em>Agents hallucinate when boundaries are vague. You must specify the immutable boundaries.</em></p>
+
+    <!-- Task 1 -->
+    <div class="task-card" id="tc-1">
+        <h3>Feature Specification 1: Token Truncation Contract (20 pts)</h3>
+        <div class="task-quote">"The CCP requires a Pydantic BaseModel to configure the HuggingFace tokenizer limits... Schema must be called TokenizerConfig. Requires `model_name` (default 'Qwen/Qwen3.5-72B'). It must contain `max_input_length` (int, le=32000). Optional `truncation_strategy` ('longest_first' or 'only_first'). Finally, `return_tensors_pt` boolean default True."</div>
+        <textarea class="contract-input" placeholder="class TokenizerConfig(BaseModel): ..."></textarea>
+        <button class="action-btn" onclick="revealRubric(1)">Submit Contract</button>
+        <div class="rubric-box" id="rub-1">
+            <h4 style="margin-top:0; color:var(--accent-blue);">Self-Audit Rubric</h4>
+            <div class="rubric-item"><span class="rubric-score">[5 pts]</span> Correct model_name default</div>
+            <div class="rubric-item"><span class="rubric-score">[5 pts]</span> max_input_length strictly with Field(le=32000)</div>
+            <div class="rubric-item"><span class="rubric-score">[5 pts]</span> truncation_strategy properly typed as Literal inside Optional</div>
+            <div class="rubric-item"><span class="rubric-score">[5 pts]</span> return_tensors_pt defined cleanly</div>
+        </div>
+    </div>
+
+    <!-- Task 2 -->
+    <div class="task-card" id="tc-2">
+        <h3>Feature Specification 2: The Voice DNA Payload Contract (20 pts)</h3>
+        <div class="task-quote">"Require a DSPy Signature named DetermineLoraMapping. Inputs: `client_conflict_type` (str) and `target_archetype` (str). Outputs: `lora_repo_id` (str) and `gpu_allocation_tier` (int)."</div>
+        <textarea class="contract-input" placeholder="class DetermineLoraMapping(dspy.Signature): ..."></textarea>
+        <button class="action-btn" onclick="revealRubric(2)">Submit Contract</button>
+        <div class="rubric-box" id="rub-2">
+            <h4 style="margin-top:0; color:var(--accent-blue);">Self-Audit Rubric</h4>
+            <div class="rubric-item"><span class="rubric-score">[5 pts]</span> Signature class inheritance exactly correct</div>
+            <div class="rubric-item"><span class="rubric-score">[5 pts]</span> InputField types and variables named correctly</div>
+            <div class="rubric-item"><span class="rubric-score">[5 pts]</span> OutputField mapping correctly initialized for repo_id</div>
+            <div class="rubric-item"><span class="rubric-score">[5 pts]</span> gpu_allocation_tier strictly enforced as integer</div>
+        </div>
+    </div>
+
+    <!-- Task 3 -->
+    <div class="task-card" id="tc-3">
+        <h3>Feature Specification 3: The Generation Constraint Contract (20 pts)</h3>
+        <div class="task-quote">"The QA Department demands an OpenProse contract for invoke_hf_generation. Provide the 'Requires' and 'Ensures' clauses in strict structural language."</div>
+        <textarea class="contract-input" placeholder="Requires:\n\nEnsures:"></textarea>
+        <button class="action-btn" onclick="revealRubric(3)">Submit Contract</button>
+        <div class="rubric-box" id="rub-3">
+            <h4 style="margin-top:0; color:var(--accent-blue);">Self-Audit Rubric</h4>
+            <div class="rubric-item"><span class="rubric-score">[10 pts]</span> Requires tensor physically bound to the identical CUDA device VRAM pool as the model.</div>
+            <div class="rubric-item"><span class="rubric-score">[10 pts]</span> Ensures output successfully decodes into a native string stripping metadata.</div>
+        </div>
+    </div>
+
+    <!-- SECTION 2 -->
+    <h2>SECTION 2: DEFECT TRIAGE (60 points)</h2>
+    <p><em>Four agent-generated blocks submitted. Classify instantly.</em></p>
+
+    <!-- Block Alpha -->
+    <div class="task-card" id="triage-alpha">
+        <h3>Code Block Alpha (15 pts)</h3>
+        <pre><code>from transformers import AutoModelForCausalLM
+import torch
+
+def load_sovereign_engine(model_id: str):
+    print(f"Mounting {model_id} to VRAM...")
+    engine = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        torch_dtype=torch.float16,
+        device_map="auto"
+   ).eval()
+   return engine</code></pre>
+        <div class="triage-grid">
+            <button class="triage-btn" onclick="checkTriage('alpha', 'correct')">✅ Correct</button>
+            <button class="triage-btn" onclick="checkTriage('alpha', 'omission')">🔴 Omission</button>
+            <button class="triage-btn" onclick="checkTriage('alpha', 'hallucination')">🟡 Hallucination</button>
+            <button class="triage-btn" onclick="checkTriage('alpha', 'misapplication')">🔵 Misapplication</button>
+        </div>
+        <div class="rubric-box" id="rub-alpha">
+            <strong style="color:var(--accent-green)">✅ Correct.</strong> Contains precision, sharding (device_map), and locks state via .eval().
+        </div>
+    </div>
+
+    <!-- Block Beta -->
+    <div class="task-card" id="triage-beta">
+        <h3>Code Block Beta (15 pts)</h3>
+        <pre><code>from transformers import AutoTokenizer
+
+def execute_token_translation(client_input: str):
+    tokenizer = AutoTokenizer.from_pretrained("Qwen")
+    token_indices = tokenizer.encode(client_input)
+    # Passing standard python list to GPU layer
+    return orchestrator_engine["model"].generate(input_ids=token_indices)</code></pre>
+        <div class="triage-grid">
+            <button class="triage-btn" onclick="checkTriage('beta', 'correct')">✅ Correct</button>
+            <button class="triage-btn" onclick="checkTriage('beta', 'omission')">🔴 Omission</button>
+            <button class="triage-btn" onclick="checkTriage('beta', 'hallucination')">🟡 Hallucination</button>
+            <button class="triage-btn" onclick="checkTriage('beta', 'misapplication')">🔵 Misapplication</button>
+        </div>
+        <div class="rubric-box" id="rub-beta">
+            <strong style="color:var(--accent-red)">🔴 Omission.</strong> Line 5. Violates PyTorch tensor contract. Fix requires `return_tensors="pt"` into tokenizer call.
+        </div>
+    </div>
+
+    <!-- Block Gamma -->
+    <div class="task-card" id="triage-gamma">
+        <h3>Code Block Gamma (15 pts)</h3>
+        <pre><code>from peft import PeftModel
+
+def hot_swap_voice_dna(base_model, client_state: str):
+    if client_state == "resistant":
+        return PeftModel.from_pretrained(base_model, "ccp/jp", load_in_8bit=True)
+    else:
+        return PeftModel.from_pretrained(base_model, "ccp/aud", load_in_8bit=True)</code></pre>
+        <div class="triage-grid">
+            <button class="triage-btn" onclick="checkTriage('gamma', 'correct')">✅ Correct</button>
+            <button class="triage-btn" onclick="checkTriage('gamma', 'omission')">🔴 Omission</button>
+            <button class="triage-btn" onclick="checkTriage('gamma', 'hallucination')">🟡 Hallucination</button>
+            <button class="triage-btn" onclick="checkTriage('gamma', 'misapplication')">🔵 Misapplication</button>
+        </div>
+        <div class="rubric-box" id="rub-gamma">
+            <strong style="color:var(--accent-blue)">🔵 Misapplication.</strong> Lines 5 & 7. Loading quantization (load_in_8bit) during dynamic secondary PEFT initialization forces model to reload Base parameter distributions, causing a catastrophic stutter.
+        </div>
+    </div>
+
+    <!-- Block Delta -->
+    <div class="task-card" id="triage-delta">
+        <h3>Code Block Delta (15 pts)</h3>
+        <pre><code>import dspy
+
+sovereign_lm = dspy.HFClientVLLM(
+    model="google/gemma",
+    port=8080,
+    url="http://localhost",
+    hf_cloud_fallback=True
+)
+dspy.settings.configure(lm=sovereign_lm)</code></pre>
+        <div class="triage-grid">
+            <button class="triage-btn" onclick="checkTriage('delta', 'correct')">✅ Correct</button>
+            <button class="triage-btn" onclick="checkTriage('delta', 'omission')">🔴 Omission</button>
+            <button class="triage-btn" onclick="checkTriage('delta', 'hallucination')">🟡 Hallucination</button>
+            <button class="triage-btn" onclick="checkTriage('delta', 'misapplication')">🔵 Misapplication</button>
+        </div>
+        <div class="rubric-box" id="rub-delta">
+            <strong style="color:var(--accent-yellow)">🟡 Hallucination.</strong> Line 7. `hf_cloud_fallback=True` is an invented hallucination violating Dictum 3 (Sovereignty). External API failovers breach data isolation laws.
+        </div>
+    </div>
+
+    <!-- SECTION 3 -->
+    <h2>SECTION 3: ARCHITECTURAL REASONING (40 points)</h2>
+
+    <div class="task-card">
+        <h3>Question 1 (20 pts)</h3>
+        <div class="task-quote">"Why does the CCP enforce checking `device_map='auto'` and `torch_dtype` during initialization rather than wrapping client queries in a try/except block for a CUDA OOM crash?"</div>
+        <textarea class="contract-input" placeholder="State your architectural logic..."></textarea>
+        <button class="action-btn" onclick="this.nextElementSibling.classList.add('active'); this.disabled=true;">Audit Result</button>
+        <div class="rubric-box">
+            <strong>Rubric:</strong> Must cite Sovereign NIM MCDA / Dictum 1. Must clarify that an OOM crash destabilizes the entire GPU thread, wiping all concurrent WebSocket sessions, not just the single caller.
+        </div>
+    </div>
+
+    <div class="task-card">
+        <h3>Question 2 (20 pts)</h3>
+        <div class="task-quote">"Why does the JIT Skill Compiler rely on PEFT swapping via HuggingFace rather than just switching DSPy text prompts across a singular frozen model?"</div>
+        <textarea class="contract-input" placeholder="State the physical distinction..."></textarea>
+        <button class="action-btn" onclick="this.nextElementSibling.classList.add('active'); this.disabled=true;">Audit Result</button>
+        <div class="rubric-box">
+            <strong>Rubric:</strong> A text prompt is a weak suggestion; a LoRA adapter physically rewires probabilistic mathematics. The Machine must be reconfigured physically to guarantee extreme Voice DNA execution.
+        </div>
+    </div>
+
+    <!-- SECTION 4 -->
+    <h2>SECTION 4: FEYNMAN COMPRESSION (40 points)</h2>
+    <div class="task-card">
+        <p>Explain why commanding HuggingFace correctly is critical for maintaining sovereign control over agentic systems. Synthesize: The Laser Cutter, OOM Physics Collapse / Hallucinations, and The QA Department/Chassis.</p>
+        <textarea class="contract-input" style="min-height:200px" placeholder="Start synthesizing... (Minimum 4 sentences)"></textarea>
+        <button class="action-btn" onclick="this.nextElementSibling.classList.add('active'); this.disabled=true;">Lock Compression</button>
+        <div class="rubric-box">
+            <strong>Exemplar Standard:</strong> <br>
+            "Commanding HuggingFace is non-negotiable because it literally represents the physical cognitive weight of The Laser Cutter... Without rigorous constraint by The Chassis allocating strict VRAM constraints and The QA Department sanitizing output token targets, you invite massive OOM Physics Collapse. Failure to rigidly pair tokenizers results in undetectable decoding hallucinations..."
+        </div>
+    </div>
+
+    <button class="terminal-btn" onclick="terminate()">[ SUBMIT & TERMINATE ORCHESTRATION ]</button>
+</div>
+
+<script>
+    // Timer Logic
+    let timeRemaining = 12 * 60; // 12 minutes
+    const timerEl = document.getElementById('timer');
+    const hudEl = document.getElementById('hud');
+
+    const timerInterval = setInterval(() => {
+        timeRemaining--;
+        const min = Math.floor(timeRemaining / 60);
+        const sec = timeRemaining % 60;
+        timerEl.textContent = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+
+        if(timeRemaining <= 60) {
+            hudEl.classList.add('warning');
+            timerEl.style.color = "#ff0000";
+        }
+
+        if(timeRemaining <= 0) {
+            clearInterval(timerInterval);
+            document.getElementById('time-up').style.display = 'flex';
+        }
+    }, 1000);
+
+    function revealRubric(id) {
+        document.querySelector(`#tc-${id} textarea`).disabled = true;
+        document.querySelector(`#tc-${id} button`).style.display = 'none';
+        document.getElementById(`rub-${id}`).classList.add('active');
+    }
+
+    const triageAnswers = {
+        'alpha': 'correct',
+        'beta': 'omission',
+        'gamma': 'misapplication',
+        'delta': 'hallucination'
+    };
+
+    function checkTriage(block, selection) {
+        // Disable buttons
+        const btns = document.querySelectorAll(`#triage-${block} .triage-btn`);
+        btns.forEach(btn => btn.disabled = true);
+        
+        // Highlight logic
+        const rev = document.getElementById(`rub-${block}`);
+        rev.classList.add('active');
+        
+        if (triageAnswers[block] !== selection) {
+            rev.style.borderLeftColor = "var(--accent-red)";
+            rev.innerHTML += `<br><br><span style="color:var(--accent-red)">[✗] You incorrectly classified this as ${selection}.</span>`;
+        } else {
+            rev.style.borderLeftColor = "var(--accent-green)";
+        }
+    }
+
+    function terminate() {
+        clearInterval(timerInterval);
+        document.getElementById('success-screen').style.display = 'flex';
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 01 - Master Capstone</title>
+  <style>
+    :root {
+      --bg: #09090b; --panel: #111114; --line: rgba(255,255,255,0.08);
+      --text: #f4f4f5; --muted: #a1a1aa; --accent: #f97316;
+      --good: #22c55e; --bad: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; min-height: 100vh; background: linear-gradient(180deg, #0b0b0e 0%, #09090b 100%);
+      color: var(--text); font-family: Georgia, "Times New Roman", serif; line-height: 1.6;
+    }
+    .hud {
+      position: fixed; top: 18px; right: 18px; z-index: 20; display: flex; gap: 10px; align-items: center;
+      padding: 10px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(9, 9, 11, 0.92); font: 700 0.86rem/1 Arial; text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .hud .timer-warn { color: var(--bad); }
+    .shell { max-width: 880px; margin: 0 auto; padding: 34px 18px 90px; }
+    .hero, .card, .result {
+      border-radius: 18px; border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22); padding: 24px;
+    }
+    .card { margin-top: 18px; }
+    .eyebrow { color: var(--accent); text-transform: uppercase; letter-spacing: 0.18em; font: 700 0.74rem/1.2 Arial; margin-bottom: 12px; }
+    h1, h2, h3 { margin: 0 0 14px; line-height: 1.08; font-weight: 500; }
+    h1 { font-size: clamp(2.2rem, 4vw, 3.8rem); }
+    h2 { font-size: clamp(1.4rem, 2.7vw, 2rem); }
+    .divider { height: 1px; margin: 22px 0; background: linear-gradient(90deg, transparent, rgba(249,115,22,0.3), transparent); }
+    .meta { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 18px; }
+    .meta div { padding: 14px; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; background: rgba(255,255,255,0.02); }
+    .meta span { display: block; color: var(--muted); font: 700 0.74rem/1.2 Arial; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+    .mono { font-family: Consolas, monospace; font-size: 0.95rem; }
+    .code-block { background: #071018; padding: 16px; border-radius: 12px; font-family: Consolas, monospace; font-size: 0.9rem; color: #56c5ff; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 16px; white-space: pre-wrap; }
+    .qnum { color: #fdba74; font: 700 0.78rem/1.2 Arial; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+    .points { color: var(--muted); font: 700 0.8rem/1.2 Arial; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+    .choices { display: grid; gap: 10px; margin-top: 14px; }
+    .choice { width: 100%; text-align: left; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); color: var(--text); font: 400 1rem/1.45 Arial; cursor: pointer; transition: border-color 0.18s ease; }
+    .choice.selected { border-color: rgba(249,115,22,0.7); background: rgba(249,115,22,0.08); }
+    input[type="text"], textarea { width: 100%; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.03); color: var(--text); font: 400 1rem/1.45 Arial; }
+    textarea { min-height: 170px; resize: vertical; margin-top: 10px; }
+    input:focus, textarea:focus { border-color: rgba(249,115,22,0.55); outline: none; box-shadow: 0 0 0 4px rgba(249,115,22,0.12); }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+    .btn { border: 0; cursor: pointer; padding: 14px 18px; border-radius: 999px; font: 700 0.94rem/1 Arial; transition: transform 0.18s ease; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.14); }
+    .result { margin-top: 22px; display: none; }
+    .result.show { display: block; }
+    .score { font: 700 1.2rem/1.3 Arial; margin-bottom: 14px; }
+    .pass { color: var(--good); } .fail { color: var(--bad); }
+    .breakdown { display: grid; gap: 10px; margin-top: 16px; }
+    .breakdown div { padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); }
+    .footnote { margin-top: 18px; color: var(--muted); font-size: 0.96rem; }
+    .hidden { display: none; }
+    .req-list { padding-left: 20px; color: #d9e4ec; }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <span>Master Capstone</span>
+    <span id="timer">12:00</span>
+  </div>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Lesson 01 - Master Synthesis</p>
+      <h1>Contracts are not suggestions; they are the laws of the Factory Floor.</h1>
+      <div class="divider"></div>
+      <p>This is your terminal Capstone assessment. No reference code. No crutches. You are writing strict execution contracts and triaging defective code under severe time constraints.</p>
+      <div class="meta">
+        <div><span>Questions</span>10 total</div>
+        <div><span>Time</span>12 minutes</div>
+        <div><span>Passing Score</span>160 / 200</div>
+      </div>
+      <div class="actions"><button class="btn btn-primary" onclick="startExam()">Initiate Evaluation</button></div>
+    </section>
+
+    <form id="examForm" class="hidden" onsubmit="return false;">
+      <h2 style="margin-top: 36px;">Section 1: Contract Specification</h2>
+      
+      <!-- Q1: Pydantic -->
+      <section class="card">
+        <div class="qnum">Question 1</div>
+        <div class="points">20 points</div>
+        <h2>QA Department Contract (Pydantic)</h2>
+        <p>Write the Pydantic field declarations for an 'Intervention Action'. Must include:</p>
+        <ul class="req-list">
+          <li>A trace ID (string).</li>
+          <li>A strategies array (list of strings).</li>
+          <li>A severity value (float bounded strictly between 0.0 and 1.0).</li>
+          <li>An acknowledgment flag (boolean defaulting to False).</li>
+        </ul>
+        <textarea id="q1" placeholder="class InterventionAction(BaseModel):&#10;    trace_id: ..."></textarea>
+      </section>
+
+      <!-- Q2: DSPy -->
+      <section class="card">
+        <div class="qnum">Question 2</div>
+        <div class="points">20 points</div>
+        <h2>Machinist Contract (DSPy)</h2>
+        <p>Write compiling signature boundaries for 'Silence Threshold Generator'.</p>
+        <ul class="req-list">
+          <li>Input: transcript buffer (string).</li>
+          <li>Input: seconds since spoken (integer).</li>
+          <li>Output: tension score (float).</li>
+          <li>Output: decision (string).</li>
+        </ul>
+        <textarea id="q2" placeholder="class SilenceGenerator(dspy.Signature):&#10;    transcript: ..."></textarea>
+      </section>
+
+      <!-- Q3: FastAPI -->
+      <section class="card">
+        <div class="qnum">Question 3</div>
+        <div class="points">20 points</div>
+        <h2>Chassis Contract (FastAPI)</h2>
+        <p>Write the function signature via FastAPI standard (`async def`) for route `/v1/telemetry_sync`, accepting an `api_key` string, a `timestamp` integer, and a `heartbeat_flags` array of booleans. Must return a boolean.</p>
+        <textarea id="q3" placeholder="@app.post('/v1/telemetry_sync')&#10;async def ..."></textarea>
+      </section>
+
+      <h2 style="margin-top: 36px;">Section 2: Defect Triage</h2>
+
+      <!-- Q4: Triage Pydantic -->
+      <section class="card">
+        <div class="qnum">Question 4</div>
+        <div class="points">15 points</div>
+        <h2>Defect Identification I</h2>
+        <div class="code-block">class EmotionalState(BaseModel):<br>    client_id = "Default_ID"<br>    anxiety_level = 0.5<br>    triggers_fired = []</div>
+        <p>Classify this agent payload.</p>
+        <div class="choices" data-question="q4">
+          <button type="button" class="choice" onclick="pickChoice('q4','A',this)">✅ Correct</button>
+          <button type="button" class="choice" onclick="pickChoice('q4','B',this)">🔴 Omission (Agent omitted Type Hints, substituting Default Assignment)</button>
+          <button type="button" class="choice" onclick="pickChoice('q4','C',this)">🟡 Hallucination</button>
+          <button type="button" class="choice" onclick="pickChoice('q4','D',this)">🔵 Misapplication</button>
+        </div>
+      </section>
+
+      <!-- Q5: Triage Fast API -->
+      <section class="card">
+        <div class="qnum">Question 5</div>
+        <div class="points">15 points</div>
+        <h2>Defect Identification II</h2>
+        <div class="code-block">@app.post("/v1/ingest_biometrics")<br>async def ingest_biometrics(bpm: int, hrv: float, is_resting: bool):<br>    engine.record(bpm, hrv, is_resting)<br>    return True</div>
+        <p>Classify this agent payload.</p>
+        <div class="choices" data-question="q5">
+          <button type="button" class="choice" onclick="pickChoice('q5','A',this)">✅ Correct</button>
+          <button type="button" class="choice" onclick="pickChoice('q5','B',this)">🔴 Omission (Agent correctly typed ingress, but forgot to type hint the Return output)</button>
+          <button type="button" class="choice" onclick="pickChoice('q5','C',this)">🟡 Hallucination</button>
+          <button type="button" class="choice" onclick="pickChoice('q5','D',this)">🔵 Misapplication</button>
+        </div>
+      </section>
+
+      <!-- Q6: Triage Pi Harness -->
+      <section class="card">
+        <div class="qnum">Question 6</div>
+        <div class="points">15 points</div>
+        <h2>Defect Identification III</h2>
+        <div class="code-block">import subprocess<br>def build_workspace(client_folder_name: str, create_subfolders: str):<br>    subprocess.run(f"mkdir -p /mnt/{client_folder_name}", shell=True)<br>    if create_subfolders == "True":<br>        pass</div>
+        <p>Classify this agent payload.</p>
+        <div class="choices" data-question="q6">
+          <button type="button" class="choice" onclick="pickChoice('q6','A',this)">✅ Correct</button>
+          <button type="button" class="choice" onclick="pickChoice('q6','B',this)">🔴 Omission</button>
+          <button type="button" class="choice" onclick="pickChoice('q6','C',this)">🟡 Hallucination (Agent hallucinated unstructured text parsing for a binary conditional flag)</button>
+          <button type="button" class="choice" onclick="pickChoice('q6','D',this)">🔵 Misapplication</button>
+        </div>
+      </section>
+      
+      <h2 style="margin-top: 36px;">Section 3: Architectural Reasoning</h2>
+
+      <section class="card">
+        <div class="qnum">Question 7</div>
+        <div class="points">20 points</div>
+        <h2>Why enforce Pydantic on top of DSPy?</h2>
+        <p>Explain why we run Pydantic output validation immediately downstream of DSPy's compilation signatures.</p>
+        <textarea id="q7" placeholder="Reasoning..."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 8</div>
+        <div class="points">15 points</div>
+        <h2>The Chassis Philosophy</h2>
+        <p>Why do we use FastAPI ingress signatures instead of internal Python `if type(x) != int` validations?</p>
+        <textarea id="q8" placeholder="Reasoning..."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 9</div>
+        <div class="points">20 points</div>
+        <h2>The Cost of Removal</h2>
+        <p>What mathematically happens to the CCP Factory Floor if Type Hints are universally removed?</p>
+        <textarea id="q9" placeholder="Reasoning..."></textarea>
+      </section>
+
+      <h2 style="margin-top: 36px;">Section 4: Terminal Evaluation Node</h2>
+
+      <section class="card">
+        <div class="qnum">Question 10 (Feynman Compression)</div>
+        <div class="points">40 points</div>
+        <h2>Feynman Compression</h2>
+        <p>Explain what a Type Hint is and why it functions as the structural immune system of the platform. Minimum length: 220 characters.</p>
+        <p class="footnote">Full credit requires integration of three core structural elements: (1) The prohibition of Silent State Corruption. (2) The Orchestration Dichotomy transferring validation pressure to the QA Department (Pydantic). (3) Protection of the JIT Skill Compiler logic layer.</p>
+        <textarea id="q10" placeholder="A Type Hint is fundamentally..."></textarea>
+      </section>
+
+      <div class="actions">
+        <button class="btn btn-primary" type="button" onclick="submitExam(false)">Submit exam</button>
+        <button class="btn btn-secondary" type="button" onclick="window.scrollTo({top:0, behavior:'smooth'})">Back to top</button>
+      </div>
+    </form>
+
+    <section id="result" class="result">
+      <div class="eyebrow">Evaluation Output</div>
+      <div id="scoreLine" class="score"></div>
+      <p id="resultSummary"></p>
+      <div id="breakdown" class="breakdown"></div>
+      <p id="timeoutNote" class="footnote"></p>
+    </section>
+  </main>
+
+  <script>
+    let answers = {};
+    let examStarted = false;
+    let examSubmitted = false;
+    let secondsRemaining = 720;
+    let timerHandle = null;
+
+    function pickChoice(question, value, element) {
+      if (examSubmitted) return;
+      answers[question] = value;
+      document.querySelectorAll(`[data-question="${question}"] .choice`).forEach(btn => btn.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function startExam() {
+      if (examStarted) return;
+      examStarted = true;
+      document.getElementById('examForm').classList.remove('hidden');
+      window.scrollTo({ top: document.getElementById('examForm').offsetTop - 20, behavior: 'smooth' });
+      timerHandle = setInterval(tick, 1000);
+    }
+
+    function tick() {
+      if (examSubmitted) return;
+      secondsRemaining--;
+      if (secondsRemaining <= 0) { secondsRemaining = 0; updateTimer(); submitExam(true); return; }
+      updateTimer();
+    }
+
+    function updateTimer() {
+      const mins = String(Math.floor(secondsRemaining / 60)).padStart(2, '0');
+      const secs = String(secondsRemaining % 60).padStart(2, '0');
+      const timerEl = document.getElementById('timer');
+      timerEl.textContent = `${mins}:${secs}`;
+      if (secondsRemaining <= 120) timerEl.classList.add('timer-warn');
+    }
+
+    function txtValue(id) { return (document.getElementById(id)?.value || '').trim().toLowerCase(); }
+    function containsAny(value, options) { return options.some(o => value.includes(o)); }
+
+    function gradeRichText(value, keywordGroups) {
+      if (!value) return 0;
+      let hits = 0;
+      keywordGroups.forEach(group => { if(containsAny(value, group)) hits++; });
+      return hits;
+    }
+
+    function submitExam(fromTimeout) {
+      if (examSubmitted) return;
+      examSubmitted = true;
+      clearInterval(timerHandle);
+
+      document.querySelectorAll('input, textarea, button.choice').forEach(el => el.disabled = true);
+      
+      let total = 0;
+      const breakdown = [];
+
+      // Q1 (Pydantic Spec)
+      const q1val = txtValue('q1');
+      const q1score = gradeRichText(q1val, [['trace_id: str'], ['list[str]'], ['ge=0.0', 'le=1.0'], ['bool = false']]);
+      const q1final = Math.min(20, q1score * 5);
+      total += q1final;
+      breakdown.push(['Q1', q1final, 'Required: str trace_id, list[str] limit, field constraints, bool=False default']);
+
+      // Q2 (DSPy Spec)
+      const q2val = txtValue('q2');
+      const q2score = gradeRichText(q2val, [['transcript: str'], ['seconds_since_spoken: int'], ['tension_score: float'], ['decision: str']]);
+      const q2final = Math.min(20, q2score * 5);
+      total += q2final;
+      breakdown.push(['Q2', q2final, 'Required: Exact typed Input / Output field declarations.']);
+
+      // Q3 (FastAPI Spec)
+      const q3val = txtValue('q3');
+      const q3score = gradeRichText(q3val, [['async def', 'def'], ['api_key: str', 'timestamp: int'], ['list[bool]'], ['-> bool', 'returns bool']]);
+      const q3final = Math.min(20, q3score * 5);
+      total += q3final;
+      breakdown.push(['Q3', q3final, 'Required: Parameter boundaries & Return type signature.']);
+
+      // Q4 (Triage)
+      const q4 = answers.q4 === 'B' ? 15 : 0;
+      total += q4;
+      breakdown.push(['Q4', q4, 'Classification: 🔴 Omission. Missing type hints bypasses QA inspection.']);
+
+      // Q5 (Triage)
+      const q5 = answers.q5 === 'B' ? 15 : 0;
+      total += q5;
+      breakdown.push(['Q5', q5, 'Classification: 🔴 Omission. Function return type `-> bool` was omitted.']);
+
+      // Q6 (Triage)
+      const q6 = answers.q6 === 'C' ? 15 : 0;
+      total += q6;
+      breakdown.push(['Q6', q6, 'Classification: 🟡 Hallucination. Using unstructured text flag instead of primitive binary bool.']);
+
+      // Q7 (Reasoning)
+      const q7val = txtValue('q7');
+      const q7score = gradeRichText(q7val, [['hallucinat', 'string', 'text', 'guess', 'probabilistic'], ['pydantic', 'hard stop', 'qa', 'retry']]);
+      const q7final = Math.min(20, q7score * 10);
+      total += q7final;
+      breakdown.push(['Q7', q7final, 'Reasoning: LLMs are probabilistic at generating tokens. Pydantic traps inevitable hallucinations before persisting them.']);
+
+      // Q8 (Reasoning)
+      const q8val = txtValue('q8');
+      const q8score = gradeRichText(q8val, [['perimeter', 'boundary', 'reject', 'fastapi'], ['boilerplate', 'logic', 'pollut']]);
+      const q8final = Math.min(15, q8score * 7.5);
+      total += q8final;
+      breakdown.push(['Q8', q8final, 'Reasoning: Validating internally convolutes execution logic. FastAPI acts as external perimeter barrier.']);
+
+      // Q9 (Reasoning)
+      const q9val = txtValue('q9');
+      const q9score = gradeRichText(q9val, [['any', 'pydantic', 'blueprint', 'qa'], ['crash', 'blow up', 'defect']]);
+      const q9final = Math.min(20, q9score * 10);
+      total += q9final;
+      breakdown.push(['Q9', q9final, 'Reasoning: Pydantic loses structure. Everything defaults to Any. Downstream logic will violently crash on unpredictable data.']);
+
+      // Q10 (Feynman)
+      const q10val = txtValue('q10');
+      let q10 = 0;
+      const m10 = [];
+      if (q10val.length < 220) { m10.push("Minimum length exception."); } else {
+        const hasCorr = containsAny(q10val, ['silent state corruption', 'unpredictable break', 'casualty', 'corrupt']);
+        const hasQA = containsAny(q10val, ['pydantic', 'qa department', 'schema']);
+        const hasJIT = containsAny(q10val, ['jit', 'skill compiler', 'logic buffer']);
+        const c10 = [hasCorr, hasQA, hasJIT].filter(Boolean).length;
+        if(c10 === 3) q10 = 40; else if(c10 === 2) q10 = 25;
+        if(!hasCorr) m10.push('Silent State Corruption mapping missing.');
+        if(!hasQA) m10.push('QA/Pydantic architectural requirement missing.');
+        if(!hasJIT) m10.push('JIT Compiler execution context missing.');
+      }
+      total += q10;
+      breakdown.push(['Q10', q10, m10.length ? `Penalties: ${m10.join(' ')}` : 'Full Sovereign Compression Achieved.']);
+
+      const pass = total >= 160;
+      const scLine = document.getElementById('scoreLine');
+      scLine.textContent = `${total} / 200`;
+      scLine.className = `score ${pass ? 'pass' : 'fail'}`;
+
+      document.getElementById('resultSummary').textContent = pass
+        ? 'Certification passed. You comprehend the Operational Doctrine. Primitive types are not Python syntax to you—they are factory blueprints that lock down probabilistic risk.'
+        : 'Threshold failure. You lack structural authority over data mechanics. Revisit the orchestration doctrine. You cannot supervise an agentic network if you cannot command the physics of the data running inside it.';
+
+      const brk = document.getElementById('breakdown');
+      brk.innerHTML = '';
+      breakdown.forEach(([label, score, note]) => {
+        const d = document.createElement('div');
+        d.innerHTML = `<strong>${label}: ${score} points</strong><br>${note}`;
+        brk.appendChild(d);
+      });
+
+      document.getElementById('timeoutNote').textContent = fromTimeout ? 'Assessment locked by auto-timeout.' : 'Time constraint met successfully.';
+      
+      const rDiv = document.getElementById('result');
+      rDiv.classList.add('show');
+      rDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    updateTimer();
+  </script>
+</body>
+</html>

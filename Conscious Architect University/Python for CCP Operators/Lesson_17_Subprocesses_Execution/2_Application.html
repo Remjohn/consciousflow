@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 17 — Application Layer: Subprocesses</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0A;--surface:#151515;--surface2:#1e1e1e;--surface3:#2A2A2A;
+  --text:#FAFAFA;--muted:#A0A0A0;--border:#2e2e2e;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--serif:'Playfair Display',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.65;overflow-x:hidden;}
+.container{max-width:780px;margin:0 auto;padding:4rem 2rem 10rem;}
+
+h1{font-family:var(--serif);font-size:clamp(2.5rem,6vw,3.8rem);line-height:1.0;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-family:var(--serif);font-size:1.9rem;margin-bottom:1rem;color:var(--accent);}
+h3{font-family:var(--sans);font-size:1.3rem;margin-top:2rem;margin-bottom:1rem;font-weight:600;}
+p{margin-bottom:1.4rem;color:var(--muted);font-size:1rem;line-height:1.7;}
+strong{color:var(--text);}
+ul, ol { margin-bottom: 1.4rem; padding-left: 1.5rem; color: var(--muted); }
+li { margin-bottom: 0.5rem; }
+
+/* INTERACTION BOX */
+.interaction-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2.25rem;margin:2rem 0;}
+.interaction-header{font-family:var(--mono);font-size:0.7rem;color:var(--accent);text-transform:uppercase;margin-bottom:1.25rem;letter-spacing:0.12em;padding-bottom:0.6rem;border-bottom:1px solid var(--border);}
+.question-text{font-size:1.05rem;font-weight:500;margin-bottom:1.75rem;color:#fff;line-height:1.6;}
+
+.code-block{background:#0e0e0e;border:1px solid var(--border);border-radius:6px;padding:1rem;margin-bottom:1.5rem;font-family:var(--mono);font-size:0.85rem;color:#d4d4d4;overflow-x:auto;}
+.code-keyword{color:#c586c0;}
+.code-function{color:#dcdcaa;}
+.code-string{color:#ce9178;}
+.code-comment{color:#6a9955;}
+code{font-family:var(--mono);font-size:0.85em;color:var(--accent);background:var(--surface2);padding:0.1rem 0.3rem;border-radius:3px;}
+
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.7rem 1.4rem;font-family:var(--sans);font-weight:600;font-size:0.95rem;border-radius:4px;cursor:pointer;transition:all 0.18s;}
+.btn:hover:not(:disabled){background:#fff;transform:translateY(-1px);}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+
+.choices{display:flex;flex-direction:column;gap:0.85rem;margin-bottom:0.5rem;}
+.choice-btn{text-align:left;padding:1rem 1.2rem;background:var(--bg);border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;transition:all 0.18s;font-size:0.92rem;font-weight:400;font-family:var(--sans);line-height:1.5;}
+.choice-btn:hover{border-color:var(--text);color:var(--text);}
+.choice-btn.selected-wrong{border-color:var(--red);color:var(--red);background:rgba(231,111,81,0.05);}
+.choice-btn.selected-right{border-color:var(--green);color:var(--green);background:rgba(42,157,143,0.05);}
+
+.input-group { display: flex; gap: 0.75rem; margin-top: 1rem; }
+.input-text { background: var(--bg); border: 2px solid var(--border); color: #fff; font-family: var(--mono); font-size: 0.95rem; padding: 0.7rem 1rem; flex: 1; border-radius: 4px; transition: border-color 0.2s; }
+.input-text:focus { outline: none; border-color: var(--accent); }
+.input-text:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* FEEDBACK */
+.feedback{display:none;margin-top:1.5rem;padding:1.25rem 1.5rem;border-radius:4px;font-size:0.9rem;line-height:1.65;}
+.feedback.visible{display:block;animation:fadein 0.35s;}
+.feedback.error{background:rgba(231,111,81,0.08);border-left:3px solid var(--red);color:#ffb3a1;}
+.feedback.success{background:rgba(42,157,143,0.08);border-left:3px solid var(--green);color:#a7ece2;}
+.feedback-title{font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;margin-bottom:0.5rem;font-weight:600;letter-spacing:0.1em;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+/* EDGE CASE CARD */
+.edge-case-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:0 6px 6px 0;padding:1.5rem;margin-bottom:1rem;}
+.edge-case-title{font-family:var(--mono);font-size:0.85rem;color:var(--text);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.8rem;font-weight:600;}
+.edge-case-row{margin-bottom:0.5rem;font-size:0.92rem;color:var(--muted);}
+.edge-case-row strong{color:var(--accent);font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em;display:inline-block;width:125px;}
+
+/* STRATEGY CARD */
+.strategy-card{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:1.25rem;margin-bottom:1rem;}
+.strategy-title{font-family:var(--mono);font-size:0.75rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;}
+.strategy-text{font-size:0.9rem;color:var(--muted);line-height:1.6;}
+
+/* GAUNTLET */
+.gauntlet-wrap{margin-top:4rem;border-top:2px solid var(--border);padding-top:3rem;}
+.gauntlet-intro{font-size:0.88rem;color:var(--muted);margin-bottom:2rem;padding:1rem 1.25rem;background:var(--surface2);border-radius:4px;border-left:2px solid var(--border);}
+.q-block{background:var(--surface2);padding:1.4rem 1.5rem;border-radius:6px;margin-bottom:1.25rem;border:1px solid var(--border);}
+.q-num{font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.4rem;letter-spacing:0.1em;}
+.q-text{font-size:1rem;margin-bottom:1.25rem;font-weight:500;color:#fff;line-height:1.55;}
+
+.divider{border:none;border-top:1px solid var(--border);margin:3rem 0;}
+
+/* GATED CONTENT */
+.gated-content{opacity:0;pointer-events:none;transform:translateY(16px);transition:all 0.45s ease;display:none;}
+.gated-content.unlocked{opacity:1;pointer-events:auto;transform:translateY(0);display:block;}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div style="font-family:var(--mono);font-size:0.7rem;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.15em;">Python for CCP Operators · Lesson 17 · Application Layer</div>
+  <h1>Subprocesses & Production</h1>
+
+  <!-- SPACED RETRIEVAL INTERRUPT -->
+  <div class="interaction-box">
+    <div class="interaction-header">Spaced Retrieval Interrupt</div>
+    <div class="question-text">Without looking back: If the <code>subprocess.run()</code> function is executed without the <code>capture_output=True</code> argument, where does the result of the command physically go?</div>
+    <div class="input-group">
+      <input type="text" id="retrieval-input" class="input-text" placeholder="State your answer and lock...">
+      <button class="btn" onclick="checkRetrieval(this)">Lock</button>
+    </div>
+    <div class="feedback" id="fb-retrieval"></div>
+  </div>
+
+  <div class="gated-content" id="gallery-content">
+    <hr class="divider">
+    <h2>The CCP Artifact Gallery</h2>
+    <p>This is not theory. This is the exact code that runs the Conscious Coaching Platform. We are examining the mechanical application of Python's execution primitives across the production chassis. Every line is load-bearing.</p>
+
+    <!-- ARTIFACT A -->
+    <h3>Artifact A: The QA Department — Task Request Schema</h3>
+    <div class="interaction-box">
+      <div class="interaction-header">Prediction Gate: Pydantic Boundaries</div>
+      <div class="code-block">
+<span class="code-keyword">from</span> pydantic <span class="code-keyword">import</span> BaseModel, Field, field_validator
+<span class="code-keyword">import</span> re
+
+<span class="code-keyword">class</span> <span class="code-function">BashCommandExecutionRequest</span>(BaseModel):
+    tool_name: <span class="code-keyword">str</span> = Field(default=<span class="code-string">"bash"</span>)
+    command: <span class="code-keyword">str</span> = Field(..., description=<span class="code-string">"The raw bash command to execute."</span>)
+    timeout_seconds: <span class="code-keyword">float</span> = Field(default=<span class="code-string">30.0</span>, le=<span class="code-string">120.0</span>, description=<span class="code-string">"Max execution time."</span>)
+
+    @field_validator(<span class="code-string">'command'</span>)
+    <span class="code-keyword">classmethod</span>
+    <span class="code-keyword">def</span> <span class="code-function">sanitize_destructive_patterns</span>(cls, v: <span class="code-keyword">str</span>) -> <span class="code-keyword">str</span>:
+        <span class="code-keyword">if</span> re.search(<span class="code-string">r"rm\s+-rf\s+/"</span>, v):
+            <span class="code-keyword">raise</span> ValueError(<span class="code-string">"CRITICAL: Root destructive operation detected."</span>)
+        <span class="code-keyword">return</span> v
+      </div>
+      <p style="font-size:0.9rem;margin-bottom:1.5rem;"><strong>The Data Flow:</strong> LLM text → parsed string → BashCommandExecutionRequest → @field_validator rules → sanitized payload safe for subprocess.</p>
+      
+      <div class="question-text">If the LLM generates a mathematically complex script compilation tool call demanding a 360-second compilation interval (<code>timeout_seconds = 360.0</code>), what physical state does the system adopt?</div>
+      <div class="choices">
+        <button class="choice-btn" onclick="checkGate(1, this, false)">A. The system hangs for 360 seconds before throwing a TimeoutExpired exception.</button>
+        <button class="choice-btn" onclick="checkGate(1, this, true)">B. Pydantic raises a fatal ValidationError immediately because of the `le=120.0` constraint.</button>
+        <button class="choice-btn" onclick="checkGate(1, this, false)">C. The timeout defaults to 30.0 seconds and ignores the provided 360.0 value.</button>
+      </div>
+      <div class="feedback" id="fb1"></div>
+    </div>
+  </div>
+
+  <div class="gated-content" id="artifact-b-content">
+    <!-- ARTIFACT B -->
+    <h3>Artifact B: The Machinist — The Compiler Tool Signature</h3>
+    <div class="interaction-box">
+      <div class="interaction-header">Prediction Gate: DSPy Error Tracing</div>
+      <div class="code-block">
+<span class="code-keyword">import</span> dspy
+
+<span class="code-keyword">class</span> <span class="code-function">ExecuteVoiceDNACompiler</span>(dspy.Signature):
+    <span class="code-string">"""Executes the external Rust-based compiler and parses structural stdout."""</span>
+    
+    compiler_flags: <span class="code-keyword">str</span> = dspy.InputField(desc=<span class="code-string">"The exact argument flags generated"</span>)
+    
+    execution_stdout: <span class="code-keyword">str</span> = dspy.OutputField(desc=<span class="code-string">"Parsed stdout from the process"</span>)
+    execution_stderr: <span class="code-keyword">str</span> = dspy.OutputField(desc=<span class="code-string">"Specific error trace if returncode != 0"</span>)
+      </div>
+      
+      <div class="question-text">The subprocess crashes on a Null Pointer exception in the Rust compiler. The return code is <code>1</code>. How does the LLM know what went wrong?</div>
+      <div class="choices">
+        <button class="choice-btn" onclick="checkGate(2, this, false)">A. The system passes back a standard 'ToolFailed: Try again' prompt string.</button>
+        <button class="choice-btn" onclick="checkGate(2, this, false)">B. The stdout stream captures both standard output and error output combined.</button>
+        <button class="choice-btn" onclick="checkGate(2, this, true)">C. The exception text is physically routed into `execution_stderr` and passed into the context window.</button>
+      </div>
+      <div class="feedback" id="fb2"></div>
+    </div>
+  </div>
+
+  <div class="gated-content" id="artifact-c-content">
+    <!-- ARTIFACT C & D combined for flow -->
+    <h3>Artifact C: The Robot Arm — Subprocess Execution Envelope</h3>
+    <div class="interaction-box">
+      <div class="interaction-header">Prediction Gate: Wrapper Exception Safety</div>
+      <div class="code-block">
+<span class="code-keyword">def</span> <span class="code-function">execute_constrained_bash</span>(command: <span class="code-keyword">str</span>, timeout: <span class="code-keyword">float</span>) -> <span class="code-keyword">dict</span>:
+    <span class="code-keyword">try</span>:
+        process = subprocess.run(
+            [<span class="code-string">"bash"</span>, <span class="code-string">"-c"</span>, command],
+            capture_output=<span class="code-keyword">True</span>, text=<span class="code-keyword">True</span>, timeout=timeout
+        )
+        <span class="code-keyword">return</span> {<span class="code-string">"success"</span>: process.returncode == 0, <span class="code-string">"stderr"</span>: process.stderr.strip()}
+    <span class="code-keyword">except</span> subprocess.TimeoutExpired:
+        <span class="code-keyword">return</span> {<span class="code-string">"success"</span>: <span class="code-keyword">False</span>, <span class="code-string">"stderr"</span>: <span class="code-string">"CRITICAL: Timeout saturated."</span>}
+      </div>
+      
+      <div class="question-text">An erratic LLM tool generates <code>sleep 100</code>. The function is invoked with <code>timeout=10.0</code>. What dictionary key triggers a failure notice to the upstream agent?</div>
+      <div class="choices">
+        <button class="choice-btn" onclick="checkGate(3, this, true)">A. "success": False and "stderr": "CRITICAL: Timeout saturated." are returned.</button>
+        <button class="choice-btn" onclick="checkGate(3, this, false)">B. process.returncode automatically defaults to 1 on timeout, handled by the standard return block.</button>
+        <button class="choice-btn" onclick="checkGate(3, this, false)">C. A FastAPI 500 Internal Server error detaches the agent loop entirely.</button>
+      </div>
+      <div class="feedback" id="fb3"></div>
+    </div>
+  </div>
+
+  <div class="gated-content" id="artifact-d-content">
+    <h3>Artifact D: The Memory Engine — Neo4j Seed execution wrapper</h3>
+    <div class="interaction-box">
+      <div class="interaction-header">Prediction Gate: Check=True Hard Faults</div>
+      <div class="code-block">
+<span class="code-keyword">def</span> <span class="code-function">ingest_ontology</span>(ontology_file_path: Path):
+    ingest_command = [<span class="code-string">"neo4j-admin"</span>, <span class="code-string">"database"</span>, <span class="code-string">"import"</span>, ...]
+    
+    ingest_run = subprocess.run(
+        ingest_command,
+        capture_output=<span class="code-keyword">True</span>,
+        text=<span class="code-keyword">True</span>,
+        check=<span class="code-keyword">True</span>
+    )
+    <span class="code-keyword">return</span> <span class="code-keyword">True</span>
+      </div>
+      
+      <div class="question-text">Look closely at <code>check=True</code>. If the <code>neo4j-admin</code> module is unavailable or returns an error (<code>returncode=1</code>), what output is computationally extracted from this function?</div>
+      <div class="choices">
+        <button class="choice-btn" onclick="checkGate(4, this, false)">A. It returns False to safely indicate a database schema error.</button>
+        <button class="choice-btn" onclick="checkGate(4, this, true)">B. No output is processed; it violently raises a `subprocess.CalledProcessError` exception.</button>
+        <button class="choice-btn" onclick="checkGate(4, this, false)">C. The process hangs indefinitely without a timeout property.</button>
+      </div>
+      <div class="feedback" id="fb4"></div>
+    </div>
+  </div>
+
+  <div class="gated-content" id="tracing-content">
+    <hr class="divider">
+    <h2>Data Flow Tracing Exercise</h2>
+    <p>Trace a client interacting with the CA11 Framework logic model. They invoke a specialized "Synthesize Analogies" skill that requires an ML binary sub-process to generate vectors natively on the CPU. The agent issues the command.</p>
+    <ol>
+      <li>Client WebSocket Request via FastAPI.</li>
+      <li>LLM Chain-of-Thought determines `run_local_embeddings`.</li>
+      <li>Pydantic Validation sanitizes the query and truncates timeout.</li>
+      <li>Subprocess Call: `subprocess.run(["python",...])`.</li>
+      <li>Execution State Check confirms termination.</li>
+      <li>Error Hand-off routes `process.stderr` back to agent memory.</li>
+      <li>Agent logic retries or finalizes the Action pipeline.</li>
+    </ol>
+    
+    <div class="interaction-box" style="border-color:var(--accent);">
+      <div class="interaction-header">The Critical Trace Moment</div>
+      <div class="question-text">What happens at Step 4 if <code>capture_output=True</code> is fundamentally missing from the execution block?</div>
+      <div class="input-group">
+        <input type="text" id="trace-input" class="input-text" placeholder="State impact on Step 8/Agent Loop...">
+        <button class="btn" onclick="checkTrace(this)">Lock</button>
+      </div>
+      <div class="feedback" id="fb-trace"></div>
+    </div>
+  </div>
+
+  <div class="gated-content" id="edge-cases-content">
+    <hr class="divider">
+    <h2>Production Edge Cases</h2>
+    <p>Execution processes are inherently unstable. The host environment modifies them constantly. Understand exactly when execution wrappers quietly bend, securely break, or aggressively halt operations.</p>
+    
+    <div class="edge-case-card">
+      <div class="edge-case-title">Edge Case A: The Silent Wait</div>
+      <div class="edge-case-row"><strong>The Condition</strong> A daemon sits in memory waiting indefinitely without outputting signals.</div>
+      <div class="edge-case-row"><strong>The Reaction</strong> `subprocess.run()` honors `timeout` by terminating the daemon via a harsh SIGKILL signal and raising a `TimeoutExpired` exception. You cannot gently request a hung process to abandon post.</div>
+    </div>
+
+    <div class="edge-case-card" style="border-left-color:var(--red);">
+      <div class="edge-case-title">Edge Case B: shell=True with Unvalidated Inputs</div>
+      <div class="edge-case-row"><strong>The Condition</strong> A developer implements `subprocess.run(f"ls {agent_path}", shell=True)` without Pydantic validators.</div>
+      <div class="edge-case-row"><strong>The Reaction</strong> An LLM hallucinates `"; cat /etc/passwd"`. Python passes the literal string to `/bin/sh`. Banned in CCP logic grids: parameters must be lists `["binary", "arg"]`.</div>
+    </div>
+
+    <div class="edge-case-card" style="border-left-color:var(--green);">
+      <div class="edge-case-title">Edge Case C: Pydantic Timeout ValidationError</div>
+      <div class="edge-case-row"><strong>The Condition</strong> The agent dictates a database constraint requires 600 CPU seconds.</div>
+      <div class="edge-case-row"><strong>The Reaction</strong> Pydantic execution triggers a HTTP 422 or DSPy `ValidationError`. Sovereign Architecture bounds processes independent of logical agent design enforcing realtime caching.</div>
+    </div>
+
+    <h2>Strategic Paper Integration</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-top:1.5rem;">
+      <div class="strategy-card">
+        <div class="strategy-title">Orchestration Dichotomy</div>
+        <div class="strategy-text">Mandates absolute separation between non-deterministic LLM execution (Laser Cutter) and deterministic system management (Chassis). Subprocess is the membrane.</div>
+      </div>
+      <div class="strategy-card">
+        <div class="strategy-title">Terminal Agents (190/200)</div>
+        <div class="strategy-text">Agentic shell integrations MUST contain robust timeout envelopes, MUST divorce stderr from stdout, and MUST enforce sandboxed executable pathways.</div>
+      </div>
+      <div class="strategy-card">
+        <div class="strategy-title">Pi Harness OODA Loop</div>
+        <div class="strategy-text">Subprocess exists entirely within the ACT component. Its physical output explicitly populates the memory for the OBSERVE state on the subsequent loop.</div>
+      </div>
+    </div>
+
+    <!-- GAUNTLET -->
+    <div class="gauntlet-wrap">
+      <h2>Application Gauntlet</h2>
+      <div class="gauntlet-intro">Determine the failure point and reasoning. Read the implementation code and determine guaranteed execution state constraints.</div>
+      <div id="q-container"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── SPACED RETRIEVAL ──────────────────────────────────────────────────────
+function checkRetrieval(btn) {
+  const input = document.getElementById('retrieval-input');
+  const val = input.value.toLowerCase().trim();
+  if (!val) return;
+  input.disabled = true;
+  btn.disabled = true;
+  
+  const fb = document.getElementById('fb-retrieval');
+  fb.classList.add('visible');
+  
+  if (val.includes('console') || val.includes('terminal') || val.includes('screen') || val.includes('host')) {
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">Correct Retrieval</div>The result prints to the host terminal screen running the server. It is NOT returned to Python memory, leaving the agent completely blind.`;
+  } else {
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title">Incorrect / Partial</div>The correct answer is: it prints to the host terminal physically observing the server runtime, not to the agent memory map.`;
+  }
+  
+  setTimeout(() => {
+    document.getElementById('gallery-content').classList.add('unlocked');
+  }, 1000);
+}
+
+// ── PREDICTION GATES ──────────────────────────────────────────────────────
+function checkGate(level, btn, correct) {
+  const qb = btn.parentElement;
+  qb.querySelectorAll('.choice-btn').forEach(c => c.style.pointerEvents = 'none');
+  const fb = document.getElementById(`fb${level}`);
+  fb.classList.add('visible');
+
+  if (correct) {
+    btn.classList.add('selected-right');
+    fb.classList.add('success');
+    if (level === 1) fb.innerHTML = `<div class="feedback-title">Correct — Pydantic Gate</div>The request never leaves schema validation. Pydantic raises a fatal 'ValidationError' because le=120.0 bounds the constraint. OS execution is protected.`;
+    else if (level === 2) fb.innerHTML = `<div class="feedback-title">Correct — Explicit Tracing</div>The exception text physically populates 'execution_stderr', enabling DSPy to pass the failure explicitly into the next sequence of operations.`;
+    else if (level === 3) fb.innerHTML = `<div class="feedback-title">Correct — Wrapper Gracefulness</div>The TimeoutExpired block intercepts the process death, returning success:False and injecting standard string errors into the payload. Fast and deterministic.`;
+    else if (level === 4) fb.innerHTML = `<div class="feedback-title">Correct — Violent Halt</div>Because check=True translates arbitrary non-zero exit codes into hard Python exceptions, the system intentionally abandons gentle degradation to explicitly halt a poisoned state.`;
+    
+    const nextLayer = level === 1 ? 'artifact-b-content' : level === 2 ? 'artifact-c-content' : level === 3 ? 'artifact-d-content' : 'tracing-content';
+    setTimeout(() => {
+      document.getElementById(nextLayer).classList.add('unlocked');
+    }, 1200);
+  } else {
+    btn.classList.add('selected-wrong');
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title">Misconception Trapped</div>Incorrect mapping boundary. Review and reset.`;
+    setTimeout(() => {
+      qb.querySelectorAll('.choice-btn').forEach(c => {
+        c.style.pointerEvents = 'auto';
+        c.classList.remove('selected-wrong');
+      });
+      fb.classList.remove('visible', 'error');
+      fb.innerHTML = '';
+    }, 3000);
+  }
+}
+
+// ── TRACE GATE ─────────────────────────────────────────────────────────
+function checkTrace(btn) {
+  const input = document.getElementById('trace-input');
+  const val = input.value.toLowerCase().trim();
+  if (!val) return;
+  input.disabled = true;
+  btn.disabled = true;
+  
+  const fb = document.getElementById('fb-trace');
+  fb.classList.add('visible');
+  
+  if (val.includes('none') || val.includes('blind') || val.includes('empty') || val.includes('void')) {
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">Correct Analysis</div>The process.stdout evaluates to None. The LLM perceives an absolute void even though execution succeeded, spiraling into a retry loop resolving a matrix that already exists.`;
+  } else {
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title">Misconception</div>The agent perceives process.stdout as missing/None. It will endlessly retry the command despite host execution success.`;
+  }
+  
+  setTimeout(() => {
+    document.getElementById('edge-cases-content').classList.add('unlocked');
+    renderGauntlet();
+  }, 1000);
+}
+
+// ── GAUNTLET ─────────────────────────────────────────────────────────────
+const G_DATA = [
+  { q: "<code>def check_asset(path):\n  res = subprocess.run(['tool', path], capture_output=True)\n  if res.stdout == 'VALID': return True</code><br>What happens if `tool` crashes throwing a stack trace?",
+    ans: "false", match: ["silently returns false", "ignores"], exp: "It silently returns False. It does not inspect res.returncode or res.stderr, obliterating context." },
+  { q: "<code>class TerminalAction(BaseModel):\n  cmd_sequence: list[str] = Field(...)</code><br>How does a list parameter alter execution safety compared to a single string parameter?",
+    ans: "shell injection", match: ["injection", "bypass", "sandboxed"], exp: "It fundamentally forces execution WITHOUT interpreting malicious shell injection characters normally evaluated in raw text strings." },
+  { q: "<code>try:\n  subprocess.check_output(['cat', 'log'])\nexcept subprocess.CalledProcessError:</code><br>What differentiates check_output from run()?",
+    ans: "exception", match: ["raise", "error automatically", "non-zero"], exp: "check_output automatically captures output and aggressively throws CalledProcessError on any non-zero exit code implicitly." },
+  { q: "A FastApi route handles 1000 requests/s, triggering: <code>subprocess.Popen(['python', 'model.py'])</code>.<br>What critical failure occurs?",
+    ans: "zombie", match: ["starvation", "ghost", "hangs forever", "thread"], exp: "Zombie process starvation. Because there are no .wait() or stdout streams invoked, 1000 detached ghost processes consume CPU threads until server death." },
+  { q: "<code>res = subprocess.run(cmd.split(' '), capture_output=True)\nreturn Prediction(response=res.stdout)</code><br>What triggers a crash in DSPy during returning?",
+    ans: "byte", match: ["b'", "serialize", "text=true"], exp: "The script omitted text=True. It returns a raw bytestring instead of a standard string, causing DSPy to crash during internal data serialization." },
+  { q: "<code>@app.post('/event')\nasync def ev(trig):\n  subprocess.run(['update.sh', trig.host_id], shell=True)</code><br>If `host_id` is '& rm -rf /', does it detonate? (Yes/No)",
+    ans: "yes", exp: "Yes. The endpoint recklessly combined unvalidated input into a shell=True target. Catastrophic deletion occurs." },
+  { q: "In the OODA loop, how do we guarantee the 'log_content' variable wasn't hallucinated internally by the LLM itself instead of reading the filesystem?",
+    ans: "history", match: ["append", "process.stdout", "feed back"], exp: "By taking explicit process.stdout dictionaries generated in the ACT phase and explicitly appending them to the history payload fed back into OBSERVE context." },
+];
+
+function renderGauntlet() {
+  const container = document.getElementById('q-container');
+  let html = '';
+  G_DATA.forEach((item, idx) => {
+    html += `
+    <div class="q-block" id="gq-${idx}">
+      <div class="q-num">Drill 0${idx+1}</div>
+      <div class="q-text" style="font-size:0.9rem;">${item.q.replace(/\n/g, "<br>")}</div>
+      <div class="input-group">
+        <input type="text" id="gInput-${idx}" class="input-text" placeholder="Type answer and lock…">
+        <button class="btn" onclick="answerGText(${idx}, this)">Lock</button>
+      </div>
+      <div class="feedback" id="gfb-${idx}"></div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function answerGText(idx, btn) {
+  const input = document.getElementById(`gInput-${idx}`);
+  const val = input.value.toLowerCase().trim();
+  if (!val) return;
+  input.disabled = true;
+  btn.disabled = true;
+  const fb = document.getElementById(`gfb-${idx}`);
+  fb.classList.add('visible');
+
+  let correct = false;
+  if (val.includes(G_DATA[idx].ans)) correct = true;
+  if (G_DATA[idx].match) G_DATA[idx].match.forEach(m => { if(val.includes(m)) correct = true; });
+
+  if (correct) {
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">Correct</div>${G_DATA[idx].exp}`;
+  } else {
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title" style="color:var(--red);">Misconception Identified</div>${G_DATA[idx].exp}`;
+  }
+}
+</script>
+</body>
+</html>

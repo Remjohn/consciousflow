@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 14 - Application Layer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #09090b;
+      --panel: #131316;
+      --panel-2: #1a1a1f;
+      --line: #27272a;
+      --text: #fafafa;
+      --muted: #a1a1aa;
+      --amber: #f59e0b;
+      --amber-glow: rgba(245,158,11,0.12);
+      --teal: #14b8a6;
+      --teal-glow: rgba(20,184,166,0.12);
+      --emerald: #10b981;
+      --emerald-glow: rgba(16,185,129,0.12);
+      --rose: #f43f5e;
+      --rose-glow: rgba(244,63,94,0.12);
+      --violet: #8b5cf6;
+      --violet-glow: rgba(139,92,246,0.12);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'DM Sans', sans-serif; line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
+    
+    .nav-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      backdrop-filter: blur(16px); background: rgba(9,9,11,0.85);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      max-width: 1200px; margin: 0 auto; padding: 0 1rem; height: 54px;
+    }
+    .nav-brand { font-family: 'Space Grotesk'; font-size: 0.85rem; color: var(--amber); letter-spacing: 0.1em; }
+    .nav-links { display: flex; gap: 1.5rem; }
+    .nav-link { color: var(--muted); font-size: 0.85rem; text-decoration: none; font-weight: 500; transition: color 0.2s; }
+    .nav-link:hover, .nav-link.active { color: var(--amber); }
+
+    .section { min-height: 100vh; padding: 6rem 1.5rem 4rem; position: relative; }
+    .section-inner { max-width: 1120px; margin: 0 auto; }
+    
+    .eyebrow { color: var(--amber); text-transform: uppercase; letter-spacing: 0.15em; font: 700 0.8rem/1.2 'Space Grotesk'; margin-bottom: 12px; }
+    h1 { font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1.1; margin-bottom: 1.5rem; letter-spacing: -0.03em; }
+    h2 { font-size: 2rem; margin-bottom: 1.2rem; }
+    p { margin-bottom: 1rem; color: var(--muted); font-size: 0.98rem; }
+    
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 2rem; margin-bottom: 24px; }
+    .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; }
+    
+    .tab-nav { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--line); padding-bottom: 12px; overflow-x: auto; }
+    .tab-btn {
+      background: transparent; border: 1px solid transparent; color: var(--muted);
+      padding: 8px 16px; border-radius: 6px; font: 600 0.85rem 'Space Grotesk'; cursor: pointer; transition: all 0.2s;
+    }
+    .tab-btn:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .tab-btn.active { background: var(--amber-glow); color: var(--amber); border-color: var(--amber); }
+    
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    
+    .code-block {
+      background: #0d0d10; border: 1px solid var(--line); border-radius: 8px;
+      padding: 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
+      color: #e5e7eb; white-space: pre-wrap; margin-bottom: 16px; overflow-x: auto;
+    }
+    
+    .insight-panel {
+      padding: 16px; border-left: 3px solid var(--amber); background: var(--amber-glow);
+      border-radius: 0 8px 8px 0; margin-bottom: 16px;
+    }
+    .insight-panel h4 { font-family: 'DM Sans'; font-size: 0.85rem; color: var(--amber); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+    .insight-panel p { color: var(--text); font-size: 0.9rem; margin-bottom: 0; }
+    
+    .canvas-wrap { background: #0d0d10; border: 1px solid var(--line); border-radius: 8px; position: relative; width: 100%; height: 300px; display:flex; align-items:center; justify-content:center; }
+    
+    .gate {
+      background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 20px;
+      margin-top: 24px; border-top: 3px solid var(--rose);
+    }
+    .gate-title { display: flex; align-items: center; gap: 10px; font: 700 0.9rem 'Space Grotesk'; color: var(--rose); text-transform: uppercase; margin-bottom: 12px; }
+    .gate-text { font-size: 0.95rem; color: var(--text); margin-bottom: 16px; font-weight: 500; }
+    
+    .btn {
+      background: var(--amber); color: #000; border: none; padding: 10px 20px; border-radius: 6px;
+      font: 700 0.9rem 'Space Grotesk'; cursor: pointer; transition: all 0.2s;
+    }
+    .btn:hover { background: #fbbf24; transform: translateY(-1px); }
+    
+    .reveal-box {
+      margin-top: 16px; padding: 16px; background: rgba(16,185,129,0.08); border-left: 3px solid var(--emerald); border-radius: 0 6px 6px 0;
+      color: var(--text); font-size: 0.9rem; display: none; animation: fadeIn 0.4s ease;
+    }
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    
+    @media (max-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      h1 { font-size: 2.2rem; }
+      .section { padding: 5rem 1rem 3rem; }
+      .card { padding: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+  
+  <nav class="nav-bar">
+    <div class="nav-inner">
+      <span class="nav-brand">APP LAYER</span>
+      <div class="nav-links">
+        <a href="#interrupt" class="nav-link active">Interrupt</a>
+        <a href="#artifacts" class="nav-link">Artifacts</a>
+        <a href="#gauntlet" class="nav-link">Gauntlet</a>
+      </div>
+    </div>
+  </nav>
+
+  <header id="interrupt" class="section" style="display:flex; align-items:center;">
+    <div class="section-inner" style="width:100%;">
+      <p class="eyebrow">Lesson 14 - Application Layer</p>
+      <h1>PyTorch Tensor Operations in Production</h1>
+      <p style="font-size: 1.1rem; max-width: 600px; margin-bottom: 2rem;">In the Capability layer, we looked at PyTorch concepts in isolation. But on the Factory Floor, PyTorch commands are deeply integrated into the overarching deterministic orchestration framework. The LLM does not execute in a vacuum.</p>
+      
+      <div class="card" style="border-left: 3px solid var(--teal);">
+        <h3 style="color:var(--teal); margin-bottom:12px;">Spaced Retrieval Interrupt</h3>
+        <p style="color:var(--text); font-weight:500;">Without looking: What explicit PyTorch method must be invoked upon an instantiated base model to absolutely guarantee that its forward passes behave deterministically inside the Laser Cutter, avoiding erratic probabilistic dropout?</p>
+        <button class="btn" style="background:var(--teal); color:#fff; margin-top:12px;" onclick="this.nextElementSibling.style.display='block'; this.style.display='none'">Reveal Answer</button>
+        <div class="reveal-box" style="border-color:var(--teal); background:var(--teal-glow);">
+          <strong>Answer: The <span class="mono">.eval()</span> method.</strong> Without it, the model defaults to <span class="mono">.train()</span> mode, leaving dropout and batch normalization layers active, structurally destroying the reproducibility of the JIT Skill Compiler's outputs.
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section id="artifacts" class="section">
+    <div class="section-inner">
+      <p class="eyebrow">The Subsystems</p>
+      <h2>The CCP Artifact Gallery</h2>
+      <p>Below are five production-scale artifacts illustrating exactly how PyTorch tensor literacy interfaces with spanning architecture.</p>
+      
+      <div class="card">
+        <div class="tab-nav">
+          <button class="tab-btn active" onclick="switchTab('t1')">1. QA Dept (Pydantic)</button>
+          <button class="tab-btn" onclick="switchTab('t2')">2. Machinist (DSPy)</button>
+          <button class="tab-btn" onclick="switchTab('t3')">3. Chassis (FastAPI)</button>
+          <button class="tab-btn" onclick="switchTab('t4')">4. Robot Arm (Pi)</button>
+          <button class="tab-btn" onclick="switchTab('t5')">5. Memory (Neo4j)</button>
+        </div>
+        
+        <!-- Tab 1: Pydantic -->
+        <div id="t1" class="tab-content active">
+          <div class="grid-2">
+            <div>
+              <h3>The Pydantic Shape Gate</h3>
+              <p>We cannot pass raw tensor objects directly through HTTP APIs or save them easily to a plain-text database without extreme serialization overhead. We rely heavily on Pydantic to validate the mathematical <em>shapes</em> of these tensors before they are permitted to execute.</p>
+              <div class="code-block">from pydantic import BaseModel, field_validator
+from typing import List
+
+class VoiceDNA(BaseModel):
+    coach_id: str
+    tensor_shape: List[int]
+    
+    @field_validator("tensor_shape")
+    def validate_qwen(cls, v: List[int]):
+        if len(v) != 2 or v[1] != 8192:
+            raise ValueError(f"CRITICAL FAULT: Shape {v} does not align.")
+        return v</div>
+              <div class="insight-panel">
+                <h4>Orchestration Dichotomy</h4>
+                <p>If removed: The architecture relies wholly on PyTorch's internal C++ backend to throw an obscure <span class="mono">RuntimeError</span> during the forward pass. Pydantic serves as an armored shield protecting the VRAM.</p>
+              </div>
+            </div>
+            <div>
+              <div class="gate">
+                <div class="gate-title">Prediction Gate</div>
+                <div class="gate-text">If the JSON config for a customized adapter hallucinates and provides <span class="mono">"tensor_shape": [1, 4096]</span> at line 6, what physically happens at the PyTorch layer?</div>
+                <button class="btn" style="background:var(--rose); color:#fff;" onclick="this.nextElementSibling.style.display='block'; this.style.display='none'">Commit</button>
+                <div class="reveal-box" style="border-color:var(--rose); background:var(--rose-glow);">
+                  Nothing physically happens at the PyTorch layer, because PyTorch is never invoked. The Pydantic ValueError terminates the execution flow before the heavy torch.load() constructor is even called.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: DSPy -->
+        <div id="t2" class="tab-content">
+          <div class="grid-2">
+            <div>
+              <h3 style="color:var(--violet)">The DSPy Latent Extractor</h3>
+              <p>DSPy manages text, but there are specialized multimodal tasks where the LLM's raw hidden states must be extracted and analyzed for uncertainty metrics before the final text is permitted to stream to the client.</p>
+              <div class="code-block">class StateExtractionModule(dspy.Module):
+    def forward(self, client_utterance: str):
+        # 1. DSPy forward pass
+        prediction = self.generate(utt=client_utterance)
+        
+        # 2. Extract context via hook
+        hidden_tensor: torch.Tensor = dspy.settings.lm.get_last_hidden_state()
+        
+        # 3. Assert dimensional integrity
+        assert hidden_tensor.shape[-1] == 1024, "Latent drift detected."
+        return prediction, hidden_tensor</div>
+            </div>
+            <div>
+               <div class="gate" style="border-top-color:var(--violet)">
+                <div class="gate-title" style="color:var(--violet)">Prediction Gate</div>
+                <div class="gate-text">If <span class="mono">get_last_hidden_state()</span> returns a tensor of <span class="mono">torch.Size([1, 45, 1024])</span>, what specific value does <span class="mono">shape[-1]</span> evaluate to?</div>
+                <button class="btn" style="background:var(--violet); color:#fff;" onclick="this.nextElementSibling.style.display='block'; this.style.display='none'">Commit</button>
+                <div class="reveal-box" style="border-color:var(--violet); background:var(--violet-glow);">
+                  It evaluates to 1024. The [-1] Python index accesses the absolute last element in the shape tuple. This is a crucial literacy skill for operators reading multi-dimensional array slicing code.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: FastAPI -->
+        <div id="t3" class="tab-content">
+          <div class="grid-2">
+            <div>
+              <h3 style="color:var(--amber)">FastAPI Dynamic Adapter Route</h3>
+              <p>The API layer manages the reception of HTTP commands instructing the server to swap out the active model adapter.</p>
+              <div class="code-block">@app.post("/system/inject-lora")
+async def inject_voice_dna(path: str):
+    # Load PyTorch LoRA onto base model
+    active_model = PeftModel.from_pretrained(base, path)
+    
+    # Lock params to prevent catastrophic forgetting
+    for name, param in active_model.named_parameters():
+        if "lora" not in name.lower():
+            param.requires_grad = False
+            
+    active_model.eval()
+    return {"status": "SUCCESS"}</div>
+            </div>
+            <div>
+               <div class="gate" style="border-top-color:var(--amber)">
+                <div class="gate-title" style="color:var(--amber)">Prediction Gate</div>
+                <div class="gate-text">If the developer removes the <span class="mono">for name, param</span> loop restricting gradients, what happens during the next generated coaching Socratic iteration?</div>
+                <button class="btn" onclick="this.nextElementSibling.style.display='block'; this.style.display='none'">Commit</button>
+                <div class="reveal-box" style="border-color:var(--amber); background:var(--amber-glow);">
+                  Nothing breaks immediately. But if any training loop is triggered, the core intelligence of the base model will be mutated and destroyed. It is a silent ticking time bomb.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Pi -->
+        <div id="t4" class="tab-content">
+          <div class="grid-2">
+            <div>
+              <h3 style="color:var(--emerald)">Pi Subprocess Memory Sentinel</h3>
+              <p>Running heavy PyTorch tensor math in the primary FastAPI thread blocks the event loop and risks taking down the entire API via hardware-level CUDA out-of-memory errors.</p>
+              <div class="code-block">def execute_tensor_safely(script: str):
+    result = subprocess.run(
+        ["python", script], capture_output=True, timeout=180
+    )
+    if result.returncode != 0:
+        if "CUDA out of memory" in result.stderr:
+            return "ERROR: GPU OOM."
+    return result.stdout</div>
+            </div>
+            <div>
+               <div class="gate" style="border-top-color:var(--emerald)">
+                <div class="gate-title" style="color:var(--emerald)">Prediction Gate</div>
+                <div class="gate-text">Why isn't the CUDA out of memory error caught by a standard <span class="mono">try...except</span> block bridging FastAPI and PyTorch directly?</div>
+                <button class="btn" style="background:var(--emerald); color:#fff;" onclick="this.nextElementSibling.style.display='block'; this.style.display='none'">Commit</button>
+                <div class="reveal-box" style="border-color:var(--emerald); background:var(--emerald-glow);">
+                  PyTorch CUDA OOM errors happen at the GPU driver level and corrupt the memory context of the primary Python process itself. subprocess.run() isolates the memory fault entirely.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 5: Neo4j -->
+        <div id="t5" class="tab-content">
+          <div class="grid-2">
+            <div>
+              <h3 style="color:var(--teal)">Graphing the Latent Space</h3>
+              <p>Neo4j manages relationships between specific PyTorch files, allowing the system to recall which neural matrices generated successful coaching loops.</p>
+              <div class="code-block">MATCH (c:Coach {id: $coach_id})
+MERGE (a:LoRA_Adapter {file_path: $adapter})
+SET a.tensor_dimension = $vector_shape,
+    a.eval_mode_locked = true
+MERGE (c)-[:UTILIZES]->(a)</div>
+            </div>
+            <div>
+               <div class="gate" style="border-top-color:var(--teal)">
+                <div class="gate-title" style="color:var(--teal)">Prediction Gate</div>
+                <div class="gate-text">If an agent modifies the query and drops the <span class="mono">$vector_shape</span> parameter completely, what happens inside the graph database?</div>
+                <button class="btn" style="background:var(--teal); color:#fff;" onclick="this.nextElementSibling.style.display='block'; this.style.display='none'">Commit</button>
+                <div class="reveal-box" style="border-color:var(--teal); background:var(--teal-glow);">
+                  The graph loses the physical blueprint of the PyTorch capability, forcing the system to perform highly expensive VRAM inspections blindly on every route loading attempt.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section id="gauntlet" class="section">
+    <div class="section-inner">
+      <p class="eyebrow">Terminal Phase</p>
+      <h2>Application Gauntlet</h2>
+      <p>Scan the following non-tutorial artifacts. Identify the hidden PyTorch concept, trace its consequence, and name the subsystem.</p>
+      
+      <div id="gauntletContainer" style="margin-top: 24px;"></div>
+    </div>
+  </section>
+
+  <script>
+    function switchTab(id) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(id).classList.add('active');
+    }
+
+    const gauntletData = [
+      {
+        q: "Unrecognized Module Integration:\n<code>for n, p in model.named_parameters():\n   if 'dense' in n:\n       p.data += torch.randn_like(p) * 0.05\n       p.requires_grad = True</code>",
+        qText: "What concept is actively misused here, and what happens if this is integrated into the production server?",
+        a: "The agent manually overwrote requires_grad to True for base parameters along with randomly perturbing weights. If executed, the core intelligence matrix is physically corrupted.",
+      },
+      {
+        q: "<code>class VoiceDNASchema(BaseModel):\n  embedding_target_shape: Literal['[1, 1024]', '[1, 4096]']</code>",
+        qText: "Which CCP Subsystem does this code belong to?",
+        a: "The QA Department (Pydantic). It validates a specific data contract utilizing Literal syntax to constrain acceptable .shape arrays.",
+      },
+      {
+        q: "<code>proc = subprocess.run(['python', 'analyze.py'], timeout=10)</code>",
+        qText: "Which Orchestration Layer executes this exact pattern?",
+        a: "The Robot Arm (The Pi execution harness). It physically runs potentially dangerous PyTorch operations in a walled-garden process.",
+      },
+      {
+        q: "<code>model = peft.PeftModel.from_pretrained(global_qwen, 'adapters/temp')\n# missing line here\npredicted = model.generate(**inputs)</code>",
+        qText: "What happens if the specific line is missing before .generate()?",
+        a: "The model runs in .train() mode. Dropout introduces non-deterministic hallucinations, breaking JIT outputs.",
+      }
+    ];
+
+    const gc = document.getElementById('gauntletContainer');
+    gauntletData.forEach((item, index) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.marginBottom = '16px';
+      card.innerHTML = `
+        <div style="color:var(--text); font-family:'DM Sans'; font-size:1rem; margin-bottom:12px;"><strong>${index+1}.</strong> ${item.q.replace(/<code>/g, '<div class="code-block">').replace(/<\/code>/g, '</div>')}</div>
+        <p style="color:var(--amber); font-weight:500;">${item.qText}</p>
+        <button class="btn btn-secondary" style="border:1px solid var(--line); background:transparent; color:var(--text);" onclick="this.nextElementSibling.style.display='block'; this.style.display='none'">Reveal Assessment</button>
+        <div class="reveal-box" style="border-color:var(--emerald); background:rgba(16,185,129,0.08); margin-top:12px;">
+          <strong>Answer:</strong> ${item.a}
+        </div>
+      `;
+      gc.appendChild(card);
+    });
+    
+    // Auto-navbar highlighting
+    const links=document.querySelectorAll('.nav-link');
+    const ids=['interrupt','artifacts','gauntlet'];
+    window.addEventListener('scroll',()=>{
+      const y=window.scrollY+100;let active=ids[0];
+      ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+      links.forEach(l=>l.classList.toggle('active',l.getAttribute('href').substring(1)===active));
+    });
+  </script>
+</body>
+</html>

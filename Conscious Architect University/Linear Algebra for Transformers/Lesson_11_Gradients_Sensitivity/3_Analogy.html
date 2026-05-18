@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 11 — Analogy / Visual Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0a08;--fg:#e4e0d8;--muted:#7a746c;--accent:#c4845a;
+  --accent-dim:#7a5538;--accent-glow:rgba(196,132,90,.12);
+  --error:#c45c4a;--success:#5a9e6b;--card:#151210;--border:#2a2520;
+  --input-bg:#0f0d0b;
+}
+html{font-size:16px;scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;color:var(--fg);background:var(--bg);min-height:100vh;line-height:1.7;overflow-x:hidden}
+#app{position:relative;z-index:1;max-width:680px;margin:0 auto;padding:48px 20px 100px}
+.section{display:none;opacity:0;transform:translateY(14px)}
+.section.visible{display:block;opacity:1;transform:translateY(0);transition:opacity .45s ease,transform .45s ease}
+.section.entering{display:block;opacity:0;transform:translateY(14px)}
+.divider{width:120px;height:1px;background:var(--accent);opacity:.2;margin:36px auto}
+h1{font-family:'Space Mono',monospace;font-size:clamp(1.2rem,3.5vw,1.45rem);font-weight:700;color:var(--fg);letter-spacing:-.02em;margin-bottom:6px}
+h2{font-family:'Space Mono',monospace;font-size:clamp(.82rem,2.5vw,.95rem);font-weight:700;color:var(--accent);letter-spacing:.04em;margin-bottom:10px;text-transform:uppercase}
+p{color:var(--fg);margin-bottom:11px;font-weight:300}
+p strong{font-weight:700;color:var(--fg)}
+.muted-text{color:var(--muted);font-size:.9rem}
+code{font-family:'Space Mono',monospace;font-size:.88rem;color:var(--accent);background:rgba(196,132,90,.07);padding:2px 5px;border-radius:3px}
+.prompt-box{background:var(--card);border:1px solid var(--border);border-radius:5px;padding:20px 22px;margin:20px 0}
+.input-row{display:flex;align-items:center;gap:10px;margin-top:13px;flex-wrap:wrap}
+.input-field{font-family:'Space Mono',monospace;font-size:.9rem;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--fg);padding:9px 12px;outline:none;transition:border-color .2s;width:150px}
+.input-field:focus{border-color:var(--accent)}
+.input-field.locked{border-color:var(--accent-dim);opacity:.7;pointer-events:none}
+.input-field.wrong{border-color:var(--error)}
+.input-field.right{border-color:var(--success)}
+.input-label{font-family:'Space Mono',monospace;font-size:.8rem;color:var(--muted)}
+.submit-btn{font-family:'Space Mono',monospace;font-size:.76rem;letter-spacing:.06em;background:none;border:1px solid var(--accent-dim);color:var(--accent);padding:9px 18px;border-radius:4px;cursor:pointer;transition:all .2s;text-transform:uppercase}
+.submit-btn:hover:not(:disabled){border-color:var(--accent);background:var(--accent-glow)}
+.submit-btn:disabled{opacity:.3;cursor:default}
+.option-grid{display:flex;flex-direction:column;gap:7px;margin-top:11px}
+.option-btn{font-family:'DM Sans',sans-serif;font-size:.92rem;text-align:left;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--fg);padding:11px 15px;cursor:pointer;transition:all .2s}
+.option-btn:hover:not(:disabled){border-color:var(--accent-dim);background:rgba(196,132,90,.03)}
+.option-btn:disabled{cursor:default}
+.option-btn.selected{border-color:var(--accent);background:var(--accent-glow)}
+.option-btn.selected.wrong{border-color:var(--error);background:rgba(196,92,74,.07);color:var(--error)}
+.option-btn.selected.right{border-color:var(--success);background:rgba(90,158,107,.07);color:var(--success)}
+.option-btn.dimmed{opacity:.3}
+.feedback{margin-top:13px;padding:13px 17px;border-radius:4px;font-size:.88rem;line-height:1.7;display:none}
+.feedback.show{display:block;animation:fadeUp .3s ease forwards}
+.feedback.error{background:rgba(196,92,74,.06);border-left:3px solid var(--error)}
+.feedback.success{background:rgba(90,158,107,.06);border-left:3px solid var(--success)}
+.feedback .mtag{font-family:'Space Mono',monospace;font-size:.72rem;letter-spacing:.05em;color:var(--error);text-transform:uppercase;margin-bottom:6px;display:block}
+.continue-wrap{margin-top:24px;display:none}
+.continue-wrap.show{display:block;animation:fadeUp .3s ease forwards}
+.continue-btn{font-family:'Space Mono',monospace;font-size:.76rem;letter-spacing:.06em;background:none;border:1px solid var(--accent-dim);color:var(--accent);padding:8px 24px;border-radius:4px;cursor:pointer;transition:all .2s}
+.continue-btn:hover{border-color:var(--accent);background:var(--accent-glow)}
+/* Fader table */
+.fader-table{width:100%;border-collapse:collapse;margin:14px 0;font-family:'Space Mono',monospace;font-size:.85rem}
+.fader-table th{text-align:left;color:var(--accent);font-weight:400;padding:6px 10px;border-bottom:1px solid var(--border)}
+.fader-table td{padding:6px 10px;border-bottom:1px solid rgba(42,37,32,.5)}
+.fader-table .val-neg{color:var(--error)}
+.fader-table .val-pos{color:var(--success)}
+/* Canvas */
+.canvas-wrap{position:relative;margin:20px auto;text-align:center}
+.canvas-wrap canvas{border:1px solid var(--border);border-radius:4px;cursor:crosshair;max-width:100%;touch-action:none}
+.canvas-instruction{font-family:'Space Mono',monospace;font-size:.78rem;color:var(--muted);letter-spacing:.03em;margin-top:8px}
+.canvas-legend{display:flex;gap:20px;justify-content:center;margin-top:12px;font-family:'Space Mono',monospace;font-size:.75rem;color:var(--muted)}
+.canvas-legend .leg-item{display:flex;align-items:center;gap:6px}
+.canvas-legend .leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.canvas-legend .leg-dot.current{background:var(--fg)}
+.canvas-legend .leg-dot.pred{background:var(--accent);border:2px dashed var(--accent);background:transparent}
+.canvas-legend .leg-dot.actual{background:var(--success)}
+/* Type B canvases */
+.traj-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:16px 0}
+.traj-col{text-align:center}
+.traj-col canvas{border:1px solid var(--border);border-radius:4px;max-width:100%}
+.traj-col .traj-label{font-family:'Space Mono',monospace;font-size:.75rem;color:var(--muted);margin-top:6px}
+.traj-col .traj-btn{margin-top:8px}
+.traj-col.selected-traj canvas{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.traj-col.wrong-traj canvas{border-color:var(--error);box-shadow:0 0 0 1px var(--error)}
+.traj-col.right-traj canvas{border-color:var(--success);box-shadow:0 0 0 1px var(--success)}
+/* Pipeline */
+.mod-pool{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+.mod-card{font-family:'Space Mono',monospace;font-size:.8rem;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;color:var(--fg);padding:10px 14px;cursor:pointer;transition:all .2s;user-select:none}
+.mod-card:hover:not(.used):not(.locked){border-color:var(--accent-dim);background:var(--accent-glow)}
+.mod-card.used{opacity:.3;pointer-events:none;border-style:dashed}
+.mod-card.locked{pointer-events:none}
+.mod-card small{color:var(--muted);font-size:.72rem;display:block;margin-top:2px}
+.pipeline-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-height:44px;padding:12px;background:var(--input-bg);border:1px solid var(--border);border-radius:4px;margin:12px 0}
+.pipeline-row .pipe-mod{font-family:'Space Mono',monospace;font-size:.78rem;background:var(--card);border:1px solid var(--accent-dim);border-radius:3px;padding:6px 10px;color:var(--accent)}
+.pipeline-row .pipe-arrow{color:var(--muted);font-size:.9rem}
+.pipeline-row .pipe-empty{color:var(--muted);font-size:.82rem;font-style:italic}
+.pipe-reset{font-family:'Space Mono',monospace;font-size:.72rem;color:var(--muted);background:none;border:1px solid var(--border);border-radius:3px;padding:4px 10px;cursor:pointer;margin-left:8px}
+.pipe-reset:hover{border-color:var(--accent-dim)}
+/* Gauntlet */
+.gq-counter{font-family:'Space Mono',monospace;font-size:.78rem;color:var(--muted);letter-spacing:.04em;margin-bottom:16px}
+.gq-card{background:var(--card);border:1px solid var(--border);border-radius:5px;padding:18px 20px;margin-bottom:12px}
+.gq-card .qt{font-size:.92rem;margin-bottom:10px;line-height:1.6}
+.gq-card .qc{font-family:'Space Mono',monospace;font-size:.84rem;color:var(--accent);display:block;margin:5px 0 10px}
+.gq-mf{font-family:'Space Mono',monospace;font-size:.78rem;margin-top:7px;padding:6px 10px;border-radius:3px;display:none}
+.gq-mf.show{display:block}
+.gq-mf.ok{color:var(--success);background:rgba(90,158,107,.05)}
+.gq-mf.no{color:var(--error);background:rgba(196,92,74,.05)}
+.gq-card.done{opacity:.5;pointer-events:none}
+.gq-final{font-family:'Space Mono',monospace;text-align:center;padding:26px 0}
+.gq-final .sn{font-size:2rem;font-weight:700;color:var(--accent)}
+.gq-final .sl{font-size:.8rem;color:var(--muted);letter-spacing:.05em;margin-top:2px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:520px){
+  #app{padding:32px 12px 80px}
+  .input-field{width:120px}
+  .traj-row{flex-direction:column;align-items:center}
+  .mod-pool{flex-direction:column}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;transition-duration:0s!important}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ======== S0: TRANSFER CHALLENGE — OPENING ======== -->
+<section id="s0" class="section visible">
+  <h2>Transfer Domain</h2>
+  <h1>The Mixing Console</h1>
+  <p>You are a mixing engineer. Four faders control the final mix quality (scored 0–100):</p>
+  <table class="fader-table">
+    <tr><th>Fader</th><th>Quality change per 1 dB</th></tr>
+    <tr><td>Bass</td><td class="val-neg">&minus;4.2 points</td></tr>
+    <tr><td>Vocal Presence (3kHz)</td><td class="val-pos">+6.8 points</td></tr>
+    <tr><td>Reverb Tail</td><td class="val-neg">&minus;0.9 points</td></tr>
+    <tr><td>Master Level</td><td class="val-pos">+0.3 points</td></tr>
+  </table>
+  <p>You want to maximize quality. You can make one adjustment before the next playback. Which fader do you move, and in which direction?</p>
+  <div class="option-grid" id="s0-opts">
+    <button class="option-btn" onclick="submitS0(this,'a')">Bass — decrease it (the negative change means it's too loud)</button>
+    <button class="option-btn" onclick="submitS0(this,'b')">Vocal Presence — increase it (largest quality gain per dB)</button>
+    <button class="option-btn" onclick="submitS0(this,'c')">Reverb Tail — decrease it (any negative change should be reversed)</button>
+    <button class="option-btn" onclick="submitS0(this,'d')">Master Level — increase it (small but safe)</button>
+  </div>
+  <div class="feedback" id="s0-fb"></div>
+  <div class="continue-wrap" id="s0-cont"><button class="continue-btn" onclick="revealSection('s1')">Continue</button></div>
+</section>
+
+<!-- ======== S1: CANVAS DRAG-TO-PREDICT ======== -->
+<section id="s1" class="section">
+  <h2>Visual Prediction</h2>
+  <h1>Where does the next step land?</h1>
+  <p>The console has two faders we're adjusting simultaneously: <strong>Bass</strong> (horizontal axis) and <strong>Vocal Presence</strong> (vertical axis). The contour lines show equal-quality levels — closer together means steeper quality change.</p>
+  <p>The current mix position is the <strong>solid white dot</strong>. The optimal position is at the center of the innermost contour.</p>
+  <p style="margin-top:8px">The engineer makes one adjustment step (a specific combination of Bass and Vocal changes). <strong>Drag to predict where the mix lands after this single step.</strong></p>
+  <div class="canvas-wrap">
+    <canvas id="cv1" width="560" height="340"></canvas>
+    <div class="canvas-instruction" id="cv1-inst">Click and drag to place your prediction, then release to lock</div>
+    <div class="canvas-legend" id="cv1-leg" style="display:none">
+      <div class="leg-item"><div class="leg-dot current"></div>Current position</div>
+      <div class="leg-item"><div class="leg-dot pred"></div>Your prediction</div>
+      <div class="leg-item"><div class="leg-dot actual"></div>Actual landing</div>
+    </div>
+  </div>
+  <div class="feedback" id="s1-fb"></div>
+  <div class="continue-wrap" id="s1-cont"><button class="continue-btn" onclick="revealSection('s2')">Continue</button></div>
+</section>
+
+<!-- ======== S2: LEARNING RATE STATE SELECTION ======== -->
+<section id="s2" class="section">
+  <h2>Step Size Recognition</h2>
+  <h1>Which adjustment strategy fails?</h1>
+  <p>Three engineers approach the same mix problem (same starting position, same quality landscape). Each uses a different adjustment intensity — their "step size." All three make several sequential adjustments.</p>
+  <p style="margin-top:8px">The dot traces show the path each engineer's mix followed. <strong>Select the path where the quality gets WORSE with each adjustment.</strong></p>
+  <div class="traj-row" id="traj-row">
+    <div class="traj-col" id="traj-a">
+      <canvas id="tA" width="170" height="170"></canvas>
+      <div class="traj-label">Engineer A</div>
+      <button class="submit-btn traj-btn" onclick="submitS2('a')">Select</button>
+    </div>
+    <div class="traj-col" id="traj-b">
+      <canvas id="tB" width="170" height="170"></canvas>
+      <div class="traj-label">Engineer B</div>
+      <button class="submit-btn traj-btn" onclick="submitS2('b')">Select</button>
+    </div>
+    <div class="traj-col" id="traj-c">
+      <canvas id="tC" width="170" height="170"></canvas>
+      <div class="traj-label">Engineer C</div>
+      <button class="submit-btn traj-btn" onclick="submitS2('c')">Select</button>
+    </div>
+  </div>
+  <div class="feedback" id="s2-fb"></div>
+  <div class="continue-wrap" id="s2-cont"><button class="continue-btn" onclick="revealSection('s3')">Continue</button></div>
+</section>
+
+<!-- ======== S3: SIGNAL CHAIN PIPELINE ======== -->
+<section id="s3" class="section">
+  <h2>Pipeline Construction</h2>
+  <h1>How does sensitivity chain through stages?</h1>
+  <p>An audio signal passes through four processing modules in sequence. Each module has a <strong>propagation factor</strong> — how much a change at its input is amplified or attenuated before reaching its output.</p>
+  <div class="mod-pool" id="mod-pool">
+    <div class="mod-card" data-id="eq" onclick="addMod('eq')">EQ Module<small>factor: 1.2</small></div>
+    <div class="mod-card" data-id="comp" onclick="addMod('comp')">Compressor<small>factor: 0.8</small></div>
+    <div class="mod-card" data-id="rev" onclick="addMod('rev')">Reverb<small>factor: 1.5</small></div>
+    <div class="mod-card" data-id="out" onclick="addMod('out')">Output Stage<small>factor: 3.0</small></div>
+  </div>
+  <p class="muted-text">Click modules in the order the signal flows through them.</p>
+  <div class="pipeline-row" id="pipe-row"><span class="pipe-empty">Click modules above to build the signal chain...</span><button class="pipe-reset" onclick="resetPipe()" style="display:none" id="pipe-rst">Reset</button></div>
+  <div class="prompt-box" style="margin-top:16px">
+    <p>The total sensitivity of the <strong>first module</strong> in your chain equals the product of all downstream propagation factors. Compute this value.</p>
+    <div class="input-row">
+      <span class="input-label">Accumulated sensitivity =</span>
+      <input type="text" id="pipe-val" class="input-field" placeholder="?" autocomplete="off">
+      <button class="submit-btn" id="pipe-btn" onclick="submitPipe()">Lock Answer</button>
+    </div>
+  </div>
+  <div class="feedback" id="s3-fb"></div>
+  <div class="continue-wrap" id="s3-cont"><button class="continue-btn" onclick="revealSection('s4')">Continue</button></div>
+</section>
+
+<!-- ======== S4: TRANSFER GAUNTLET ======== -->
+<section id="s4" class="section">
+  <h2>Transfer Gauntlet</h2>
+  <h1>Garden optimization. Same structure.</h1>
+  <div class="gq-counter" id="tg-cnt">0 / 6</div>
+  <div id="tg-box"></div>
+  <div class="gq-final" id="tg-fin" style="display:none">
+    <div class="sn" id="tg-sn"></div>
+    <div class="sl">out of 6 correct</div>
+    <div class="continue-wrap show" id="tg-done" style="display:none;margin-top:20px">
+      <button class="continue-btn" onclick="finishL3()">Complete Analogy Layer</button>
+    </div>
+  </div>
+</section>
+
+<!-- ======== COMPLETION ======== -->
+<section id="done" class="section">
+  <div class="divider" style="margin-top:0;margin-bottom:30px"></div>
+  <h1>Analogy layer complete.</h1>
+  <p class="muted-text">You identified gradient magnitude in a mixing console. You predicted gradient descent landing positions on a quality landscape. You recognized divergence from trajectory patterns. You traced sensitivity through a signal chain — the chain rule in disguise.</p>
+  <p class="muted-text" style="margin-top:10px">The garden gauntlet confirmed: you can recognize the gradient structure in a domain with zero surface features from calculus or neural networks. That is transfer.</p>
+  <p style="margin-top:20px;color:var(--accent);font-weight:500">Every dial is a partial derivative.</p>
+</section>
+
+</div>
+
+<script>
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+function revealSection(id){
+  const el=document.getElementById(id);
+  el.classList.remove('hidden');el.classList.add('entering');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{el.classList.remove('entering');el.classList.add('visible')}));
+  setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'start'}),70);
+  if(id==='s1') initCanvas1();
+  if(id==='s2') initTrajCanvases();
+  if(id==='s4') buildTransferGauntlet();
+}
+function showFB(id,t,h){const e=document.getElementById(id);e.className='feedback show '+t;e.innerHTML=h}
+function showCont(id){document.getElementById(id).classList.add('show')}
+function lockOpts(gid){document.querySelectorAll('#'+gid+' .option-btn').forEach(b=>b.disabled=true)}
+
+/* ============================================================
+   S0: TRANSFER CHALLENGE
+   ============================================================ */
+function submitS0(btn,ch){
+  lockOpts('s0-opts');
+  if(ch==='b'){
+    btn.classList.add('selected','right');
+    showFB('s0-fb','success',
+      'Correct. Vocal Presence has the highest sensitivity — each dB of adjustment produces the largest quality change (+6.8), and the direction is positive (increase). ' +
+      'You followed the direction of steepest <em>ascent</em> on the quality function. This is gradient ascent — the same principle RISER uses to maximize reward instead of minimizing loss. ' +
+      'The four sensitivity values you just read <strong>are the components of a 4-dimensional gradient vector</strong>: [&minus;4.2, +6.8, &minus;0.9, +0.3].');
+    showCont('s0-cont');
+  }else{
+    btn.classList.add('selected','wrong');
+    document.querySelectorAll('#s0-opts .option-btn').forEach(b=>{if(!b.classList.contains('selected'))b.classList.add('dimmed')});
+    document.querySelectorAll('#s0-opts .option-btn')[1].classList.add('right');
+    const wrong={a:'Bass has sensitivity 4.2 — but Vocal has sensitivity 6.8. The question is which fader gives the <em>largest</em> quality improvement per unit of adjustment, not which is merely bad.',
+      c:'Reverb sensitivity is only 0.9. Vocal is 6.8 — 7.5&times; more impactful. You chose a safe, small adjustment over the dominant sensitivity direction.',
+      d:'Master Level has the lowest sensitivity (0.3). Adjusting it is nearly irrelevant. The gradient component here is 0.3 — it barely points in any direction.'};
+    showFB('s0-fb','error','<span class="mtag">Magnitude Blindness</span>'+wrong[ch]);
+  }
+}
+
+/* ============================================================
+   S1: CANVAS DRAG-TO-PREDICT (Type A)
+   ============================================================ */
+// Quality function: f(bass, vocal) = (bass-0.6)^2 + 4*(vocal-0.7)^2
+// Canvas mapping: bass[0,1]->x[40,540], vocal[0,1]->y[310,40] (inverted)
+const CV={
+  W:560,H:340,
+  bx:40,bw:500, vy:310,vh:-270,
+  toX(b){return this.bx+b*this.bw},
+  toY(v){return this.vy+v*this.vh},
+  toB(x){return(x-this.bx)/this.bw},
+  toV(y){return(y-this.vy)/this.vh},
+  // Current position
+  cb:0.9, cv:0.3,
+  // Gradient at current: ∂f/∂b = 2(0.9-0.6)=0.6, ∂f/∂v = 8(0.3-0.7)=-3.2
+  // η = 0.05, step = (-0.03, +0.16)
+  // Correct landing: (0.87, 0.46)
+  tb:0.87, tv:0.46,
+  // Optimum
+  ob:0.6, ov:0.7
+};
+let cv1Locked=false, cv1PredB=null, cv1PredV=null, cv1DragX=null, cv1DragY=null, cv1Dragging=false;
+
+function initCanvas1(){
+  cv1Locked=false;cv1PredB=null;cv1PredV=null;cv1DragX=null;cv1DragY=null;cv1Dragging=false;
+  document.getElementById('cv1-inst').textContent='Click and drag to place your prediction, then release to lock';
+  document.getElementById('cv1-inst').style.display='';
+  document.getElementById('cv1-leg').style.display='none';
+  document.getElementById('s1-fb').className='feedback';
+  drawCV1();
+}
+
+function drawCV1(crossB,crossV,predB,predV,actualB,actualV){
+  const c=document.getElementById('cv1'), ctx=c.getContext('2d');
+  ctx.clearRect(0,0,CV.W,CV.H);
+  // Background
+  ctx.fillStyle='#0f0d0b';ctx.fillRect(0,0,CV.W,CV.H);
+  // Contour ellipses
+  const levels=[0.02,0.08,0.18,0.32,0.50];
+  ctx.strokeStyle='rgba(196,132,90,0.15)';ctx.lineWidth=1;
+  levels.forEach(lv=>{
+    const sa=Math.sqrt(lv), sb=Math.sqrt(lv/4);
+    ctx.beginPath();
+    ctx.ellipse(CV.toX(CV.ob),CV.toY(CV.ov),sa*CV.bw,sb*Math.abs(CV.vh),0,0,Math.PI*2);
+    ctx.stroke();
+  });
+  // Innermost filled
+  ctx.fillStyle='rgba(196,132,90,0.04)';
+  ctx.beginPath();
+  ctx.ellipse(CV.toX(CV.ob),CV.toY(CV.ov),Math.sqrt(0.02)*CV.bw,Math.sqrt(0.02/4)*Math.abs(CV.vh),0,0,Math.PI*2);
+  ctx.fill();
+  // Axis labels
+  ctx.font='11px "Space Mono"';ctx.fillStyle='#7a746c';
+  ctx.fillText('Bass \u2192',CV.W-80,CV.H-10);
+  ctx.save();ctx.translate(14,CV.toY(0.9)-40);ctx.rotate(-Math.PI/2);
+  ctx.fillText('Vocal \u2192',0,0);ctx.restore();
+  // Optimum marker (tiny)
+  ctx.fillStyle='rgba(196,132,90,0.3)';
+  ctx.beginPath();ctx.arc(CV.toX(CV.ob),CV.toY(CV.ov),3,0,Math.PI*2);ctx.fill();
+  // Current position (solid white)
+  ctx.fillStyle='#e4e0d8';
+  ctx.beginPath();ctx.arc(CV.toX(CV.cb),CV.toY(CV.cv),6,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(228,224,216,0.3)';ctx.lineWidth=1;ctx.stroke();
+  // Crosshair during drag
+  if(crossB!==undefined&&crossB!==null&&!cv1Locked){
+    const cx=CV.toX(crossB),cy=CV.toY(crossV);
+    ctx.strokeStyle='rgba(196,132,90,0.5)';ctx.lineWidth=1;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(cx,0);ctx.lineTo(cx,CV.H);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(CV.W,cy);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(196,132,90,0.7)';
+    ctx.beginPath();ctx.arc(cx,cy,5,0,Math.PI*2);ctx.fill();
+  }
+  // Prediction (dashed amber)
+  if(predB!==undefined&&predB!==null){
+    const px=CV.toX(predB),py=CV.toY(predV);
+    ctx.strokeStyle='#c4845a';ctx.lineWidth=2;ctx.setLineDash([5,4]);
+    ctx.beginPath();ctx.arc(px,py,7,0,Math.PI*2);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(196,132,90,0.15)';
+    ctx.beginPath();ctx.arc(px,py,7,0,Math.PI*2);ctx.fill();
+  }
+  // Actual (solid green)
+  if(actualB!==undefined&&actualB!==null){
+    const ax=CV.toX(actualB),ay=CV.toY(actualV);
+    ctx.fillStyle='#5a9e6b';
+    ctx.beginPath();ctx.arc(ax,ay,7,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(90,158,107,0.3)';ctx.lineWidth=1;ctx.stroke();
+    // Arrow from current to actual
+    ctx.strokeStyle='rgba(90,158,107,0.4)';ctx.lineWidth=1.5;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(CV.toX(CV.cb),CV.toY(CV.cv));ctx.lineTo(ax,ay);ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+function getCanvasPos(e){
+  const c=document.getElementById('cv1'), r=c.getBoundingClientRect();
+  const scaleX=CV.W/r.width, scaleY=CV.H/r.height;
+  let cx,cy;
+  if(e.touches){cx=e.touches[0].clientX;cy=e.touches[0].clientY}
+  else{cx=e.clientX;cy=e.clientY}
+  return{x:(cx-r.left)*scaleX, y:(cy-r.top)*scaleY};
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const c=document.getElementById('cv1');
+  c.addEventListener('mousedown',cv1Down);
+  c.addEventListener('mousemove',cv1Move);
+  c.addEventListener('mouseup',cv1Up);
+  c.addEventListener('mouseleave',cv1Up);
+  c.addEventListener('touchstart',e=>{e.preventDefault();cv1Down(e)},{passive:false});
+  c.addEventListener('touchmove',e=>{e.preventDefault();cv1Move(e)},{passive:false});
+  c.addEventListener('touchend',e=>{e.preventDefault();cv1Up(e)},{passive:false});
+});
+
+function cv1Down(e){
+  if(cv1Locked)return;
+  cv1Dragging=true;
+  const p=getCanvasPos(e);
+  cv1DragB=CV.toB(p.x);cv1DragV=CV.toV(p.y);
+  drawCV1(cv1DragB,cv1DragV);
+}
+function cv1Move(e){
+  if(!cv1Dragging||cv1Locked)return;
+  const p=getCanvasPos(e);
+  cv1DragB=CV.toB(p.x);cv1DragV=CV.toV(p.y);
+  drawCV1(cv1DragB,cv1DragV);
+}
+function cv1Up(e){
+  if(!cv1Dragging||cv1Locked)return;
+  cv1Dragging=false;
+  // Lock prediction
+  cv1Locked=true;
+  cv1PredB=cv1DragB;cv1PredV=cv1DragV;
+  drawCV1(null,null,cv1PredB,cv1PredV);
+  document.getElementById('cv1-inst').textContent='Prediction locked. Resolving...';
+  // Reveal actual after delay
+  setTimeout(()=>{
+    drawCV1(null,null,cv1PredB,cv1PredV,CV.tb,CV.tv);
+    document.getElementById('cv1-inst').style.display='none';
+    document.getElementById('cv1-leg').style.display='flex';
+    // Evaluate
+    const dist=Math.sqrt(Math.pow(cv1PredB-CV.tb,2)+Math.pow(cv1PredV-CV.tv,2));
+    // "Direct to center" wrong prediction: roughly equal movement in both axes
+    const directB=CV.cb-(CV.cb-CV.ob)*0.15; // ~0.855
+    const directV=CV.cv+(CV.ov-CV.cv)*0.15; // ~0.36
+    const directDist=Math.sqrt(Math.pow(cv1PredB-directB,2)+Math.pow(cv1PredV-directV,2));
+    if(dist<0.025){
+      showFB('s1-fb','success',
+        'Your prediction matches the computed step. The step moved <strong>mostly in the Vocal direction</strong> (from 0.30 to 0.46) and <strong>only slightly in the Bass direction</strong> (from 0.90 to 0.87). The contour lines are closer together in the Vocal dimension — steeper terrain means the gradient is dominated by that axis. The step follows the gradient, not the straight line to the optimum.');
+      showCont('s1-cont');
+    }else if(directDist<0.06&&dist>0.025){
+      showFB('s1-fb','error',
+        '<span class="mtag">Direct-to-Target Fallacy</span>'+
+        'Your prediction moved roughly equally toward the optimum — but the actual step moved <strong>much more in the Vocal direction</strong> than the Bass direction. '+
+        'Look at the contour spacing: the lines are packed tightly in the Vocal dimension (steep terrain, large gradient component) and widely spaced in the Bass dimension (gentle terrain, small gradient component). '+
+        'The step size in each dimension is proportional to the gradient component in that dimension, not proportional to the distance to the optimum. '+
+        '<br><br>Your prediction: Bass '+cv1PredB.toFixed(2)+', Vocal '+cv1PredV.toFixed(2)+
+        '<br>Actual step: Bass '+CV.tb.toFixed(2)+', Vocal '+CV.tv.toFixed(2));
+      showCont('s1-cont');
+    }else{
+      showFB('s1-fb','error',
+        'The actual step landed at <strong>Bass '+CV.tb.toFixed(2)+', Vocal '+CV.tv.toFixed(2)+'</strong> — a large Vocal movement (+0.16) and a small Bass movement (&minus;0.03). '+
+        'The contour lines are much closer together in the Vocal dimension, meaning the quality changes rapidly there. The gradient is dominated by the Vocal component. '+
+        'Your prediction: Bass '+cv1PredB.toFixed(2)+', Vocal '+cv1PredV.toFixed(2)+
+        '<br>Actual step: Bass '+CV.tb.toFixed(2)+', Vocal '+CV.tv.toFixed(2));
+      showCont('s1-cont');
+    }
+  },900);
+}
+
+/* ============================================================
+   S2: LEARNING RATE STATE SELECTION (Type B)
+   ============================================================ */
+// Three trajectories on f(b,v)=(b-0.6)^2+(v-0.7)^2 (circle contours)
+// Start: (0.85, 0.35)
+const trajStart={b:0.85,v:0.35};
+// A: η too small — barely moves
+const trajA=[{b:0.85,v:0.35},{b:0.844,v:0.357},{b:0.839,v:0.363},{b:0.835,v:0.368},{b:0.831,v:0.372},{b:0.828,v:0.376},{b:0.825,v:0.379}];
+// B: η just right — converges
+const trajB=[{b:0.85,v:0.35},{b:0.82,v:0.40},{b:0.796,v:0.44},{b:0.778,v:0.474},{b:0.764,v:0.501},{b:0.753,v:0.522},{b:0.745,v:0.538},{b:0.738,v:0.551}];
+// C: η too large — diverges (oscillates with growing amplitude)
+const trajC=[{b:0.85,v:0.35},{b:0.74,v:0.55},{b:0.68,v:0.20},{b:0.76,v:0.70},{b:0.58,v:0.10},{b:0.82,v:0.80}];
+
+function drawTraj(canvasId,points,highlight){
+  const c=document.getElementById(canvasId), ctx=c.getContext('2d');
+  const w=170,h=170;
+  const toX=b=>15+b*140, toY=v=>155-v*140;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#0f0d0b';ctx.fillRect(0,0,w,h);
+  // Contour circles
+  ctx.strokeStyle='rgba(196,132,90,0.12)';ctx.lineWidth=1;
+  [0.05,0.15,0.3,0.5].forEach(r=>{
+    ctx.beginPath();ctx.arc(toX(0.6),toY(0.7),r*140,0,Math.PI*2);ctx.stroke();
+  });
+  // Optimum
+  ctx.fillStyle='rgba(196,132,90,0.25)';
+  ctx.beginPath();ctx.arc(toX(0.6),toY(0.7),2.5,0,Math.PI*2);ctx.fill();
+  // Trajectory line
+  if(points.length>1){
+    ctx.strokeStyle=highlight||'rgba(228,224,216,0.5)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(toX(points[0].b),toY(points[0].v));
+    for(let i=1;i<points.length;i++) ctx.lineTo(toX(points[i].b),toY(points[i].v));
+    ctx.stroke();
+  }
+  // Points
+  points.forEach((p,i)=>{
+    ctx.fillStyle=i===0?'#e4e0d8':(highlight==='rgba(90,158,107,0.7)'?'#5a9e6b':'rgba(228,224,216,0.7)');
+    ctx.beginPath();ctx.arc(toX(p.b),toY(p.v),i===0?4:3,0,Math.PI*2);ctx.fill();
+  });
+}
+
+function initTrajCanvases(){
+  drawTraj('tA',trajA);
+  drawTraj('tB',trajB);
+  drawTraj('tC',trajC);
+  document.querySelectorAll('.traj-col').forEach(c=>{c.classList.remove('selected-traj','wrong-traj','right-traj')});
+  document.querySelectorAll('.traj-btn').forEach(b=>b.disabled=false);
+  document.getElementById('s2-fb').className='feedback';
+}
+
+function submitS2(ch){
+  document.querySelectorAll('.traj-btn').forEach(b=>b.disabled=true);
+  const cols={a:'traj-a',b:'traj-b',c:'traj-c'};
+  const correct='c';
+  if(ch===correct){
+    document.getElementById(cols[ch]).classList.add('right-traj');
+    drawTraj('tC',trajC,'rgba(90,158,107,0.7)');
+    showFB('s2-fb','success',
+      'Correct. Engineer C\'s trajectory <strong>oscillates with growing amplitude</strong> — each step overshoots the optimum more severely than the last. The adjustment intensity (step size) is too large for the terrain curvature. ' +
+      'This is divergence: the same mechanism that makes η=1.5 catastrophic on f(x)=x&sup2; in the exposure layer. The step size exceeds what the local curvature can support, and the system flies apart.');
+    showCont('s2-cont');
+  }else{
+    document.getElementById(cols[ch]).classList.add('wrong-traj');
+    document.getElementById(cols[correct]).classList.add('right-traj');
+    drawTraj('t'+correct.toUpperCase(),trajC,'rgba(90,158,107,0.7)');
+    const wrong={a:'Engineer A\'s steps are tiny — the mix barely moves. This is a step size that is too <em>small</em>, not too large. It converges, just slowly.',
+      b:'Engineer B\'s path curves smoothly toward the optimum. Each step brings the mix closer. This is the well-calibrated step size.'};
+    showFB('s2-fb','error','<span class="mtag">Divergence Blindness</span>'+wrong[ch]);
+    setTimeout(()=>{initTrajCanvases()},3500);
+  }
+}
+
+/* ============================================================
+   S3: SIGNAL CHAIN PIPELINE (Type C)
+   ============================================================ */
+const modules={
+  eq:{name:'EQ',factor:1.2},
+  comp:{name:'Compressor',factor:0.8},
+  rev:{name:'Reverb',factor:1.5},
+  out:{name:'Output',factor:3.0}
+};
+const correctOrder=['eq','comp','rev','out'];
+// Accumulated sensitivity for first module = product of all downstream factors
+// EQ→Comp→Rev→Out: sensitivity of EQ = 0.8 × 1.5 × 3.0 = 3.6
+let pipeState=[];
+
+function addMod(id){
+  if(document.getElementById('mod-pool').querySelector('.locked'))return;
+  if(pipeState.includes(id))return;
+  pipeState.push(id);
+  document.querySelector('.mod-card[data-id="'+id+'"]').classList.add('used');
+  renderPipe();
+}
+
+function resetPipe(){
+  if(document.getElementById('mod-pool').querySelector('.locked'))return;
+  pipeState=[];
+  document.querySelectorAll('.mod-card').forEach(c=>c.classList.remove('used'));
+  renderPipe();
+  document.getElementById('pipe-val').value='';
+  document.getElementById('pipe-val').classList.remove('locked','wrong','right');
+  document.getElementById('pipe-btn').disabled=false;
+  document.getElementById('s3-fb').className='feedback';
+}
+
+function renderPipe(){
+  const row=document.getElementById('pipe-row');
+  const rst=document.getElementById('pipe-rst');
+  if(pipeState.length===0){
+    row.innerHTML='<span class="pipe-empty">Click modules above to build the signal chain...</span>';
+    rst.style.display='none';
+  }else{
+    let h='';
+    pipeState.forEach((id,i)=>{
+      if(i>0) h+='<span class="pipe-arrow">\u2192</span>';
+      h+='<span class="pipe-mod">'+modules[id].name+' ('+modules[id].factor+')</span>';
+    });
+    row.innerHTML=h;
+    rst.style.display='';
+    row.appendChild(rst);
+  }
+}
+
+function submitPipe(){
+  const inp=document.getElementById('pipe-val');
+  const val=parseFloat(inp.value);
+  if(isNaN(val)||pipeState.length<4){
+    if(pipeState.length<4) showFB('s3-fb','error','Place all four modules in the signal chain before computing.');
+    return;
+  }
+  inp.classList.add('locked');
+  document.getElementById('pipe-btn').disabled=true;
+  document.querySelectorAll('.mod-card').forEach(c=>c.classList.add('locked'));
+
+  // Check order
+  const orderCorrect=pipeState.every((id,i)=>id===correctOrder[i]);
+  // Compute correct product for the correct chain: downstream of first module
+  let correctProduct=1;
+  for(let i=1;i<correctOrder.length;i++) correctProduct*=modules[correctOrder[i]].factor;
+  // correctProduct = 0.8 * 1.5 * 3.0 = 3.6
+
+  // Compute product for learner's chain
+  let learnerProduct=1;
+  for(let i=1;i<pipeState.length;i++) learnerProduct*=modules[pipeState[i]].factor;
+
+  const valOk=Math.abs(val-correctProduct)<0.05;
+
+  if(orderCorrect&&valOk){
+    inp.classList.add('right');
+    showFB('s3-fb','success',
+      'Correct chain: EQ &rarr; Compressor &rarr; Reverb &rarr; Output. ' +
+      'The accumulated sensitivity of EQ = 0.8 &times; 1.5 &times; 3.0 = <strong>3.6</strong>. ' +
+      'This is the chain rule in disguise: the sensitivity of the earliest stage equals the <em>product of all downstream propagation factors</em>. ' +
+      'In a neural network, this is exactly &part;L/&part;w₁ = (&part;L/&part;z) &times; (&part;z/&part;h) &times; (&part;h/&part;w₁) — the gradient passes through every subsequent layer.');
+    showCont('s3-cont');
+  }else{
+    inp.classList.add('wrong');
+    let hint='';
+    if(!orderCorrect){
+      hint+='<span class="mtag">Chain Order Error</span>';
+      hint+='Your chain produces accumulated sensitivity = '+learnerProduct.toFixed(2)+' for the first module. '+
+        'The correct signal flow is <strong>EQ &rarr; Compressor &rarr; Reverb &rarr; Output</strong> (EQ shapes frequencies first, then dynamics control, then spatial processing, then final output). '+
+        'Reversing any pair changes the accumulated product because the chain rule multiplies through each stage in sequence.<br><br>';
+    }
+    if(!valOk){
+      hint+='Correct chain accumulated sensitivity = '+correctProduct.toFixed(1)+' (product of all downstream factors: '+
+        modules[correctOrder[1]].factor+' &times; '+modules[correctOrder[2]].factor+' &times; '+modules[correctOrder[3]].factor+'). ';
+    }
+    showFB('s3-fb','error',hint);
+    setTimeout(()=>{
+      resetPipe();
+      document.querySelectorAll('.mod-card').forEach(c=>c.classList.remove('locked'));
+    },4000);
+  }
+}
+
+/* ============================================================
+   S4: TRANSFER GAUNTLET — Garden domain
+   ============================================================ */
+const TG=[
+  {
+    t:'A gardener measures how much tomato yield changes per unit adjustment of four variables. Which variable has the highest "yield gradient"?',
+    c:null,
+    opts:['Soil pH: yield changes by 0.3 kg per 0.1 pH unit','Sunlight: yield changes by 1.8 kg per extra hour','Water: yield changes by 0.5 kg per extra liter','Nitrogen: yield changes by 0.02 kg per extra gram'],
+    correct:1,
+    wm:{0:'0.3/0.1 = 3.0 kg per pH unit. But sunlight gives 1.8 kg per hour — need to compare rates on the same scale.',2:'0.5 kg per liter = 0.5 kg/L. Sunlight is 1.8 kg/hour — higher sensitivity per unit.',3:'0.02 kg per gram is extremely low sensitivity. Sunlight dominates.'}
+  },
+  {
+    t:'The yield gradient (yield change per unit increase of each variable) is [+0.8, &minus;0.1, +0.5, &minus;3.2] for [Nitrogen, Sunlight, Water, Soil Salinity]. To maximize yield, which variable should the gardener decrease?',
+    c:'Gradient: [+0.8, &minus;0.1, +0.5, &minus;3.2]',
+    opts:['Nitrogen','Sunlight','Water','Soil Salinity'],
+    correct:3,
+    wm:{0:'Nitrogen\'s gradient is +0.8 — increasing it improves yield. You want to decrease the variable with a negative gradient.',1:'Sunlight\'s gradient is &minus;0.1 — slightly negative, but Soil Salinity\'s is &minus;3.2 — 32&times; larger negative impact.',2:'Water\'s gradient is +0.5 — positive. Increasing water improves yield.'}
+  },
+  {
+    t:'The gardener applies 200g of nitrogen (a massive dose). The plants die. What happened?',
+    c:null,
+    opts:['The gradient reversed direction — more nitrogen now decreases yield','The step size was too large and overshot the optimal nitrogen level','The nitrogen gradient was zero — nitrogen doesn\'t affect yield','The gradient magnitude was too small to produce any change'],
+    correct:1,
+    wm:{0:'The gradient may reverse at a different point, but the immediate cause is the step size, not the direction.',2:'If the gradient were zero, changing nitrogen would have no effect — but the plants died, so it had a huge effect.',3:'A massive dose produced a catastrophic effect — the opposite of "too small."'}
+  },
+  {
+    t:'No single adjustment to pH, sunlight, water, or nitrogen improves the tomato yield. The gardener measures all four sensitivities and finds they are all approximately zero. But the yield is only 40% of theoretical maximum. What type of landscape feature is this?',
+    c:null,
+    opts:['Global minimum','Local minimum','Saddle point','Linear region'],
+    correct:2,
+    wm:{0:'A global minimum would mean yield cannot be improved from ANY starting point — but 40% of maximum means better yields clearly exist.',1:'A local minimum means all local directions go uphill. In 4 dimensions, this is possible but vastly less likely than a saddle point.',3:'A linear region would have non-zero gradients in at least some directions.'}
+  },
+  {
+    t:'True or False: by measuring the yield sensitivity at the current nitrogen level, the gardener can determine the exact optimal nitrogen level.',
+    c:null,
+    opts:['True — the gradient points toward the optimum','False — the gradient indicates direction, not destination'],
+    correct:1,
+    wm:{0:'The gradient tells you which way is uphill (or downhill). It tells you nothing about how far away the optimum is, or whether a deeper optimum exists in a different direction.'}
+  },
+  {
+    t:'The garden has a processing chain: Seed &rarr; Soil Absorption &rarr; Root Uptake &rarr; Stem Transport &rarr; Leaf Photosynthesis &rarr; Fruit Yield. The gardener wants to know how sensitive Fruit Yield is to Seed Quality. Through how many intermediate stages must this sensitivity propagate?',
+    c:null,
+    opts:['1','2','3','4'],
+    correct:3,
+    wm:{0:'Seed &rarr; Soil Absorption is one stage, but the sensitivity must continue through all downstream stages.',1:'That counts only two stages — but there are four stages between Seed and Fruit Yield.',2:'Three stages skips one. Count: Soil Absorption, Root Uptake, Stem Transport, Leaf Photosynthesis = 4 stages.'}
+  }
+];
+
+let tgScore=0, tgIdx=0;
+
+function buildTransferGauntlet(){
+  const box=document.getElementById('tg-box');
+  box.innerHTML='';tgScore=0;tgIdx=0;
+  TG.forEach((q,i)=>{
+    const card=document.createElement('div');card.className='gq-card';card.id='tg-'+i;card.style.display='none';
+    let h='<div class="qt">'+q.t+'</div>';
+    if(q.c) h+='<span class="qc">'+q.c+'</span>';
+    h+='<div class="option-grid">';
+    q.opts.forEach((o,j)=>{h+='<button class="option-btn" onclick="ansTG('+i+','+j+',this)">'+o+'</button>'});
+    h+='</div><div class="gq-mf" id="tg-fb-'+i+'"></div>';
+    card.innerHTML=h;box.appendChild(card);
+  });
+  showTG(0);
+}
+
+function showTG(idx){
+  if(idx>=TG.length){
+    document.getElementById('tg-box').style.display='none';
+    document.getElementById('tg-cnt').style.display='none';
+    const f=document.getElementById('tg-fin');f.style.display='block';
+    document.getElementById('tg-sn').textContent=tgScore+' / '+TG.length;
+    const d=document.getElementById('tg-done');d.style.display='block';d.classList.add('show');
+    return;
+  }
+  const card=document.getElementById('tg-'+idx);card.style.display='block';
+  card.scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('tg-cnt').textContent=(idx+1)+' / '+TG.length;
+}
+
+function ansTG(qi,ci,btn){
+  const q=TG[qi], card=document.getElementById('tg-'+qi);
+  card.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
+  btn.classList.add('selected');
+  const fb=document.getElementById('tg-fb-'+qi);
+  if(ci===q.correct){
+    btn.classList.add('right');
+    fb.className='gq-mf show ok';fb.textContent='Correct.';tgScore++;
+  }else{
+    btn.classList.add('wrong');
+    card.querySelectorAll('.option-btn')[q.correct].classList.add('right');
+    fb.className='gq-mf show no';fb.textContent=q.wm[ci]||'Incorrect.';
+  }
+  card.classList.add('done');
+  setTimeout(()=>showTG(qi+1),1600);
+}
+
+function finishL3(){revealSection('done')}
+</script>
+</body>
+</html>

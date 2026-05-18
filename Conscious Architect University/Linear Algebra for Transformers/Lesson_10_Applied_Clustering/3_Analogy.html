@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Applied Clustering — Analogy Laboratory</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050505;--surface:#111;--surface2:#1a1a1a;--surface3:#252525;
+  --text:#FAFAFA;--muted:#888;--border:#333;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;--blue:#264653;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6;overflow-x:hidden;}
+.container{max-width:800px;margin:0 auto;padding:4rem 2rem 10rem;}
+
+h1{font-weight:700;font-size:2.4rem;line-height:1.1;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-weight:600;font-size:1.4rem;margin-bottom:1rem;color:#fff;}
+p{margin-bottom:1.5rem;color:var(--muted);font-size:1.05rem;}
+strong{color:#fff;}
+
+.layer-tag{font-family:var(--mono);font-size:0.75rem;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.12em;}
+
+.interaction-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2.5rem;margin:2rem 0;}
+.interaction-header{font-family:var(--mono);font-size:0.72rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:.6rem;}
+.question-text{font-size:1.1rem;font-weight:500;margin-bottom:1.5rem;color:#fff;line-height:1.65;}
+
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.7rem 1.4rem;font-family:var(--sans);font-weight:600;font-size:0.95rem;border-radius:4px;cursor:pointer;transition:all 0.2s;}
+.btn:hover:not(:disabled){transform:translateY(-2px);background:#fff;box-shadow:0 4px 12px rgba(255,255,255,0.1);}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+.btn-outline{background:transparent;border:1px solid var(--muted);color:var(--text);}
+.btn-outline:hover:not(:disabled){background:var(--surface3);border-color:#fff;}
+.btn-accent{background:var(--accent);color:#000;}
+.btn-accent:hover:not(:disabled){background:#f0d07e;}
+
+.canvas-wrapper{background:#000;border:1px solid #2a2a2a;border-radius:4px;overflow:hidden;position:relative;margin-bottom:1.5rem;cursor:crosshair;}
+canvas{display:block;width:100%;}
+
+/* Prediction state panel */
+.pred-panel{display:flex;gap:1rem;align-items:center;margin-bottom:1.2rem;padding:1rem;background:var(--bg);border:1px solid var(--border);border-radius:4px;font-family:var(--mono);font-size:0.85rem;}
+.pred-panel .label{color:var(--muted);}
+.pred-panel .val{color:var(--accent);font-weight:600;}
+.pred-panel .val.locked{color:#fff;}
+
+/* Type B options grid */
+.state-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.5rem;}
+.state-option{background:var(--bg);border:2px solid var(--border);border-radius:6px;overflow:hidden;cursor:pointer;transition:border-color 0.2s;}
+.state-option:hover{border-color:var(--accent);}
+.state-option.selected{border-color:var(--accent);}
+.state-option.correct-reveal{border-color:var(--green);}
+.state-option.wrong-reveal{border-color:var(--red);}
+.state-option canvas{display:block;width:100%;}
+.state-option-label{font-family:var(--mono);font-size:0.7rem;color:var(--muted);text-align:center;padding:0.4rem;border-top:1px solid var(--border);}
+
+/* Type C pipeline builder */
+.pipeline-builder{display:flex;flex-direction:column;gap:1rem;margin-bottom:1.5rem;}
+.step-inventory{display:flex;flex-wrap:wrap;gap:0.6rem;padding:1rem;background:var(--bg);border:1px dashed var(--border);border-radius:4px;}
+.step-chip{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:0.8rem;padding:0.4rem 0.8rem;border-radius:20px;cursor:pointer;transition:all 0.2s;user-select:none;}
+.step-chip:hover{border-color:var(--accent);color:var(--accent);}
+.step-chip.used{opacity:0.25;cursor:default;pointer-events:none;}
+.pipeline-slots{display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;padding:1rem;background:var(--bg);border:1px solid var(--border);border-radius:4px;min-height:60px;}
+.pipeline-arrow{color:var(--muted);font-size:1.2rem;}
+.slot-chip{background:var(--surface3);border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:0.8rem;padding:0.4rem 0.8rem;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:0.5rem;}
+.slot-chip .remove{color:var(--red);font-weight:700;}
+.slot-chip.correct{border-color:var(--green);color:var(--green);}
+.slot-chip.wrong{border-color:var(--red);color:var(--red);}
+.slot-empty-hint{color:var(--muted);font-family:var(--mono);font-size:0.8rem;}
+
+.feedback{display:none;margin-top:1.5rem;padding:1.5rem;border-radius:4px;font-size:0.95rem;line-height:1.65;}
+.feedback.visible{display:block;animation:fadein 0.35s;}
+.feedback.error{background:rgba(231,111,81,0.08);border-left:3px solid var(--red);color:#ffb3a1;}
+.feedback.success{background:rgba(42,157,143,0.08);border-left:3px solid var(--green);color:#a7ece2;}
+.feedback-title{font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;margin-bottom:0.5rem;font-weight:600;letter-spacing:0.08em;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.gated-content{opacity:0;pointer-events:none;transform:translateY(20px);transition:all 0.5s ease;display:none;}
+.gated-content.unlocked{opacity:1;pointer-events:auto;transform:translateY(0);display:block;}
+
+.gauntlet-wrap{margin-top:4rem;border-top:2px solid var(--border);padding-top:3rem;}
+.gauntlet-intro{margin-bottom:2.5rem;}
+.q-block{background:var(--surface2);padding:1.5rem;border-radius:6px;margin-bottom:1.5rem;border:1px solid var(--border);}
+.q-num{font-family:var(--mono);font-size:0.68rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.6rem;letter-spacing:0.08em;}
+.q-text{font-size:1.05rem;margin-bottom:1.3rem;font-weight:500;color:#fff;line-height:1.6;}
+.input-text{background:var(--bg);border:2px solid var(--border);color:#fff;font-family:var(--mono);font-size:1rem;padding:0.6rem 1rem;border-radius:4px;width:100%;margin-bottom:1rem;}
+.input-text:focus{outline:none;border-color:var(--accent);}
+
+.axis-label{position:absolute;font-family:var(--mono);font-size:0.72rem;color:var(--muted);}
+
+/* Slider — frozen until predict committed */
+.slider-row{display:flex;align-items:center;gap:1rem;margin-bottom:1rem;}
+.slider-row input[type=range]{flex:1;-webkit-appearance:none;background:transparent;}
+.slider-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;height:22px;width:22px;border-radius:50%;background:var(--accent);cursor:pointer;margin-top:-9px;box-shadow:0 0 8px rgba(232,196,106,0.3);}
+.slider-row input[type=range]::-webkit-slider-runnable-track{width:100%;height:4px;cursor:pointer;background:var(--border);border-radius:2px;}
+.slider-row input[type=range]:disabled::-webkit-slider-thumb{background:var(--muted);}
+.sil-display{font-family:var(--mono);font-size:1.1rem;font-weight:600;min-width:5rem;text-align:right;}
+
+.month-labels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.5rem;}
+
+.predict-input-row{display:flex;gap:1rem;align-items:flex-end;margin-bottom:1rem;}
+.predict-input-row input{background:var(--bg);border:2px solid var(--border);color:#fff;font-family:var(--mono);font-size:1rem;padding:0.5rem 0.8rem;border-radius:4px;width:120px;}
+.predict-input-row input:focus{outline:none;border-color:var(--accent);}
+.predict-input-row label{font-family:var(--mono);font-size:0.75rem;color:var(--muted);display:block;margin-bottom:0.3rem;}
+
+.divider{border:none;border-top:1px solid var(--border);margin:3rem 0;}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="layer-tag">Lesson 10 · Layer 3 — Analogy / Multi-Domain</div>
+  <h1>The Pipeline Is Isomorphic</h1>
+  <p>The applied clustering pipeline is not specific to psychology or AI. Every domain that gathers heterogeneous measurements, compares entities across them, and classifies those entities into actionable groups executes the identical engineering sequence. This layer proves that claim by forcing you to recognize the deep structure beneath three completely different surface domains — and to apply that structure without any scaffold telling you where to look.</p>
+
+  <!-- ======================================================= -->
+  <!-- TRANSFER CHALLENGE — TYPE C: PIPELINE CONSTRUCTION       -->
+  <!-- ======================================================= -->
+  <div class="interaction-box" id="block-typeC">
+    <div class="interaction-header">Transfer Challenge · Type C — Pipeline Construction</div>
+    <div class="question-text">
+      A match analytics company tracks 10-minute windows of football match data. They want to classify tactical phases — "High Press," "Mid-Block," "Collapse &amp; Counter" — from raw telemetry. Here is the inventory of operations. <strong>Assemble the pipeline in the correct execution order.</strong> Wrong orderings produce a broken output — you'll see why.
+    </div>
+
+    <div class="pipeline-builder">
+      <div>
+        <div class="q-num" style="margin-bottom:0.5rem;">Step Inventory — click to add in order</div>
+        <div class="step-inventory" id="inventory">
+          <span class="step-chip" data-step="kmeans" onclick="addStep('kmeans',this)">K-Means Clustering</span>
+          <span class="step-chip" data-step="feature" onclick="addStep('feature',this)">Feature Selection</span>
+          <span class="step-chip" data-step="injection" onclick="addStep('injection',this)">Label Injection</span>
+          <span class="step-chip" data-step="norm" onclick="addStep('norm',this)">Z-Score Normalization</span>
+          <span class="step-chip" data-step="drift" onclick="addStep('drift',this)">Drift Monitoring</span>
+          <span class="step-chip" data-step="raw" onclick="addStep('raw',this)">Raw Telemetry Intake</span>
+          <span class="step-chip" data-step="pca" onclick="addStep('pca',this)">PCA Compression</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="q-num" style="margin-bottom:0.5rem;">Your Pipeline → (click a step to remove it)</div>
+        <div class="pipeline-slots" id="pipeline-slots">
+          <span class="slot-empty-hint">Pipeline is empty — add steps above</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-accent" id="btn-lock-pipeline" onclick="lockPipeline()" disabled>Lock Pipeline & Evaluate</button>
+    <div class="feedback" id="fb-pipeline"></div>
+  </div>
+
+  <!-- Gate 1: unlocks after pipeline is correctly locked -->
+  <div class="gated-content" id="gate-1">
+
+    <p>The football analyst's pipeline is structurally identical to the CCP's. Raw telemetry replaces Telegram transcripts. Z-Score equalization prevents sprint distance (200–1400m) from drowning pressing intensity (5–35 presses/90). K-Means discovers the three tactical phases. The tactical dashboard is the JIT Compiler. The halftime re-cluster is the Guardian Agent. Skip any phase and the intelligence degrades silently — a pipeline running on single-axis separation while reporting four clean archetypes.</p>
+
+    <!-- ======================================================= -->
+    <!-- TYPE A — RPG NORMALIZATION: DRAG-TO-PREDICT WEAPON       -->
+    <!-- ======================================================= -->
+    <div class="interaction-box" id="block-typeA">
+      <div class="interaction-header">Type A Canvas — RPG: Drag Your Predicted Centroid</div>
+      <div class="question-text">
+        A game designer runs K-Means on <strong>raw, un-normalized</strong> weapon stats: Attack Power [0–9000] on the X-axis and Critical Rate [0–0.15] on the Y-axis. Four archetypes should emerge: Burst DPS, Sustained DPS, Utility, and Elemental Nuke.<br><br>
+        <strong>Before seeing the result:</strong> drag the circle to where you predict the "Utility" cluster centroid will land when K-Means runs on <em>raw</em> stats. Consider what scale dominance does to the distance computation.
+      </div>
+
+      <div class="canvas-wrapper" id="typeA-wrap" style="height:300px;">
+        <canvas id="rpg-canvas" width="600" height="300"></canvas>
+        <div class="axis-label" style="bottom:8px;left:50%;transform:translateX(-50%);">Attack Power (raw) →</div>
+        <div class="axis-label" style="top:50%;left:6px;transform:rotate(-90deg) translateX(-50%);transform-origin:left center;">Crit Rate ↑</div>
+      </div>
+
+      <div class="pred-panel" id="pred-panel-A">
+        <span class="label">Your prediction:</span>
+        <span class="val" id="pred-A-display">Drag the ◎ on the canvas above</span>
+        <span class="label" style="margin-left:auto;">Status:</span>
+        <span class="val" id="pred-A-status">Not placed</span>
+      </div>
+
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+        <button class="btn btn-outline" id="btn-lock-A" onclick="lockPredA()" disabled>Lock Prediction</button>
+        <button class="btn btn-accent" id="btn-reveal-A" onclick="revealA()" disabled>Run K-Means & Reveal</button>
+      </div>
+      <div class="feedback" id="fb-typeA"></div>
+    </div>
+
+    <!-- Gate 2: unlocks after Type A reveal -->
+    <div class="gated-content" id="gate-2">
+
+      <p>The centroid did not land near the true geometric center of the "Utility" archetype — it collapsed toward the high-Attack side of the space because Attack Power's 9000-unit range consumed 99.998% of the Euclidean distance. Critical Rate's 0.15-unit range was geometrically invisible. The four archetypes exist in the data but are unreachable without normalization.</p>
+      <p>Now observe what Min-Max normalization does to the same weapons. Both features compress to [0,1]. The four archetypes emerge cleanly because the distance computation finally weighs both dimensions equally.</p>
+
+      <!-- ======================================================= -->
+      <!-- TYPE B — DRIFT DETECTION: STATE SELECTION                -->
+      <!-- ======================================================= -->
+      <div class="interaction-box" id="block-typeB">
+        <div class="interaction-header">Type B Canvas — Guardian Agent: Predict the Drift State</div>
+        <div class="question-text">
+          The Guardian Agent monitors the "Resistant Deflector" archetype across 6 months of CBCS coaching. The three canvases below show three possible cluster states at month 4. <strong>Before seeing the Silhouette score:</strong> select which canvas you predict correctly represents the population geometry at month 4 — when the archetype has been drifting for 3 months.
+        </div>
+
+        <div class="state-grid" id="state-grid">
+          <div class="state-option" id="opt-0" onclick="selectState(0)">
+            <canvas id="state-c0" width="180" height="140"></canvas>
+            <div class="state-option-label">Option A</div>
+          </div>
+          <div class="state-option" id="opt-1" onclick="selectState(1)">
+            <canvas id="state-c1" width="180" height="140"></canvas>
+            <div class="state-option-label">Option B</div>
+          </div>
+          <div class="state-option" id="opt-2" onclick="selectState(2)">
+            <canvas id="state-c2" width="180" height="140"></canvas>
+            <div class="state-option-label">Option C</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem;">
+          <button class="btn btn-outline" id="btn-lock-B" onclick="lockStateSelection()" disabled>Lock Selection</button>
+          <span id="selection-readout" style="font-family:var(--mono);font-size:0.85rem;color:var(--muted);">No option selected</span>
+        </div>
+
+        <!-- The slider is LOCKED until prediction is committed -->
+        <div style="padding:1.2rem;background:var(--bg);border:1px solid var(--border);border-radius:4px;opacity:0.3;" id="slider-section">
+          <div class="month-labels">
+            <span>Month 1</span><span>Month 2</span><span>Month 3</span><span>Month 4</span><span>Month 5</span><span>Month 6</span>
+          </div>
+          <div class="slider-row">
+            <input type="range" id="drift-slider" min="1" max="6" value="1" disabled>
+            <div class="sil-display" id="sil-display" style="color:var(--green);">s=0.85</div>
+          </div>
+          <div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);">Silhouette score — visible only after prediction is locked</div>
+        </div>
+
+        <div class="feedback" id="fb-typeB"></div>
+      </div>
+
+      <!-- Gate 3: unlocks after Type B correct -->
+      <div class="gated-content" id="gate-3">
+
+        <p>The Guardian Agent fires a drift alarm when the Silhouette score falls below 0.40. At month 4, Option B correctly depicts what happens: the Deflector cluster has migrated spatially away from its original centroid, the cluster boundary no longer contains the population, and data points from adjacent archetypes have begun overlapping. The operator must trigger a full re-clustering — not adjust the threshold, not wait another month.</p>
+        <p>Notice what Option A depicted: the cluster still looks clean but has shrunk to a tight, isolated pocket. That is a false positive pattern — high Silhouette from a shrunken, unrepresentative cluster. Option C depicted the correct geometry for month 1, not month 4. Both errors are reachable and both correspond to real operational mistakes.</p>
+
+        <hr class="divider">
+
+        <!-- ======================================================= -->
+        <!-- TRANSFER GAUNTLET                                        -->
+        <!-- ======================================================= -->
+        <div class="gauntlet-wrap" id="gauntlet">
+          <div class="gauntlet-intro">
+            <div class="layer-tag">Transfer Gauntlet — Zero Scaffolding</div>
+            <h2>Cross-Domain Structural Recognition</h2>
+            <p>No canvas. No visuals. The structure you built across three transfer domains must now operate as pure inference. Each question targets the pipeline mechanism in a domain you have not explicitly worked through. Name the structural component.</p>
+          </div>
+          <div id="q-container"></div>
+        </div>
+
+      </div><!-- /gate-3 -->
+    </div><!-- /gate-2 -->
+  </div><!-- /gate-1 -->
+
+</div><!-- /container -->
+
+<script>
+
+/* ─────────────────────────────────────────────────────── */
+/* TYPE C: PIPELINE CONSTRUCTION                           */
+/* ─────────────────────────────────────────────────────── */
+const CORRECT_ORDER = ['raw','feature','norm','pca','kmeans','injection','drift'];
+let builtPipeline = [];
+
+function addStep(key, chipEl) {
+  if(chipEl.classList.contains('used')) return;
+  builtPipeline.push(key);
+  chipEl.classList.add('used');
+  renderSlots();
+  document.getElementById('btn-lock-pipeline').disabled = builtPipeline.length < 5;
+}
+
+function removeStep(idx) {
+  const removed = builtPipeline.splice(idx, 1)[0];
+  // un-use the chip
+  document.querySelectorAll('#inventory .step-chip').forEach(c => {
+    if(c.dataset.step === removed) c.classList.remove('used');
+  });
+  renderSlots();
+  document.getElementById('btn-lock-pipeline').disabled = builtPipeline.length < 5;
+}
+
+function renderSlots() {
+  const el = document.getElementById('pipeline-slots');
+  if(builtPipeline.length === 0) {
+    el.innerHTML = '<span class="slot-empty-hint">Pipeline is empty — add steps above</span>';
+    return;
+  }
+  const LABELS = {
+    raw:'Raw Telemetry Intake', feature:'Feature Selection', norm:'Z-Score Normalization',
+    pca:'PCA Compression', kmeans:'K-Means Clustering', injection:'Label Injection', drift:'Drift Monitoring'
+  };
+  el.innerHTML = builtPipeline.map((key, i) => `
+    <span class="slot-chip" onclick="removeStep(${i})">
+      ${LABELS[key]} <span class="remove">×</span>
+    </span>
+    ${i < builtPipeline.length-1 ? '<span class="pipeline-arrow">→</span>' : ''}
+  `).join('');
+}
+
+function lockPipeline() {
+  const fb = document.getElementById('fb-pipeline');
+  const btn = document.getElementById('btn-lock-pipeline');
+  btn.disabled = true;
+  document.querySelectorAll('#inventory .step-chip').forEach(c => c.style.pointerEvents='none');
+  document.querySelectorAll('#pipeline-slots .slot-chip').forEach(c => c.style.pointerEvents='none');
+
+  // Check correctness: must contain all 7 in order, or at minimum the 5 core in correct relative order
+  const coreOrder = ['raw','feature','norm','kmeans','injection'];
+  const userCore = builtPipeline.filter(k => coreOrder.includes(k));
+  const orderCorrect = JSON.stringify(userCore) === JSON.stringify(coreOrder) && builtPipeline.length === CORRECT_ORDER.length;
+  const partialCorrect = JSON.stringify(userCore) === JSON.stringify(coreOrder);
+
+  if(orderCorrect) {
+    fb.className='feedback visible success';
+    fb.innerHTML=`<div class="feedback-title">Pipeline Valid — Full Architecture</div>Correct execution order: Raw Intake → Feature Selection → Z-Score Normalization → PCA Compression → K-Means → Label Injection → Drift Monitoring. The composition is order-dependent. Normalization after K-Means produces clusters in unequalized space. PCA before normalization projects distorted variance axes. Each phase consumes the exact output of the phase before it.`;
+    setTimeout(unlockGate1, 1500);
+  } else if(partialCorrect && builtPipeline.length >= 5) {
+    fb.className='feedback visible success';
+    fb.innerHTML=`<div class="feedback-title">Core Pipeline Valid — Missing Components</div>The five core phases are in the correct sequence. Note that PCA Compression (between Normalization and K-Means) reduces the dimensionality of the normalized feature space, and Drift Monitoring is the operational layer that keeps the whole system honest over time. Both are required for a production pipeline.`;
+    setTimeout(unlockGate1, 1500);
+  } else {
+    fb.className='feedback visible error';
+    fb.innerHTML=`<div class="feedback-title">Pipeline Sequence Broken</div>The core phases must execute in this relative order: Raw Intake → Feature Selection → Normalization → K-Means → Label Injection. Your current ordering would cause at least one phase to operate on an input it cannot process. For example: running K-Means before normalization clusters by the widest raw range and ignores all narrow-range features. Remove and reconstruct. <button class="btn btn-outline" style="margin-top:1rem;font-size:0.85rem;" onclick="resetPipeline()">Reset Pipeline</button>`;
+  }
+}
+
+function resetPipeline() {
+  builtPipeline = [];
+  document.querySelectorAll('#inventory .step-chip').forEach(c => {c.classList.remove('used');c.style.pointerEvents='';});
+  renderSlots();
+  document.getElementById('btn-lock-pipeline').disabled = true;
+  document.getElementById('fb-pipeline').className='feedback';
+}
+
+function unlockGate1() {
+  const g = document.getElementById('gate-1');
+  g.style.display='block';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>g.classList.add('unlocked')));
+  initRPG();
+  setTimeout(()=>window.scrollTo({top:g.offsetTop-40,behavior:'smooth'}),300);
+}
+
+/* ─────────────────────────────────────────────────────── */
+/* TYPE A: RPG DRAG-TO-PREDICT CENTROID                    */
+/* ─────────────────────────────────────────────────────── */
+const cvA = document.getElementById('rpg-canvas');
+const ctA = cvA.getContext('2d');
+let rpgPoints = [];
+let predA = null; // {x,y} in canvas coords
+let predALocked = false;
+let dragging = false;
+
+// The "Utility" cluster true centroid in raw space: Attack≈1800, CritRate≈0.12 (top-left normalized)
+// But when raw K-Means runs, it collapses to Attack axis only
+const TRUE_CENTROID_RAW = {nx:0.2, ny:0.8}; // normalized position of Utility cluster
+const RAW_CENTROID_SKEWED = {nx:0.2, ny:0.5}; // where K-Means actually puts it (collapsed Y axis)
+
+function initRPG() {
+  rpgPoints = [];
+  const clusters = [
+    {cx:0.8,cy:0.2,label:'burst'},   // Burst DPS: high attack, low crit
+    {cx:0.5,cy:0.5,label:'sustain'}, // Sustained DPS
+    {cx:0.2,cy:0.8,label:'utility'}, // Utility: low attack, high crit
+    {cx:0.8,cy:0.8,label:'nuke'},    // Elemental Nuke: high attack, high crit
+  ];
+  for(let i=0;i<120;i++){
+    const c=clusters[i%4];
+    const nx=Math.max(0,Math.min(1,c.cx+(Math.random()-0.5)*0.22));
+    const ny=Math.max(0,Math.min(1,c.cy+(Math.random()-0.5)*0.22));
+    rpgPoints.push({nx,ny,label:c.label});
+  }
+  drawRPGRaw();
+}
+
+function nxToCanvasX(nx){return nx*560+20;}
+function nyToCanvasY(ny){return 280-ny*260;}
+
+function drawRPGRaw(){
+  ctA.clearRect(0,0,600,300);
+  // Draw axes
+  ctA.strokeStyle='#333';ctA.lineWidth=1;
+  ctA.beginPath();ctA.moveTo(20,280);ctA.lineTo(580,280);ctA.stroke();
+  ctA.beginPath();ctA.moveTo(20,280);ctA.moveTo(20,20);ctA.lineTo(20,280);ctA.stroke();
+
+  // Axis tick labels
+  ctA.fillStyle='#555';ctA.font='10px IBM Plex Mono';ctA.textAlign='center';
+  [0,3000,6000,9000].forEach((v,i)=>{
+    const x=20+(v/9000)*560;
+    ctA.fillText(v,x,295);
+  });
+  ctA.textAlign='right';
+  [0,0.05,0.10,0.15].forEach((v,i)=>{
+    const y=280-(v/0.15)*260;
+    ctA.fillText(v.toFixed(2),16,y+3);
+  });
+
+  // Draw points in white (before clustering)
+  rpgPoints.forEach(p=>{
+    // Raw display: X is Attack (nx maps linearly), Y is Crit (very compressed visually)
+    const px=nxToCanvasX(p.nx);
+    // In RAW space without normalization, the Y spread is visually tiny:
+    const rawY = p.ny * 0.15; // actual crit value
+    const pyRaw = 280 - (rawY/0.15)*5 - 10; // compress Y to show scale dominance
+    ctA.fillStyle='rgba(255,255,255,0.45)';
+    ctA.beginPath();ctA.arc(px,pyRaw,2.5,0,Math.PI*2);ctA.fill();
+  });
+
+  // Draw draggable prediction circle
+  if(predA) {
+    ctA.strokeStyle=predALocked?'#fff':'var(--E8C46A, #E8C46A)';
+    ctA.lineWidth=predALocked?2:2;
+    ctA.setLineDash(predALocked?[]:[6,3]);
+    ctA.strokeStyle=predALocked?'rgba(255,255,255,0.9)':'#E8C46A';
+    ctA.beginPath();ctA.arc(predA.x,predA.y,14,0,Math.PI*2);ctA.stroke();
+    ctA.fillStyle=predALocked?'rgba(255,255,255,0.15)':'rgba(232,196,106,0.15)';
+    ctA.beginPath();ctA.arc(predA.x,predA.y,14,0,Math.PI*2);ctA.fill();
+    ctA.setLineDash([]);
+    ctA.fillStyle=predALocked?'#fff':'#E8C46A';
+    ctA.font='11px IBM Plex Mono';ctA.textAlign='center';
+    ctA.fillText('◎',predA.x,predA.y+4);
+  } else {
+    // Draw hint
+    ctA.fillStyle='rgba(232,196,106,0.5)';
+    ctA.font='11px IBM Plex Mono';ctA.textAlign='center';
+    ctA.fillText('Click & drag to place your Utility centroid prediction',300,150);
+  }
+}
+
+cvA.addEventListener('mousedown',e=>{
+  if(predALocked) return;
+  const r=cvA.getBoundingClientRect();
+  const scaleX=600/r.width;
+  const scaleY=300/r.height;
+  predA={x:(e.clientX-r.left)*scaleX,y:(e.clientY-r.top)*scaleY};
+  dragging=true;
+  updatePredADisplay();
+  drawRPGRaw();
+  document.getElementById('btn-lock-A').disabled=false;
+});
+cvA.addEventListener('mousemove',e=>{
+  if(!dragging||predALocked) return;
+  const r=cvA.getBoundingClientRect();
+  const scaleX=600/r.width;const scaleY=300/r.height;
+  predA={x:(e.clientX-r.left)*scaleX,y:(e.clientY-r.top)*scaleY};
+  updatePredADisplay();
+  drawRPGRaw();
+});
+cvA.addEventListener('mouseup',()=>{dragging=false;});
+cvA.addEventListener('mouseleave',()=>{dragging=false;});
+
+// Touch support
+cvA.addEventListener('touchstart',e=>{
+  if(predALocked)return;e.preventDefault();
+  const r=cvA.getBoundingClientRect();const t=e.touches[0];
+  const scaleX=600/r.width;const scaleY=300/r.height;
+  predA={x:(t.clientX-r.left)*scaleX,y:(t.clientY-r.top)*scaleY};
+  dragging=true;updatePredADisplay();drawRPGRaw();
+},{passive:false});
+cvA.addEventListener('touchmove',e=>{
+  if(!dragging||predALocked)return;e.preventDefault();
+  const r=cvA.getBoundingClientRect();const t=e.touches[0];
+  const scaleX=600/r.width;const scaleY=300/r.height;
+  predA={x:(t.clientX-r.left)*scaleX,y:(t.clientY-r.top)*scaleY};
+  updatePredADisplay();drawRPGRaw();
+},{passive:false});
+cvA.addEventListener('touchend',()=>{dragging=false;});
+
+function updatePredADisplay(){
+  if(!predA) return;
+  const nx=(predA.x-20)/560;
+  const rawAtk=Math.round(nx*9000);
+  document.getElementById('pred-A-display').textContent=`Attack≈${rawAtk}`;
+  document.getElementById('pred-A-status').textContent='Placed (not locked)';
+}
+
+function lockPredA(){
+  predALocked=true;
+  document.getElementById('btn-lock-A').disabled=true;
+  document.getElementById('btn-reveal-A').disabled=false;
+  document.getElementById('pred-A-status').textContent='LOCKED';
+  document.getElementById('pred-A-status').style.color='#fff';
+  drawRPGRaw();
+}
+
+function revealA(){
+  document.getElementById('btn-reveal-A').disabled=true;
+  ctA.clearRect(0,0,600,300);
+
+  // Draw axes again
+  ctA.strokeStyle='#333';ctA.lineWidth=1;
+  ctA.beginPath();ctA.moveTo(20,280);ctA.lineTo(580,280);ctA.stroke();
+  ctA.beginPath();ctA.moveTo(20,20);ctA.lineTo(20,280);ctA.stroke();
+  ctA.fillStyle='#555';ctA.font='10px IBM Plex Mono';ctA.textAlign='center';
+  [0,3000,6000,9000].forEach(v=>{ctA.fillText(v,20+(v/9000)*560,295);});
+  ctA.textAlign='right';
+  [0,0.05,0.10,0.15].forEach(v=>{ctA.fillText(v.toFixed(2),16,280-(v/0.15)*260+3);});
+
+  // Draw points (compressed Y to show domination)
+  rpgPoints.forEach(p=>{
+    const px=nxToCanvasX(p.nx);
+    const pyRaw=280-(p.ny*0.15/0.15)*5-10;
+    ctA.fillStyle='rgba(255,255,255,0.35)';
+    ctA.beginPath();ctA.arc(px,pyRaw,2.5,0,Math.PI*2);ctA.fill();
+  });
+
+  // Draw user prediction (amber dashed)
+  if(predA){
+    ctA.strokeStyle='#E8C46A';ctA.lineWidth=2;ctA.setLineDash([5,3]);
+    ctA.beginPath();ctA.arc(predA.x,predA.y,14,0,Math.PI*2);ctA.stroke();
+    ctA.setLineDash([]);
+    ctA.fillStyle='rgba(232,196,106,0.15)';
+    ctA.beginPath();ctA.arc(predA.x,predA.y,14,0,Math.PI*2);ctA.fill();
+    ctA.fillStyle='#E8C46A';ctA.font='9px IBM Plex Mono';ctA.textAlign='center';
+    ctA.fillText('YOUR PRED',predA.x,predA.y-20);
+  }
+
+  // Draw actual raw K-Means centroid for "Utility" — collapsed to mid-Y because crit range invisible
+  // In raw space K-Means: Attack splits into quartiles. "Utility" would fall in low-attack band,
+  // but Y (crit) is compressed. Actual centroid lands near Attack≈1800, Crit visually at center.
+  const actualX=nxToCanvasX(0.2); // low attack
+  const actualY=280-2.5-10; // nearly at the bottom — crit is invisible
+  ctA.strokeStyle='#E76F51';ctA.lineWidth=2;ctA.setLineDash([]);
+  ctA.beginPath();ctA.arc(actualX,actualY,14,0,Math.PI*2);ctA.stroke();
+  ctA.fillStyle='rgba(231,111,81,0.15)';
+  ctA.beginPath();ctA.arc(actualX,actualY,14,0,Math.PI*2);ctA.fill();
+  ctA.fillStyle='#E76F51';ctA.font='9px IBM Plex Mono';ctA.textAlign='center';
+  ctA.fillText('RAW K-MEANS',actualX,actualY-20);
+
+  // Arrow from prediction to actual
+  if(predA){
+    ctA.strokeStyle='rgba(255,255,255,0.3)';ctA.lineWidth=1;ctA.setLineDash([3,3]);
+    ctA.beginPath();ctA.moveTo(predA.x,predA.y);ctA.lineTo(actualX,actualY);ctA.stroke();
+    ctA.setLineDash([]);
+  }
+
+  // Label explaining collapse
+  ctA.fillStyle='rgba(231,111,81,0.7)';ctA.font='bold 11px IBM Plex Mono';ctA.textAlign='left';
+  ctA.fillText('↑ Crit Rate dimension collapsed — range 0.15 vs Attack range 9000',25,260);
+
+  const fb=document.getElementById('fb-typeA');
+  const nx=predA?(predA.x-20)/560:0.5;
+  const predAtk=Math.round(nx*9000);
+  const correct=predAtk<3000; // If they predicted low attack that's partly right
+
+  if(correct){
+    fb.className='feedback visible success';
+    fb.innerHTML=`<div class="feedback-title">Correct Intuition — Wrong Reason</div>You placed the prediction in the low-Attack region, which matches where raw K-Means puts the "Utility" cluster. But notice the Y-axis: the actual centroid is pinned at the very bottom. Critical Rate is effectively invisible to the distance computation. The four true archetypes exist only in normalized space where both axes contribute equally.`;
+  } else {
+    fb.className='feedback visible error';
+    fb.innerHTML=`<div class="feedback-title">Scale Dominance — The Core Failure</div>Raw K-Means clusters entirely along the Attack Power axis because its 9,000-unit range accounts for 99.998% of the Euclidean distance. Critical Rate's 0.15-unit range is geometrically invisible. The four archetypes you expected — Burst, Sustained, Utility, Nuke — are unreachable from raw space. They only emerge after Min-Max normalization compresses Attack to [0,1] and expands Crit to [0,1], giving both axes equal geometric weight.`;
+  }
+
+  setTimeout(unlockGate2, 1800);
+}
+
+function unlockGate2(){
+  const g=document.getElementById('gate-2');
+  g.style.display='block';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>g.classList.add('unlocked')));
+  initStatePanels();
+  setTimeout(()=>window.scrollTo({top:g.offsetTop-40,behavior:'smooth'}),300);
+}
+
+/* ─────────────────────────────────────────────────────── */
+/* TYPE B: CONCEPT DRIFT STATE SELECTION                   */
+/* ─────────────────────────────────────────────────────── */
+let selectedState = null;
+let stateLocked = false;
+
+// Option index 1 is the CORRECT one (drifted cluster, scattered, overlapping)
+const CORRECT_STATE = 1;
+
+function initStatePanels(){
+  drawStateCanvas(0, 'stable-shrunk');  // A: shrunken tight cluster — false positive trap
+  drawStateCanvas(1, 'drifted');        // B: CORRECT — drifted and overlapping
+  drawStateCanvas(2, 'early-stable');   // C: early month 1 (no drift yet)
+}
+
+function drawStateCanvas(idx, type) {
+  const cv=document.getElementById(`state-c${idx}`);
+  const ct=cv.getContext('2d');
+  ct.clearRect(0,0,180,140);
+
+  // Anchor cluster (stable — always present)
+  ct.fillStyle='rgba(42,157,143,0.25)';ct.beginPath();ct.arc(55,70,25,0,Math.PI*2);ct.fill();
+  ct.strokeStyle='rgba(42,157,143,0.6)';ct.lineWidth=1.5;ct.setLineDash([]);
+  ct.beginPath();ct.arc(55,70,25,0,Math.PI*2);ct.stroke();
+  ct.fillStyle='rgba(42,157,143,0.8)';
+  for(let i=0;i<18;i++){
+    ct.beginPath();ct.arc(55+(Math.random()-0.5)*22,70+(Math.random()-0.5)*22,2,0,Math.PI*2);ct.fill();
+  }
+
+  // Old centroid ring
+  const oldCx=130, oldCy=70;
+  ct.strokeStyle='rgba(231,111,81,0.3)';ct.setLineDash([4,3]);ct.lineWidth=1.5;
+  ct.beginPath();ct.arc(oldCx,oldCy,28,0,Math.PI*2);ct.stroke();
+  ct.setLineDash([]);
+  ct.fillStyle='rgba(231,111,81,0.3)';ct.font='8px IBM Plex Mono';ct.textAlign='center';
+  ct.fillText('old',oldCx,oldCy+3);
+
+  if(type==='stable-shrunk'){
+    // Cluster is small and tight — still near centroid, but unrepresentative
+    ct.fillStyle='rgba(231,111,81,0.6)';ct.beginPath();ct.arc(130,70,10,0,Math.PI*2);ct.fill();
+    for(let i=0;i<8;i++){
+      ct.fillStyle='rgba(231,111,81,0.7)';
+      ct.beginPath();ct.arc(130+(Math.random()-0.5)*10,70+(Math.random()-0.5)*10,2,0,Math.PI*2);ct.fill();
+    }
+    ct.fillStyle='rgba(255,255,255,0.4)';ct.font='7px IBM Plex Mono';ct.textAlign='center';
+    ct.fillText('s=0.72',130,100);
+  } else if(type==='drifted'){
+    // Cluster has migrated — points scattered, overlapping adjacent space
+    const newCx=155, newCy=40;
+    ct.fillStyle='rgba(231,111,81,0.25)';ct.beginPath();ct.arc(newCx,newCy,20,0,Math.PI*2);ct.fill();
+    for(let i=0;i<20;i++){
+      ct.fillStyle='rgba(231,111,81,0.6)';
+      ct.beginPath();ct.arc(newCx+(Math.random()-0.5)*45,newCy+(Math.random()-0.5)*50,2,0,Math.PI*2);ct.fill();
+    }
+    // Arrow showing drift
+    ct.strokeStyle='rgba(231,111,81,0.5)';ct.lineWidth=1;ct.setLineDash([]);
+    ct.beginPath();ct.moveTo(oldCx,oldCy);ct.lineTo(newCx-5,newCy+5);ct.stroke();
+    ct.fillStyle='rgba(255,80,80,0.8)';ct.font='7px IBM Plex Mono';ct.textAlign='center';
+    ct.fillText('s=0.28 ⚠',110,125);
+  } else {
+    // Early stable — full cluster at centroid
+    ct.fillStyle='rgba(231,111,81,0.4)';ct.beginPath();ct.arc(130,70,25,0,Math.PI*2);ct.fill();
+    ct.strokeStyle='rgba(231,111,81,0.7)';ct.lineWidth=1.5;
+    ct.beginPath();ct.arc(130,70,25,0,Math.PI*2);ct.stroke();
+    for(let i=0;i<20;i++){
+      ct.fillStyle='rgba(231,111,81,0.7)';
+      ct.beginPath();ct.arc(130+(Math.random()-0.5)*22,70+(Math.random()-0.5)*22,2,0,Math.PI*2);ct.fill();
+    }
+    ct.fillStyle='rgba(42,157,143,0.7)';ct.font='7px IBM Plex Mono';ct.textAlign='center';
+    ct.fillText('s=0.82',130,100);
+  }
+}
+
+function selectState(idx){
+  if(stateLocked) return;
+  selectedState=idx;
+  document.querySelectorAll('.state-option').forEach((el,i)=>{
+    el.classList.toggle('selected',i===idx);
+  });
+  document.getElementById('selection-readout').textContent=`Option ${['A','B','C'][idx]} selected`;
+  document.getElementById('btn-lock-B').disabled=false;
+}
+
+function lockStateSelection(){
+  if(selectedState===null||stateLocked) return;
+  stateLocked=true;
+  document.getElementById('btn-lock-B').disabled=true;
+  document.getElementById('selection-readout').textContent='Selection locked';
+
+  // Reveal state options
+  document.querySelectorAll('.state-option').forEach((el,i)=>{
+    el.classList.remove('selected');
+    if(i===CORRECT_STATE){el.classList.add('correct-reveal');}
+    else if(i===selectedState&&selectedState!==CORRECT_STATE){el.classList.add('wrong-reveal');}
+    el.style.pointerEvents='none';
+  });
+
+  // Unlock the slider for review
+  const sliderSection=document.getElementById('slider-section');
+  sliderSection.style.opacity='1';
+  document.getElementById('drift-slider').disabled=false;
+  document.getElementById('drift-slider').value=4; // Month 4
+  updateDriftSlider(4); // Show month 4 silhouette
+
+  const fb=document.getElementById('fb-typeB');
+
+  if(selectedState===CORRECT_STATE){
+    fb.className='feedback visible success';
+    fb.innerHTML=`<div class="feedback-title">Correct — Genuine Drift Detected</div>Option B correctly shows the Deflector cluster has migrated spatially away from its original centroid, with points scattered and overlapping adjacent cluster space. The Silhouette score at month 4 (s≈0.28) is below the 0.40 threshold. The Guardian Agent fires an alarm. A full re-clustering is required to define the new archetype geometry.<br><br><strong>Option A</strong> depicted a false positive pattern: a shrunken, tight cluster (high Silhouette, low coverage). Looks healthy but represents only a fraction of the original population.<br><strong>Option C</strong> depicted month 1 — the pre-drift baseline. Wrong time point.`;
+    setTimeout(unlockGate3, 2000);
+  } else {
+    const wrongExplanation={
+      0:`<strong>Option A</strong> is a false positive trap. A shrunken tight cluster still reports high Silhouette (s≈0.72) because the remaining points are well-grouped. But the cluster has lost coverage — it no longer represents the population. High Silhouette can coexist with a pipeline that silently stopped serving the full archetype.`,
+      2:`<strong>Option C</strong> shows the month 1 baseline — stable clusters, no drift. You were asked to predict month 4 after 3 months of behavioral evolution. Month 1 geometry tells you what the archetypes looked like when they were calibrated, not where the population is now.`
+    }[selectedState];
+    fb.className='feedback visible error';
+    fb.innerHTML=`<div class="feedback-title">Incorrect Selection</div>${wrongExplanation}<br><br>Option B is correct: the cluster has migrated away from the original centroid, points are scattered across cluster boundaries, and the Silhouette score (s≈0.28) has fallen below the 0.40 alarm threshold. <button class="btn btn-outline" style="margin-top:1rem;font-size:0.85rem;" onclick="resetStateSelection()">Try Again</button>`;
+  }
+}
+
+function resetStateSelection(){
+  stateLocked=false; selectedState=null;
+  document.querySelectorAll('.state-option').forEach(el=>{
+    el.classList.remove('selected','correct-reveal','wrong-reveal');
+    el.style.pointerEvents='';
+  });
+  document.getElementById('selection-readout').textContent='No option selected';
+  document.getElementById('btn-lock-B').disabled=true;
+  document.getElementById('fb-typeB').className='feedback';
+  const sliderSection=document.getElementById('slider-section');
+  sliderSection.style.opacity='0.3';
+  document.getElementById('drift-slider').disabled=true;
+  document.getElementById('drift-slider').value=1;
+  document.getElementById('sil-display').textContent='s=0.85';
+  document.getElementById('sil-display').style.color='var(--green)';
+}
+
+document.getElementById('drift-slider').addEventListener('input',function(){
+  updateDriftSlider(parseInt(this.value));
+});
+
+function updateDriftSlider(month){
+  const scores=[0,0.85,0.74,0.59,0.28,0.19,0.12]; // months 0-6
+  const s=scores[month]||0.85;
+  const display=document.getElementById('sil-display');
+  display.textContent=`s=${s.toFixed(2)}`;
+  display.style.color=s<0.40?'var(--red)':s<0.60?'var(--accent)':'var(--green)';
+}
+
+function unlockGate3(){
+  const g=document.getElementById('gate-3');
+  g.style.display='block';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>g.classList.add('unlocked')));
+  renderGauntlet();
+  setTimeout(()=>window.scrollTo({top:g.offsetTop-40,behavior:'smooth'}),400);
+}
+
+/* ─────────────────────────────────────────────────────── */
+/* TRANSFER GAUNTLET                                       */
+/* ─────────────────────────────────────────────────────── */
+const G_DATA = [
+  {
+    type:'text',
+    q:'In the football analytics pipeline, including "jersey number" as a feature produces mathematically perfect clusters — defenders in one group, midfielders in another — but with zero tactical value. This is the same failure as adding Telegram User_ID in the CCP. What single word names the category of feature that causes this failure?',
+    match:'demographic|identity|identifier',
+    exp:'Demographic (or identifier). These features encode uniqueness, not behavioral variation. K-Means achieves maximum Silhouette on trivially separated individual entities — but the clusters encode no operational signal. The pipeline must validate that every feature measures behavior, not identity.'
+  },
+  {
+    type:'bool',
+    q:'True or False: In the audio mastering analogy, dynamic range compression is structurally equivalent to Min-Max normalization — not Z-Score — because audio tracks have hard physical amplitude boundaries and extreme peaks are artifacts, not signal.',
+    ans:true,
+    exp:'True. Min-Max is appropriate when features have hard conceptual ceilings and outlier values represent measurement limits rather than informative extremes. Audio amplitude has a physical maximum (0 dBFS). Compressing to that boundary is exactly Min-Max normalization applied to waveforms.'
+  },
+  {
+    type:'text',
+    q:'In the RPG balance pipeline, a developer skips normalization after a balance patch that doubles all Elemental Bonus values. K-Means still converges and Silhouette = 0.65. But the recommendation engine serves wrong weapon builds for weeks before anyone notices. What is the correct term for this failure mode — when a pipeline produces valid-looking output while silently encoding only one behavioral dimension?',
+    match:'scale dominance|scale|dominance',
+    exp:'Scale dominance. The feature with the widest raw numerical range — in this case, the doubled Elemental Bonus values — dominates the Euclidean distance computation and renders all other features geometrically invisible. The clusters separate cleanly along one axis while ignoring the remaining dimensions. Silhouette cannot detect this because it only measures geometric separation, not semantic content.'
+  },
+  {
+    type:'bool',
+    q:'True or False: In the cooking pipeline, seasonal drift (summer recipes favoring citrus and acid, winter recipes favoring butter and umami) represents a genuine Concept Drift requiring re-clustering — not a false positive from demographic influx.',
+    ans:true,
+    exp:'True. Genuine Concept Drift occurs when the underlying behavioral distribution of the population shifts — not when new members join. Seasonal ingredient patterns systematically alter the feature vectors of existing recipes. The centroids that described summer cuisine no longer represent winter cuisine. Re-clustering on updated data is required.'
+  },
+  {
+    type:'text',
+    q:'The CCP pipeline compresses 2,300 tokens of raw client context into 4 deterministic numbers consumed by the JIT Compiler. This achieves zero hallucination rate on archetype assignment, sub-millisecond lookup latency, and a 98.7% reduction in token cost per inference. What is the name of the architectural component that consumes these 4 numbers and uses them to select a coaching protocol?',
+    match:'jit|compiler|jit compiler',
+    exp:'The JIT Skill Compiler. It receives the geometric coordinates (CLUSTER_ID, CENTROID_DISTANCE, TRAJECTORY_LABEL, MOOD_STATE) from Neo4j and uses them as deterministic constraints on the LLM\'s coaching response. The pipeline does not feed the LLM raw text — it feeds it coordinates.'
+  },
+  {
+    type:'text',
+    q:'A client\'s cluster label flips between two archetypes every week for six consecutive weeks. The Guardian Agent does not fire a Concept Drift alarm. What pipeline mechanism would prevent this instability without masking genuine archetype transitions?',
+    match:'smooth|average|ema|exponential|window',
+    exp:'Exponential moving average (EMA) smoothing on cluster distances. Instead of re-assigning the label on every weekly update, the pipeline tracks the smoothed distance to each centroid over a rolling window. A label change is only triggered when the smoothed distance to a new centroid is consistently lower for 2 or more consecutive periods. This absorbs minor boundary fluctuations while still surfacing genuine transitions.'
+  },
+  {
+    type:'bool',
+    q:'True or False: PCA always improves clustering quality because it removes noise and focuses the distance computation on the most important behavioral dimensions.',
+    ans:false,
+    exp:'False. PCA preserves maximum total population variance — not maximum cluster separability. A feature axis that carries high discriminative power between archetypes but low total population variance will be discarded by PCA. This can merge clusters that were cleanly separated in the original space. Always compare Silhouette scores before and after PCA. If Silhouette drops, PCA has erased discriminative structure.'
+  },
+];
+
+function renderGauntlet(){
+  const c=document.getElementById('q-container');
+  let html='';
+  G_DATA.forEach((item,idx)=>{
+    html+=`<div class="q-block" id="gq-${idx}">
+      <div class="q-num">Question ${idx+1} of ${G_DATA.length}</div>
+      <div class="q-text">${item.q}</div>`;
+    if(item.type==='bool'){
+      html+=`<div style="display:flex;gap:1rem;">
+        <button class="btn btn-outline" onclick="answerBool(${idx},true,this)">True</button>
+        <button class="btn btn-outline" onclick="answerBool(${idx},false,this)">False</button>
+      </div>`;
+    } else {
+      html+=`<input type="text" id="gInput-${idx}" class="input-text" placeholder="Type keyword or phrase...">
+             <button class="btn btn-outline" onclick="answerText(${idx},this)">Lock Answer</button>`;
+    }
+    html+=`<div class="feedback" id="gfb-${idx}"></div></div>`;
+  });
+  c.innerHTML=html;
+}
+
+function answerBool(idx,val,btn){
+  const block=document.getElementById(`gq-${idx}`);
+  block.querySelectorAll('button').forEach(b=>b.disabled=true);
+  const fb=document.getElementById(`gfb-${idx}`);fb.classList.add('visible');
+  const correct=val===G_DATA[idx].ans;
+  fb.className=`feedback visible ${correct?'success':'error'}`;
+  fb.innerHTML=`<div class="feedback-title">${correct?'Correct':'Incorrect'}</div>${G_DATA[idx].exp}`;
+}
+
+function answerText(idx,btn){
+  const input=document.getElementById(`gInput-${idx}`);
+  const val=input.value.toLowerCase().trim();
+  if(!val) return;
+  input.disabled=true;btn.disabled=true;
+  const fb=document.getElementById(`gfb-${idx}`);
+  const matches=G_DATA[idx].match.split('|');
+  const correct=matches.some(m=>val.includes(m));
+  fb.className=`feedback visible ${correct?'success':'error'}`;
+  fb.innerHTML=`<div class="feedback-title">${correct?'Correct':'Incorrect'}</div>${G_DATA[idx].exp}`;
+}
+
+</script>
+</body>
+</html>

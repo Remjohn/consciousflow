@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrix Multiplication — The Playbook</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:.85em;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1;min-width:280px;}
+.visual-col{flex:1.2;min-width:320px;}
+
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+.insight.teal{border-color:var(--teal);background:var(--teal-glow);}.insight.teal strong{color:var(--teal);}
+.insight.rose{border-color:var(--rose);background:var(--rose-glow);}.insight.rose strong{color:var(--rose);}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text-muted);color:var(--text);}
+.btn-outline.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow);}
+.btn-sm{padding:.4rem .8rem;font-size:.78rem;}
+
+.quiz-option{display:block;width:100%;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:.88rem;color:var(--text-muted);transition:all .25s;text-align:left;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;}
+.quiz-option:hover{border-color:var(--border-light);color:var(--text);}
+.quiz-option.correct{border-color:var(--emerald);color:var(--emerald);background:var(--emerald-glow);}
+.quiz-option.wrong{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+.quiz-option.disabled{pointer-events:none;opacity:.6;}
+.quiz-explanation{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+.quiz-explanation.show{max-height:300px;}
+
+.matrix-cell{display:inline-flex;align-items:center;justify-content:center;width:40px;height:36px;border:1px solid var(--border);font-family:'JetBrains Mono';font-size:.82rem;font-weight:600;border-radius:4px;transition:all .3s;}
+.matrix-cell.hl-row{background:var(--amber-glow);border-color:var(--amber);color:var(--amber);}
+.matrix-cell.hl-col{background:var(--teal-glow);border-color:var(--teal);color:var(--teal);}
+.matrix-cell.hl-result{background:var(--emerald-glow);border-color:var(--emerald);color:var(--emerald);}
+
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+.scroll-hint{animation:bounce 2s ease infinite;}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column!important;}
+  .canvas-wrap{min-height:280px!important;}
+  .nav-links{gap:.5rem;}.nav-link{font-size:.7rem;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">MATRIX MULT</span>
+    <div class="nav-links">
+      <a href="#multiplier" class="nav-link active" data-section="multiplier">Multiplier</a>
+      <a href="#geometry" class="nav-link" data-section="geometry">Geometry</a>
+      <a href="#lora" class="nav-link" data-section="lora">LoRA</a>
+      <a href="#edges" class="nav-link" data-section="edges">Edge Cases</a>
+      <a href="#checkpoint" class="nav-link" data-section="checkpoint">Checkpoint</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 05 — EXPOSURE LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Matrix Multiplication<br><span style="color:var(--text-muted);font-weight:300;">The Frozen Playbook</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      Every weight matrix is a transformation written as numbers. Every multiplication is that transformation being executed. Every model is hundreds of these playbooks stacked.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: Interactive Matrix Multiplier -->
+<section id="multiplier" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — ROW · COLUMN = ONE OUTPUT</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Interactive Matrix × Vector</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          Each output element is the <strong style="color:var(--text);">dot product</strong> of one matrix row with the input vector. Click a row to highlight the computation.
+        </p>
+        <div style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem;">
+          <!-- Matrix -->
+          <div>
+            <div style="font-size:.72rem;color:var(--text-dim);margin-bottom:.3rem;">Matrix M</div>
+            <div style="display:grid;grid-template-columns:repeat(3,40px);gap:2px;" id="matrixGrid"></div>
+          </div>
+          <span style="font-size:1.5rem;color:var(--text-dim);">×</span>
+          <!-- Vector -->
+          <div>
+            <div style="font-size:.72rem;color:var(--text-dim);margin-bottom:.3rem;">Vector v</div>
+            <div style="display:grid;grid-template-columns:40px;gap:2px;" id="vecGrid"></div>
+          </div>
+          <span style="font-size:1.5rem;color:var(--text-dim);">=</span>
+          <!-- Result -->
+          <div>
+            <div style="font-size:.72rem;color:var(--text-dim);margin-bottom:.3rem;">Result</div>
+            <div style="display:grid;grid-template-columns:40px;gap:2px;" id="resGrid"></div>
+          </div>
+        </div>
+        <div id="dotExplain" class="card" style="padding:1rem;margin-bottom:1rem;">
+          <p style="font-size:.85rem;color:var(--text-dim);font-family:'JetBrains Mono';">Click a row to see the dot product computation</p>
+        </div>
+        <div class="insight teal">
+          <strong>Shape rule:</strong> (m×<span style="color:var(--rose);">n</span>) × (<span style="color:var(--rose);">n</span>×p) → (m×p). Inner dimensions must match. This is the grammar of matrix computation.
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:400px;">
+          <canvas id="gridCanvas"></canvas>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-top:.75rem;">
+          <button class="btn btn-outline btn-sm active" data-mat="scale">Scale 2×,3×</button>
+          <button class="btn btn-outline btn-sm" data-mat="rotate">Rotate 90°</button>
+          <button class="btn btn-outline btn-sm" data-mat="shear">Shear</button>
+          <button class="btn btn-outline btn-sm" data-mat="project">Project</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: Geometric Types -->
+<section id="geometry" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:.5rem;">02 — MATRICES ENCODE GEOMETRY</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">How Matrices Reshape Space</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;">
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--amber);">
+        <h4 style="color:var(--amber);margin-bottom:.5rem;">Diagonal (Scaling)</h4>
+        <div style="font-family:'JetBrains Mono';font-size:.8rem;color:var(--text-dim);margin-bottom:.5rem;">[s₁ 0] · v = [s₁v₁]<br>[0 s₂] &nbsp;&nbsp;&nbsp; [s₂v₂]</div>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">Each axis scaled independently. In Transformers: amplifying or dampening specific feature dimensions.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--teal);">
+        <h4 style="color:var(--teal);margin-bottom:.5rem;">Rotation</h4>
+        <div style="font-family:'JetBrains Mono';font-size:.8rem;color:var(--text-dim);margin-bottom:.5rem;">[cosθ -sinθ]<br>[sinθ &nbsp;cosθ]</div>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">Norm-preserving. Paper #35's steering technique: rotate the hidden state's direction without changing its magnitude.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--rose);">
+        <h4 style="color:var(--rose);margin-bottom:.5rem;">Projection</h4>
+        <div style="font-family:'JetBrains Mono';font-size:.8rem;color:var(--text-dim);margin-bottom:.5rem;">[1 0] · v = [v₁]<br>[0 0] &nbsp;&nbsp;&nbsp; [0 ]</div>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">Information destruction. Q/K/V projections: 768→64. <strong style="color:var(--text);">704 dimensions permanently annihilated</strong> per head.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--violet);">
+        <h4 style="color:var(--violet);margin-bottom:.5rem;">LoRA Update</h4>
+        <div style="font-family:'JetBrains Mono';font-size:.8rem;color:var(--text-dim);margin-bottom:.5rem;">ΔW = B(768×16) · A(16×768)<br>rank ≤ 16</div>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">Low-rank factorization. Only 16 independent directions modifiable. <strong style="color:var(--text);">752 directions frozen</strong>. Sufficient for Voice DNA (~8-12D), fails for reasoning (>64D).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: LoRA Visualizer -->
+<section id="lora" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">03 — THE RANK BOTTLENECK</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">LoRA: Low-Rank Adaptation</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          Instead of modifying the full 768×768 weight matrix (589,824 params), LoRA factorizes the update as <strong style="color:var(--text);">ΔW = B × A</strong> through a rank-r bottleneck.
+        </p>
+        <div class="card" style="padding:1rem;margin-bottom:.75rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
+            <span style="font-size:.82rem;font-weight:600;">Rank</span>
+            <span id="rankVal" style="font-family:'JetBrains Mono';color:var(--amber);font-size:.9rem;">16</span>
+          </div>
+          <input type="range" id="rankSlider" min="1" max="64" value="16" style="-webkit-appearance:none;width:100%;background:transparent;">
+          <style>#rankSlider::-webkit-slider-track{height:4px;background:var(--border);border-radius:2px;}#rankSlider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--amber);border-radius:50%;margin-top:-6px;cursor:pointer;}</style>
+        </div>
+        <div id="loraStats" class="card" style="padding:1rem;font-family:'JetBrains Mono';font-size:.82rem;line-height:1.8;color:var(--text-muted);"></div>
+        <div class="insight" style="margin-top:.75rem;">
+          <strong>Paper #31:</strong> Voice DNA has intrinsic dimension ~8-12. Rank 16 is sufficient. Complex reasoning has dimension >64 — LoRA catastrophically fails.
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:380px;">
+          <canvas id="loraCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 4: Edge Cases -->
+<section id="edges" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--rose);margin-bottom:.5rem;">04 — EDGE CASES</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Extremes & Shape Rules</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;">
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--emerald);">
+        <h4 style="color:var(--emerald);margin-bottom:.5rem;">Identity Matrix</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">I·v = v. The pass-through. Residual connections effectively add an identity: output = Ix + T(x) = x + T(x).</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--text-dim);">
+        <h4 style="margin-bottom:.5rem;">Zero Matrix</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">0·v = 0. Total information annihilation. A dead attention head with collapsed weights.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--violet);">
+        <h4 style="color:var(--violet);margin-bottom:.5rem;">Non-Square: Dimension Change</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">64×768 = compression (info destroyed). 3072×768 = expansion (info preserved, higher canvas). The Transformer's compress-then-expand architecture.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--rose);">
+        <h4 style="color:var(--rose);margin-bottom:.5rem;">Non-Commutativity</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">AB ≠ BA. Rotate-then-scale ≠ scale-then-rotate. In a Transformer, <strong style="color:var(--text);">layer order defines the computational pipeline</strong>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 5: Checkpoint -->
+<section id="checkpoint" class="section">
+  <div class="section-inner" style="max-width:720px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">05 — CHECKPOINT</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Test Your Understanding</h2>
+    <div id="quizContainer" style="display:flex;flex-direction:column;gap:1.5rem;"></div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);">
+  <p style="max-width:600px;margin:0 auto 1rem;line-height:1.5;">
+    <strong>Compression:</strong> A matrix is a frozen transformation. A weight matrix is a learned frozen transformation. Understanding matrices = understanding exactly what the model has learned.
+  </p>
+  Interactive Visual Learning — Lesson 05: Matrix Multiplication Exposure
+</footer>
+
+<script>
+const DPR=window.devicePixelRatio||1;
+
+/* Hero */
+(function(){const c=document.getElementById('heroCanvas');let W,H,ctx;
+function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+resize();window.addEventListener('resize',resize);
+let t=0;
+function draw(){ctx.clearRect(0,0,W,H);
+  for(let r=0;r<4;r++)for(let c2=0;c2<6;c2++){
+    const x=W*0.15+c2*(W*0.12),y=H*0.25+r*(H*0.14);
+    const v=Math.sin(t*0.01+r*0.5+c2*0.3)*0.5+0.5;
+    ctx.fillStyle=`rgba(245,158,11,${v*0.06})`;
+    ctx.fillRect(x,y,W*0.08,H*0.08);
+    ctx.strokeStyle=`rgba(245,158,11,${v*0.08})`;ctx.lineWidth=1;
+    ctx.strokeRect(x,y,W*0.08,H*0.08);
+  }
+  t++;requestAnimationFrame(draw);}
+draw();})();
+
+/* Matrix Multiplier */
+(function(){
+  const matrices={
+    scale:{m:[[2,0],[0,3]],v:[4,5],label:'Scale 2×,3×'},
+    rotate:{m:[[0,-1],[1,0]],v:[3,1],label:'Rotate 90°'},
+    shear:{m:[[1,0.5],[0,1]],v:[2,4],label:'Shear'},
+    project:{m:[[1,0],[0,0]],v:[3,7],label:'Project onto x'}
+  };
+  let mType='scale',hlRow=-1;
+
+  function renderGrids(){
+    const{m,v}=matrices[mType];
+    const rows=m.length,cols=m[0].length;
+    // Matrix
+    const mg=document.getElementById('matrixGrid');
+    mg.style.gridTemplateColumns=`repeat(${cols},40px)`;
+    mg.innerHTML='';
+    m.forEach((row,ri)=>row.forEach((val,ci)=>{
+      const d=document.createElement('div');d.className='matrix-cell';
+      if(ri===hlRow)d.classList.add('hl-row');
+      d.textContent=val;d.dataset.row=ri;
+      d.style.cursor='pointer';
+      d.addEventListener('click',()=>{hlRow=ri;renderGrids();showDot();});
+      mg.appendChild(d);
+    }));
+    // Vector
+    const vg=document.getElementById('vecGrid');vg.innerHTML='';
+    v.forEach((val,i)=>{
+      const d=document.createElement('div');d.className='matrix-cell';
+      if(hlRow>=0)d.classList.add('hl-col');
+      d.textContent=val;vg.appendChild(d);
+    });
+    // Result
+    const rg=document.getElementById('resGrid');rg.innerHTML='';
+    const res=m.map(row=>row.reduce((s,c,i)=>s+c*v[i],0));
+    res.forEach((val,i)=>{
+      const d=document.createElement('div');d.className='matrix-cell';
+      if(i===hlRow)d.classList.add('hl-result');
+      d.textContent=val;rg.appendChild(d);
+    });
+  }
+
+  function showDot(){
+    if(hlRow<0)return;
+    const{m,v}=matrices[mType];const row=m[hlRow];
+    const terms=row.map((c,i)=>`${c}×${v[i]}`).join(' + ');
+    const result=row.reduce((s,c,i)=>s+c*v[i],0);
+    document.getElementById('dotExplain').innerHTML=`
+      <p style="font-size:.78rem;color:var(--text-dim);margin-bottom:.25rem;">Row ${hlRow+1} · v =</p>
+      <p style="font-family:'JetBrains Mono';font-size:.88rem;color:var(--amber);">${terms} = <strong style="color:var(--emerald);">${result}</strong></p>`;
+  }
+
+  // Grid canvas
+  const canvas=document.getElementById('gridCanvas');
+  function drawGrid(){
+    const p=canvas.parentElement,r=p.getBoundingClientRect();
+    canvas.width=r.width*DPR;canvas.height=r.height*DPR;canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';
+    const ctx=canvas.getContext('2d');ctx.scale(DPR,DPR);
+    const w=r.width,h=r.height;ctx.clearRect(0,0,w,h);
+    const{m,v}=matrices[mType];const cx=w/2,cy=h/2,sc=Math.min(w,h)/12;
+
+    // Grid dots + transformed
+    for(let i=-5;i<=5;i++)for(let j=-5;j<=5;j++){
+      // Original
+      ctx.beginPath();ctx.arc(cx+i*sc,cy-j*sc,1.5,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.08)';ctx.fill();
+      // Transformed
+      const tx=m[0][0]*i+(m[0][1]||0)*j;
+      const ty=m[1][0]*i+(m[1][1]||0)*j;
+      ctx.beginPath();ctx.arc(cx+tx*sc,cy-ty*sc,2,0,Math.PI*2);ctx.fillStyle='rgba(20,184,166,0.3)';ctx.fill();
+    }
+
+    // Axes
+    ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(w,cy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,0);ctx.lineTo(cx,h);ctx.stroke();
+
+    // Input vector
+    const vx=cx+v[0]*sc,vy=cy-v[1]*sc;
+    ctx.strokeStyle='#a1a1aa';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(vx,vy);ctx.stroke();
+    ctx.beginPath();ctx.arc(vx,vy,4,0,Math.PI*2);ctx.fillStyle='#a1a1aa';ctx.fill();
+    ctx.font='600 10px Space Grotesk';ctx.fillStyle='#a1a1aa';ctx.textAlign='left';
+    ctx.fillText(`v=(${v[0]},${v[1]})`,vx+8,vy-8);
+
+    // Output vector
+    const res=m.map(row=>row.reduce((s,c,i)=>s+c*v[i],0));
+    const ox=cx+res[0]*sc,oy=cy-res[1]*sc;
+    ctx.save();ctx.shadowColor='#10b981';ctx.shadowBlur=6;
+    ctx.strokeStyle='#10b981';ctx.lineWidth=2.5;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ox,oy);ctx.stroke();ctx.restore();
+    ctx.beginPath();ctx.arc(ox,oy,5,0,Math.PI*2);ctx.fillStyle='#10b981';ctx.fill();
+    ctx.font='600 10px Space Grotesk';ctx.fillStyle='#10b981';
+    ctx.fillText(`Mv=(${res[0]},${res[1]})`,ox+8,oy-8);
+  }
+
+  document.querySelectorAll('[data-mat]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('[data-mat]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      mType=btn.dataset.mat;hlRow=-1;
+      renderGrids();drawGrid();
+      document.getElementById('dotExplain').innerHTML='<p style="font-size:.85rem;color:var(--text-dim);font-family:JetBrains Mono;">Click a row to see the dot product computation</p>';
+    });
+  });
+  renderGrids();drawGrid();window.addEventListener('resize',drawGrid);
+})();
+
+/* LoRA Visualizer */
+(function(){
+  const canvas=document.getElementById('loraCanvas');
+  const slider=document.getElementById('rankSlider');
+  const rankVal=document.getElementById('rankVal');
+  const statsEl=document.getElementById('loraStats');
+
+  function draw(){
+    const rank=parseInt(slider.value);
+    rankVal.textContent=rank;
+    const fullParams=768*768;
+    const loraParams=768*rank*2;
+    const ratio=(loraParams/fullParams*100).toFixed(1);
+    const frozen=768-rank;
+    statsEl.innerHTML=`
+      Full matrix: <span style="color:var(--text);">${fullParams.toLocaleString()}</span> params<br>
+      LoRA (B·A): <span style="color:var(--amber);">${loraParams.toLocaleString()}</span> params (<span style="color:var(--amber);">${ratio}%</span>)<br>
+      Modifiable directions: <span style="color:var(--emerald);">${rank}</span> / 768<br>
+      Frozen directions: <span style="color:var(--rose);">${frozen}</span>`;
+
+    const p=canvas.parentElement,r=p.getBoundingClientRect();
+    canvas.width=r.width*DPR;canvas.height=r.height*DPR;canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';
+    const ctx=canvas.getContext('2d');ctx.scale(DPR,DPR);
+    const w=r.width,h=r.height;ctx.clearRect(0,0,w,h);
+
+    const padL=40,padR=30,padT=40,padB=50;
+    const gW=w-padL-padR,gH=h-padT-padB;
+
+    // Full matrix bar
+    const barH=30,barY=padT;
+    ctx.fillStyle='rgba(255,255,255,0.04)';ctx.fillRect(padL,barY,gW,barH);
+    ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.strokeRect(padL,barY,gW,barH);
+    ctx.font='600 10px Space Grotesk';ctx.fillStyle='#52525b';ctx.textAlign='center';
+    ctx.fillText('Full W (768×768)',padL+gW/2,barY-8);
+
+    // LoRA bars
+    const bW=gW*(768*rank)/fullParams;const aW=gW*(rank*768)/fullParams;
+    const bY=barY+barH+30,aY=bY+barH+20;
+    ctx.fillStyle='rgba(245,158,11,0.15)';ctx.fillRect(padL,bY,bW,barH);
+    ctx.strokeStyle=bW>0?'#f59e0b':'transparent';ctx.lineWidth=1.5;ctx.strokeRect(padL,bY,Math.max(bW,2),barH);
+    ctx.fillStyle='#f59e0b';ctx.textAlign='left';ctx.fillText(`B (768×${rank})`,padL,bY-6);
+
+    ctx.fillStyle='rgba(20,184,166,0.15)';ctx.fillRect(padL,aY,aW,barH);
+    ctx.strokeStyle=aW>0?'#14b8a6':'transparent';ctx.strokeRect(padL,aY,Math.max(aW,2),barH);
+    ctx.fillStyle='#14b8a6';ctx.fillText(`A (${rank}×768)`,padL,aY-6);
+
+    // Bottleneck visualization
+    const botY=aY+barH+35;const maxDim=768;
+    const totalW2=gW*0.8;const startX=padL+(gW-totalW2)/2;
+    // Full width bar
+    ctx.fillStyle='rgba(255,255,255,0.03)';
+    ctx.fillRect(startX,botY,totalW2,18);
+    ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.strokeRect(startX,botY,totalW2,18);
+    // Rank portion
+    const rankW=(rank/maxDim)*totalW2;
+    ctx.fillStyle='rgba(16,185,129,0.25)';ctx.fillRect(startX,botY,rankW,18);
+    ctx.strokeStyle='#10b981';ctx.lineWidth=2;ctx.strokeRect(startX,botY,Math.max(rankW,2),18);
+    // Frozen portion label
+    ctx.font='10px JetBrains Mono';ctx.fillStyle='#10b981';ctx.textAlign='left';
+    ctx.fillText(`${rank} modifiable`,startX,botY+32);
+    ctx.fillStyle='#f43f5e';ctx.textAlign='right';
+    ctx.fillText(`${frozen} frozen`,startX+totalW2,botY+32);
+    ctx.fillStyle='#52525b';ctx.textAlign='center';
+    ctx.fillText('768 total directions',startX+totalW2/2,botY-6);
+  }
+
+  slider.addEventListener('input',draw);
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Quiz */
+(function(){
+  const questions=[
+    {q:"W_Q is 64×768. Input x is 768-dim. What is the shape of Q = W_Q · x?",
+     opts:["768-dim vector","64-dim vector — each of 64 rows dot-products with the 768-dim input to produce one output element","768×64 matrix","Undefined — shapes incompatible"],
+     correct:1,explanation:"A (64×768) matrix times a (768×1) vector produces a (64×1) vector. Each of the 64 rows acts as a recipe, dot-producting with the 768 input values to produce one Query dimension."},
+    {q:"LoRA uses B ∈ ℝ^(768×32) and A ∈ ℝ^(32×768). How many independent directions can the update modify?",
+     opts:["768 — same as full fine-tuning","32 — the rank of the bottleneck. 736 directions are frozen.","32×768 = 24,576 directions","It depends on the training data"],
+     correct:1,explanation:"The product ΔW = B·A has rank at most 32 (the bottleneck dimension). Only 32 of the 768 possible independent directions are modifiable. The remaining 736 are structurally frozen regardless of training."},
+    {q:"You want to first project 768D → 64D (via W_Q), then rotate 45° (via R). What is the correct product?",
+     opts:["W_Q × R (project first, rotate second)","R × W_Q — the rightmost matrix is applied first, so R × W_Q applies W_Q to the input, then R to the result","The order doesn't matter for these operations","Neither — you need to add them, not multiply"],
+     correct:1,explanation:"In matrix multiplication, the rightmost matrix is applied first: (R·W_Q)·x = R·(W_Q·x). First W_Q projects 768→64, then R rotates the 64D result. The composition order reads right-to-left."},
+    {q:"If a model has 7 billion parameters distributed across hundreds of weight matrices, what does 'training' actually discover?",
+     opts:["The architecture of the network","The right numerical values for every cell in every matrix, so that the collective system of transformations produces intelligent behavior","The optimal learning rate schedule","Which layers to use for each token"],
+     correct:1,explanation:"Training is optimization over the numerical entries of every weight matrix. Each number is one parameter. The 7 billion numbers collectively define the transformation pipeline that converts token embeddings into contextual representations and finally into output token predictions."}
+  ];
+  const container=document.getElementById('quizContainer');
+  questions.forEach((q,qi)=>{
+    const card=document.createElement('div');card.className='card';card.style.padding='1.25rem';
+    let optsHTML='';q.opts.forEach((o,oi)=>{optsHTML+=`<button class="quiz-option" data-q="${qi}" data-o="${oi}">${o}</button>`;});
+    card.innerHTML=`<p style="font-size:.82rem;font-weight:600;color:var(--text-dim);margin-bottom:.75rem;">Question ${qi+1}</p>
+      <p style="font-size:.92rem;line-height:1.6;margin-bottom:1rem;">${q.q}</p>
+      <div id="qO${qi}">${optsHTML}</div>
+      <div class="quiz-explanation" id="qE${qi}" style="margin-top:.75rem;"><div class="insight">${q.explanation}</div></div>`;
+    container.appendChild(card);
+  });
+  container.addEventListener('click',(e)=>{
+    const btn=e.target.closest('.quiz-option');if(!btn)return;
+    const qi=+btn.dataset.q,oi=+btn.dataset.o;
+    const opts=document.querySelectorAll(`#qO${qi} .quiz-option`);
+    if(opts[0].classList.contains('disabled'))return;
+    opts.forEach((o,i)=>{o.classList.add('disabled');
+      if(i===questions[qi].correct)o.classList.add('correct');
+      else if(i===oi&&oi!==questions[qi].correct)o.classList.add('wrong');});
+    document.getElementById(`qE${qi}`).classList.add('show');
+  });
+})();
+
+/* Nav */
+(function(){
+  const links=document.querySelectorAll('.nav-link');
+  const ids=['multiplier','geometry','lora','edges','checkpoint'];
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+100;let active=ids[0];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+    links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));
+  });
+})();
+</script>
+</body>
+</html>

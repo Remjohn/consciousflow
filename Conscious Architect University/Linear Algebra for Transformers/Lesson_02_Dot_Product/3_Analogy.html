@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dot Product — Analogy & Domains Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1.2;min-width:320px;}
+.visual-col{flex:1;min-width:280px;}
+
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+
+.tab-btn{padding:.6rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-dim);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.85rem;transition:all .2s;}
+.tab-btn:hover{color:var(--text);border-color:var(--border-light);}
+.tab-btn.active{background:var(--amber-glow);color:var(--amber);border-color:var(--amber);}
+
+.domain-content{display:none;}
+.domain-content.active{display:block;animation:fadeIn 0.3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+
+.puzzle-card{border:1px solid var(--border);background:var(--bg-card);border-radius:8px;margin-bottom:.75rem;overflow:hidden;}
+.puzzle-header{padding:1rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:600;color:var(--text);background:var(--bg-elevated);}
+.puzzle-header:hover{background:rgba(255,255,255,0.05);}
+.puzzle-body{padding:0 1rem;max-height:0;overflow:hidden;transition:all 0.3s ease;color:var(--text-muted);font-size:.9rem;line-height:1.6;}
+.puzzle-card.open .puzzle-body{padding:1rem;max-height:500px;}
+.puzzle-card.open .puzzle-icon{transform:rotate(180deg);}
+.puzzle-icon{transition:transform 0.3s;}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text-muted);color:var(--text);}
+.btn-outline.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow);}
+
+.scroll-hint{animation:bounce 2s ease infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column-reverse!important;}
+  .canvas-wrap{min-height:300px!important;}
+  .nav-links{display:none;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">DOT PRODUCT</span>
+    <div class="nav-links">
+      <a href="#domains" class="nav-link active" data-section="domains">6 Domains</a>
+      <a href="#crossdomain" class="nav-link" data-section="crossdomain">Cross-Domain</a>
+      <a href="#puzzles" class="nav-link" data-section="puzzles">Logic Puzzles</a>
+      <a href="#builder" class="nav-link" data-section="builder">Builder Task</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 02 — ANALOGY LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Dot Product<br><span style="color:var(--text-muted);font-weight:300;">Alignment × Conviction</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      Watch the same multiply-and-add arithmetic score football passes, predict frequency clashes, compute flavor balance, and rank AI retrieval — all from one formula.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: The 6-Domain System -->
+<section id="domains" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — UNIVERSAL MAPPING</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">The 6-Domain System</h2>
+
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.5rem;">
+      <button class="tab-btn active" data-target="sports"><i class="fas fa-futbol"></i> Football</button>
+      <button class="tab-btn" data-target="gaming"><i class="fas fa-gamepad"></i> RPG Combat</button>
+      <button class="tab-btn" data-target="music"><i class="fas fa-headphones"></i> Audio</button>
+      <button class="tab-btn" data-target="cooking"><i class="fas fa-utensils"></i> Cooking</button>
+      <button class="tab-btn" data-target="psych"><i class="fas fa-users"></i> Psychology</button>
+      <button class="tab-btn" data-target="ai"><i class="fas fa-brain"></i> CCP / RAG</button>
+    </div>
+
+    <div class="flex-layout">
+      <div class="reading-col">
+        <!-- SPORTS -->
+        <div id="sports" class="domain-content active">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Football Tactical Chemistry</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            Pass quality = direction × commitment. The ball-carrier's brain computes a mental Dot Product: each teammate's run is a Key vector (direction + speed), and the passer's intent is the Query.
+          </p>
+          <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1.5rem;font-size:.92rem;">
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--emerald);">High Positive:</strong> Barella surges centrally, Lautaro mirrors from the left half-space. Both tactical vectors aim at the same geometric destination at maximum sprint velocity. Dot Product explodes.</li>
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--text-dim);">Zero:</strong> Center-back holds stationary while winger sprints down the far touchline. Perpendicular vectors with zero magnitude overlap. Independent planes, zero synergy.</li>
+            <li><strong style="color:var(--rose);">Negative:</strong> Two attackers make overlapping runs into the same pocket. Their convergence cancels spatial advantage — one marker covers both. Net negative tactical score.</li>
+          </ul>
+          <div class="insight">
+            <strong>The Math Tie-Back:</strong> Pass selection is a biological neural network running Dot Product comparisons to select the maximum-scoring recipient in real-time.
+          </div>
+        </div>
+
+        <!-- GAMING -->
+        <div id="gaming" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">RPG Damage Effectiveness</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            Your attack vector is [Fire, Ice, Physical, Holy, Dark]. The enemy's resistance profile is another vector on the same axes. Damage = Dot Product.
+          </p>
+          <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1.5rem;font-size:.92rem;">
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--emerald);">High (Perfect Counter):</strong> Holy Paladin (0,0,3,9,0) vs Undead Lich (0,0,1,8,0). Holy stat × Holy vulnerability = massive score.</li>
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--text-dim);">Zero (Orthogonal Matchup):</strong> Fire Mage vs creature with all resistance on Ice/Dark axes. Fire × 0 = nothing penetrates.</li>
+            <li><strong style="color:var(--rose);">Negative (Type Disadvantage):</strong> Hit a Fire Elemental with fire damage — it heals. Negative resistance absorbs your attack.</li>
+          </ul>
+          <div class="insight">
+            <strong>Min-maxing builds</strong> is gradient descent over Dot Product landscapes. Optimal party = maximum aggregate dot products across the widest enemy resistance spread.
+          </div>
+        </div>
+
+        <!-- MUSIC -->
+        <div id="music" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Spectral Reinforcement & Cancellation</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            Each instrument is a vector across frequency bands: [Sub-Bass, Low-Mids, High-Mids, Treble, Air]. The Dot Product measures total harmonic reinforcement.
+          </p>
+          <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1.5rem;font-size:.92rem;">
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--emerald);">High (Frequency Clash):</strong> 808 kick (9,3,0,0,0) × sub synth (8,2,0,0,0) = 78. Overwhelming bass reinforcement. Mix clips.</li>
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--text-dim);">Zero (Clean Mix):</strong> Same kick × hi-hat (0,0,1,7,8) = 0. Orthogonal frequency bands. Pristine separation.</li>
+            <li><strong style="color:var(--rose);">Negative (Phase Cancel):</strong> Inverted duplicate = massive negative product. Waves subtract to silence.</li>
+          </ul>
+          <div class="insight">
+            <strong>"Do these instruments clash?"</strong> = Mental Dot Product across frequency space. Zero means clean coexistence.
+          </div>
+        </div>
+
+        <!-- COOKING -->
+        <div id="cooking" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Flavor Reinforcement & Balance</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            Each ingredient is a vector on [Salt, Umami, Acid, Sweet, Bitter, Fat]. The Dot Product predicts reinforcement intensity.
+          </p>
+          <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1.5rem;font-size:.92rem;">
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--emerald);">High (Umami Bomb):</strong> Soy sauce (7,9,0,0,1,0) × Miso paste (5,8,0,1,0,0) = 107. Intense compounding on Salt+Umami. Demands orthogonal counterbalance.</li>
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--text-dim);">Zero (Complementary):</strong> Soy sauce × Lemon juice (0,0,9,1,0,0) = 0. Acid sits on an entirely independent axis. Clean expansion.</li>
+            <li><strong style="color:var(--rose);">Negative (Suppression):</strong> Extreme bitterness suppresses sweetness on the tongue. Negative Dot Product = active perceptual destruction.</li>
+          </ul>
+          <div class="insight">
+            <strong>A "balanced" dish</strong> = moderate Dot Products across all pairings. No explosive reinforcement on any single axis.
+          </div>
+        </div>
+
+        <!-- PSYCH -->
+        <div id="psych" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Big Five Compatibility Score</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            Each person is a vector on [Openness, Conscientiousness, Extraversion, Agreeableness, Neuroticism]. The Dot Product measures total trait-weighted compatibility.
+          </p>
+          <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1.5rem;font-size:.92rem;">
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--emerald);">High (Natural Allies):</strong> Executive Alpha (8,9,7,3,2) × Beta (7,8,6,2,3) = 182. Massive trait overlap on O, C, E axes.</li>
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--text-dim);">Zero (Indifference):</strong> Pure Extravert (0,0,10,0,0) × Pure Conscientiousness (0,10,0,0,0) = 0. Separate wavelengths.</li>
+            <li><strong style="color:var(--rose);">Negative (Friction):</strong> High Openness (9,0,0,0,0) × hostility-to-novelty (-9,0,0,0,0) = -81. Structural trait opposition.</li>
+          </ul>
+          <div class="insight">
+            <strong>Recruiting</strong> teams with high aggregate personality Dot Products statistically yields higher collaborative success.
+          </div>
+        </div>
+
+        <!-- AI -->
+        <div id="ai" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">CCP RAG Relevance Scoring</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            The CRAL engine computes Q·K for every stored premise. Unlike Cosine Similarity, the Dot Product preserves magnitude — allowing well-evidenced premises to naturally outrank weaker ones at identical angles.
+          </p>
+          <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1.5rem;font-size:.92rem;">
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--emerald);">High (Semantic Match):</strong> "Fear of public speaking" × "Performance Anxiety in Professional Settings" = massive score. Alignment + high training magnitude.</li>
+            <li style="margin-bottom:.5rem;"><strong style="color:var(--text-dim);">Zero (Irrelevant):</strong> Same query × "SQL Database Indexing" = 0. Semantically orthogonal.</li>
+            <li><strong style="color:var(--rose);">Negative (Anti-Relevance):</strong> Query actively contradicts coaching philosophy. Safety filter triggers on negative raw score.</li>
+          </ul>
+          <div class="insight">
+            <strong>Cosine vs Dot Product</strong> is an architectural choice: Cosine strips magnitude for pure direction. Dot Product preserves it for confidence-weighted ranking. The CCP uses both strategically.
+          </div>
+        </div>
+      </div>
+
+      <!-- Visual Column -->
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:450px;">
+          <canvas id="domainCanvas"></canvas>
+        </div>
+        <p id="canvasCaption" style="font-size:.78rem;color:var(--text-dim);text-align:center;margin-top:.75rem;padding:0 .5rem;">
+          Select a domain tab and a mode to see its Dot Product mapping.
+        </p>
+        <div style="display:flex;justify-content:center;gap:.5rem;margin-top:.75rem;" id="modeToggles">
+          <button class="btn btn-outline active" data-mode="pos">High Positive</button>
+          <button class="btn btn-outline" data-mode="zero">Zero / Orthogonal</button>
+          <button class="btn btn-outline" data-mode="neg">Negative</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: Cross-Domain Breaks -->
+<section id="crossdomain" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:.5rem;">02 — WHERE THE MODEL BREAKS</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Cross-Domain Comparison</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:1.5rem;">
+      <div class="card" style="flex:1;min-width:250px;padding:1.5rem;border-left:3px solid var(--rose);">
+        <h4 style="color:var(--rose);margin-bottom:.5rem;">🍳 Cooking: Logarithmic Saturation</h4>
+        <p style="font-size:.88rem;color:var(--text-muted);line-height:1.6;">
+          The Dot Product assumes doubling Salt doubles its contribution. <strong style="color:var(--text);">Biologically false.</strong> Human taste perception is logarithmic — the tongue saturates. The linear model overestimates reinforcement.
+        </p>
+      </div>
+      <div class="card" style="flex:1;min-width:250px;padding:1.5rem;border-left:3px solid var(--teal);">
+        <h4 style="color:var(--teal);margin-bottom:.5rem;">🎵 Music: Phase Blindness</h4>
+        <p style="font-size:.88rem;color:var(--text-muted);line-height:1.6;">
+          Two bass notes at identical frequency and amplitude yield an enormous positive Dot Product. But if one is delayed by <strong style="color:var(--text);">half a wavelength</strong>, they physically cancel. The Dot Product cannot see timing — only structural overlap.
+        </p>
+      </div>
+      <div class="card" style="flex:1;min-width:250px;padding:1.5rem;border-left:3px solid var(--violet);">
+        <h4 style="color:var(--violet);margin-bottom:.5rem;">🧠 Psychology: Ceiling Effects</h4>
+        <p style="font-size:.88rem;color:var(--text-muted);line-height:1.6;">
+          Doubling Extraversion score doesn't double social impact. Non-linear interpersonal dynamics, contextual dependencies, and ceiling effects all impose <strong style="color:var(--text);">second-order corrections</strong> the pure linear model misses.
+        </p>
+      </div>
+    </div>
+    <div class="insight" style="margin-top:1.5rem;">
+      <strong>The lesson:</strong> Dot Products give you the first-order approximation of interaction. Reality imposes second-order corrections (saturation, phase, context). Knowing where the model breaks is as important as knowing where it works.
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: Logic Puzzles -->
+<section id="puzzles" class="section">
+  <div class="section-inner" style="max-width:800px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">03 — REASONING TRAPS</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Logic Puzzles & Fallacies</h2>
+
+    <div class="puzzle-card">
+      <div class="puzzle-header"><span>1. The Magnitude Paradox</span><i class="fas fa-chevron-down puzzle-icon"></i></div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Setup:</strong> A=(1000,0) · B=(1,0)=1000. But C=(0.5,0.5) · D=(0.5,0.5)=0.50. C and D are literally <em>identical</em>. Which pair is "more similar"?</p>
+        <div class="insight">
+          <strong>Resolution:</strong> The Dot Product claims A·B has 2000× more "relevance" — but C=D are identical vectors. This proves the Dot Product conflates alignment with raw loudness. Exactly why Softmax scaling (÷√d_k) and Cosine normalization exist.
+        </div>
+      </div>
+    </div>
+
+    <div class="puzzle-card">
+      <div class="puzzle-header"><span>2. The Zero Trap</span><i class="fas fa-chevron-down puzzle-icon"></i></div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Setup:</strong> E=(5,5) · F=(5,-5). Compute: (5×5)+(5×-5) = 25-25 = 0. They share identical X-axis intensity. So why is the Dot Product zero?</p>
+        <div class="insight" style="border-color:var(--rose);background:var(--rose-glow);">
+          <strong style="color:var(--rose);">Resolution:</strong> They are geometrically orthogonal (90°). The positive agreement on one axis is <em>perfectly annihilated</em> by negative disagreement on the other. Zero doesn't mean "nothing in common" — it means agreements and disagreements exactly cancel.
+        </div>
+      </div>
+    </div>
+
+    <div class="puzzle-card">
+      <div class="puzzle-header"><span>3. The Narcissism Loop</span><i class="fas fa-chevron-down puzzle-icon"></i></div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Setup:</strong> Every token computes attention against itself. Since A·A = ‖A‖², which tokens will be most narcissistic (highest self-attention)?</p>
+        <div class="insight">
+          <strong>Resolution:</strong> Tokens with the largest magnitude vectors — commonly high-frequency function words ("the", "is", "of") whose embeddings have been heavily trained. Without careful intervention, these common tokens steal attention from rarer, semantically important tokens.
+        </div>
+      </div>
+    </div>
+
+    <div class="puzzle-card">
+      <div class="puzzle-header"><span>4. The Symmetry Illusion</span><i class="fas fa-chevron-down puzzle-icon"></i></div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Setup:</strong> A·B = B·A (commutativity). But in Attention, the score from Token A→B ≠ Token B→A. How, if the Dot Product is commutative?</p>
+        <div class="insight" style="border-color:var(--violet);background:var(--violet-glow);">
+          <strong style="color:var(--violet);">Resolution:</strong> Because Q_A and K_A come from <em>different learned projection matrices</em>. The Dot Product computed is Q_A·K_B vs Q_B·K_A. Since Q_A ≠ K_A, the inputs to each dot product are different vectors entirely.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 4: Build Your Own -->
+<section id="builder" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">04 — KINESTHETIC TASK</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Build-Your-Own Analogy</h2>
+
+    <div style="background:var(--bg-elevated);border:1px dashed var(--amber);border-radius:12px;padding:2rem;">
+      <p style="color:var(--text-muted);font-size:.95rem;line-height:1.7;margin-bottom:1.5rem;">
+        Construct your own domain mapping. Choose a system with at least 3 measurable dimensions. Assign two entity vectors, compute the Dot Product, and identify the magnitude trap.
+      </p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:1rem;">
+        <div>
+          <label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">System Domain</label>
+          <input type="text" placeholder="e.g., Investment Portfolio, Workout Program" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';">
+        </div>
+        <div>
+          <label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Entity A Vector (comma-separated)</label>
+          <input type="text" placeholder="e.g., 8, 3, 5" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';">
+        </div>
+        <div>
+          <label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Entity B Vector (comma-separated)</label>
+          <input type="text" placeholder="e.g., 7, 2, 6" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';">
+        </div>
+      </div>
+      <div style="margin-top:1rem;">
+        <label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Identify the Magnitude Trap</label>
+        <textarea rows="3" placeholder="Describe a scenario where the Dot Product misleads because one entity's raw intensity drowns out another's superior alignment..." style="width:100%;padding:.8rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';resize:vertical;"></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:1rem;">
+        <button class="btn" style="background:var(--amber);color:#000;"><i class="fas fa-save"></i> Save Framework</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem 4rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);margin-top:2rem;">
+  <p style="max-width:600px;margin:0 auto 1.5rem;line-height:1.6;">
+    <strong>Compression Layer:</strong> The Dot Product is the mathematical engine that answers: "How much of your identity structurally overlaps with mine, and how powerfully are we both expressing it?"
+  </p>
+  Interactive Visual Learning — Lesson 02: Dot Product Analogy Layer
+</footer>
+
+<script>
+const DPR=window.devicePixelRatio||1;
+function setupCanvas(c){const p=c.parentElement,r=p.getBoundingClientRect();c.width=r.width*DPR;c.height=r.height*DPR;c.style.width=r.width+'px';c.style.height=r.height+'px';const ctx=c.getContext('2d');ctx.scale(DPR,DPR);return{ctx,w:r.width,h:r.height};}
+
+/* Hero */
+(function(){const c=document.getElementById('heroCanvas');let W,H,ctx;
+function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+resize();window.addEventListener('resize',resize);
+let t=0;
+function draw(){ctx.clearRect(0,0,W,H);
+  const cx=W/2,cy=H/2;
+  for(let i=0;i<8;i++){
+    const r=80+i*40+Math.sin(t*0.008+i)*20;
+    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(${i%2?'20,184,166':'245,158,11'},${0.06-i*0.006})`;ctx.lineWidth=1.5;ctx.stroke();
+  }
+  for(let i=0;i<5;i++){
+    const a=t*0.005+i*Math.PI*2/5;
+    const x1=cx+Math.cos(a)*60,y1=cy+Math.sin(a)*60;
+    const x2=cx+Math.cos(a+Math.PI)*200,y2=cy+Math.sin(a+Math.PI)*200;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);
+    ctx.strokeStyle='rgba(139,92,246,0.04)';ctx.lineWidth=1;ctx.stroke();
+  }
+  t++;requestAnimationFrame(draw);}
+draw();})();
+
+/* Domain Canvas */
+(function(){
+  const canvas=document.getElementById('domainCanvas');
+  let currentDomain='sports',currentMode='pos',animT=0;
+  let cW=0,cH=0,cCtx=null;
+
+  function resizeCanvas(){const p=canvas.parentElement,r=p.getBoundingClientRect();canvas.width=r.width*DPR;canvas.height=r.height*DPR;canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';cW=r.width;cH=r.height;cCtx=canvas.getContext('2d');cCtx.scale(DPR,DPR);}
+  resizeCanvas();window.addEventListener('resize',resizeCanvas);
+
+  const domainData={
+    sports:{labels:['Forward','Lateral'],aLabel:'Striker Run',bLabel:'Pass Intent',
+      pos:{a:[0.9,0.2],b:[0.85,0.25],dot:'High',desc:'Parallel sprints toward goal'},
+      zero:{a:[0,1],b:[1,0],dot:'0',desc:'Perpendicular movement planes'},
+      neg:{a:[0.7,0.3],b:[-0.6,-0.2],dot:'Negative',desc:'Overlapping runs cancel space'}},
+    gaming:{labels:['Holy','Physical'],aLabel:'Paladin Attack',bLabel:'Lich Weakness',
+      pos:{a:[0.95,0.3],b:[0.9,0.15],dot:'High',desc:'Holy stat × Holy vulnerability'},
+      zero:{a:[1,0],b:[0,1],dot:'0',desc:'Fire vs Ice-only resist axes'},
+      neg:{a:[0.9,0.1],b:[-0.8,0.1],dot:'Negative',desc:'Fire heals Fire Elemental'}},
+    music:{labels:['Sub-Bass','Treble'],aLabel:'808 Kick',bLabel:'Second Instrument',
+      pos:{a:[0.95,0.1],b:[0.9,0.15],dot:'78',desc:'Both in sub-bass = clip'},
+      zero:{a:[0.95,0],b:[0,0.95],dot:'0',desc:'Kick × Hi-hat = clean'},
+      neg:{a:[0.9,0.1],b:[-0.9,-0.1],dot:'Negative',desc:'Inverted phase = silence'}},
+    cooking:{labels:['Salt/Umami','Acid'],aLabel:'Soy Sauce',bLabel:'Second Ingredient',
+      pos:{a:[0.95,0],b:[0.85,0.1],dot:'107',desc:'Soy × Miso = umami bomb'},
+      zero:{a:[0.95,0],b:[0,0.95],dot:'0',desc:'Soy × Lemon = orthogonal'},
+      neg:{a:[0,0.9],b:[0,-0.85],dot:'Negative',desc:'Bitter suppresses sweet'}},
+    psych:{labels:['Openness/Extravert','Conscientiousness'],aLabel:'Executive Alpha',bLabel:'Executive Beta',
+      pos:{a:[0.8,0.9],b:[0.7,0.85],dot:'182',desc:'Natural allies: matched traits'},
+      zero:{a:[0,1],b:[1,0],dot:'0',desc:'Pure Extravert × Pure Conscientious'},
+      neg:{a:[0.9,0],b:[-0.9,0],dot:'-81',desc:'Open vs closed-minded hostility'}},
+    ai:{labels:['Anxiety Axis','Tech Axis'],aLabel:'User Query',bLabel:'Stored Premise',
+      pos:{a:[0.85,0.2],b:[0.8,0.25],dot:'High',desc:'Fear of speaking × Performance Anxiety'},
+      zero:{a:[0.9,0],b:[0,0.9],dot:'0',desc:'Speaking fear × SQL Indexing'},
+      neg:{a:[0.9,0.1],b:[-0.85,0],dot:'Negative',desc:'Anti-relevance: safety filter'}}
+  };
+
+  function draw(){
+    const ctx=cCtx,w=cW,h=cH;
+    if(!ctx)return;
+    ctx.save();ctx.setTransform(DPR,0,0,DPR,0,0);
+    ctx.clearRect(0,0,w,h);
+    const cx=w*0.5,cy=h*0.5,R=Math.min(w,h)*0.32;
+    const d=domainData[currentDomain];
+    const m=d[currentMode];
+
+    // Grid
+    ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(cx-R*1.3,cy);ctx.lineTo(cx+R*1.3,cy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,cy-R*1.3);ctx.lineTo(cx,cy+R*1.3);ctx.stroke();
+    ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+
+    // Axis labels
+    ctx.font='10px DM Sans';ctx.fillStyle='#52525b';
+    ctx.textAlign='left';ctx.fillText(d.labels[0],cx+R+10,cy+4);
+    ctx.textAlign='center';ctx.fillText(d.labels[1],cx,cy-R-10);
+
+    // Vectors
+    const aAng=Math.atan2(m.a[1],m.a[0]);
+    let bAng=Math.atan2(m.b[1],m.b[0]);
+    // Add subtle animation jiggle
+    if(currentMode==='zero') bAng+=Math.sin(animT)*0.02;
+    if(currentMode==='neg') bAng+=Math.sin(animT*3)*0.04;
+
+    function drawVec(ang,mag,color,label){
+      const tx=cx+Math.cos(ang)*(R*mag*0.95),ty=cy-Math.sin(ang)*(R*mag*0.95);
+      ctx.save();ctx.shadowColor=color;ctx.shadowBlur=8;ctx.strokeStyle=color;ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(tx,ty);ctx.stroke();ctx.restore();
+      const hl=12;
+      ctx.beginPath();ctx.moveTo(tx,ty);
+      ctx.lineTo(tx-hl*Math.cos(-ang+0.35),ty+hl*Math.sin(-ang+0.35));
+      ctx.lineTo(tx-hl*Math.cos(-ang-0.35),ty+hl*Math.sin(-ang-0.35));
+      ctx.fillStyle=color;ctx.fill();
+      ctx.font='600 11px Space Grotesk';ctx.fillStyle=color;ctx.textAlign='left';
+      ctx.fillText(label,tx+10,ty-5);
+    }
+
+    const magA=Math.sqrt(m.a[0]**2+m.a[1]**2);
+    const magB=Math.sqrt(m.b[0]**2+m.b[1]**2);
+    drawVec(aAng,magA,'#f59e0b',d.aLabel);
+    drawVec(bAng,magB,'#14b8a6',d.bLabel);
+
+    // Projection shadow for positive mode
+    if(currentMode==='pos'){
+      const projLen=magA*magB*Math.cos(bAng-aAng);
+      if(projLen>0){
+        const px=cx+Math.cos(aAng)*(R*projLen*0.7);
+        const py=cy-Math.sin(aAng)*(R*projLen*0.7);
+        ctx.setLineDash([3,3]);ctx.strokeStyle='rgba(16,185,129,0.4)';ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(px,py);ctx.stroke();ctx.setLineDash([]);
+        ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.fillStyle='#10b981';ctx.fill();
+        ctx.font='9px DM Sans';ctx.fillStyle='#10b981';ctx.textAlign='center';ctx.fillText('projection',px,py+15);
+      }
+    }
+
+    // Score readout
+    const dotCol=currentMode==='pos'?'#10b981':currentMode==='zero'?'#f59e0b':'#f43f5e';
+    ctx.font='700 16px Space Grotesk';ctx.fillStyle=dotCol;ctx.textAlign='left';
+    ctx.fillText('Dot = '+m.dot,20,30);
+    ctx.font='11px DM Sans';ctx.fillStyle='#52525b';ctx.textAlign='left';
+    ctx.fillText(m.desc,20,48);
+
+    ctx.restore();
+    animT+=0.05;
+    requestAnimationFrame(draw);
+  }
+
+  // Tab events
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentDomain=btn.dataset.target;
+      document.querySelectorAll('.domain-content').forEach(c=>c.classList.remove('active'));
+      document.getElementById(currentDomain).classList.add('active');
+    });
+  });
+
+  document.querySelectorAll('#modeToggles .btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('#modeToggles .btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentMode=btn.dataset.mode;
+    });
+  });
+
+  draw();
+})();
+
+/* Puzzles */
+(function(){
+  document.querySelectorAll('.puzzle-header').forEach(hdr=>{
+    hdr.addEventListener('click',()=>{
+      const c=hdr.parentElement;
+      const isOpen=c.classList.contains('open');
+      document.querySelectorAll('.puzzle-card').forEach(p=>p.classList.remove('open'));
+      if(!isOpen) c.classList.add('open');
+    });
+  });
+})();
+
+/* Nav */
+(function(){
+  const links=document.querySelectorAll('.nav-link');
+  const ids=['domains','crossdomain','puzzles','builder'];
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+100;let active=ids[0];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+    links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));
+  });
+})();
+</script>
+</body>
+</html>

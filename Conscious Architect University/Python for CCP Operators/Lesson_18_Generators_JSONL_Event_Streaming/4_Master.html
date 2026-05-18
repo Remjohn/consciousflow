@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 18 — Master Layer: Generators & JSONL</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#050505;--sur:#0f0f0f;--sur2:#181818;--sur3:#222;
+      --fg:#fafafa;--muted:#888;--brd:#2a2a2a;
+      --acc:#E8C46A;--red:#E76F51;--grn:#2A9D8F;
+      --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.6;overflow-x:hidden}
+    .wrap{max-width:840px;margin:0 auto;padding:2rem 2rem 8rem}
+
+    /* STICKY HEADER */
+    .exam-hdr{position:sticky;top:0;background:rgba(5,5,5,.96);border-bottom:1px solid var(--brd);
+      z-index:100;display:flex;justify-content:space-between;align-items:center;
+      padding:1rem 0;margin-bottom:3rem;backdrop-filter:blur(8px)}
+    .timer{font-family:var(--mono);font-size:2rem;color:var(--fg);font-weight:600;letter-spacing:.05em;transition:color .4s}
+    .timer.warn{color:var(--acc)} .timer.crit{color:var(--red)}
+    .score-disp{font-family:var(--mono);font-size:1.05rem;color:var(--muted)}
+    .score-disp span{color:var(--fg)}
+
+    /* INTRO */
+    h1{font-weight:700;font-size:2.1rem;line-height:1.1;margin-bottom:1.2rem;color:var(--red);letter-spacing:-.02em}
+    .intro-p{color:var(--muted);font-size:1rem;margin-bottom:.9rem;line-height:1.7}
+    .intro-p strong{color:#fff}
+    .thresh{background:var(--sur);border:1px solid var(--brd);padding:1.1rem 1.4rem;border-radius:6px;margin:1.4rem 0 1.8rem;font-family:var(--mono);font-size:.88rem;color:var(--muted)}
+    .thresh span{color:var(--acc)}
+
+    /* BUTTONS */
+    .btn{background:var(--red);color:#000;border:none;padding:.8rem 1.8rem;font-family:var(--sans);
+      font-weight:700;font-size:.98rem;border-radius:4px;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:1px}
+    .btn:hover:not(:disabled){transform:translateY(-2px);background:#fff}
+    .btn:disabled{opacity:.35;cursor:not-allowed}
+    .btn-out{background:transparent;border:1px solid var(--muted);color:var(--fg);font-weight:500;text-transform:none;letter-spacing:0}
+    .btn-out:hover:not(:disabled){background:var(--sur3);border-color:#fff}
+    .btn-acc{background:var(--acc);color:#000}
+    .btn-acc:hover:not(:disabled){background:#fff}
+
+    /* QUESTION BLOCKS */
+    .qb{background:var(--sur);border:1px solid var(--brd);border-radius:6px;padding:1.8rem;margin-bottom:1.6rem;transition:opacity .3s,border-color .3s}
+    .qb.answered{opacity:.42;pointer-events:none}
+    .qb.correct{border-color:var(--grn)!important;opacity:.58}
+    .qb.wrong{border-color:var(--red)!important;opacity:.58}
+    .qb.partcorrect{border-color:var(--acc)!important;opacity:.6}
+    .q-meta{display:flex;justify-content:space-between;align-items:center;
+      font-family:var(--mono);font-size:.7rem;color:var(--red);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.9rem}
+    .q-pts{color:var(--muted)}
+    .q-text{font-size:1.05rem;font-weight:500;color:#fff;margin-bottom:1.4rem;line-height:1.65}
+    .q-text em{font-style:normal;color:var(--acc)}
+    .q-text code{font-family:var(--mono);font-size:.88rem;background:var(--sur2);padding:2px 6px;border-radius:3px;color:var(--acc)}
+
+    /* Text inputs */
+    .inp-row{display:flex;gap:.75rem;align-items:flex-start;flex-wrap:wrap}
+    .txt-inp{background:var(--bg);border:2px solid var(--brd);color:#fff;
+      font-family:var(--mono);font-size:.92rem;padding:.6rem .9rem;border-radius:4px;flex:1;
+      transition:border-color .2s;min-width:180px}
+    .txt-inp:focus{outline:none;border-color:var(--acc)}
+    .txt-inp.locked{opacity:.6;pointer-events:none}
+    textarea.txt-inp{min-height:80px;resize:vertical;font-family:var(--sans);font-size:.92rem;line-height:1.6}
+
+    /* Bool buttons */
+    .bool-row{display:flex;flex-direction:column;gap:.7rem}
+    .bool-btn{background:var(--sur2);border:1px solid var(--brd);color:var(--fg);
+      font-family:var(--sans);font-size:.9rem;text-align:left;padding:.8rem 1rem;border-radius:4px;
+      cursor:pointer;transition:all .2s;line-height:1.55}
+    .bool-btn:hover:not(:disabled){border-color:var(--acc);background:rgba(232,196,106,.06)}
+    .bool-btn:disabled{cursor:default}
+    .bool-btn.chosen-r{border-color:var(--grn)!important;background:rgba(42,157,143,.1)!important;color:#a7ece2!important}
+    .bool-btn.chosen-w{border-color:var(--red)!important;background:rgba(231,111,81,.08)!important;color:#ffb3a1!important}
+    .bool-btn.show-r{border-color:var(--grn);background:rgba(42,157,143,.06);color:#a7ece2}
+
+    /* Feedback */
+    .fb{display:none;margin-top:1.25rem;padding:1.1rem 1.3rem;border-radius:4px;font-size:.92rem;line-height:1.65}
+    .fb.vis{display:block;animation:fin .35s}
+    .fb.ok{background:rgba(42,157,143,.09);border-left:3px solid var(--grn);color:#a7ece2}
+    .fb.err{background:rgba(231,111,81,.08);border-left:3px solid var(--red);color:#ffb3a1}
+    .fb.part{background:rgba(232,196,106,.08);border-left:3px solid var(--acc);color:#f5d98a}
+    .fb-lbl{font-family:var(--mono);font-size:.66rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.35rem;font-weight:600;display:block}
+
+    /* Progress strip */
+    .prog-strip{height:3px;background:var(--sur3);margin-bottom:2rem;border-radius:2px;overflow:hidden}
+    .prog-fill{height:100%;background:var(--acc);width:0%;transition:width .4s}
+
+    /* Classify question */
+    .clf-row{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.75rem}
+    .clf-btn{background:var(--sur2);border:1px solid var(--brd);color:var(--fg);padding:.5rem .9rem;
+      border-radius:4px;cursor:pointer;font-size:.84rem;transition:all .2s}
+    .clf-btn:hover:not(:disabled){border-color:var(--acc)}
+    .clf-btn:disabled{cursor:default}
+    .clf-btn.c-sel{border-color:var(--acc);background:rgba(232,196,106,.1);color:var(--acc)}
+    .clf-btn.c-r{border-color:var(--grn)!important;background:rgba(42,157,143,.1)!important;color:#a7ece2!important}
+    .clf-btn.c-w{border-color:var(--red)!important;background:rgba(231,111,81,.08)!important;color:#ffb3a1!important}
+
+    /* Open text (contract spec) */
+    .spec-textarea{width:100%;min-height:100px;background:var(--bg);border:2px solid var(--brd);
+      color:var(--acc);font-family:var(--sans);font-size:.95rem;line-height:1.65;
+      padding:1rem;border-radius:4px;resize:vertical;transition:border-color .2s}
+    .spec-textarea:focus{outline:none;border-color:var(--acc)}
+
+    /* Feynman terminal */
+    #feynman{display:none;margin-top:3.5rem;border-top:2px solid var(--brd);padding-top:2.5rem}
+    #feynman.vis{display:block}
+    .term-hdr{font-family:var(--mono);font-size:.72rem;color:var(--acc);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.9rem}
+    .feyn-prompt{background:var(--sur2);border:1px solid var(--brd);padding:1.4rem;border-radius:6px;margin-bottom:1.4rem;font-size:.98rem;color:var(--muted);line-height:1.7}
+    .feyn-prompt strong{color:#fff}
+    .feyn-inp{width:100%;height:170px;background:var(--sur);color:var(--acc);font-family:var(--sans);font-size:.98rem;line-height:1.7;padding:1.1rem;border:1px solid var(--brd);border-radius:4px;resize:vertical;transition:border-color .2s}
+    .feyn-inp:focus{outline:none;border-color:var(--acc)}
+
+    /* Results */
+    #results{display:none} #results.vis{display:block;animation:fin .5s}
+    .res-card{background:var(--sur);border:1px solid var(--brd);border-radius:8px;padding:2.5rem;text-align:center;margin-top:2rem}
+    .res-score{font-family:var(--mono);font-size:4rem;font-weight:600;margin-bottom:.5rem}
+    .res-score.pass{color:var(--grn)} .res-score.fail{color:var(--red)}
+    .res-verdict{font-size:1.35rem;font-weight:700;margin-bottom:.9rem}
+    .res-sub{color:var(--muted);font-size:.93rem;line-height:1.7;max-width:560px;margin:0 auto}
+
+    /* Fatal overlay */
+    .fatal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(231,111,81,.95);
+      color:#000;z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+    .fatal h2{font-size:3.5rem;font-weight:900;margin-bottom:1rem} .fatal p{font-size:1.2rem;max-width:520px}
+
+    @keyframes fin{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+    @media(max-width:600px){.wrap{padding:1.5rem 1rem 6rem}.timer{font-size:1.5rem}.res-score{font-size:3rem}}
+  </style>
+</head>
+<body>
+
+<!-- FATAL OVERLAY -->
+<div class="fatal" id="fatal">
+  <h2>EXAM TERMINATED</h2>
+  <p>Time expired. Your contract specification capability is insufficient for sovereign deployment. Return to the Application Layer and rebuild production-level pattern recognition before recertification.</p>
+</div>
+
+<div class="wrap" id="main">
+
+  <!-- STICKY HEADER -->
+  <div class="exam-hdr">
+    <div class="timer" id="countdown">12:00</div>
+    <div class="score-disp">SCORE: <span id="score-live">0</span> / 200</div>
+  </div>
+
+  <!-- INTRO SCREEN -->
+  <div id="intro">
+    <div style="font-family:var(--mono);font-size:.7rem;color:var(--acc);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1.1rem">Lesson 18 · Layer 4 · Capstone Certification</div>
+    <h1>Capstone Operation:<br>Generators &amp; JSONL Mastery</h1>
+    <p class="intro-p">This is the 12-minute timed capstone. You will write <strong>Pydantic/DSPy contract specifications</strong> from natural language, <strong>classify defects</strong> in Pi Harness streaming code, answer <strong>architectural reasoning</strong> questions, and complete a <strong>Feynman Synthesis</strong> graded on structural keyword presence.</p>
+    <p class="intro-p">No reference material. No pre-written code blocks to read. No second attempts on any submitted answer.</p>
+    <div class="thresh">Passing threshold: <span>160 / 200 pts</span>&nbsp;·&nbsp;Time: <span>12:00</span>&nbsp;·&nbsp;Questions: <span>12 + 1 synthesis</span></div>
+    <button class="btn" onclick="startExam()">Initiate Capstone</button>
+  </div>
+
+  <!-- EXAM QUESTIONS -->
+  <div id="exam-qs" style="display:none"></div>
+
+  <!-- FEYNMAN TERMINAL -->
+  <div id="feynman">
+    <div class="term-hdr">// Feynman Protocol — Integration Synthesis [40 pts]</div>
+    <div class="feyn-prompt">
+      <strong>Synthesis Prompt:</strong> In a single paragraph using your own words, explain why the Conscious Coaching Platform's agentic harness requires generators with JSONL streaming instead of synchronous list accumulation. Your explanation must demonstrate understanding of all three of these structural elements: <em style="color:var(--acc)">[1] the Foreman's real-time observability requirement</em>, <em style="color:var(--acc)">[2] the O(1) memory invariant across long-running sessions</em>, and <em style="color:var(--acc)">[3] the role of the newline delimiter in maintaining parse-safe stream boundaries</em>. Write to demonstrate understanding — not to game keyword detection.
+    </div>
+    <p style="font-family:var(--mono);font-size:.76rem;color:var(--muted);margin-bottom:1rem">Grading automatically detects structural alignment. Minimum 60 words required.</p>
+    <textarea class="feyn-inp" id="feyn-inp" placeholder="In the CCP agentic harness, generators combined with JSONL streaming are essential because..."></textarea>
+    <br><br>
+    <button class="btn btn-acc" onclick="submitFeynman()">Compile Synthesis</button>
+    <div class="fb" id="feyn-fb" style="margin-top:1.25rem"></div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+    <div class="res-card">
+      <div class="res-score" id="final-score">—</div>
+      <div class="res-verdict" id="final-verdict">—</div>
+      <p class="res-sub" id="final-sub">—</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let timerSecs = 720; // 12 minutes
+let timerInt = null;
+let score = 0;
+let answered = 0;
+const TOTAL_Q = 12;
+const MAX = 200;
+const PASS = 160;
+
+/* ═══════ QUESTION DATA ═══════ */
+const Q = [
+  // ─── CONTRACT SPECIFICATION (open text, keyword-graded) ───
+  {
+    id:0, section:'Contract Specification — Pydantic Field', pts:15,
+    type:'spec',
+    text:'Write the Pydantic <em>BaseModel field declarations</em> for a CCP streaming telemetry event. The schema must enforce: (1) event_type limited to exactly "thought", "tool_call", "tool_result", or "final_output" via a regex pattern; (2) an integer timestamp in milliseconds; (3) a string session_id that is never empty; (4) an optional dict payload defaulting to an empty dict.',
+    placeholder:'class TelemetryEvent(BaseModel):\n    event_type: str = Field(..., pattern=...)\n    timestamp_ms: int\n    session_id: str = Field(..., min_length=1)\n    payload: dict = Field(default_factory=dict)',
+    keywords: [/pattern.*thought.*tool_call|pattern.*\^.*\$/, /timestamp_ms.*int|int.*timestamp/, /session_id.*min_length|Field.*min_length.*session/, /default_factory.*dict|payload.*dict.*Field/],
+    requiredHits: 3,
+    okMsg: 'Contract specification correct. The regex pattern whitelist, int timestamp, non-empty session_id constraint, and defaulted payload dict are all present. This schema would successfully block hallucinated event_types at the QA Department gateway.',
+    partMsg: 'Partial specification. Review: (1) regex pattern must use exact anchors ^(thought|tool_call|tool_result|final_output)$, (2) timestamp must be int not str, (3) min_length=1 enforces non-empty session_id, (4) default_factory=dict avoids mutable default argument.',
+  },
+  {
+    id:1, section:'Contract Specification — DSPy Signature', pts:15,
+    type:'spec',
+    text:'Write a <em>DSPy Signature class</em> for the Machinist\'s session synthesis pipeline. It must: (1) inherit from dspy.Signature with a docstring explaining its purpose; (2) declare a session_transcript InputField with a desc string; (3) declare a psychological_vector OutputField with a desc string. The class must support atomic, one-in one-out processing for generator-based streaming.',
+    placeholder:'class SessionSynthesis(dspy.Signature):\n    """..."""\n    session_transcript = dspy.InputField(desc="...")\n    psychological_vector = dspy.OutputField(desc="...")',
+    keywords: [/dspy\.Signature/, /InputField.*desc|desc.*InputField/, /OutputField.*desc|desc.*OutputField/, /psychological_vector|psych.*vector/],
+    requiredHits: 3,
+    okMsg: 'DSPy Signature specification correct. The Signature correctly inherits from dspy.Signature, declares typed InputField and OutputField with descriptive hints, and maps to an atomic one-session-in / one-vector-out pipeline compatible with generator streaming.',
+    partMsg: 'Partial specification. Ensure: (1) class inherits dspy.Signature explicitly, (2) InputField has a desc= string, (3) OutputField has a desc= string, (4) field name is psychological_vector (the Machinist output). DSPy Predict() will call this signature atomically per generator iteration.',
+  },
+  {
+    id:2, section:'Contract Specification — OpenProse Contract', pts:10,
+    type:'spec',
+    text:'Define the OpenProse <em>Requires / Ensures / Invariants</em> contract for a CCP JSONL stream boundary. Specify: the precondition the system requires of each yielded string, the postcondition it ensures the downstream consumer receives, and the memory invariant the generator maintains throughout execution.',
+    placeholder:'Requires: each yielded string is a valid JSON object terminated with \\n\nEnsures: the downstream parser receives parse-safe JSONL lines, one per event\nInvariant: memory usage is O(1) — only one event is held in memory at any yield point',
+    keywords: [/requires?.*json|json.*requires?/, /ensures?.*parse|parser.*ensures?/, /invariant.*o\(1\)|o\(1\).*invariant|memory.*flat|constant.*memory/],
+    requiredHits: 2,
+    okMsg: 'OpenProse contract correct. The Requires clause enforces JSONL format at ingestion. The Ensures clause guarantees parse-safe output at emission. The Invariant guarantees O(1) memory — the generator never holds more than one event in its execution frame.',
+    partMsg: 'Partial contract. Requires must specify newline-terminated JSON. Ensures must specify parse-safe delivery. Invariant must specify flat memory (O(1)) across the full execution lifecycle.',
+  },
+
+  // ─── DEFECT TRIAGE ───
+  {
+    id:3, section:'Defect Triage — Classify & Fix', pts:15,
+    type:'classify',
+    text:'An agent produced this Pi Harness stream function. Classify the defect type and identify which CCP contract it violates:\n\n<pre style="font-family:var(--mono);font-size:.83rem;background:var(--sur2);padding:12px;border-radius:4px;margin:10px 0;color:#c2d4e0;white-space:pre-wrap">def stream_coaching_output(session_id: str):\n    results = []\n    results.append(json.dumps({"step": "analysing"}) + "\\n")\n    results.append(json.dumps({"step": "complete"}) + "\\n")\n    return results</pre>',
+    classify: ['✅ Correct', '🔴 Omission', '🟡 Hallucination', '🔵 Misapplication'],
+    ans: 1,
+    opts: ['Returns a list instead of yielding — violates streaming protocol', 'Missing json import', 'The function name is incorrect for the CCP harness', 'Both yields and returns simultaneously'],
+    ansOpt: 0,
+    okMsg: '✓ Correct. Classification: 🔴 Omission. The function omits the yield keyword — returning a pre-built list instead of streaming events incrementally. This violates the Pi Harness Streaming Protocol: the callers (FastAPI StreamingResponse, QA validated_stream) expect a generator object, not a list. The operator loses all real-time telemetry.',
+    errMsg: '✗ Incorrect. Classification: Omission — the yield statement is absent. return results sends all events in one block, eliminating streaming. FastAPI\'s StreamingResponse feeds from a generator iterator — receiving a list it may behave unexpectedly depending on FastAPI version. The Foreman loses all live visibility.'
+  },
+  {
+    id:4, section:'Defect Triage — Binary Classification', pts:10,
+    type:'bool',
+    text:'Is this QA Department stream intercept correct or defective?\n\n<pre style="font-family:var(--mono);font-size:.83rem;background:var(--sur2);padding:12px;border-radius:4px;margin:10px 0;color:#c2d4e0;white-space:pre-wrap">def validated_stream(raw_gen):\n    all_events = list(raw_gen)          # consume first\n    for event in all_events:\n        SessionEvent.model_validate_json(event)\n        yield event</pre>',
+    opts: ['Correct — validates every event before yielding it downstream', 'Defective — list(raw_gen) exhausts the generator before the for-loop. The yielded events are correct, but the O(1) memory invariant is violated and the first event is delayed until ALL events are received.'],
+    ans: 1,
+    correctMsg: 'Correct. Defect: list(raw_gen) forces eager evaluation of the entire generator pipeline before the first validated event is yielded. This defeats streaming — all events are buffered in RAM simultaneously, violating the O(1) memory invariant and reintroducing the synchronous delay the generator was designed to eliminate.',
+    wrongMsg: 'Incorrect. The validation logic is sound, but list(raw_gen) on line 2 is a critical structural defect. It eagerly consumes the entire upstream generator into a Python list before yielding begins. This destroys streaming — the downstream consumer receives nothing until all events are processed, and all events are held in RAM simultaneously.'
+  },
+  {
+    id:5, section:'Defect Triage — Classify & Specify', pts:15,
+    type:'bool',
+    text:'Classify this defect type and select the correct contract violation:\n\n<pre style="font-family:var(--mono);font-size:.83rem;background:var(--sur2);padding:12px;border-radius:4px;margin:10px 0;color:#c2d4e0;white-space:pre-wrap">async def event_generator():\n    async for raw_line in harness.run_session(session_id):\n        yield raw_line   # no encoding</pre>',
+    opts: ['🔴 Omission — missing .encode("utf-8"). HTTP transport layer requires bytes not str. FastAPI StreamingResponse will raise TypeError or silently fail at socket transmission.', '🟡 Hallucination — the async syntax is invalid for generators. The function should be synchronous.', '✅ Correct — FastAPI automatically encodes str to bytes before socket transmission.', '🔵 Misapplication — async generators cannot be used with StreamingResponse.'],
+    ans: 0,
+    correctMsg: 'Correct. Classification: 🔴 Omission. The .encode("utf-8") call is absent. HTTP streaming sockets require bytes — Python str objects cannot be transmitted directly at the network layer. The fix is trivial: yield raw_line.encode("utf-8"). This is the most common defect in CCP Chassis stream generators.',
+    wrongMsg: 'Incorrect. Classification: Omission. The async syntax is valid for generators — FastAPI natively supports async generators in StreamingResponse. The defect is the missing .encode("utf-8"). FastAPI does NOT auto-encode string yields. The HTTP socket layer requires raw bytes.'
+  },
+  {
+    id:6, section:'Defect Triage — Memory Defect', pts:10,
+    type:'bool',
+    text:'A Memory Engine engineer argues this change improves readability:\n\n<em>Before:</em> <code>for record in result: yield json.dumps(record.data()) + "\\n"</code>\n\n<em>After:</em> <code>return [json.dumps(r.data()) + "\\n" for r in result]</code>\n\nIs the engineer correct?',
+    opts: ['Yes — the list comprehension is equivalent in output and more readable', 'No — list comprehension loads all Neo4j records into RAM simultaneously, violating the O(1) memory invariant. Under load (200+ users, large graphs), this causes OOM container termination.'],
+    ans: 1,
+    correctMsg: 'Correct. The "readability improvement" is a memory disaster. The list comprehension materialises the entire result set — potentially thousands of graph nodes — in Python memory before returning. The generator version held one record at a time, achieving O(1) memory. The list version is O(n). Under concurrency, this causes container OOM kills.',
+    wrongMsg: 'Incorrect. The outputs may be identical in content, but the memory behaviour is opposite. The list comprehension forces all records into RAM before the first item is delivered. The generator holds exactly one record at any instant, then yields it and discards it. This is the O(1) vs O(n) distinction — critical for high-concurrency CCP deployments.'
+  },
+
+  // ─── ARCHITECTURAL REASONING ───
+  {
+    id:7, section:'Architectural Reasoning', pts:15,
+    type:'bool',
+    text:'Why does the CCP enforce a strict <em>parameterised query</em> requirement (<code>id=$id</code>) in the Memory Engine\'s Neo4j generator — rather than an f-string (<code>f"WHERE n.id=\'{user_id}\'"</code>)? Which architectural principle does this enforce beyond generator streaming?',
+    opts: ['Performance — parameterised queries bypass Neo4j\'s query planner and execute faster than f-string queries, reducing latency on high-traffic sessions', 'Security — f-string interpolation embeds user-controlled input directly into the Cypher string, enabling arbitrary Cypher injection. Parameters are passed as typed values outside the query string, preventing injection. This enforces the Boundary Security Invariant — all external data crosses system boundaries as typed values, never as executable string fragments.'],
+    ans: 1,
+    correctMsg: 'Correct. Parameterised queries enforce the Boundary Security Invariant. User-controlled values (like user_id) must never become part of an executable string at a system boundary. If user_id = "x\' DETACH DELETE (n) WHERE 1=1 //" — an f-string query would execute arbitrary graph deletion. A parameterised query would safely treat that string as a literal value and find no matching nodes.',
+    wrongMsg: 'Incorrect. While parameterised queries do have performance benefits (query plan caching), the primary architectural reason is security. F-string construction with user-controlled values enables Cypher injection. The Boundary Security Invariant requires that external values cross system boundaries as typed parameters — never as embedded executable string fragments.'
+  },
+  {
+    id:8, section:'Architectural Reasoning', pts:15,
+    type:'bool',
+    text:'The CCP QA Department\'s <code>validated_stream</code> deliberately sits <em>outside</em> the Pi Harness execution loop rather than being embedded inside the harness subprocess code. Why does the Orchestration Dichotomy require this separation?',
+    opts: ['For performance — embedding validation inside the harness would slow down each LLM reasoning step by adding synchronous schema checks inside the time-critical inference loop', 'For sovereignty separation — the Robot Arm (Pi Harness) must emit freely without constraints. The QA Department (Pydantic) enforces contracts at the boundary, not inside the tool. Embedding validation inside the harness entangles execution logic with contract enforcement, violating the single-responsibility principle and making defect isolation impossible.'],
+    ans: 1,
+    correctMsg: 'Correct. The Orchestration Dichotomy requires each CCP subsystem to have a single, isolated responsibility. The Robot Arm executes — it does not validate. The QA Department validates — it does not execute. Entangling them makes it impossible to independently upgrade, test, or replace either component. A validation failure in an embedded schema would crash the harness subprocess, not just block a bad event.',
+    wrongMsg: 'Incorrect. Performance is a secondary concern. The primary reason is sovereignty — each CCP subsystem must maintain a single architectural responsibility. Embedding Pydantic validation inside the Pi Harness subprocess creates a coupling violation: harness failures and schema failures become indistinguishable. The QA Department intercepts the stream at the subsystem boundary, preserving clean separation.'
+  },
+  {
+    id:9, section:'Architectural Reasoning', pts:15,
+    type:'bool',
+    text:'A Sovereign Architect asks: "If generators produce data incrementally and the QA Department validates it incrementally — why not consolidate them into a single function that generates AND validates inside the same for-loop?" What is the architectural objection?',
+    opts: ['There is no objection — consolidation is more efficient and modular. Combining generate + validate in one function is the recommended CCP pattern.', 'Consolidation violates the Pipeline Composability Principle. Separate generator functions can be composed, replaced, or bypassed independently. A combined function cannot have its generation component inspected or its validation component swapped without modifying the core loop. In agentic systems where both the Pi Harness and the QA schemas evolve rapidly, composable pipelines are mandatory.'],
+    ans: 1,
+    correctMsg: 'Correct. The Pipeline Composability Principle requires that each pipeline stage be independently replaceable. If generation and validation are fused in a single function, upgrading the QA schema requires modifying the generation logic. In a production CCP deployment, the Pi Harness (controlled by the agent loop) and the QA schema (controlled by the contract specification) are maintained by different concerns and must evolve independently.',
+    wrongMsg: 'Incorrect. Consolidation creates a coupling violation — the generation logic becomes dependent on the validation logic, and vice versa. In the CCP, the Pi Harness is modular (different harnesses for different task types) and the QA schema is modular (different event schemas for different session types). Fusing them into one function prevents independent evolution.'
+  },
+
+  // ─── PATTERN RECOGNITION (additional)
+  {
+    id:10, section:'Multi-Context Recognition', pts:10,
+    type:'bool',
+    text:'You are reviewing a new CCP subsystem: the "Reflection Buffer" that captures client emotional shifts during sessions and feeds them to the DSPy Machinist in real-time. An engineer writes: <code>buffer = []; buffer.append(event); machinist.process(buffer)</code> at each event. What is the structural failure pattern?',
+    opts: ['The engineer calls machinist.process() inside the event loop — this is correct, atomic processing', 'The engineer accumulates events in a list (buffer) and passes the growing list to DSPy at each iteration. DSPy receives increasingly large inputs per call, violating the cognitive isolation requirement. Memory grows O(n) and DSPy\'s context window fills after enough events. A generator yielding one event at a time to DSPy is required.'],
+    ans: 1,
+    correctMsg: 'Correct. The list accumulation pattern is the fundamental anti-pattern. DSPy must receive atomic inputs for correct optimization. The growing buffer means DSPy\'s 10th call receives 10x the context of its first — exceeding token limits and degrading output quality. The generator pattern enforces one-in / one-out atomicity: each event is processed and released before the next arrives.',
+    wrongMsg: 'Incorrect. Calling machinist.process(buffer) with a growing list violates cognitive isolation. Each call gives DSPy more context than the last — after 50 events the entire session history is passed as input to each new call, causing quadratic context growth. The generator pattern ensures DSPy receives exactly one event per iteration, maintaining O(1) cognitive load.'
+  },
+  {
+    id:11, section:'Multi-Context Recognition', pts:10,
+    type:'bool',
+    text:'An Architect claims: "The Skill Compiler does not need JSONL streaming because Voice DNA fragments are small and static — they can be returned as a complete list at session start." What is the architectural counter-argument?',
+    opts: ['The Architect is correct — small static data does not require streaming. The generator pattern is only needed for large or dynamic payloads.', 'The Architect is wrong on both counts. (1) Static upfront loading prevents mid-session persona adaptation — the platform cannot inject new trait fragments in response to client state changes during the session. (2) Even small lists block the pipeline during compilation; a generator maintains composability with the broader stream pipeline, allowing the Chassis to yield fragments as they are compiled rather than after all are ready.'],
+    ans: 1,
+    correctMsg: 'Correct. The architectural argument against static lists is composability and adaptability — not just payload size. Voice DNA fragments need to be injectable mid-session as the client\'s emotional state evolves. A list requires the compilation to be complete before the session begins. A generator allows fragment injection at any point during the session, composing naturally with the existing JSONL stream pipeline.',
+    wrongMsg: 'Incorrect. The generator pattern\'s value is not purely about payload size. For the Skill Compiler, the critical argument is mid-session adaptability: if the client shifts emotionally during a session, new Voice DNA traits must be injected in real-time. A pre-compiled list cannot accommodate this. The generator pipeline allows fragment injection at any point, composing naturally with the CCP\'s event-driven session architecture.'
+  }
+];
+
+/* ═══════ TIMER ═══════ */
+function startTimer() {
+  const clock = document.getElementById('countdown');
+  timerInt = setInterval(() => {
+    timerSecs--;
+    const m = Math.floor(timerSecs / 60), s = timerSecs % 60;
+    clock.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+    clock.className = 'timer';
+    if (timerSecs <= 180) clock.classList.add('warn');
+    if (timerSecs <= 60) clock.classList.add('crit');
+    if (timerSecs <= 0) { clearInterval(timerInt); document.getElementById('fatal').style.display = 'flex'; }
+  }, 1000);
+}
+
+/* ═══════ BUILD EXAM ═══════ */
+function startExam() {
+  document.getElementById('intro').style.display = 'none';
+  const c = document.getElementById('exam-qs');
+  c.style.display = 'block';
+  let html = '<div class="prog-strip"><div class="prog-fill" id="prog"></div></div>';
+  Q.forEach((q, i) => {
+    if (q.type === 'spec') {
+      html += `<div class="qb" id="qb-${i}">
+        <div class="q-meta"><span>Contract ${String(i+1).padStart(2,'0')} — ${q.section}</span><span class="q-pts">[${q.pts} pts]</span></div>
+        <div class="q-text">${q.text}</div>
+        <textarea class="spec-textarea" id="spec-${i}" placeholder="${q.placeholder.replace(/</g,'&lt;')}"></textarea>
+        <div style="margin-top:.75rem"><button class="btn btn-out" onclick="submitSpec(${i})">Submit Contract</button></div>
+        <div class="fb" id="fb-${i}"></div></div>`;
+    } else if (q.type === 'classify') {
+      html += `<div class="qb" id="qb-${i}">
+        <div class="q-meta"><span>Defect ${String(i+1).padStart(2,'0')} — ${q.section}</span><span class="q-pts">[${q.pts} pts]</span></div>
+        <div class="q-text">${q.text}</div>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem">Step 1 — Classify defect type:</p>
+        <div class="clf-row" id="clf-${i}">${q.classify.map((c,j) => `<button class="clf-btn" onclick="clfSel(${i},${j})" data-j="${j}">${c}</button>`).join('')}</div>
+        <p style="font-size:.82rem;color:var(--muted);margin:.75rem 0 .5rem">Step 2 — Identify the contract violation:</p>
+        <div class="bool-row" id="bopts-${i}">${q.opts.map((o,j) => `<button class="bool-btn" onclick="clfAns(${i},${j})">${o}</button>`).join('')}</div>
+        <div class="fb" id="fb-${i}"></div></div>`;
+    } else {
+      html += `<div class="qb" id="qb-${i}">
+        <div class="q-meta"><span>Question ${String(i+1).padStart(2,'0')} — ${q.section}</span><span class="q-pts">[${q.pts} pts]</span></div>
+        <div class="q-text">${q.text}</div>
+        <div class="bool-row" id="br-${i}">${q.opts.map((o,j) => `<button class="bool-btn" onclick="boolAns(${i},${j})">${o}</button>`).join('')}</div>
+        <div class="fb" id="fb-${i}"></div></div>`;
+    }
+  });
+  c.innerHTML = html;
+  startTimer();
+}
+
+function updateProg() {
+  const el = document.getElementById('prog');
+  if (el) el.style.width = (answered / TOTAL_Q * 100) + '%';
+}
+
+function checkAllAnswered() {
+  answered++;
+  updateProg();
+  document.getElementById('score-live').textContent = score;
+  if (answered === TOTAL_Q) unlockFeynman();
+}
+
+/* ── SPEC GRADER ── */
+function submitSpec(i) {
+  const val = document.getElementById('spec-' + i).value.trim().toLowerCase();
+  if (!val || val.length < 20) return;
+  document.getElementById('spec-' + i).disabled = true;
+  const q = Q[i];
+  let hits = q.keywords.filter(rx => rx.test(val)).length;
+  const ok = hits >= q.requiredHits;
+  const pts = ok ? q.pts : Math.round(q.pts * hits / q.keywords.length);
+  score += pts;
+  const block = document.getElementById('qb-' + i);
+  block.classList.add('answered', ok ? 'correct' : 'partcorrect');
+  const fb = document.getElementById('fb-' + i);
+  fb.className = 'fb vis ' + (ok ? 'ok' : 'part');
+  fb.innerHTML = `<span class="fb-lbl">${ok ? '✓ Specification accepted' : '△ Partial specification'} — +${pts} pts</span>${ok ? q.okMsg : q.partMsg}`;
+  checkAllAnswered();
+}
+
+/* ── CLASSIFY GRADER ── */
+let clfChoices = {};
+function clfSel(qi, j) {
+  document.querySelectorAll(`#clf-${qi} .clf-btn`).forEach(b => { b.classList.remove('c-sel'); b.style.setProperty('border-color',''); });
+  document.querySelectorAll(`#clf-${qi} .clf-btn`)[j].classList.add('c-sel');
+  clfChoices[qi] = j;
+}
+function clfAns(qi, sel) {
+  if (clfChoices[qi] === undefined) { alert('Please classify the defect type first.'); return; }
+  const q = Q[qi];
+  document.querySelectorAll(`#clf-${qi} .clf-btn`).forEach(b => b.disabled = true);
+  document.querySelectorAll(`#bopts-${qi} .bool-btn`).forEach(b => b.disabled = true);
+  const clfOk = clfChoices[qi] === q.ans; // classify ans index
+  const optOk = sel === q.ansOpt;
+  const ok = clfOk && optOk;
+  const pts = ok ? q.pts : (clfOk || optOk ? Math.round(q.pts * .5) : 0);
+  score += pts;
+  document.querySelectorAll(`#bopts-${qi} .bool-btn`)[sel].classList.add(optOk ? 'chosen-r' : 'chosen-w');
+  if (!optOk) document.querySelectorAll(`#bopts-${qi} .bool-btn`)[q.ansOpt].classList.add('show-r');
+  const block = document.getElementById('qb-' + qi);
+  block.classList.add('answered', ok ? 'correct' : (pts > 0 ? 'partcorrect' : 'wrong'));
+  const fb = document.getElementById('fb-' + qi);
+  fb.className = 'fb vis ' + (ok ? 'ok' : (pts > 0 ? 'part' : 'err'));
+  fb.innerHTML = `<span class="fb-lbl">${ok ? '✓ Correct' : pts > 0 ? '△ Partial' : '✗ Incorrect'} — +${pts} pts</span>${ok ? q.okMsg : q.errMsg}`;
+  checkAllAnswered();
+}
+
+/* ── BOOL GRADER ── */
+function boolAns(qi, sel) {
+  const q = Q[qi];
+  document.querySelectorAll(`#br-${qi} .bool-btn`).forEach(b => b.disabled = true);
+  const ok = sel === q.ans;
+  if (ok) score += q.pts;
+  document.querySelectorAll(`#br-${qi} .bool-btn`)[sel].classList.add(ok ? 'chosen-r' : 'chosen-w');
+  if (!ok) document.querySelectorAll(`#br-${qi} .bool-btn`)[q.ans].classList.add('show-r');
+  const block = document.getElementById('qb-' + qi);
+  block.classList.add('answered', ok ? 'correct' : 'wrong');
+  const fb = document.getElementById('fb-' + qi);
+  fb.className = 'fb vis ' + (ok ? 'ok' : 'err');
+  fb.innerHTML = `<span class="fb-lbl">${ok ? '✓ Correct' : '✗ Incorrect'} — +${ok ? q.pts : 0} pts</span>${ok ? (q.correctMsg || '') : (q.wrongMsg || '')}`;
+  checkAllAnswered();
+}
+
+/* ══ FEYNMAN ══ */
+function unlockFeynman() {
+  const ft = document.getElementById('feynman');
+  ft.classList.add('vis');
+  setTimeout(() => ft.scrollIntoView({ behavior: 'smooth', block: 'start' }), 600);
+}
+
+function submitFeynman() {
+  const val = document.getElementById('feyn-inp').value.toLowerCase().trim();
+  if (!val || val.length < 60) { alert('Please write a substantive paragraph (minimum 60 words) before submitting.'); return; }
+  let pts = 0;
+  // Keyword cluster 1: real-time observability / Foreman / live visibility
+  if (/real.?time|foreman|live (observ|visib|monitor|telem)|observe.*agent|agent.*blind|blind.*agent/.test(val)) pts += 14;
+  // Keyword cluster 2: O(1) memory / flat memory / no accumulation
+  if (/o\(1\)|flat mem|memory.*constant|constant.*mem|not accum|no.*accum|one.*at.*time|garbage.*collect|memory.*efficient/.test(val)) pts += 14;
+  // Keyword cluster 3: newline delimiter / parse-safe / JSONL boundary
+  if (/newline|\\n|delimiter|line.delimit|parse.safe|boundary|jsonl|split.*stream|stream.*split/.test(val)) pts += 12;
+  score += pts;
+  document.getElementById('score-live').textContent = score;
+  clearInterval(timerInt);
+  document.getElementById('countdown').textContent = '—:——';
+  const fb = document.getElementById('feyn-fb');
+  fb.className = 'fb vis ' + (pts >= 25 ? 'ok' : pts >= 14 ? 'part' : 'err');
+  fb.innerHTML = `<span class="fb-lbl">Feynman Synthesis — +${pts} pts</span>${
+    pts >= 28 ? 'Strong structural alignment. All three load-bearing components — Foreman observability, O(1) memory invariant, and JSONL newline delimiter — are present and correctly integrated.' :
+    pts >= 14 ? 'Partial alignment. Some structural components present. The missing element(s): check whether you addressed (1) the Foreman\'s real-time observation requirement, (2) flat O(1) memory through per-event emission, and (3) the newline as the parse-safe stream boundary.' :
+    'Insufficient structural depth. The three required components: (1) generators allow the Foreman to observe agent behaviour in real-time rather than waiting for completion, (2) yield + discard maintains O(1) memory regardless of session length, (3) the \\n newline delimiter ensures each JSONL object is parse-safe at every TCP buffer read boundary.'
+  }`;
+  setTimeout(showResults, 1800);
+}
+
+/* ══ RESULTS ══ */
+function showResults() {
+  const panel = document.getElementById('results');
+  panel.classList.add('vis');
+  const passed = score >= PASS;
+  document.getElementById('final-score').textContent = score + ' / ' + MAX;
+  document.getElementById('final-score').className = 'res-score ' + (passed ? 'pass' : 'fail');
+  document.getElementById('final-verdict').textContent = passed ? '[OPERATION: CERTIFIED]' : '[OPERATION: FAILED]';
+  document.getElementById('final-sub').textContent = passed
+    ? `Score ${score}/200 — Generators & JSONL streaming mastery confirmed. You can specify the Pydantic contract for stream validation, classify defect types in Pi Harness code, reason about memory and security implications, and synthesise the three structural principles into a coherent architectural explanation. The agentic harness is no longer a black box.`
+    : `Score ${score}/200 — below the 160-point certification threshold. Return to the Application Layer to rebuild production artifact fluency and defect classification accuracy before recertification.`;
+  setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 400);
+}
+</script>
+</body>
+</html>

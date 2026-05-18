@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Stateless Execution Loop — Application Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0A;--surface:#151515;--surface2:#1e1e1e;--surface3:#2A2A2A;
+  --text:#FAFAFA;--muted:#A0A0A0;--border:#2e2e2e;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--serif:'Playfair Display',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.65;overflow-x:hidden;}
+.container{max-width:800px;margin:0 auto;padding:4rem 2rem 10rem;}
+
+h1{font-family:var(--serif);font-size:clamp(2.5rem,6vw,3.8rem);line-height:1.0;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-family:var(--serif);font-size:1.8rem;margin:3rem 0 1rem;color:#fff;}
+h3{font-family:var(--sans);font-weight:600;font-size:1.1rem;margin:2rem 0 0.75rem;color:var(--accent);}
+p{margin-bottom:1.3rem;color:var(--muted);font-size:1rem;line-height:1.7;}
+strong{color:#fff;}
+.lesson-tag{font-family:var(--mono);font-size:0.7rem;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.15em;}
+
+/* INTERRUPT BOX */
+.interrupt-box{background:var(--surface);border:1px solid var(--red);border-radius:8px;padding:2.25rem;margin:2rem 0;}
+.interrupt-hdr{font-family:var(--mono);font-size:0.7rem;color:var(--red);text-transform:uppercase;margin-bottom:1.25rem;letter-spacing:0.12em;padding-bottom:0.6rem;border-bottom:1px solid var(--border);}
+.q-text{font-size:1.05rem;font-weight:500;margin-bottom:1.75rem;color:#fff;line-height:1.6;}
+
+/* INTERACTION BOX */
+.interaction-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2.25rem;margin:2rem 0;}
+.interaction-header{font-family:var(--mono);font-size:0.7rem;color:var(--accent);text-transform:uppercase;margin-bottom:1.25rem;letter-spacing:0.12em;padding-bottom:0.6rem;border-bottom:1px solid var(--border);}
+
+/* CODE DISPLAY */
+.code-block{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:1.25rem;font-family:var(--mono);font-size:0.85rem;color:#ccc;line-height:1.6;margin:1.5rem 0;overflow-x:auto;}
+.keyword{color:#c678dd;} .string{color:#98c379;} .comment{color:#5c6370;font-style:italic;} .function{color:#61afef;}
+
+/* INPUTS & BUTTONS */
+.input-group{display:flex;gap:1rem;align-items:center;margin-bottom:0.5rem;flex-wrap:wrap;}
+.input-text{background:var(--bg);border:2px solid var(--border);color:#fff;font-family:var(--mono);font-size:0.95rem;padding:0.7rem 1rem;flex:1;min-width:200px;border-radius:4px;transition:border-color 0.2s;}
+.input-text:focus{outline:none;border-color:var(--accent);}
+.input-text:disabled{opacity:0.45;cursor:not-allowed;}
+
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.7rem 1.4rem;font-family:var(--sans);font-weight:600;font-size:0.95rem;border-radius:4px;cursor:pointer;transition:all 0.18s;}
+.btn:hover:not(:disabled){background:#fff;transform:translateY(-1px);}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);padding:0.65rem 1.25rem;}
+.btn-outline:hover:not(:disabled){border-color:var(--text);background:var(--surface2);}
+
+/* FEEDBACK */
+.feedback{display:none;margin-top:1.5rem;padding:1.25rem 1.5rem;border-radius:4px;font-size:0.9rem;line-height:1.65;}
+.feedback.visible{display:block;animation:fadein 0.35s;}
+.feedback.error{background:rgba(231,111,81,0.08);border-left:3px solid var(--red);color:#ffb3a1;}
+.feedback.success{background:rgba(42,157,143,0.08);border-left:3px solid var(--green);color:#a7ece2;}
+.feedback-title{font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;margin-bottom:0.5rem;font-weight:600;letter-spacing:0.1em;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+/* DATA TRACE */
+.trace-block{background:var(--surface2);border-left:3px solid var(--accent);padding:1.5rem;margin:1.5rem 0;font-size:0.88rem;color:#ccc;line-height:1.7;}
+.trace-step{margin-bottom:0.5rem;}
+.trace-step strong{color:var(--text);font-family:var(--mono);font-size:0.8rem;}
+
+/* GATED CONTENT */
+.gated-content{opacity:0;pointer-events:none;transform:translateY(16px);transition:all 0.45s ease;display:none;}
+.gated-content.unlocked{opacity:1;pointer-events:auto;transform:translateY(0);display:block;}
+
+/* GAUNTLET */
+.gauntlet-wrap{margin-top:4rem;border-top:2px solid var(--border);padding-top:3rem;}
+.gauntlet-intro{font-size:0.88rem;color:var(--muted);margin-bottom:2rem;padding:1rem 1.25rem;background:var(--surface2);border-radius:4px;border-left:2px solid var(--border);}
+.q-block{background:var(--surface2);padding:1.4rem 1.5rem;border-radius:6px;margin-bottom:1.25rem;border:1px solid var(--border);}
+.q-num{font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.4rem;letter-spacing:0.1em;}
+.q-misconception{font-family:var(--mono);font-size:0.65rem;color:rgba(232,196,106,0.45);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.08em;}
+
+/* SECTION DIVIDER */
+.divider{border:none;border-top:1px solid var(--border);margin:3rem 0;}
+
+.mc-tag{display:inline-block;font-family:var(--mono);font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(231,111,81,0.15);color:var(--red);padding:0.15rem 0.45rem;border-radius:2px;margin-bottom:0.4rem;}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-tag">Lesson 19 · Layer 2 — Application</div>
+  <h1>CCP Artifact Mapping</h1>
+
+  <!-- ⚡ SPACED RETRIEVAL INTERRUPT -->
+  <div class="interrupt-box" id="gate0">
+    <div class="interrupt-hdr">⚡ Spaced Retrieval Interrupt — Layer 1 Recall</div>
+    <div class="q-text">
+        Without looking back: What is the single architectural difference between a standard Python `while` loop condition that checks for a finished task string, and the Sovereign Architect standard for a bounded agentic execution loop?
+    </div>
+    <div class="input-group" style="flex-wrap:nowrap;">
+      <input type="text" id="pred0" class="input-text" placeholder="Identify the structural difference...">
+      <button class="btn" id="btn0" onclick="submitGate0()">Lock Answer</button>
+    </div>
+    <div class="feedback" id="fb0"></div>
+  </div>
+
+  <div class="gated-content" id="section1">
+    <div class="divider"></div>
+    <h2>The Orchestration Dichotomy Mapping</h2>
+    <p>The stateless execution loop flows through the various layers of the CCP factory floor. The data state must be declared, optimized, routed, commanded, and persisted. Below are 5 representative CCP artifacts showing how loop elements are managed in production.</p>
+
+    <!-- ARTIFACT 1 -->
+    <h3>Artifact 1: The QA Department — History Validation Schema</h3>
+    <p><strong>Strategic Source:</strong> <i>OpenProse Specification & MCDA Inside the Scaffold (182/200)</i></p>
+    <div class="code-block">
+<span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field, field_validator
+
+<span class="keyword">class</span> <span class="function">ExecutionState</span>(BaseModel):
+    session_id: str
+    history: list[AgentTurn] = Field(default_factory=list)
+    turn_count: int = Field(default=0, ge=0)
+    max_turns: int = Field(default=15, le=30)
+    
+    @field_validator(<span class="string">'turn_count'</span>)
+    @classmethod
+    <span class="keyword">def</span> <span class="function">enforce_cycle_cap</span>(cls, v: int, info) -> int:
+        max_t = info.data.get(<span class="string">'max_turns'</span>, 15)
+        <span class="keyword">if</span> v >= max_t:
+            <span class="keyword">raise</span> ValueError(<span class="string">f"CRITICAL: Agent cycle cap exceeded. Turn {v} >= Max {max_t}."</span>)
+        <span class="keyword">return</span> v
+    </div>
+
+    <div class="trace-block">
+      <strong>Removal Consequence:</strong> Without this block, the `MAX_TURNS` invariant cannot strictly throw an error when passed outside the loop block. Developers would rely on loose append logic sprinkled across various files.
+    </div>
+
+    <div class="interaction-box" id="gate1">
+      <div class="interaction-header">Prediction Gate 01 — Defect Identification</div>
+      <div class="q-text">
+        If <code>ExecutionState(session_id="S_001", turn_count=18, max_turns=15)</code> is instantiated, what specific error is raised and where does it get caught?
+      </div>
+      <div class="input-group" style="flex-wrap:nowrap;">
+        <input type="text" id="pred1" class="input-text" placeholder="Predict the error type...">
+        <button class="btn" id="btn1" onclick="submitGate1()">Lock Prediction</button>
+      </div>
+      <div class="feedback" id="fb1"></div>
+    </div>
+  </div>
+
+  <div class="gated-content" id="section2">
+
+    <!-- ARTIFACT 2 -->
+    <h3>Artifact 2: The Machinist — DSPy OODA Signature</h3>
+    <p><strong>Strategic Source:</strong> <i>DSPy Paper (185/200)</i></p>
+    <div class="code-block">
+<span class="keyword">import</span> dspy
+
+<span class="keyword">class</span> <span class="function">AutonomousExecutionCycle</span>(dspy.Signature):
+    <span class="comment">"""Dictate the next optimal sub-action given the history."""</span>
+    history_array: str = dspy.InputField()
+    current_turn: int = dspy.InputField(desc=<span class="string">"The current iteration attempt"</span>)
+    max_turns_allowed: int = dspy.InputField()
+    
+    agentic_action: str = dspy.OutputField(desc=<span class="string">"`<bash>` or `<FINAL_ANSWER>`"</span>)
+    </div>
+
+    <div class="trace-block">
+      <strong>Removal Consequence:</strong> Without this signature, the LLM has no concept of how close it is to loop termination. By passing `current_turn` and `max_turns_allowed`, the agent receives contextual pressure to stop exploring as the cap approaches.
+    </div>
+
+    <div class="interaction-box" id="gate2">
+      <div class="interaction-header">Prediction Gate 02 — Tracing Expectations</div>
+      <div class="q-text">
+        What happens if the LLM output generated by DSPy does <strong>not</strong> contain a string matching the format expected by <code>&lt;bash&gt;</code> or <code>&lt;FINAL_ANSWER&gt;</code> tags?
+      </div>
+      <div class="input-group" style="flex-wrap:nowrap;">
+        <input type="text" id="pred2" class="input-text" placeholder="Predict the system response...">
+        <button class="btn" id="btn2" onclick="submitGate2()">Lock Prediction</button>
+      </div>
+      <div class="feedback" id="fb2"></div>
+    </div>
+  </div>
+
+  <div class="gated-content" id="section3">
+
+    <!-- ARTIFACT 3 -->
+    <h3>Artifact 3: The Robot Arm — The Harness Subprocess Execution</h3>
+    <div class="code-block">
+<span class="keyword">import</span> subprocess
+
+<span class="keyword">async def</span> <span class="function">execute_tool_call</span>(tool_string: str, max_execution_time: int = 15) -> dict:
+    <span class="keyword">try</span>:
+        process_result = subprocess.run(
+            tool_string.split(), 
+            capture_output=<span class="keyword">True</span>, 
+            text=<span class="keyword">True</span>, 
+            timeout=max_execution_time
+        )
+        <span class="keyword">return</span> {"status": "success", "stdout": process_result.stdout}
+    <span class="keyword">except</span> subprocess.TimeoutExpired:
+        <span class="keyword">return</span> {
+            "status": "fatal_timeout",
+            "stdout": "",
+            "stderr": <span class="string">f"Subprocess hang prevented. Tool exceeded {max_execution_time}s."</span>
+        }
+    </div>
+
+    <div class="interaction-box" id="gate3">
+      <div class="interaction-header">Prediction Gate 03 — Timeouts</div>
+      <div class="q-text">
+        If <code>tool_string="sleep 20"</code> is executed, exactly what does <code>execute_tool_call</code> return?
+      </div>
+      <div class="input-group" style="flex-wrap:nowrap;">
+        <input type="text" id="pred3" class="input-text" placeholder="Predict the return value...">
+        <button class="btn" id="btn3" onclick="submitGate3()">Lock Prediction</button>
+      </div>
+      <div class="feedback" id="fb3"></div>
+    </div>
+  </div>
+
+  <div class="gated-content" id="section4">
+
+    <!-- ARTIFACT 4 -->
+    <h3>Artifact 4: The Chassis — The Real-Time Endpoint Shell</h3>
+    <div class="code-block">
+<span class="keyword">from</span> fastapi <span class="keyword">import</span> APIRouter, Depends, HTTPException
+
+@router.post(<span class="string">"/execute-coaching-loop"</span>)
+<span class="keyword">async def</span> <span class="function">trigger_coaching_loop</span>(request_data: ExecutionState, limit: int = Depends(get_tier_limits)):
+    history_array = request_data.history
+    turns = 0
+    
+    <span class="keyword">while</span> turns < limit:
+        next_action = <span class="keyword">await</span> dspy_agent(history_array, turns, limit)
+        parsed_command = output_parser(next_action)
+        <span class="keyword">if not</span> parsed_command:
+            <span class="keyword">return</span> {"status": "complete", "final_state": history_array[-1]}
+        
+        tool_res = <span class="keyword">await</span> execute_tool_call(parsed_command)
+        history_array.append({"role": "tool", "content": json.dumps(tool_res)})
+        turns += 1
+        
+    <span class="keyword">raise</span> HTTPException(status_code=408, detail=<span class="string">f"Agent loop exceeded Tier Limit: {limit} cycles."</span>)
+    </div>
+
+    <div class="interaction-box" id="gate4">
+      <div class="interaction-header">Prediction Gate 04 — Error Handling</div>
+      <div class="q-text">
+        If <code>output_parser(next_action)</code> throws an unhandled <code>TypeError</code> inside the loop, does the <code>raise HTTPException(status_code=408...)</code> catch it?
+      </div>
+      <div class="input-group" style="flex-wrap:nowrap;">
+        <input type="text" id="pred4" class="input-text" placeholder="Yes or No, with reasoning...">
+        <button class="btn" id="btn4" onclick="submitGate4()">Lock</button>
+      </div>
+      <div class="feedback" id="fb4"></div>
+    </div>
+  </div>
+
+  <div class="gated-content" id="section5">
+
+    <!-- ARTIFACT 5 -->
+    <h3>Artifact 5: The Memory Engine — State Persistance</h3>
+    <p>Neo4j uses Cypher with `UNWIND` to digest the history array into distinct Graph nodes.</p>
+    <div class="code-block">
+<span class="keyword">def</span> <span class="function">persist_execution_trace</span>(session_id: str, history_array: list[dict], driver):
+    query = <span class="string">"""
+    MATCH (s:Session {id: $session_id})
+    UNWIND $trace_events as event
+    CREATE (s)-[:HAS_TRACE_NODE]->(t:TraceNode {
+        role: event.role,
+        content: event.content
+    })
+    """</span>
+    <span class="keyword">with</span> driver.session() <span class="keyword">as</span> session:
+        session.run(query, session_id=session_id, trace_events=history_array)
+    </div>
+
+    <div class="interaction-box" id="gate5">
+      <div class="interaction-header">Prediction Gate 05 — Cypher Execution</div>
+      <div class="q-text">
+        If <code>history_array</code> contains exactly 15 turns, how many individual <code>[:HAS_TRACE_NODE]</code> relationships are created by this single cypher execution?
+      </div>
+      <div class="input-group" style="flex-wrap:nowrap;">
+        <input type="text" id="pred5" class="input-text" placeholder="Predict the quantity...">
+        <button class="btn" id="btn5" onclick="submitGate5()">Lock</button>
+      </div>
+      <div class="feedback" id="fb5"></div>
+    </div>
+  </div>
+
+  <div class="gated-content" id="gauntlet">
+    <div class="divider"></div>
+    <!-- DATA TRACING EXERCISE -->
+    <h2>Data Flow Tracing Exercise</h2>
+    <div class="trace-block" style="background:var(--bg); border-left:3px solid var(--text);">
+      <div class="trace-step">1. <strong>[CHASSIS/QA]</strong> POST /extract hits FastAPI. Extracted <code>history_array</code> passes Pydantic constraints. <code>turns = 0</code></div>
+      <div class="trace-step">2. <strong>[MACHINIST]</strong> <code>dspy_agent</code> observes state, returns <code>&lt;bash&gt;neo4j_query...&lt;/bash&gt;</code>.</div>
+      <div class="trace-step">3. <strong>[ROBOT ARM]</strong> Subprocess executes query, returning Tool result (Client complaint). Append to history. <code>turns = 1</code></div>
+      <div class="trace-step">4. <strong>[MACHINIST]</strong> <code>dspy_agent</code> sees tool result. Returns <code>&lt;FINAL_ANSWER&gt;</code>. Loop evaluates early break.</div>
+      <div class="trace-step">5. <strong>[MEMORY]</strong> Loop exits safely. Trace is serialized to Neo4j. HTTP 200 OK wraps around it.</div>
+    </div>
+
+    <!-- GAUNTLET -->
+    <div class="gauntlet-wrap">
+      <h2>Application Gauntlet</h2>
+      <div class="gauntlet-intro">
+        Code snippets from raw CCP production. Analyze the defect and the structural fallout. Do not guess.
+      </div>
+      <div id="q-container"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+function submitGate0() {
+  const val = document.getElementById('pred0').value;
+  if (!val.trim()) return;
+  document.getElementById('pred0').disabled = true;
+  document.getElementById('btn0').disabled = true;
+  
+  const fb = document.getElementById('fb0');
+  fb.classList.add('visible', 'success');
+  fb.innerHTML = `
+    <div class="feedback-title">Memory Verified</div>
+    A standard loop checks completion strings (giving termination control to the LLM). The Sovereign loop tracks an integer <code>turn_count</code> against <code>MAX_TURNS</code>, enforcing deterministic stops governed completely by the operational runtime, stripping the LLM's endless loop autonomy.
+  `;
+  document.getElementById('section1').classList.add('unlocked');
+}
+
+function submitGate1() {
+  const val = document.getElementById('pred1').value;
+  if (!val.trim()) return;
+  document.getElementById('pred1').disabled = true;
+  document.getElementById('btn1').disabled = true;
+  
+  const fb = document.getElementById('fb1');
+  fb.classList.add('visible', 'success');
+  fb.innerHTML = `
+    <div class="feedback-title">Correct Isolation</div>
+    A Pydantic <code>ValidationError</code> is raised instantly at the `@field_validator` level, throwing "CRITICAL: Agent cycle cap exceeded."
+  `;
+  document.getElementById('section2').classList.add('unlocked');
+}
+
+function submitGate2() {
+  const val = document.getElementById('pred2').value;
+  if (!val.trim()) return;
+  document.getElementById('pred2').disabled = true;
+  document.getElementById('btn2').disabled = true;
+  
+  const fb = document.getElementById('fb2');
+  fb.classList.add('visible', 'success');
+  fb.innerHTML = `
+    <div class="feedback-title">Correct Reveal</div>
+    DSPy's generation succeeds (it only enforces string typing). The failure happens downstream in the Chassis Output Parser, where the regex fails to map the raw string into an executable block.
+  `;
+  document.getElementById('section3').classList.add('unlocked');
+}
+
+function submitGate3() {
+  const val = document.getElementById('pred3').value;
+  if (!val.trim()) return;
+  document.getElementById('pred3').disabled = true;
+  document.getElementById('btn3').disabled = true;
+  
+  const fb = document.getElementById('fb3');
+  fb.classList.add('visible', 'success');
+  fb.innerHTML = `
+    <div class="feedback-title">Correct Isolation</div>
+    It triggers <code>except subprocess.TimeoutExpired</code> returning a dictionary: <code>{"status": "fatal_timeout", ... "stderr": "Subprocess hang prevented."}</code> protecting the loop thread.
+  `;
+  document.getElementById('section4').classList.add('unlocked');
+}
+
+function submitGate4() {
+  const val = document.getElementById('pred4').value.toLowerCase().trim();
+  if (!val) return;
+  document.getElementById('pred4').disabled = true;
+  document.getElementById('btn4').disabled = true;
+  
+  const fb = document.getElementById('fb4');
+  fb.classList.add('visible');
+
+  if (val.includes("no")) {
+    fb.classList.add('success');
+    fb.innerHTML = `
+      <div class="feedback-title">Correct Reveal</div>
+      No. An unhandled exception escapes the `+`while`+` loop completely, bypassing the 408 exception at the bottom, and triggers FastAPI's default 500 Internal Server error endpoint.
+    `;
+  } else {
+    fb.classList.add('error');
+    fb.innerHTML = `
+      <div class="mc-tag">Defect Trapped</div>
+      Incorrect. The 408 HTTPException only fires if the loop logically resolves its internal logic and specifically hits the <code>limit</code> barrier. Unexpected <code>TypeErrors</code> burst directly through to the top framework handler (500 Error).
+    `;
+  }
+  document.getElementById('section5').classList.add('unlocked');
+}
+
+function submitGate5() {
+  const val = document.getElementById('pred5').value;
+  if (!val.trim()) return;
+  document.getElementById('pred5').disabled = true;
+  document.getElementById('btn5').disabled = true;
+  
+  const fb = document.getElementById('fb5');
+  fb.classList.add('visible', 'success');
+  fb.innerHTML = `
+    <div class="feedback-title">Correct Result</div>
+    Exactly 15. The <code>UNWIND</code> command acts like a foreach loop in cypher, causing the subsequent <code>CREATE</code> command to execute individually for each item in the unwound list.
+  `;
+  document.getElementById('gauntlet').classList.add('unlocked');
+  renderGauntlet();
+}
+
+
+const G_DATA = [
+  {
+    num: "01",
+    target: "String Extraction Phase",
+    q: "<code>match = re.search(r'```python\s+(.*?)```', llm_out)</code><br>Which CCP subsystem handles this isolation?",
+    match: ["chassis", "fastapi", "router", "parser"],
+    exp: "The Chassis routing logic. The output parser determines the orientation and loop continuation."
+  },
+  {
+    num: "02",
+    target: "For vs While Danger",
+    q: "<code>for _ in range(50): execute(...)</code><br>What architecture flaw does this possess?",
+    match: ["force", "pointless", "fixed", "range"],
+    exp: "If the task is resolved at step 2, a fixed `for` range forces unnecessary cycles or requires complex break logic. `while` permits dynamic state evaluation."
+  },
+  {
+    num: "03",
+    target: "Pydantic Loop Interaction",
+    q: "<code>trace: list = Field(..., max_length=15)</code><br>What happens if the loop runs 16 times?",
+    match: ["validation", "error", "pydantic", "crash"],
+    exp: "A Pydantic ValidationError detonates when the array is evaluated, blocking any DB commits."
+  },
+  {
+    num: "04",
+    target: "Subprocess Panic",
+    q: "<code>history.append(json.loads(subprocess.run(['cat','d.json']).stdout))</code><br>What if data.json is mangled?",
+    match: ["jsondecodeerror", "crash", "escape"],
+    exp: "json.loads throws a JSONDecodeError crashing the loop. The Arm must wrap this in try/except dictionaries."
+  },
+  {
+    num: "05",
+    target: "Websocket Emits",
+    q: "<code>yield get_next(history)</code> inside the loop. Which system needs this?",
+    match: ["pipecat", "realtime", "websocket", "stream"],
+    exp: "Pipecat streaming (from Lesson 18) for real-time artifact bridging."
+  },
+  {
+    num: "06",
+    target: "History Amnesia",
+    q: "<code>history = [h for h in history if h['role'] != 'tool']</code><br>How does the agent fail?",
+    match: ["forget", "repeat", "echo", "loop"],
+    exp: "It forgets the output of its execution. It will infinitely request the same tool again."
+  },
+  {
+    num: "07",
+    target: "Subprocess Rules",
+    q: "<code>subprocess.run(tool_string, shell=True)</code><br>Why is this banned?",
+    match: ["injection", "cmd", "bash", "vulnerability"],
+    exp: "Bypasses deterministic subprocess isolation. It opens severe command injection vulnerabilities."
+  }
+];
+
+function renderGauntlet() {
+  const container = document.getElementById('q-container');
+  let html = '';
+  G_DATA.forEach((item, idx) => {
+    html += `
+    <div class="q-block" id="gq-${idx}">
+      <div class="q-num">Drill 0${idx+1} / 7</div>
+      <div class="q-misconception">Targets: ${item.target}</div>
+      <div class="q-text">${item.q}</div>
+      <div class="input-group" style="margin-bottom:0;flex-wrap:nowrap;">
+        <input type="text" id="gInput-${idx}" class="input-text" placeholder="Identify consequence...">
+        <button class="btn" onclick="answerGText(${idx}, this)">Lock</button>
+      </div>
+      <div class="feedback" id="gfb-${idx}"></div>
+    </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+function answerGText(idx, btn) {
+  const input = document.getElementById(`gInput-${idx}`);
+  const val = input.value.toLowerCase().trim();
+  if (!val) return;
+  input.disabled = true;
+  btn.disabled = true;
+  
+  const fb = document.getElementById(`gfb-${idx}`);
+  fb.classList.add('visible');
+
+  let correct = G_DATA[idx].match.some(m => val.includes(m.toLowerCase()));
+
+  if (correct) {
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">Correct Isolation</div>${G_DATA[idx].exp}`;
+  } else {
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="mc-tag">Defect Isolation Failed</div><br>${G_DATA[idx].exp}`;
+  }
+}
+</script>
+</body>
+</html>

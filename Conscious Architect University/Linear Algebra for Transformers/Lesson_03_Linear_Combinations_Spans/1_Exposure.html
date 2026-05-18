@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linear Combinations & Spans — The Mixing Console</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1;min-width:280px;}
+.visual-col{flex:1.2;min-width:320px;}
+
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+.insight.teal{border-color:var(--teal);background:var(--teal-glow);}
+.insight.teal strong{color:var(--teal);}
+.insight.rose{border-color:var(--rose);background:var(--rose-glow);}
+.insight.rose strong{color:var(--rose);}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-amber{background:var(--amber);color:#000;}
+.btn-amber:hover{background:#fbbf24;transform:translateY(-1px);}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text-muted);color:var(--text);}
+.btn-outline.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow);}
+.btn-sm{padding:.4rem .8rem;font-size:.78rem;}
+
+.quiz-option{display:block;width:100%;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:.88rem;color:var(--text-muted);transition:all .25s;text-align:left;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;}
+.quiz-option:hover{border-color:var(--border-light);color:var(--text);}
+.quiz-option.correct{border-color:var(--emerald);color:var(--emerald);background:var(--emerald-glow);}
+.quiz-option.wrong{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+.quiz-option.disabled{pointer-events:none;opacity:.6;}
+.quiz-explanation{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+.quiz-explanation.show{max-height:300px;}
+
+input[type=range]{-webkit-appearance:none;background:transparent;width:100%;}
+input[type=range]::-webkit-slider-track{height:4px;background:var(--border);border-radius:2px;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--amber);border-radius:50%;margin-top:-6px;cursor:pointer;}
+
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+.scroll-hint{animation:bounce 2s ease infinite;}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column!important;}
+  .canvas-wrap{min-height:300px!important;}
+  .nav-links{gap:.5rem;}.nav-link{font-size:.7rem;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">LINEAR COMBINATIONS</span>
+    <div class="nav-links">
+      <a href="#console" class="nav-link active" data-section="console">The Console</a>
+      <a href="#span" class="nav-link" data-section="span">Span</a>
+      <a href="#attention" class="nav-link" data-section="attention">Attention Output</a>
+      <a href="#edges" class="nav-link" data-section="edges">Edge Cases</a>
+      <a href="#checkpoint" class="nav-link" data-section="checkpoint">Checkpoint</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 03 — EXPOSURE LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Linear Combinations<br><span style="color:var(--text-muted);font-weight:300;">The Mixing Console</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      How new meaning is manufactured by blending existing vectors at controlled proportions — and the hard geometric walls that define what can never be reached.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: The DJ Console -->
+<section id="console" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — THE MIXING CONSOLE</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Blending Vectors With Weighted Faders</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          A <strong style="color:var(--text);">linear combination</strong> takes a set of existing components, assigns each a scalar weight, multiplies each component by its weight, and sums the results. The output is a new entity that inherits characteristics from every source in exact proportion.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          Consider two behavioral primitives:
+          <strong style="color:var(--amber);">v₁ = (1, 0)</strong> (pure Empathy) and
+          <strong style="color:var(--teal);">v₂ = (0, 1)</strong> (pure Logic).
+        </p>
+        <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'Space Grotesk';font-size:.9rem;margin-bottom:1rem;">
+          <span style="color:var(--text);">w</span> = <span style="color:var(--amber);">α₁</span> · v₁ + <span style="color:var(--teal);">α₂</span> · v₂
+        </div>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          By varying <strong style="color:var(--amber);">α₁</strong> and <strong style="color:var(--teal);">α₂</strong>, you manufacture composite vectors that never existed as primitives. The fader positions are the weights; the resulting blend is the linear combination.
+        </p>
+        <div class="insight teal">
+          <strong>Drag the sliders</strong> to adjust the weights of each basis vector. Watch the resulting blend vector update in real-time on the canvas.
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:400px;">
+          <canvas id="consoleCanvas"></canvas>
+        </div>
+        <div style="padding:.75rem 1rem;">
+          <div style="margin-bottom:.75rem;">
+            <label style="font-size:.82rem;font-weight:600;display:flex;justify-content:space-between;"><span style="color:var(--amber);">α₁ (Empathy)</span><span id="a1Val" style="color:var(--amber);">3.0</span></label>
+            <input type="range" id="a1Slider" min="-5" max="8" step="0.1" value="3">
+          </div>
+          <div>
+            <label style="font-size:.82rem;font-weight:600;display:flex;justify-content:space-between;"><span style="color:var(--teal);">α₂ (Logic)</span><span id="a2Val" style="color:var(--teal);">7.0</span></label>
+            <input type="range" id="a2Slider" min="-5" max="8" step="0.1" value="7">
+          </div>
+          <div class="card" style="padding:.75rem;margin-top:.75rem;text-align:center;">
+            <span style="font-size:.75rem;color:var(--text-dim);">RESULT VECTOR</span>
+            <div id="resultVec" style="font-size:1.2rem;font-weight:700;font-family:'Space Grotesk';color:var(--emerald);">(3.0, 7.0)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: Span -->
+<section id="span" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:.5rem;">02 — SPAN: THE GEOMETRIC BOUNDARY</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Independence vs Dependence</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          The <strong style="color:var(--text);">span</strong> of your source vectors is the set of ALL possible outputs you can generate by varying the weights. It defines the hard geometric limit of what your system can express.
+        </p>
+        <ul style="color:var(--text-muted);line-height:1.8;padding-left:1.2rem;margin-bottom:1rem;font-size:.92rem;">
+          <li><strong style="color:var(--violet);">1 vector</strong> → span is a <strong>line</strong></li>
+          <li><strong style="color:var(--teal);">2 independent vectors</strong> → span is a <strong>plane</strong> (entire 2D)</li>
+          <li><strong style="color:var(--rose);">2 dependent vectors</strong> → span collapses to a <strong>line</strong></li>
+          <li><strong style="color:var(--emerald);">3 independent in 3D</strong> → span fills the <strong>entire volume</strong></li>
+        </ul>
+        <div class="insight rose" style="margin-bottom:1rem;">
+          <strong>If v₂ = 2·v₁</strong>, both point along the same axis. No matter what weights you choose, the output is trapped on one line. The dependent vector is mathematically dead weight.
+        </div>
+        <div class="insight" style="margin-bottom:1rem;">
+          <strong>Toggle below</strong> to switch between independent and dependent basis vectors. Watch the span coverage change dramatically.
+        </div>
+        <div style="display:flex;gap:.5rem;">
+          <button class="btn btn-outline active" id="indepBtn">Independent Basis</button>
+          <button class="btn btn-outline" id="depBtn">Dependent Basis</button>
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:400px;">
+          <canvas id="spanCanvas"></canvas>
+        </div>
+        <div id="spanCaption" style="font-size:.78rem;color:var(--text-dim);text-align:center;margin-top:.75rem;padding:0 .5rem;">
+          Two independent vectors span the entire 2D plane. Every point is reachable.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: Attention Output as Linear Combination -->
+<section id="attention" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">03 — THE TRANSFORMER CONNECTION</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Attention Output = Linear Combination</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          Every single attention output is a linear combination. The model takes the <strong style="color:var(--text);">Value vectors</strong> of every relevant token, assigns each a <strong style="color:var(--amber);">weight</strong> (from Softmax), and blends them into a completely new vector.
+        </p>
+        <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'Space Grotesk';font-size:.88rem;line-height:1.8;margin-bottom:1rem;">
+          output = <span style="color:var(--amber);">0.6</span>·V₁ + <span style="color:var(--teal);">0.3</span>·V₂ + <span style="color:var(--violet);">0.1</span>·V₃<br>
+          = <span style="color:var(--amber);">0.6</span>(1,0) + <span style="color:var(--teal);">0.3</span>(0,1) + <span style="color:var(--violet);">0.1</span>(1,1)<br>
+          = <span style="color:var(--emerald);font-weight:700;">(0.7, 0.4)</span>
+        </div>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          The output <strong style="color:var(--emerald);">(0.7, 0.4)</strong> never existed in the vocabulary. It's a freshly minted representation — 70% Empathy-leaning, 40% Logic-leaning. New contextual meaning manufactured from old parts.
+        </p>
+        <div class="insight">
+          <strong>Drag the attention weight sliders</strong> to redistribute focus across the three value vectors. The blended output shifts in real-time.
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:380px;">
+          <canvas id="attentionCanvas"></canvas>
+        </div>
+        <div style="padding:.75rem 1rem;">
+          <div style="margin-bottom:.5rem;">
+            <label style="font-size:.78rem;font-weight:600;display:flex;justify-content:space-between;"><span style="color:var(--amber);">V₁ "coach" (1,0)</span><span id="w1Val">0.60</span></label>
+            <input type="range" id="w1" min="0" max="100" value="60" class="attW">
+          </div>
+          <div style="margin-bottom:.5rem;">
+            <label style="font-size:.78rem;font-weight:600;display:flex;justify-content:space-between;"><span style="color:var(--teal);">V₂ "analytical" (0,1)</span><span id="w2Val">0.30</span></label>
+            <input type="range" id="w2" min="0" max="100" value="30" class="attW">
+          </div>
+          <div>
+            <label style="font-size:.78rem;font-weight:600;display:flex;justify-content:space-between;"><span style="color:var(--violet);">V₃ "balanced" (1,1)</span><span id="w3Val">0.10</span></label>
+            <input type="range" id="w3" min="0" max="100" value="10" class="attW">
+          </div>
+          <div class="card" style="padding:.6rem;margin-top:.5rem;text-align:center;">
+            <span style="font-size:.72rem;color:var(--text-dim);">ATTENTION OUTPUT</span>
+            <div id="attOut" style="font-size:1.1rem;font-weight:700;font-family:'Space Grotesk';color:var(--emerald);">(0.70, 0.40)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 4: Edge Cases -->
+<section id="edges" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--rose);margin-bottom:.5rem;">04 — EDGE CASES</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">When the Combination Breaks</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;">
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--text-dim);">
+        <h4 style="color:var(--text-dim);margin-bottom:.5rem;">All-Zero Weights</h4>
+        <p style="font-size:.88rem;color:var(--text-muted);line-height:1.5;">
+          Setting every weight to zero produces the <strong>zero vector</strong>. In attention, this means no token was relevant — a degenerate failure state. Should never occur after proper Softmax normalization, but can emerge from gradient collapse.
+        </p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--rose);">
+        <h4 style="color:var(--rose);margin-bottom:.5rem;">Negative Weights</h4>
+        <p style="font-size:.88rem;color:var(--text-muted);line-height:1.5;">
+          A negative weight steers <strong>away</strong> from a concept. The CCP computes <code style="font-family:'Space Grotesk';color:var(--rose);background:var(--rose-glow);padding:.1em .3em;border-radius:3px;">corrected = state + (-0.5)·e_aggression</code>. You don't define "non-toxic" — you subtract "toxic."
+        </p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--amber);">
+        <h4 style="color:var(--amber);margin-bottom:.5rem;">Oversaturated Weights</h4>
+        <p style="font-size:.88rem;color:var(--text-muted);line-height:1.5;">
+          If α₁=100 and α₂=0.01, the combination degenerates into a copy of v₁. This is the overconfidence failure from Lesson 2 — Softmax concentrates near-100% weight on a single token. The model stops blending and starts parroting.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 5: Checkpoint -->
+<section id="checkpoint" class="section">
+  <div class="section-inner" style="max-width:720px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">05 — CHECKPOINT</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Test Your Understanding</h2>
+    <div id="quizContainer" style="display:flex;flex-direction:column;gap:1.5rem;"></div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);">
+  <p style="max-width:600px;margin:0 auto 1rem;line-height:1.5;">
+    <strong>Compression:</strong> A linear combination builds new meaning from weighted old parts. The span tells you what meanings are possible — and what meanings can never be reached.
+  </p>
+  Interactive Visual Learning — Lesson 03: Linear Combinations & Spans Exposure
+</footer>
+
+<script>
+const DPR=window.devicePixelRatio||1;
+function setupCanvas(c){const p=c.parentElement,r=p.getBoundingClientRect();c.width=r.width*DPR;c.height=r.height*DPR;c.style.width=r.width+'px';c.style.height=r.height+'px';const ctx=c.getContext('2d');ctx.scale(DPR,DPR);return{ctx,w:r.width,h:r.height};}
+
+/* Hero */
+(function(){const c=document.getElementById('heroCanvas');let W,H,ctx;
+function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+resize();window.addEventListener('resize',resize);
+let t=0;
+function draw(){ctx.clearRect(0,0,W,H);
+  // Flowing fader lines
+  for(let i=0;i<6;i++){
+    const x=W*0.15+i*W*0.14;
+    const fh=80+Math.sin(t*0.02+i*1.5)*60;
+    ctx.fillStyle=`rgba(${i%3===0?'245,158,11':i%3===1?'20,184,166':'139,92,246'},${0.08})`;
+    ctx.fillRect(x-3,H/2-fh,6,fh*2);
+    ctx.beginPath();ctx.arc(x,H/2-fh,5,0,Math.PI*2);
+    ctx.fillStyle=`rgba(${i%3===0?'245,158,11':i%3===1?'20,184,166':'139,92,246'},0.3)`;ctx.fill();
+  }
+  t++;requestAnimationFrame(draw);}
+draw();})();
+
+/* Section 1: Console Canvas */
+(function(){
+  const canvas=document.getElementById('consoleCanvas');
+  const s1=document.getElementById('a1Slider'),s2=document.getElementById('a2Slider');
+  const v1=document.getElementById('a1Val'),v2=document.getElementById('a2Val');
+  const res=document.getElementById('resultVec');
+
+  function draw(){
+    const{ctx,w,h}=setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+    const a1=parseFloat(s1.value),a2=parseFloat(s2.value);
+    v1.textContent=a1.toFixed(1);v2.textContent=a2.toFixed(1);
+    res.textContent=`(${a1.toFixed(1)}, ${a2.toFixed(1)})`;
+
+    const cx=w*0.4,cy=h*0.6,scale=Math.min(w,h)/16;
+
+    // Grid
+    for(let i=-8;i<=8;i++){ctx.strokeStyle=`rgba(255,255,255,${i===0?0:0.04})`;ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(cx+i*scale,0);ctx.lineTo(cx+i*scale,h);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(0,cy-i*scale);ctx.lineTo(w,cy-i*scale);ctx.stroke();}
+    ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(w,cy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,0);ctx.lineTo(cx,h);ctx.stroke();
+
+    function drawVec(x,y,color,label,dashed){
+      const tx=cx+x*scale,ty=cy-y*scale;
+      if(dashed)ctx.setLineDash([5,4]);
+      ctx.save();ctx.shadowColor=color;ctx.shadowBlur=6;ctx.strokeStyle=color;ctx.lineWidth=dashed?2:3;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(tx,ty);ctx.stroke();ctx.restore();
+      ctx.setLineDash([]);
+      const mag=Math.sqrt((tx-cx)**2+(ty-cy)**2),ang=Math.atan2(ty-cy,tx-cx),hl=Math.min(12,mag*0.2);
+      if(mag>5){ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx-hl*Math.cos(ang-0.35),ty-hl*Math.sin(ang-0.35));
+        ctx.lineTo(tx-hl*Math.cos(ang+0.35),ty-hl*Math.sin(ang+0.35));ctx.fillStyle=color;ctx.fill();}
+      ctx.font='600 11px Space Grotesk';ctx.fillStyle=color;ctx.textAlign='left';
+      ctx.fillText(label,tx+10,ty-8);
+    }
+
+    // Basis vectors (unit)
+    drawVec(1,0,'rgba(245,158,11,0.4)','v₁',true);
+    drawVec(0,1,'rgba(20,184,166,0.4)','v₂',true);
+    // Scaled components
+    drawVec(a1,0,'#f59e0b',a1.toFixed(1)+'·v₁',false);
+    drawVec(0,a2,'#14b8a6',a2.toFixed(1)+'·v₂',false);
+    // Result
+    drawVec(a1,a2,'#10b981','w = ('+a1.toFixed(1)+', '+a2.toFixed(1)+')',false);
+
+    // Dashed construction lines
+    ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(16,185,129,0.2)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(cx+a1*scale,cy);ctx.lineTo(cx+a1*scale,cy-a2*scale);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,cy-a2*scale);ctx.lineTo(cx+a1*scale,cy-a2*scale);ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Labels
+    ctx.font='10px DM Sans';ctx.fillStyle='#52525b';ctx.textAlign='center';
+    ctx.fillText('Empathy',w-30,cy+15);ctx.fillText('Logic',cx+5,15);
+  }
+  s1.addEventListener('input',draw);s2.addEventListener('input',draw);
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Section 2: Span Canvas */
+(function(){
+  const canvas=document.getElementById('spanCanvas');
+  let independent=true;
+  let cW=0,cH=0,cCtx=null,animT=0;
+
+  function resizeCanvas(){const p=canvas.parentElement,r=p.getBoundingClientRect();canvas.width=r.width*DPR;canvas.height=r.height*DPR;canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';cW=r.width;cH=r.height;cCtx=canvas.getContext('2d');cCtx.scale(DPR,DPR);}
+  resizeCanvas();window.addEventListener('resize',resizeCanvas);
+
+  function draw(){
+    const ctx=cCtx,w=cW,h=cH;if(!ctx)return;
+    ctx.save();ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,w,h);
+    const cx=w*0.5,cy=h*0.5,scale=Math.min(w,h)/12;
+
+    // If independent, fill plane; if dependent, fill line
+    if(independent){
+      // Faint grid fill to show full plane coverage
+      ctx.fillStyle='rgba(139,92,246,0.04)';ctx.fillRect(0,0,w,h);
+      // Scatter dots showing reachable points
+      for(let i=0;i<120;i++){
+        const rx=(Math.random()-0.5)*w*0.8,ry=(Math.random()-0.5)*h*0.8;
+        ctx.beginPath();ctx.arc(cx+rx,cy+ry,2,0,Math.PI*2);
+        ctx.fillStyle='rgba(139,92,246,0.12)';ctx.fill();
+      }
+    } else {
+      // Only the diagonal line
+      ctx.save();ctx.shadowColor='rgba(244,63,94,0.3)';ctx.shadowBlur=15;
+      ctx.strokeStyle='rgba(244,63,94,0.3)';ctx.lineWidth=8;
+      ctx.beginPath();ctx.moveTo(cx-200,cy+200);ctx.lineTo(cx+200,cy-200);ctx.stroke();ctx.restore();
+    }
+
+    // Axes
+    ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(w,cy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,0);ctx.lineTo(cx,h);ctx.stroke();
+
+    // Basis vectors
+    const v1x=1,v1y=2;
+    let v2x,v2y;
+    if(independent){v2x=2;v2y=-1;} else {v2x=2;v2y=4;} // dependent = 2*v1
+
+    function drawVec(x,y,color,label){
+      const tx=cx+x*scale*1.5,ty=cy-y*scale*1.5;
+      ctx.save();ctx.shadowColor=color;ctx.shadowBlur=8;ctx.strokeStyle=color;ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(tx,ty);ctx.stroke();ctx.restore();
+      const mag=Math.sqrt((tx-cx)**2+(ty-cy)**2),ang=Math.atan2(ty-cy,tx-cx),hl=12;
+      ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx-hl*Math.cos(ang-0.35),ty-hl*Math.sin(ang-0.35));
+      ctx.lineTo(tx-hl*Math.cos(ang+0.35),ty-hl*Math.sin(ang+0.35));ctx.fillStyle=color;ctx.fill();
+      ctx.font='600 12px Space Grotesk';ctx.fillStyle=color;ctx.textAlign='left';ctx.fillText(label,tx+10,ty-8);
+    }
+
+    drawVec(v1x,v1y,'#f59e0b','v₁ (1,2)');
+    drawVec(v2x,v2y,'#14b8a6',independent?'v₂ (2,-1)':'v₂ (2,4) = 2·v₁');
+
+    // Label
+    ctx.font='700 14px Space Grotesk';ctx.textAlign='left';
+    if(independent){ctx.fillStyle='#8b5cf6';ctx.fillText('Span = entire ℝ² plane',16,28);}
+    else{ctx.fillStyle='#f43f5e';ctx.fillText('Span = single line (collapsed!)',16,28);}
+
+    ctx.restore();
+    animT+=0.05;requestAnimationFrame(draw);
+  }
+
+  document.getElementById('indepBtn').addEventListener('click',()=>{
+    independent=true;
+    document.getElementById('indepBtn').classList.add('active');
+    document.getElementById('depBtn').classList.remove('active');
+    document.getElementById('spanCaption').textContent='Two independent vectors span the entire 2D plane. Every point is reachable.';
+  });
+  document.getElementById('depBtn').addEventListener('click',()=>{
+    independent=false;
+    document.getElementById('depBtn').classList.add('active');
+    document.getElementById('indepBtn').classList.remove('active');
+    document.getElementById('spanCaption').textContent='Dependent vectors (v₂ = 2·v₁) collapse the span to a single line. The second vector is dead weight.';
+  });
+  draw();
+})();
+
+/* Section 3: Attention Output Canvas */
+(function(){
+  const canvas=document.getElementById('attentionCanvas');
+  const V=[{x:1,y:0,c:'#f59e0b',l:'V₁'},{x:0,y:1,c:'#14b8a6',l:'V₂'},{x:1,y:1,c:'#8b5cf6',l:'V₃'}];
+  const sliders=[document.getElementById('w1'),document.getElementById('w2'),document.getElementById('w3')];
+  const vals=[document.getElementById('w1Val'),document.getElementById('w2Val'),document.getElementById('w3Val')];
+
+  function getWeights(){
+    const raw=sliders.map(s=>parseFloat(s.value));
+    const sum=raw.reduce((a,b)=>a+b,0)||1;
+    return raw.map(r=>r/sum);
+  }
+
+  function draw(){
+    const{ctx,w,h}=setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+    const weights=getWeights();
+    vals.forEach((v,i)=>v.textContent=weights[i].toFixed(2));
+
+    const cx=w*0.45,cy=h*0.55,scale=Math.min(w,h)/4;
+
+    // Axes
+    ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(w,cy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,0);ctx.lineTo(cx,h);ctx.stroke();
+
+    // Value vectors (faded)
+    V.forEach(v=>{
+      const tx=cx+v.x*scale,ty=cy-v.y*scale;
+      ctx.setLineDash([5,4]);ctx.strokeStyle=v.c+'66';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(tx,ty);ctx.stroke();ctx.setLineDash([]);
+      ctx.beginPath();ctx.arc(tx,ty,4,0,Math.PI*2);ctx.fillStyle=v.c+'88';ctx.fill();
+      ctx.font='600 10px Space Grotesk';ctx.fillStyle=v.c;ctx.textAlign='left';
+      ctx.fillText(v.l,tx+8,ty-6);
+    });
+
+    // Weighted contributions
+    let outX=0,outY=0;
+    V.forEach((v,i)=>{
+      const wx=v.x*weights[i],wy=v.y*weights[i];
+      outX+=wx;outY+=wy;
+      // Draw scaled vector
+      const tx=cx+wx*scale,ty=cy-wy*scale;
+      ctx.strokeStyle=v.c;ctx.lineWidth=2+weights[i]*4;ctx.globalAlpha=0.4+weights[i]*0.6;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(tx,ty);ctx.stroke();ctx.globalAlpha=1;
+    });
+
+    // Result vector
+    const rx=cx+outX*scale,ry=cy-outY*scale;
+    ctx.save();ctx.shadowColor='#10b981';ctx.shadowBlur=10;ctx.strokeStyle='#10b981';ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(rx,ry);ctx.stroke();ctx.restore();
+    const ang=Math.atan2(ry-cy,rx-cx),hl=12;
+    ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx-hl*Math.cos(ang-0.35),ry-hl*Math.sin(ang-0.35));
+    ctx.lineTo(rx-hl*Math.cos(ang+0.35),ry-hl*Math.sin(ang+0.35));ctx.fillStyle='#10b981';ctx.fill();
+    ctx.beginPath();ctx.arc(rx,ry,5,0,Math.PI*2);ctx.fill();
+    ctx.font='700 12px Space Grotesk';ctx.fillStyle='#10b981';ctx.textAlign='left';
+    ctx.fillText('output ('+outX.toFixed(2)+', '+outY.toFixed(2)+')',rx+10,ry-10);
+
+    document.getElementById('attOut').textContent=`(${outX.toFixed(2)}, ${outY.toFixed(2)})`;
+
+    // Axis labels
+    ctx.font='10px DM Sans';ctx.fillStyle='#52525b';ctx.textAlign='center';
+    ctx.fillText('Empathy',w-30,cy+15);ctx.fillText('Logic',cx+5,15);
+  }
+
+  sliders.forEach(s=>s.addEventListener('input',draw));
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Quiz */
+(function(){
+  const questions=[
+    {q:"You have steering vectors e_warmth=(3,1) and e_friendliness=(6,2). Can you reach the target (0,5)?",
+     opts:["Yes — set α₁=-2 and α₂=1","Yes — use negative weights to rotate","No — both vectors point in the same direction (e_friendliness=2·e_warmth). The span is a single line that cannot reach (0,5).","No — but only because the target has a zero component"],
+     correct:2,explanation:"e_friendliness = 2·e_warmth, making them linearly dependent. Their span is a single line through the origin along direction (3,1). The point (0,5) does not lie on this line, so it's unreachable regardless of weights."},
+    {q:"Attention weights (0.5, 0.3, 0.2) produce output X. If you double ALL weights to (1.0, 0.6, 0.4), what changes?",
+     opts:["The output direction stays the same; only the magnitude doubles","The output direction changes because the weights no longer sum to 1","Both direction and magnitude change","Nothing changes — proportional scaling is invariant"],
+     correct:0,explanation:"Doubling all weights scales the linear combination uniformly. The direction is unchanged because the proportions remain identical: (0.5:0.3:0.2) = (1.0:0.6:0.4). Only the length of the result vector doubles. In practice, Softmax guarantees weights sum to 1, so this scenario wouldn't naturally arise."},
+    {q:"You build a CCV system with 5 steering vectors, but vectors 3, 4, and 5 are linear combinations of 1 and 2. What is your actual behavioral dimensionality?",
+     opts:["5-dimensional — you have 5 vectors","3-dimensional — you have 3 redundant vectors","2-dimensional — only vectors 1 and 2 provide independent directions. You are wasting 3 vectors.","0-dimensional — dependency breaks the system"],
+     correct:2,explanation:"If vectors 3-5 are all expressible as combinations of 1 and 2, they add zero new geometric coverage. Your span is the same as span{v₁, v₂} — a 2D plane. Three of your five vectors are mathematically dead weight."},
+    {q:"In attention, Softmax weights are always non-negative and sum to 1.0. Can the attention output ever land OUTSIDE the convex hull of the value vectors?",
+     opts:["Yes — if some weights are much larger than others","Yes — because the value vectors can extend the result beyond the hull","No — non-negative weights summing to 1 produce a convex combination, which is always inside the convex hull of the inputs.","No — but only in 2D, not in higher dimensions"],
+     correct:2,explanation:"Non-negative weights summing to 1 define a convex combination. By definition, the result is always inside the convex hull of the source vectors. This means the attention output can never 'extrapolate' beyond its value vectors — it can only blend between them."}
+  ];
+  const container=document.getElementById('quizContainer');
+  questions.forEach((q,qi)=>{
+    const card=document.createElement('div');card.className='card';card.style.padding='1.25rem';
+    let optsHTML='';q.opts.forEach((o,oi)=>{optsHTML+=`<button class="quiz-option" data-q="${qi}" data-o="${oi}">${o}</button>`;});
+    card.innerHTML=`<p style="font-size:.82rem;font-weight:600;color:var(--text-dim);margin-bottom:.75rem;">Question ${qi+1}</p>
+      <p style="font-size:.92rem;line-height:1.6;margin-bottom:1rem;">${q.q}</p>
+      <div id="qO${qi}">${optsHTML}</div>
+      <div class="quiz-explanation" id="qE${qi}" style="margin-top:.75rem;"><div class="insight">${q.explanation}</div></div>`;
+    container.appendChild(card);
+  });
+  container.addEventListener('click',(e)=>{
+    const btn=e.target.closest('.quiz-option');if(!btn)return;
+    const qi=+btn.dataset.q,oi=+btn.dataset.o;
+    const opts=document.querySelectorAll(`#qO${qi} .quiz-option`);
+    if(opts[0].classList.contains('disabled'))return;
+    opts.forEach((o,i)=>{o.classList.add('disabled');
+      if(i===questions[qi].correct)o.classList.add('correct');
+      else if(i===oi&&oi!==questions[qi].correct)o.classList.add('wrong');});
+    document.getElementById(`qE${qi}`).classList.add('show');
+  });
+})();
+
+/* Nav */
+(function(){
+  const links=document.querySelectorAll('.nav-link');
+  const ids=['console','span','attention','edges','checkpoint'];
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+100;let active=ids[0];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+    links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));
+  });
+})();
+</script>
+</body>
+</html>

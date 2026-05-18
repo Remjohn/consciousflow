@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useUserStore } from '../../store/useUserStore';
-import { Monitor, DollarSign, Dumbbell, Utensils, Zap, Moon, Smartphone, Brain, AlertTriangle, TrendingUp, TrendingDown, Minus, Camera, Check, Link as LinkIcon, Edit2 } from 'lucide-react';
+import { Monitor, Zap, Moon, Smartphone, AlertTriangle, TrendingUp, TrendingDown, Minus, Edit2 } from 'lucide-react';
 import { ProtocolTimer } from './ProtocolTimer';
-import { FitnessProtocol } from '../fitness/FitnessProtocol';
-import { DisciplineCorrelation } from '../fitness/DisciplineCorrelation';
 import { ScrollingQuotes } from '../../components/ScrollingQuotes';
 import { usePunishment } from '../../hooks/usePunishment';
 import { API_URL } from '../../lib/api';
-import { KegelsPomodoro } from '../kegels/KegelsPomodoro';
-import { DeepWorkStats } from './DeepWorkStats';
+import { KegelsProtocol } from '../kegels/KegelsProtocol';
 
 type TimeScope = 'day' | 'week' | 'month';
 
@@ -21,7 +18,6 @@ export const Dashboard = () => {
         getStats,
         incrementMetric,
         setMetric,
-        getHungerState,
         checkDailyReset,
         getRigourState,
         fetchFromBackend,
@@ -32,74 +28,41 @@ export const Dashboard = () => {
     const { isPunished } = usePunishment();
     const [scope, setScope] = useState<TimeScope>('day');
     const [editMode, setEditMode] = useState(false);
-    const [evidenceUrl, setEvidenceUrl] = useState(today.production.proofPhotoUrl || '');
 
     useEffect(() => {
         fetchFromBackend();
     }, [fetchFromBackend]);
 
+    // Ensure daily reset
     useEffect(() => {
         checkDailyReset();
     }, [checkDailyReset]);
 
-    // Update local state when store updates
-    useEffect(() => {
-        setEvidenceUrl(today.production.proofPhotoUrl || '');
-    }, [today.production.proofPhotoUrl]);
-
-    const handleEvidenceSubmit = () => {
-        setMetric('production', 'proofPhotoUrl', evidenceUrl);
-    };
-
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const formData = new FormData();
-        formData.append('photo', file);
-
-        try {
-            const res = await fetch(`${API_URL}/api/upload/photo`, {
-                method: 'POST',
-                body: formData
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setEvidenceUrl(data.url);
-                setMetric('production', 'proofPhotoUrl', data.url);
-            }
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
-    const hungerState = getHungerState();
-    const hungerColor =
-        hungerState === 'STARVATION' ? 'text-blood animate-pulse' :
-            hungerState === 'SUSTENANCE' ? 'text-gold' : 'text-emerald-500';
-
     const lifestyle = today.lifestyle || {
-        sleep: 0, meditation: false, noSocial: false, noYouTube: false,
+        sleep: 0, noSocial: false, noYouTube: false,
         phoneHours: 0, phonePickups: 0,
-        coldShower: false, journaling: false, reading: false, kegels: false
+        coldShower: false, kegels: false
     };
 
-    // Kegels Pomodoro modal state
+    // Kegels modal state
     const [showKegelsModal, setShowKegelsModal] = useState(false);
 
-    // Goal Logic (150/35/5)
+    // Goal Logic (360/84/12) based on 12 packages/day
     const monthVideos = goalStatus?.monthVideos || 0;
-    const monthTarget = 150;
+    const monthTarget = 360; // 12 packages * 30 days
     const dayVideos = today.production.videos;
-    const dayTarget = 5;
+    const dayTarget = 12;
 
     // Weekly (Aggregated from history)
     const weeklyVideos = getStats('week', 'production', 'videos');
-    const weeklyTarget = 35;
+    const weeklyTarget = 84;
 
     return (
         <>
-            <div className="h-full flex flex-col p-4 gap-4 overflow-y-auto max-w-lg mx-auto pb-24 scrollbar-hide">
+        <div className="flex flex-col p-4 gap-4">
+
+                {/* COVER IMAGE GALLERY */}
+                <CoverImageGallery />
 
                 {/* PUNISHMENT BANNER */}
                 {isPunished && (
@@ -115,7 +78,7 @@ export const Dashboard = () => {
                 {/* SCROLLING KIMYA QUOTES */}
                 <ScrollingQuotes />
 
-                {/* 0. PROTOCOL STATUS WIDGET (150/35/5) */}
+                {/* 0. PROTOCOL STATUS WIDGET (360/84/12) */}
                 <div className="grid grid-cols-3 gap-2">
                     <StatusCard label="MONTHLY" value={monthVideos} target={monthTarget} />
                     <StatusCard label="WEEKLY" value={weeklyVideos} target={weeklyTarget} />
@@ -153,50 +116,9 @@ export const Dashboard = () => {
                 {/* PROTOCOL TIMER */}
                 <ProtocolTimer />
 
-                {/* DEEP WORK ANALYTICS */}
-                <div className="space-y-2">
-                    <div className="px-1">
-                        <span className="text-[10px] font-mono font-bold text-gold tracking-widest flex items-center gap-2">
-                            🎯 DEEP WORK ANALYTICS
-                        </span>
-                    </div>
-                    <DeepWorkStats />
-                </div>
 
-                {/* DAILY EVIDENCE */}
-                {scope === 'day' && (
-                    <div className={`p-3 border flex flex-col gap-2 ${today.production.proofPhotoUrl ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-steel/30 bg-void'}`}>
-                        <div className="flex justify-between items-center">
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-widest flex items-center gap-2 text-concrete">
-                                <Camera size={12} className={today.production.proofPhotoUrl ? 'text-emerald-500' : 'text-concrete/50'} />
-                                Daily Evidence
-                            </span>
-                            {today.production.proofPhotoUrl && <Check size={12} className="text-emerald-500" />}
-                        </div>
 
-                        <div className="flex gap-2">
-                            <div className="flex-1 relative">
-                                <div className="absolute inset-y-0 left-2 flex items-center pointer-events-none text-concrete/30">
-                                    <LinkIcon size={10} />
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="Paste Photo URL or Upload..."
-                                    value={evidenceUrl}
-                                    onChange={(e) => setEvidenceUrl(e.target.value)}
-                                    className="w-full bg-steel/10 border border-steel/20 py-2 pl-8 pr-2 text-[10px] font-mono text-concrete focus:border-gold/50 outline-none"
-                                />
-                            </div>
-                            <label className="bg-steel/20 hover:bg-concrete hover:text-void text-concrete border border-steel/20 px-4 py-2 text-[10px] font-bold uppercase transition-colors cursor-pointer flex items-center">
-                                Upload
-                                <input type="file" onChange={handleFileUpload} className="hidden" accept="image/*" />
-                            </label>
-                            <button onClick={handleEvidenceSubmit} className="bg-gold hover:bg-gold/80 text-void border border-gold px-4 py-2 text-[10px] font-bold uppercase transition-colors">
-                                Save
-                            </button>
-                        </div>
-                    </div>
-                )}
+                {/* REMOVED DAILY EVIDENCE UPLOAD TO SUPPORT INVISIBLE APP DOCTRINE */}
 
                 {/* RIGOUR STATE */}
                 <RigourTracker getRigourState={getRigourState} />
@@ -210,101 +132,70 @@ export const Dashboard = () => {
                         <div className="text-[10px] text-concrete/30 font-mono">{scope.toUpperCase()}</div>
                     </div>
 
-                    <div className="p-4 grid grid-cols-2 gap-4">
-                        {/* Videos */}
-                        <div className="flex flex-col items-center">
-                            <div className="text-4xl font-black text-concrete tabular-nums leading-none">
-                                {getStats(scope, 'production', 'videos')}
-                            </div>
-                            <span className="text-[9px] font-mono text-concrete/40 mt-1 uppercase">Videos</span>
-                            {scope === 'day' && (
-                                <div className="flex gap-1 mt-2">
-                                    {editMode && <button onClick={() => setMetric('production', 'videos', Math.max(0, today.production.videos - 1))} className="text-[10px] bg-steel/20 hover:bg-blood/20 text-concrete hover:text-blood px-2 py-1 font-bold">-</button>}
-                                    <button onClick={() => incrementMetric('production', 'videos')} className="text-[10px] bg-blood text-white px-3 py-1 font-bold uppercase tracking-wider hover:bg-red-600 transition-colors clip-path-polygon">Log Video</button>
+                    <div className="p-4 flex flex-col gap-6">
+                        <div className="grid grid-cols-3 gap-2">
+                            {/* Client Packages */}
+                            <div className="flex flex-col items-center">
+                                <div className="text-3xl font-black text-concrete tabular-nums leading-none">
+                                    {getStats(scope, 'production', 'videos')}
                                 </div>
-                            )}
-                        </div>
-
-                        {/* Pomodoros */}
-                        <div className="flex flex-col items-center">
-                            <div className="text-4xl font-black text-concrete/70 tabular-nums leading-none">
-                                {getStats(scope, 'production', 'pomodoros')}
+                                <span className="text-[8px] font-mono text-concrete/40 mt-1 uppercase text-center leading-tight">Client<br/>Packages</span>
+                                <span className="text-[7px] font-mono text-concrete/20 uppercase mt-1">Target 12</span>
                             </div>
-                            <span className="text-[9px] font-mono text-concrete/40 mt-1 uppercase">Sessions</span>
-                            {scope === 'day' && editMode && (
-                                <div className="flex gap-1 mt-2">
-                                    <button onClick={() => setMetric('production', 'pomodoros', Math.max(0, today.production.pomodoros - 1))} className="text-[10px] bg-steel/20 hover:bg-blood/20 text-concrete hover:text-blood px-2 py-1 font-bold">-</button>
-                                    <button onClick={() => incrementMetric('production', 'pomodoros')} className="text-[10px] bg-steel/20 hover:bg-emerald-500/20 text-concrete hover:text-emerald-500 px-2 py-1 font-bold">+</button>
+
+                            {/* Deep Work Sessions */}
+                            <div className="flex flex-col items-center">
+                                <div className="text-3xl font-black text-gold tabular-nums leading-none">
+                                    {getStats(scope, 'production', 'pomodoros')}
                                 </div>
-                            )}
-                            {!editMode && <div className="mt-2 text-[8px] font-mono text-concrete/30 uppercase tracking-widest">Auto-Logged</div>}
-                        </div>
-                    </div>
-                </div>
-
-                {/* FITNESS PROTOCOL */}
-                <div className="bg-void border border-blood/20 relative">
-                    <div className="bg-blood/5 px-3 py-2 flex justify-between items-center border-b border-blood/10">
-                        <span className="text-[10px] font-mono font-bold text-blood tracking-widest flex items-center gap-2">
-                            <Dumbbell size={12} /> BIOLOGICAL
-                        </span>
-                        <div className="text-[10px] text-blood font-bold font-mono uppercase animate-pulse">
-                            {hungerState}
-                        </div>
-                    </div>
-
-                    <div className="p-4">
-                        {/* NEW: 4×25 Fitness Protocol Widget */}
-                        <FitnessProtocol />
-
-                        {/* Discipline Correlation */}
-                        <DisciplineCorrelation />
-                    </div>
-
-                    {/* Hunger Status Bar */}
-                    <div className="bg-void border border-steel/20 p-2 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Utensils className={`w-3 h-3 ${hungerColor}`} />
-                            <span className={`text-[10px] font-mono font-bold ${hungerColor}`}>{hungerState}</span>
-                        </div>
-                        <div className="text-[9px] text-concrete/40 font-mono">
-                            {today.production.videos}/5 TARGET
-                        </div>
-                    </div>
-                </div>
-
-                {/* FINANCE HUB */}
-                <div className="bg-void border border-gold/20 relative">
-                    <div className="bg-gold/5 px-3 py-2 flex justify-between items-center border-b border-gold/10">
-                        <span className="text-[10px] font-mono font-bold text-gold tracking-widest flex items-center gap-2">
-                            <DollarSign size={12} /> FINANCE
-                        </span>
-                    </div>
-                    <div className="p-4 space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="flex flex-col">
-                                <span className="text-[9px] font-mono text-gold/50 uppercase">Earnings ({scope})</span>
-                                <div className="text-2xl font-black text-gold tabular-nums tracking-tight">
-                                    ${getStats(scope, 'finance', 'revenue').toLocaleString()}
-                                </div>
+                                <span className="text-[8px] font-mono text-concrete/40 mt-1 uppercase text-center leading-tight">Deep Work<br/>(90m)</span>
+                                <span className="text-[7px] font-mono text-concrete/20 uppercase mt-1">Target 4</span>
                             </div>
-                            <div className="flex flex-col">
-                                <span className="text-[9px] font-mono text-gold/50 uppercase">Active Clients</span>
-                                <div className="flex items-center gap-3">
-                                    <div className="text-xl font-bold text-gold/70 tabular-nums tracking-tight">
-                                        {today.finance.activeClients}
-                                    </div>
-                                    {scope === 'day' && editMode && (
-                                        <div className="flex gap-1">
-                                            <button onClick={() => setMetric('finance', 'activeClients', Math.max(0, today.finance.activeClients - 1))} className="text-[8px] bg-gold/10 hover:bg-gold/20 p-1 text-gold border border-gold/20">-</button>
-                                            <button onClick={() => setMetric('finance', 'activeClients', today.finance.activeClients + 1)} className="text-[8px] bg-gold/10 hover:bg-gold/20 p-1 text-gold border border-gold/20">+</button>
+
+                            {/* Management Sessions */}
+                            <div className="flex flex-col items-center">
+                                <div className="text-3xl font-black text-blue-400 tabular-nums leading-none">
+                                    {getStats(scope, 'production', 'managementSessions')}
+                                </div>
+                                <span className="text-[8px] font-mono text-concrete/40 mt-1 uppercase text-center leading-tight">Management<br/>(60m)</span>
+                                <span className="text-[7px] font-mono text-concrete/20 uppercase mt-1">Target 4</span>
+                            </div>
+                        </div>
+
+                        {/* Action Layer */}
+                        {scope === 'day' && (
+                            <div className="flex flex-col gap-3">
+                                <button 
+                                    onClick={() => incrementMetric('production', 'videos')} 
+                                    className="w-full py-2 bg-blood text-white font-black uppercase tracking-widest hover:bg-red-600 transition-all clip-path-polygon text-[10px]"
+                                >
+                                    Log Client Package
+                                </button>
+
+                                {editMode && (
+                                    <div className="flex justify-around border-t border-steel/10 pt-3">
+                                        <div className="flex flex-col items-center gap-1">
+                                            <span className="text-[7px] font-mono text-gold/50 uppercase">DW Adjust</span>
+                                            <div className="flex gap-1">
+                                                <button onClick={() => setMetric('production', 'pomodoros', Math.max(0, today.production.pomodoros - 1))} className="text-[10px] bg-steel/20 hover:bg-blood/20 text-concrete px-2 py-0.5 font-bold">-</button>
+                                                <button onClick={() => incrementMetric('production', 'pomodoros')} className="text-[10px] bg-steel/20 hover:bg-gold/20 text-concrete px-2 py-0.5 font-bold">+</button>
+                                            </div>
                                         </div>
-                                    )}
-                                </div>
+                                        <div className="flex flex-col items-center gap-1">
+                                            <span className="text-[7px] font-mono text-blue-400/50 uppercase">MGT Adjust</span>
+                                            <div className="flex gap-1">
+                                                <button onClick={() => setMetric('production', 'managementSessions', Math.max(0, today.production.managementSessions - 1))} className="text-[10px] bg-steel/20 hover:bg-blood/20 text-concrete px-2 py-0.5 font-bold">-</button>
+                                                <button onClick={() => incrementMetric('production', 'managementSessions')} className="text-[10px] bg-steel/20 hover:bg-blue-400/20 text-concrete px-2 py-0.5 font-bold">+</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
+
+
 
                 {/* LIFESTYLE */}
                 <div className="bg-void border border-emerald-500/20 relative">
@@ -339,12 +230,9 @@ export const Dashboard = () => {
                             <div className="flex flex-col gap-3">
                                 <LifestyleToggle label="No Social Media" active={lifestyle.noSocial} onClick={() => setMetric('lifestyle', 'noSocial', !lifestyle.noSocial)} icon={<Smartphone size={10} />} />
                                 <LifestyleToggle label="No YouTube" active={lifestyle.noYouTube} onClick={() => setMetric('lifestyle', 'noYouTube', !lifestyle.noYouTube)} icon={<Monitor size={10} />} />
-                                <LifestyleToggle label="Meditation" active={lifestyle.meditation} onClick={() => setMetric('lifestyle', 'meditation', !lifestyle.meditation)} icon={<Brain size={10} />} />
                                 <LifestyleToggle label="Cold Shower" active={lifestyle.coldShower} onClick={() => setMetric('lifestyle', 'coldShower', !lifestyle.coldShower)} icon={<Zap size={10} />} />
                             </div>
                             <div className="flex flex-col gap-3">
-                                <LifestyleToggle label="Journaling" active={lifestyle.journaling} onClick={() => setMetric('lifestyle', 'journaling', !lifestyle.journaling)} icon={<Brain size={10} />} />
-                                <LifestyleToggle label="Reading" active={lifestyle.reading} onClick={() => setMetric('lifestyle', 'reading', !lifestyle.reading)} icon={<Monitor size={10} />} />
                                 {/* Kegels with START button */}
                                 <div className="flex items-center gap-2">
                                     <LifestyleToggle label="Kegels" active={lifestyle.kegels} onClick={() => setMetric('lifestyle', 'kegels', !lifestyle.kegels)} icon={<Zap size={10} />} />
@@ -372,19 +260,52 @@ export const Dashboard = () => {
                 {/* End of main content */}
             </div>
 
-            {/* Kegels Pomodoro Modal */}
-            {
-                showKegelsModal && (
-                    <KegelsPomodoro
-                        onClose={() => setShowKegelsModal(false)}
-                        onComplete={() => {
-                            setShowKegelsModal(false);
-                            setMetric('lifestyle', 'kegels', true);
-                        }}
-                    />
-                )
-            }
+            {/* Kegels Protocol Modal */}
+            {showKegelsModal && (
+                <KegelsProtocol
+                    onClose={() => setShowKegelsModal(false)}
+                    onComplete={() => {
+                        setShowKegelsModal(false);
+                        setMetric('lifestyle', 'kegels', true);
+                    }}
+                />
+            )}
         </>
+    );
+};
+
+// Cover Image Gallery Component
+const CoverImageGallery = () => {
+    const [images, setImages] = useState<string[]>([]);
+    
+    useEffect(() => {
+        fetch(`${API_URL}/api/covers`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.images && data.images.length > 0) {
+                    setImages(data.images);
+                }
+            })
+            .catch(console.error);
+    }, []);
+
+    if (images.length === 0) return null;
+
+    // Pick image based on current hour
+    const hour = new Date().getHours();
+    const currentImage = images[hour % images.length];
+
+    return (
+        <div className="w-full aspect-[4/1] max-w-[1200px] mx-auto border-2 border-steel/20 relative overflow-hidden bg-void flex items-center justify-center">
+            <img 
+                src={`/covers/${currentImage}`} 
+                alt="Cover" 
+                className="w-full h-full object-cover object-center animate-in fade-in duration-1000"
+            />
+            <div className="absolute bottom-2 right-2 bg-void/80 px-2 py-1 text-[8px] font-mono text-concrete/50 border border-steel/20">
+                GALLERY ({hour % images.length + 1}/{images.length})
+            </div>
+        </div>
     );
 };
 
@@ -508,7 +429,8 @@ const ChallengeWidget = () => {
     }
 
     const progress = Math.round((challenge.videosProduced / challenge.videosTarget) * 100);
-    const isAhead = challenge.videosProduced >= (challenge.dayNumber * 5);
+    // Dynamic pacing derived from 12-package SLA target instead of hardcoded 5
+    const isAhead = challenge.videosProduced >= (challenge.dayNumber * 12);
 
     return (
         <div className="border border-steel/30 bg-steel/5 p-3">
@@ -532,18 +454,16 @@ const ChallengeWidget = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 mt-3 pt-2 border-t border-steel/10">
+            <div className="grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-steel/10">
                 <div>
                     <span className="text-[8px] font-mono text-concrete/40 uppercase block mb-1">Target Pace</span>
-                    <span className={`${isAhead ? 'text-emerald-500' : 'text-blood'} font-bold text-xs`}>{challenge.paceRequired}/day</span>
+                    <span className={`${isAhead ? 'text-emerald-500' : 'text-blood'} font-bold text-xs`}>{challenge.paceRequired} pkgs/day</span>
                 </div>
                 <div>
-                    <span className="text-[8px] font-mono text-concrete/40 uppercase block mb-1">Daily Pushups</span>
-                    <span className="text-concrete font-bold text-xs">{challenge.dailyPushups}</span>
-                </div>
-                <div>
-                    <span className="text-[8px] font-mono text-concrete/40 uppercase block mb-1">Daily Abs</span>
-                    <span className="text-concrete font-bold text-xs">{challenge.dailyAbs}</span>
+                    <span className="text-[8px] font-mono text-concrete/40 uppercase block mb-1">Pipeline Engine</span>
+                    <span className="text-emerald-500 font-bold text-xs flex items-center gap-1">
+                        <Zap size={10} /> Automated
+                    </span>
                 </div>
             </div>
 

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 09 - Master Capstone</title>
+  <style>
+    :root {
+      --bg: #08111a;
+      --panel: rgba(12, 20, 30, 0.88);
+      --line: rgba(255,255,255,0.08);
+      --text: #f3f7fb;
+      --muted: #9ab0c2;
+      --accent: #ff7a18;
+      --accent-2: #56c5ff;
+      --good: #2ecc71;
+      --bad: #ff5c73;
+      --gold: #ffd166;
+      --alert: #e53e3e;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0; min-height: 100vh; color: var(--text);
+      font-family: Georgia, "Times New Roman", serif; line-height: 1.6;
+      background: radial-gradient(circle at 15% 10%, rgba(86,197,255,0.18), transparent 22%),
+                  radial-gradient(circle at 82% 14%, rgba(255,122,24,0.16), transparent 24%),
+                  linear-gradient(180deg, #071018 0%, #08111a 48%, #09131c 100%);
+    }
+
+    .shell { max-width: 900px; margin: 0 auto; padding: 42px 18px 120px; }
+
+    .stage { display: none; animation: fadeUp 0.45s ease; }
+    .stage.active { display: block; }
+
+    .card {
+      border-radius: 26px; border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015)),
+                  linear-gradient(135deg, rgba(143,124,255,0.08), transparent 40%);
+      box-shadow: 0 26px 56px rgba(0,0,0,0.24); padding: 28px; margin-top: 18px;
+    }
+
+    .eyebrow {
+      color: var(--gold); text-transform: uppercase;
+      letter-spacing: 0.2em; font: 700 0.74rem/1.2 Arial, sans-serif; margin-bottom: 12px;
+    }
+
+    h1, h2, h3, h4 { margin: 0 0 14px; line-height: 1.08; font-weight: 500; }
+    h1 { font-size: clamp(2.5rem, 5vw, 4rem); }
+    h2 { font-size: clamp(1.55rem, 2.8vw, 2.35rem); color: var(--accent-2); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-top: 40px; }
+    h3 { font-size: 1.2rem; color: #d9e4ec; margin-top: 25px; }
+    p { margin: 0 0 14px; }
+    
+    .divider { height: 1px; margin: 24px 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent); }
+
+    .mono { font-family: Consolas, monospace; font-size: 0.95rem; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; }
+    pre.mono-block {
+      background: rgba(10, 15, 20, 0.9); padding: 16px; border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1); overflow-x: auto;
+      font-family: 'JetBrains Mono', Consolas, monospace; font-size: 0.9rem; color: #e2e8f0; margin-bottom: 16px;
+    }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+    .btn {
+      border: 0; cursor: pointer; padding: 14px 18px; border-radius: 999px; font: 700 0.94rem/1 Arial, sans-serif;
+      transition: 0.18s ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { background: linear-gradient(90deg, #ff7a18, #ff994d); color: white; }
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.15); }
+    .btn-danger { background: var(--alert); color: white; }
+
+    textarea, input[type="text"] {
+      width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03); color: var(--text); font: 400 1rem/1.45 font-family: 'JetBrains Mono', Consolas, monospace; outline: none; margin-bottom: 15px;
+    }
+    textarea { min-height: 100px; resize: vertical; }
+    textarea.code-area { font-family: Consolas, monospace; background: rgba(0,0,0,0.3); }
+    textarea:focus, input:focus { border-color: rgba(255,122,24,0.55); }
+
+    .choices { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .choice { padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #fff; cursor: pointer; }
+    .choice.selected { background: rgba(255,122,24,0.2); border-color: #ff7a18; }
+
+    /* Timer UI */
+    .timer-fixed {
+      position: fixed; top: 20px; right: 20px; background: rgba(10, 15, 20, 0.95);
+      border: 1px solid var(--accent); padding: 10px 20px; border-radius: 12px;
+      font-family: 'JetBrains Mono', Consolas, monospace; font-size: 1.5rem; color: var(--accent);
+      box-shadow: 0 4px 20px rgba(255, 122, 24, 0.2); z-index: 100;
+      transition: color 0.3s, border-color 0.3s; display: none;
+    }
+    .timer-fixed.urgent { color: var(--alert); border-color: var(--alert); animation: pulse 1s infinite alternate; }
+
+    @keyframes pulse { from { box-shadow: 0 0 10px rgba(229, 62, 62, 0.2); } to { box-shadow: 0 0 20px rgba(229, 62, 62, 0.6); } }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .rubric-box {
+      margin-top: 30px; padding: 25px; border-radius: 16px; border: 1px solid var(--good);
+      background: rgba(46, 204, 113, 0.05); display: none;
+    }
+    .rubric-box h3 { color: var(--good); }
+  </style>
+</head>
+<body>
+  
+  <div id="examTimer" class="timer-fixed">12:00</div>
+
+  <main class="shell">
+    
+    <!-- STAGE 0: HERO (Instructions) -->
+    <section id="stage-0" class="stage active">
+      <div class="card">
+        <p class="eyebrow">Layer 4 — Capstone</p>
+        <h1>Master Assessment</h1>
+        <div class="divider"></div>
+        <p class="lede">You have traversed the Capability, Application, and Orchestration layers. This assessment simulates reality on the factory floor under a strict time constraint.</p>
+        <p><strong>Conditions:</strong></p>
+        <ul>
+          <li><strong>⏱️ TIME LIMIT: 12 MINUTES.</strong></li>
+          <li>No reference materials permitted. The threshold for operational clearance is a score of 160/200.</li>
+          <li>You will specify contracts, triage agent-generated code defects, explain architectural necessity, and synthesize structural physics.</li>
+        </ul>
+        <div class="actions">
+          <button class="btn btn-danger" onclick="startExam()">BEGIN CAPSTONE (Start Timer)</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 1: EXAM -->
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="eyebrow">Terminal Evaluation</p>
+        
+        <!-- SECTION 1 -->
+        <h2>SECTION 1: CONTRACT SPECIFICATION (60 pts)</h2>
+        <p>Draft precise specifications to autonomous code-generation agents.</p>
+
+        <h3>Scenario 1: The Pipeline Routing Node (20 pts)</h3>
+        <p>Draft a Pydantic `BaseModel` for Voice DNA output containing: 1) `coach_alias` (str) 2) `synthesis_speed` (float, 0.75-1.25) 3) `fallback_behavior` (Literal "HALT" or "RETRY"). If float is out of bounds, forcefully raise ValueError with message "Critical Voice DNA Synthesis speed violation".</p>
+        <textarea class="code-area" placeholder="class VoiceDNA(BaseModel): ..."></textarea>
+
+        <h3>Scenario 2: The Agentic Subprocess Harness (20 pts)</h3>
+        <p>Draft a Pydantic schema for terminal commands: 1) `max_timeout_seconds` (int, default=30, >= 5). 2) `suppress_stdout` (bool). 3) `command_array` (list[str], min_length=1). Wait, if `command_array` is empty, what Python Exception natively triggers, and how does the Chassis catch it?</p>
+        <textarea class="code-area" placeholder="Code & Explanation here..."></textarea>
+
+        <h3>Scenario 3: DSPy Assertion Signature (20 pts)</h3>
+        <p>Draft a DSPy `Signature` mapping a string payload to a boolean. What mechanism does Machinist use if the LLM refuses to return the boolean format, and why is this a `DSPySuggestionError` rather than a fatal crash?</p>
+        <textarea class="code-area" placeholder="class MySignature(dspy.Signature): ..."></textarea>
+
+
+        <!-- SECTION 2 -->
+        <h2>SECTION 2: DEFECT TRIAGE (60 pts)</h2>
+        <p>Classify the block, identify the defective line, name the contract violated, and specify the fix.</p>
+        
+        <h3>Block 1</h3>
+        <pre class="mono-block">
+# Line 1: def ping_neo4j_state(session_id: str):
+# Line 2:     try:
+# Line 3:         node = memory_engine.fetch(session_id)
+# Line 4:         return node.properties
+# Line 5:     except Exception as e:
+# Line 6:         logging.error("Failed to load session memory.")
+# Line 7:         return {"session_active": False}
+        </pre>
+        <div class="choices" data-triage="b1">
+          <button class="choice" onclick="selectChoice('b1', 'Correct', this)">✅ Correct</button>
+          <button class="choice" onclick="selectChoice('b1', 'Omission', this)">🔴 Omission</button>
+          <button class="choice" onclick="selectChoice('b1', 'Hallucination', this)">🟡 Hallucination</button>
+          <button class="choice" onclick="selectChoice('b1', 'Misapplication', this)">🔵 Misapplication</button>
+        </div>
+        <input type="text" placeholder="Line # & Fix description...">
+
+        <h3>Block 2</h3>
+        <pre class="mono-block">
+# Line 1: import subprocess
+# Line 2: def run_telemetry_bash(target_host: str):
+# Line 3:     result = subprocess.run(
+# Line 4:         ["ping", target_host],
+# Line 5:         capture_output=True,
+# Line 6:         timeout=15,
+# Line 7:         text=True
+# Line 8:     )
+# Line 9:     return result.stdout
+        </pre>
+        <div class="choices" data-triage="b2">
+          <button class="choice" onclick="selectChoice('b2', 'Correct', this)">✅ Correct</button>
+          <button class="choice" onclick="selectChoice('b2', 'Omission', this)">🔴 Omission</button>
+          <button class="choice" onclick="selectChoice('b2', 'Hallucination', this)">🟡 Hallucination</button>
+          <button class="choice" onclick="selectChoice('b2', 'Misapplication', this)">🔵 Misapplication</button>
+        </div>
+        <input type="text" placeholder="Line # & Fix description...">
+
+        <h3>Block 3</h3>
+        <pre class="mono-block">
+# Line 1: from pydantic import BaseModel, model_validator
+# Line 2: class GraphRelationship(BaseModel):
+# Line 3:     source_node: str
+# Line 4:     target_node: str
+# Line 5:     @model_validator(mode='after')
+# Line 6:     def check_circular(self):
+# Line 7:         if self.source_node == self.target_node:
+# Line 8:             raise ValueError("Entities cannot map natively.")
+# Line 9:         return self
+        </pre>
+        <div class="choices" data-triage="b3">
+          <button class="choice" onclick="selectChoice('b3', 'Correct', this)">✅ Correct</button>
+          <button class="choice" onclick="selectChoice('b3', 'Omission', this)">🔴 Omission</button>
+          <button class="choice" onclick="selectChoice('b3', 'Hallucination', this)">🟡 Hallucination</button>
+          <button class="choice" onclick="selectChoice('b3', 'Misapplication', this)">🔵 Misapplication</button>
+        </div>
+        <input type="text" placeholder="Line # & Fix description...">
+
+        <h3>Block 4</h3>
+        <pre class="mono-block">
+# Line 1: def connect_broker():
+# Line 2:     try:
+# Line 3:         client = redis.StrictRedis(host='localhost', port=6379, db=0)
+# Line 4:         client.ping()
+# Line 5:     except redis.exceptions.ConnectionError:
+# Line 6:         pass
+# Line 7:     finally:
+# Line 8:         print("Redis routine executed.")
+# Line 9:     return client
+        </pre>
+        <div class="choices" data-triage="b4">
+          <button class="choice" onclick="selectChoice('b4', 'Correct', this)">✅ Correct</button>
+          <button class="choice" onclick="selectChoice('b4', 'Omission', this)">🔴 Omission</button>
+          <button class="choice" onclick="selectChoice('b4', 'Hallucination', this)">🟡 Hallucination</button>
+          <button class="choice" onclick="selectChoice('b4', 'Misapplication', this)">🔵 Misapplication</button>
+        </div>
+        <input type="text" placeholder="Line # & Fix description...">
+
+        <!-- SECTION 3 -->
+        <h2>SECTION 3: ARCHITECTURAL REASONING (40 pts)</h2>
+        <h3>Q1: The Fast-Fail Paradigm</h3>
+        <p>Why strictly enforce `ValidationError` natively on LLM JSON output instead of using conditional `if key in payload` downstream? Map to the QA Department boundary.</p>
+        <textarea placeholder="Reasoning..."></textarea>
+
+        <h3>Q2: Zombie Protection via Subprocesses</h3>
+        <p>Why does the `__error.md` Pi harness signaling protocol insist upon explicitly catching `subprocess.TimeoutExpired` rather than defaulting to `Exception: pass`?</p>
+        <textarea placeholder="Reasoning..."></textarea>
+
+        <!-- SECTION 4 -->
+        <h2>SECTION 4: FEYNMAN COMPRESSION (40 pts)</h2>
+        <p>Explain why Exception Handling is critical for sovereign control. Include: 1) The subsystem, 2) The exact failure mode prevented, 3) The Orchestration Dichotomy layer.</p>
+        <textarea id="feynmanText" placeholder="Exception Handling operates..."></textarea>
+
+        <div class="divider" style="margin-top: 40px;"></div>
+        <div class="actions">
+          <button id="submitBtn" class="btn btn-primary" onclick="submitExam()">SUBMIT CAPSTONE</button>
+        </div>
+
+        <div id="rubricArea" class="rubric-box">
+          <h3>EVALUATION RUBRIC & ANSWER KEY</h3>
+          <p><strong>Section 1 (60 pts):</strong><br>
+          - S1: BaseModel, Float typing, Literal constraint, valid @field_validator.<br>
+          - S2: max_timeout_seconds Field(ge=5). Identifies Pydantic array bounds throwing ValidationError, caught by FastAPI exception middleware.<br>
+          - S3: dspy.Signature mapping. DSPySuggest catching DSPySuggestionError to backtrack context recursively instead of crashing OS.</p>
+          
+          <p><strong>Section 2 (60 pts):</strong><br>
+          - B1: 🔴 Omission & Misapplication (Line 5). Broad 'except Exception' swallows global telemetry.<br>
+          - B2: 🔴 Omission (Line 9). Missing try/except block around subprocess.run with timeout=15 will crash thread.<br>
+          - B3: ✅ Correct. Flawless use of ValueError interception natively in Pydantic.<br>
+          - B4: 🔵 Misapplication (Line 6). Using 'pass' on a connection failure returns undefined state crashing deep downstream.</p>
+
+          <p><strong>Section 3 (40 pts):</strong><br>
+          - Q1: Immutable QA Calipers. Pydantic stops execution before memory allocators hand bad dicts to the db layer.<br>
+          - Q2: OODA Loop Determinism. Relying on broad passes destroys telemetry. TimeoutExpired creates notification __error.md allowing the agent to Orient and Decide accurately.</p>
+
+          <p><strong>Section 4 Automated Scan:</strong></p>
+          <div id="feynmanScan"></div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    let timerInterval;
+    let secondsLeft = 12 * 60;
+    let examActive = false;
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+    }
+
+    function selectChoice(groupId, val, elem) {
+      if(!examActive) return;
+      const group = document.querySelector(`[data-triage="${groupId}"]`);
+      group.querySelectorAll('.choice').forEach(b => b.classList.remove('selected'));
+      elem.classList.add('selected');
+    }
+
+    function updateTimerDisplay() {
+      const el = document.getElementById('examTimer');
+      const m = Math.floor(secondsLeft / 60);
+      const s = secondsLeft % 60;
+      el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+      if(secondsLeft <= 120) el.classList.add('urgent');
+      if(secondsLeft <= 0) {
+        clearInterval(timerInterval);
+        submitExam();
+      }
+    }
+
+    function startExam() {
+      goToStage(1);
+      document.getElementById('examTimer').style.display = 'block';
+      examActive = true;
+      timerInterval = setInterval(() => {
+        secondsLeft--;
+        updateTimerDisplay();
+      }, 1000);
+    }
+
+    function containsAny(value, options) {
+      return options.some(opt => value.toLowerCase().includes(opt.toLowerCase()));
+    }
+
+    function submitExam() {
+      examActive = false;
+      clearInterval(timerInterval);
+      document.getElementById('examTimer').style.display = 'none';
+      document.getElementById('submitBtn').style.display = 'none';
+      
+      const text = document.getElementById('feynmanText').value;
+      const chk1 = containsAny(text, ['Subsystem', 'Chassis', 'QA Department', 'Pydantic', 'DSPy', 'Machinist', 'Pi Harness']);
+      const chk2 = containsAny(text, ['failure', 'crash', 'timeout', 'halt', 'collapse', 'zombie', 'corrupt']);
+      const chk3 = containsAny(text, ['Dichotomy', 'layer', 'Chassis', 'Laser Cutter', 'QA']);
+      
+      let fText = `<ul><li>Subsystem specified: ${chk1 ? '✅' : '❌'}</li><li>Failure mode specified: ${chk2 ? '✅' : '❌'}</li><li>Orchestration component named: ${chk3 ? '✅' : '❌'}</li></ul>`;
+      
+      document.getElementById('feynmanScan').innerHTML = fText;
+      document.getElementById('rubricArea').style.display = 'block';
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>

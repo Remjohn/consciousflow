@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 09 - Application Layer</title>
+  <style>
+    :root {
+      --bg: #08111a;
+      --panel: rgba(12, 20, 30, 0.88);
+      --panel-2: rgba(21, 31, 43, 0.92);
+      --line: rgba(255,255,255,0.08);
+      --text: #f3f7fb;
+      --muted: #9ab0c2;
+      --accent: #ff7a18;
+      --accent-2: #56c5ff;
+      --good: #2ecc71;
+      --bad: #ff5c73;
+      --gold: #ffd166;
+      --violet: #8f7cff;
+      --gray: #2d3748;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(86,197,255,0.18), transparent 22%),
+        radial-gradient(circle at 82% 14%, rgba(255,122,24,0.16), transparent 24%),
+        linear-gradient(180deg, #071018 0%, #08111a 48%, #09131c 100%);
+    }
+
+    .progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: rgba(255,255,255,0.05);
+      z-index: 50;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #ff7a18, #ffd166, #56c5ff);
+      transition: width 0.35s ease;
+    }
+
+    .shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 42px 18px 80px;
+    }
+
+    .stage {
+      display: none;
+      animation: fadeUp 0.45s ease;
+    }
+
+    .stage.active { display: block; }
+
+    .hero, .card {
+      border-radius: 26px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015)),
+        linear-gradient(135deg, rgba(143,124,255,0.08), transparent 40%);
+      box-shadow: 0 26px 56px rgba(0,0,0,0.24);
+      overflow: hidden;
+    }
+
+    .hero { padding: 28px; }
+    .card { padding: 22px; margin-top: 18px; }
+
+    .eyebrow {
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 12px;
+    }
+
+    .section-count {
+      color: #89a1b2;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font: 700 0.75rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 10px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 14px;
+      line-height: 1.08;
+      font-weight: 500;
+    }
+
+    h1 { font-size: clamp(2.5rem, 5vw, 4rem); }
+    h2 { font-size: clamp(1.55rem, 2.8vw, 2.35rem); }
+    h3 { font-size: 1.08rem; }
+    p { margin: 0 0 14px; }
+
+    .lede {
+      max-width: 54rem;
+      font-size: 1.12rem;
+      color: #d9e4ec;
+    }
+
+    .divider {
+      height: 1px;
+      margin: 24px 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    }
+
+    .hero-grid,
+    .grid-2 {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .mini-card {
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      padding: 16px;
+    }
+
+    .mini-title {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.78rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 8px;
+    }
+
+    .mono {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.95rem;
+      background: rgba(255,255,255,0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    
+    pre.mono-block {
+      background: rgba(10, 15, 20, 0.9);
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-size: 0.9rem;
+      color: #e2e8f0;
+      margin-bottom: 16px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      padding: 14px 18px;
+      border-radius: 999px;
+      font: 700 0.94rem/1 Arial, Helvetica, sans-serif;
+      transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: linear-gradient(90deg, #ff7a18, #ff994d);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .visual-wrap {
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(5, 14, 22, 0.7);
+      padding: 12px;
+    }
+
+    .choices {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .choice {
+      width: 100%;
+      text-align: left;
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      color: #e7eef5;
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      transition: border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .choice.selected {
+      border-color: rgba(255,122,24,0.78);
+      background: rgba(255,122,24,0.08);
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(255,122,24,0.55);
+      box-shadow: 0 0 0 4px rgba(255,122,24,0.12);
+    }
+
+    .locked {
+      margin-top: 12px;
+      color: #ffd7a6;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif;
+    }
+
+    .feedback {
+      display: none;
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .feedback.show { display: block; }
+    .feedback.good { border-color: rgba(46,204,113,0.38); }
+    .feedback.bad { border-color: rgba(255,92,115,0.38); }
+
+    .gauntlet-grid {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .q-card {
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .q-card label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif;
+    }
+
+    .final-box {
+      margin-top: 18px;
+      padding: 22px;
+      border-radius: 20px;
+      border: 1px solid rgba(86,197,255,0.28);
+      background: linear-gradient(180deg, rgba(86,197,255,0.08), rgba(255,255,255,0.02));
+    }
+
+    .hidden { display: none; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 820px) {
+      .hero-grid,
+      .grid-2 { grid-template-columns: 1fr; }
+      .shell { padding: 30px 14px 60px; }
+      .hero, .card { padding: 18px; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true">
+    <div id="progressFill" class="progress-fill"></div>
+  </div>
+
+  <main class="shell">
+    
+    <!-- STAGE 0: HERO (Spaced Retrieval Interrupt) -->
+    <section id="stage-0" class="stage active">
+      <div class="hero">
+        <p class="eyebrow">Lesson 09 - Application Layer</p>
+        <h1>Spaced Retrieval</h1>
+        <div class="divider"></div>
+        <p class="lede">Before you map the pipeline, you must recall its purpose.</p>
+        
+        <p>What is the fundamental architectural difference between an unhandled <span class="mono">json.JSONDecodeError</span> arising from a malformed LLM payload, and a specifically caught <span class="mono">json.JSONDecodeError</span> mapped to a fallback state?</p>
+        
+        <textarea id="heroText" placeholder="The unhandled error..."></textarea>
+        
+        <div class="actions">
+          <button class="btn btn-primary" onclick="submitHero()">Lock Retrieval</button>
+        </div>
+        
+        <div id="hero-feedback" class="feedback"></div>
+        <div id="hero-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(1)">Access the Artifact Gallery</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 1: PYDANTIC -->
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="section-count">Artifact 1 of 4</p>
+        <h2>The QA Department — Pydantic Validation</h2>
+        <p>The most frequent error in the CCP ecosystem is an LLM hallucinating its data structure. To prevent those hallucinations from poisoning the Chassis, the QA Department aggressively raises <span class="mono">ValidationError</span>.</p>
+        
+        <pre class="mono-block">
+from pydantic import BaseModel, model_validator
+
+class CoachingScript(BaseModel):
+    coach_id: str
+    trigger_count: int
+    cbcs_alignment_score: float
+
+    @model_validator(mode='after')
+    def validate_triggers(self) -> 'CoachingScript':
+        if self.trigger_count < 1:
+            raise ValueError(f"CRITICAL: Script for {self.coach_id} has 0 triggers.")
+        if self.cbcs_alignment_score < 0.6:
+            raise ValueError("CBCS alignment is below the 0.6 baseline.")
+        return self
+        </pre>
+
+        <h3>Prediction Gate</h3>
+        <p>If the LLM generates <span class="mono">{"coach_id": "JP-1", "trigger_count": 0, "cbcs_alignment_score": 0.9}</span>, what happens natively in Python?</p>
+        
+        <div class="choices" data-group="s1">
+          <button class="choice" data-value="A" onclick="selectChoice('s1','A',this)">Both errors are raised concurrently in a list.</button>
+          <button class="choice" data-value="B" onclick="selectChoice('s1','B',this)">The trigger_count check fires first, ejects the execution, and short-circuits. The cbcs_alignment_score check is never reached.</button>
+          <button class="choice" data-value="C" onclick="selectChoice('s1','C',this)">Pydantic suppresses the ValueError and returns an empty class.</button>
+        </div>
+        
+        <div id="s1-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions">
+          <button id="s1-submit" class="btn btn-primary" onclick="submitChoice('s1','B',s1Feedback, () => {})">Lock prediction</button>
+        </div>
+        <div id="s1-feedback" class="feedback"></div>
+        <div id="s1-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(2)">Next Artifact</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 2: FASTAPI -->
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="section-count">Artifact 2 of 4</p>
+        <h2>The Chassis — FastAPI Exception Routing</h2>
+        <p>When Pydantic or Neo4j raises an error, the FastAPI endpoint (The Chassis) must catch it and translate it into a standard HTTP code safely.</p>
+        
+        <pre class="mono-block">
+@router.post("/generate-script")
+async def generate_script(req: SessionRequest):
+    try:
+        script = await run_dspy_pipeline(req.coach_id, req.context)
+        return {"status": "success", "data": script.model_dump()}
+        
+    except ValidationError as e:
+        print(f"Schema violation: {e.errors()}")
+        raise HTTPException(status_code=422, detail="LLM failed to meet structure constraints")
+        
+    except Exception as e:
+        print(f"Fatal Engine Failure: {e}")
+        raise HTTPException(status_code=500, detail="Internal Orchestrator Failure")
+        </pre>
+
+        <h3>Prediction Gate</h3>
+        <p>If <span class="mono">run_dspy_pipeline</span> crashes due to a <span class="mono">ConnectionRefusedError</span> (Redis database offline), does the caller receive a 422 or a 500 status code?</p>
+        
+        <div class="choices" data-group="s2">
+          <button class="choice" data-value="A" onclick="selectChoice('s2','A',this)">422</button>
+          <button class="choice" data-value="B" onclick="selectChoice('s2','B',this)">500</button>
+        </div>
+        
+        <div id="s2-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions">
+          <button id="s2-submit" class="btn btn-primary" onclick="submitChoice('s2','B',s2Feedback, () => {})">Lock prediction</button>
+        </div>
+        <div id="s2-feedback" class="feedback"></div>
+        <div id="s2-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(3)">Next Artifact</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 3: PI HARNESS -->
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="section-count">Artifact 3 of 4</p>
+        <h2>The Robot Arm — Pi Harness Signaling</h2>
+        <p>A subprocess that runs forever freezes the agent. Catching timeouts is mathematically essential.</p>
+        
+        <pre class="mono-block">
+import subprocess
+
+def run_bash_tool(cmd: str, timeout: int = 15) -> str:
+    try:
+        result = subprocess.run(
+            cmd, shell=True, capture_output=True, text=True, timeout=timeout
+        )
+        return result.stdout
+        
+    except subprocess.TimeoutExpired:
+        Path("__error.md").write_text(f"Command timed out after {timeout} seconds.")
+        return "ERROR: Pipeline Timeout Escapement."
+        </pre>
+
+        <h3>Prediction Gate</h3>
+        <p>Look closely at the error handling block. What happens if the `cmd` is `ls -zzz` which instantly fails with an exit code of `1` (invalid flag), but finishes in 2 seconds?</p>
+        
+        <div class="choices" data-group="s3">
+          <button class="choice" data-value="A" onclick="selectChoice('s3','A',this)">It generates the __error.md indicating a syntax error.</button>
+          <button class="choice" data-value="B" onclick="selectChoice('s3','B',this)">The except block is ignored. It returns result.stdout (which is blank) while the error silently lives in result.stderr.</button>
+          <button class="choice" data-value="C" onclick="selectChoice('s3','C',this)">The program crashes fatally with a CalledProcessError.</button>
+        </div>
+        
+        <div id="s3-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions">
+          <button id="s3-submit" class="btn btn-primary" onclick="submitChoice('s3','B',s3Feedback, () => {})">Lock prediction</button>
+        </div>
+        <div id="s3-feedback" class="feedback"></div>
+        <div id="s3-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(4)">Next Artifact</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 4: DSPy MACHINIST -->
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="section-count">Artifact 4 of 4</p>
+        <h2>The Machinist — DSPy Fallback Synthesis</h2>
+        <p>When DSPy optimizes a target, it relies on structured assertions. When an assertion fails, it generates an internal exception to force the LLM to rewrite the prompt.</p>
+        
+        <pre class="mono-block">
+try:
+    dspy.Suggest(
+        prediction.target_trigger in ["confrontation", "humor", "empathy"],
+        f"Invalid trigger: {prediction.target_trigger}. Must be one of the trinity."
+    )
+except dspy.primitives.assertions.DSPySuggestionError as e:
+    print(f"Machinist caught deviation. Initiating pipeline retry.")
+    raise  # Re-raises to allow the teleprompter to backtrack
+        </pre>
+
+        <h3>Prediction Gate</h3>
+        <p>What happens if the developer deletes the <span class="mono">raise</span> keyword on line 8?</p>
+        
+        <div class="choices" data-group="s4">
+          <button class="choice" data-value="A" onclick="selectChoice('s4','A',this)">Python will crash with a SyntaxError inside the except block.</button>
+          <button class="choice" data-value="B" onclick="selectChoice('s4','B',this)">The pipeline will automatically retry using the print statement text.</button>
+          <button class="choice" data-value="C" onclick="selectChoice('s4','C',this)">The exception is swallowed. DSPy never knows an error occurred. The invalid trigger continues downstream, gutting the self-healing loop.</button>
+        </div>
+        
+        <div id="s4-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions">
+          <button id="s4-submit" class="btn btn-primary" onclick="submitChoice('s4','C',s4Feedback, () => {})">Lock prediction</button>
+        </div>
+        <div id="s4-feedback" class="feedback"></div>
+        <div id="s4-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(5)">Continue to Data Tracing</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 5: DATA FLOW TRACING (TEXT ONLY) -->
+    <section id="stage-5" class="stage">
+      <div class="card">
+        <p class="eyebrow">The Orchestration Dichotomy</p>
+        <h2>Data Flow Tracing & Edge Cases</h2>
+        
+        <p><strong>Rule of Sovereignty:</strong> "Throw early, catch late."</p>
+        <p>You want the deep layers of the factory (Pydantic, DSPy) to <code>raise</code> exceptions the literal millisecond a defect is detected. You want the highest layer of the factory (FastAPI) to <code>catch</code> the exception and route it safely. Plastering <code>try/except Exception: pass</code> in the deep sub-modules swallows telemetry and hides the rot.</p>
+
+        <div class="divider"></div>
+
+        <h3>Silent Failure: The Hidden Rot</h3>
+        <p>When an Architect incorrectly writes error handling, they create silent failures.</p>
+        <pre class="mono-block">
+def update_voice_dna(new_weight: float):
+    try:
+        model.layers[1].weight = new_weight
+    except Exception:
+        pass # "I just want it to not crash."
+        </pre>
+        <p>If the layer index `1` doesn't exist, an `IndexError` fires. The `except Exception` indiscriminately absorbs it. The `pass` does nothing. The function returns. The platform thinks the Voice DNA is perfectly dialed in. The client receives terrible coaching. The Architect spends 8 hours debugging the LLM prompt, oblivious that the tensor update failed in Python.</p>
+
+        <h3>Explicit Catching: The Surgical Scalpel</h3>
+        <pre class="mono-block">
+def update_voice_dna(new_weight: float):
+    try:
+        model.layers[1].weight = new_weight
+    except IndexError as e:
+        log_to_foreman(f"CRITICAL: Voice DNA mismatch. {e}")
+        raise SovereignArchitectError("Blueprint corrupted.") from e
+        </pre>
+        <p>Here, not only is the exact error targeted, but it is actively re-broadcast as a custom Sovereign error using Error Chaining (<code>from e</code>), ensuring the telemetry dashboard lights up.</p>
+
+        <div class="actions">
+          <button class="btn btn-primary" onclick="goToStage(6)">Enter the Layer 2 Gauntlet</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAGE 6: GAUNTLET -->
+    <section id="stage-6" class="stage">
+      <div class="card">
+        <p class="eyebrow">Application Gauntlet</p>
+        <h2>Seven Production Fragments</h2>
+        <p>Identify the outcome or subsystem logic in the 7 actual CCP fragments below.</p>
+        <div class="gauntlet-grid">
+          <div class="q-card">
+            <label for="g1">1. `except KeyError: return None` mapped to a db.match(client_id). What subsystem achieves safe dictionary fallback?</label>
+            <input id="g1" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g2">2. `try: invoke_pi() except subprocess.TimeoutExpired: fallback()` — If the except block was removed, what happens on a timed out bash command?</label>
+            <input id="g2" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g3">3. `@app.exception_handler(ValidationError)` — Which layer of the Orchestration Dichotomy acts as this global interceptor?</label>
+            <input id="g3" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g4">4. In a batch inference `for` loop, what keyword safely skips the current iteration inside the except block while continuing the loop?</label>
+            <input id="g4" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g5">5. `raise LoRALoadError("...") from e`. What is the specific functional name of this trace preservation technique?</label>
+            <input id="g5" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g6">6. What is the fundamental danger of `except Exception:` acting as a parent shield?</label>
+            <input id="g6" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g7">7. If `run_dspy()` throws MemoryError, does the `finally: db.close_transaction()` block execute successfully?</label>
+            <input id="g7" type="text" placeholder="Short answer (Yes/No)">
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="gradeGauntlet()">Submit gauntlet</button>
+        </div>
+        <div id="gauntlet-feedback" class="feedback"></div>
+        <div id="final-box" class="final-box hidden">
+          <p class="eyebrow" style="margin-bottom:10px;">Layer 2 Complete</p>
+          <p id="final-text"></p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const totalStages = 7;
+    const selections = {};
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach((stage) => stage.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = 'feedback show ' + type;
+      box.innerHTML = '<h3>' + title + '</h3><p>' + body + '</p>';
+    }
+
+    function containsAny(value, options) {
+      return options.some((option) => value.includes(option));
+    }
+
+    function submitHero() {
+      const value = document.getElementById('heroText').value.trim().toLowerCase();
+      const checks = [
+        containsAny(value, ['sever', 'crash', 'ooda loop', 'fatal', 'destroy', 'stop', 'halts']),
+        containsAny(value, ['isolate', 'fallback', 'survive', 'continue', 'reroute', 'chute', 'catch'])
+      ];
+      const hits = checks.filter(Boolean).length;
+      document.getElementById('heroText').disabled = true;
+      if (hits >= 2) {
+        showFeedback('hero-feedback', 'good', 'Interrupt cleared', 'An unhandled error severs the OODA loop and violently terminates the process. A caught error routes execution into a manageable fallback chute without crashing the system.');
+        document.getElementById('hero-next').classList.remove('hidden');
+      } else {
+        showFeedback('hero-feedback', 'bad', 'Interrupt failed', 'Your response did not conceptually contrast a system crash (unhandled) with a fallback route (caught). Please consider the OODA loop implications.');
+        document.getElementById('heroText').disabled = false;
+      }
+    }
+
+    function selectChoice(groupId, value, element) {
+      if (document.querySelector('[data-group="' + groupId + '"]').dataset.locked === 'true') return;
+      selections[groupId] = value;
+      document.querySelectorAll('[data-group="' + groupId + '"] .choice').forEach((button) => button.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function submitChoice(groupId, correct, feedbackPack, revealFn) {
+      const selected = selections[groupId];
+      if (!selected) {
+        showFeedback(groupId + '-feedback', 'bad', 'Prediction required', 'Commit to a specific answer.');
+        return;
+      }
+      document.querySelector('[data-group="' + groupId + '"]').dataset.locked = 'true';
+      document.getElementById(groupId + '-submit').disabled = true;
+      document.getElementById(groupId + '-lock').classList.remove('hidden');
+      revealFn();
+      const isCorrect = selected === correct;
+      const payload = isCorrect ? feedbackPack.good : feedbackPack.bad;
+      showFeedback(groupId + '-feedback', isCorrect ? 'good' : 'bad', payload.title, payload.body);
+      document.getElementById(groupId + '-next').classList.remove('hidden');
+    }
+
+    const s1Feedback = {
+      good: {
+        title: 'Correct: Short-circuit Evaluation.',
+        body: 'The trigger_count check fires first and invokes `raise`. The function instantly ejects. The cbcs_alignment_score check is never reached.'
+      },
+      bad: {
+        title: 'Misconception exposed.',
+        body: 'Python executes line by line. The moment a `raise` is hit, execution violently ejects from the current scope. Subsequent checks in the block will not run.'
+      }
+    };
+
+    const s2Feedback = {
+      good: {
+        title: 'Correct: It bypasses the specific schema block.',
+        body: 'A database connection error is not a `ValidationError`. It skips the first except block and hits the generic catch-all `Exception` block, emitting a 500 error.'
+      },
+      bad: {
+        title: 'Misconception exposed.',
+        body: 'You expected a 422. However, a database layer failure is structurally separate from Pydantic schema validation. It will fall to the broad Exception handler.'
+      }
+    };
+
+    const s3Feedback = {
+      good: {
+        title: 'Correct: Timeout does not mean failure, mathematically.',
+        body: 'Because `ls -zzz` ran and finished instantly (even though it errored and returned code 1), it did NOT trigger the timeout. The except block ignores it. This is why Piarness needs specific returncode checks, not just timeout nets.'
+      },
+      bad: {
+        title: 'Misconception exposed.',
+        body: 'A `TimeoutExpired` exception explicitly and only tracks time. Fast failures completely bypass it, and the error gets hidden silently in standard err streams.'
+      }
+    };
+
+    const s4Feedback = {
+      good: {
+        title: 'Correct: The feedback loop is destroyed.',
+        body: 'When you catch an error and do not explicitly `raise` it again, the traceback terminates there. DSPy thinks the execution was flawless, completely neutering the self-healing dynamic.'
+      },
+      bad: {
+        title: 'Misconception exposed: You swallowed the defect.',
+        body: 'A print statement does not communicate with the compiler. If you do not `raise` back out to DSPy, the compiler assumes victory.'
+      }
+    };
+
+    function gradeGauntlet() {
+      const answers = {
+        g1: ['memory', 'neo4j', 'graph', 'database'],
+        g2: ['crash', 'dies', 'fatal error', 'unhandled'],
+        g3: ['chassis', 'fastapi', 'router'],
+        g4: ['continue'],
+        g5: ['error chaining', 'chaining'],
+        g6: ['swallows', 'hides', 'silent', 'zombie', 'ignore', 'muddy'],
+        g7: ['yes']
+      };
+      let score = 0;
+      Object.entries(answers).forEach(([id, keywords]) => {
+        const value = document.getElementById(id).value.trim().toLowerCase();
+        if (value && containsAny(value, keywords)) score += 1;
+      });
+
+      if (score >= 6) {
+        showFeedback('gauntlet-feedback', 'good', 'Gauntlet cleared: ' + score + '/7', 'You traced the error routes cleanly across all 4 critical production subsystems.');
+        document.getElementById('final-box').classList.remove('hidden');
+        document.getElementById('final-text').innerHTML = 'The QA Department, Chassis, Robot Arm, and Machinist all utilize Exceptions differently, but cooperatively. Prepare to synthesize these disparate flows in Layer 3: Orchestration.';
+      } else {
+        showFeedback('gauntlet-feedback', 'bad', 'Gauntlet failed: ' + score + '/7', 'Review the 4 Artifact pipelines. Pay attention to how the Chassis manages the global state while Pydantic/DSPy raise specific flags.');
+        document.getElementById('final-box').classList.add('hidden');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,19 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useUserStore } from '../../store/useUserStore';
 import { Play, Pause, RefreshCw, Timer, Maximize2 } from 'lucide-react';
-import { DeepWorkPomodoro } from './DeepWorkPomodoro';
+import { DeepWorkSession } from './DeepWorkSession';
 import { useTimer } from '../../hooks/useTimer';
 
-const WORK_DURATION_MS = 25 * 60 * 1000; // 25 minutes
-const BREAK_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const DEEP_WORK_DURATION_MS = 90 * 60 * 1000; // 90 minutes
+const MANAGEMENT_DURATION_MS = 60 * 60 * 1000; // 60 minutes
+const BREAK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
+export type ProtocolSessionMode = 'DEEP_WORK' | 'MANAGEMENT';
 
 export const ProtocolTimer = () => {
     const { getCurrentScheduleMode, incrementMetric } = useUserStore();
     const [currentTime, setCurrentTime] = useState(new Date());
     const [isBreak, setIsBreak] = useState(false);
     const [showFullscreen, setShowFullscreen] = useState(false);
+    const [sessionMode, setSessionMode] = useState<ProtocolSessionMode>('DEEP_WORK');
 
     const schedule = getCurrentScheduleMode();
+    const WORK_DURATION_MS = sessionMode === 'DEEP_WORK' ? DEEP_WORK_DURATION_MS : MANAGEMENT_DURATION_MS;
 
     // Update current time display
     useEffect(() => {
@@ -25,12 +30,13 @@ export const ProtocolTimer = () => {
     const workTimer = useTimer({
         durationMs: WORK_DURATION_MS,
         onComplete: () => {
-            incrementMetric('production', 'pomodoros');
+            const metricKey = sessionMode === 'DEEP_WORK' ? 'pomodoros' : 'managementSessions';
+            incrementMetric('production', metricKey);
             setIsBreak(true);
             breakTimer.start();
         },
         notificationTitle: '🏆 Deep Work Complete!',
-        notificationBody: 'Time for a 5-minute break.'
+        notificationBody: 'Time for a 15-minute tactical reset.'
     });
 
     // Break timer
@@ -105,7 +111,7 @@ export const ProtocolTimer = () => {
                                     {formatTime(activeTimer.remainingSeconds)}
                                 </span>
                                 <span className="text-[9px] font-mono uppercase text-concrete/40 tracking-[0.2em]">
-                                    {isBreak ? 'Recovery Protocol' : 'Deep Work Cycle'}
+                                    {isBreak ? 'Recovery Protocol' : (sessionMode === 'DEEP_WORK' ? 'Deep Work Cycle' : 'Management Cycle')}
                                 </span>
                             </div>
                         </div>
@@ -133,6 +139,24 @@ export const ProtocolTimer = () => {
                         </div>
                     </div>
 
+                    {/* Mode Toggle (Only when idle) */}
+                    {!activeTimer.isRunning && !activeTimer.isPaused && !isBreak && (
+                        <div className="flex bg-steel/10 p-1 rounded-lg">
+                            <button
+                                onClick={() => setSessionMode('DEEP_WORK')}
+                                className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded ${sessionMode === 'DEEP_WORK' ? 'bg-gold text-void' : 'text-concrete/50 hover:text-concrete'}`}
+                            >
+                                Deep Work (90m)
+                            </button>
+                            <button
+                                onClick={() => setSessionMode('MANAGEMENT')}
+                                className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded ${sessionMode === 'MANAGEMENT' ? 'bg-blue-400 text-void' : 'text-concrete/50 hover:text-concrete'}`}
+                            >
+                                Management (60m)
+                            </button>
+                        </div>
+                    )}
+
                     {/* Background Mode Hint */}
                     {activeTimer.isRunning && (
                         <div className="text-[9px] text-concrete/30 text-center">
@@ -142,9 +166,12 @@ export const ProtocolTimer = () => {
                 </div>
             </div>
 
-            {/* Fullscreen Deep Work Pomodoro */}
+            {/* Fullscreen Session Modal */}
             {showFullscreen && (
-                <DeepWorkPomodoro onClose={() => setShowFullscreen(false)} />
+                <DeepWorkSession 
+                    mode={sessionMode} 
+                    onClose={() => setShowFullscreen(false)} 
+                />
             )}
         </>
     );

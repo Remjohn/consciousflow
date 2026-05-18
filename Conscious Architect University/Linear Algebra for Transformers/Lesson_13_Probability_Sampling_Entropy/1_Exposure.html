@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>L13 · Exposure — Probability, Sampling & Entropy</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&family=Bebas+Neue&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080808;
+    --surface: #0f0f0f;
+    --surface2: #161616;
+    --border: #222;
+    --border-lit: #333;
+    --amber: #f59e0b;
+    --amber-dim: #92400e;
+    --red: #ef4444;
+    --green: #22c55e;
+    --text: #e5e5e5;
+    --text-dim: #737373;
+    --text-muted: #404040;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --display: 'Bebas Neue', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.05) 2px,
+      rgba(0,0,0,0.05) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  .shell {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 60px 24px 120px;
+  }
+
+  /* Header */
+  .lesson-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--amber);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(48px, 8vw, 80px);
+    letter-spacing: 0.03em;
+    line-height: 0.9;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  h1 span { color: var(--amber); }
+
+  .subtitle {
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 60px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Progress bar */
+  .progress-strip {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 48px;
+  }
+  .p-seg {
+    height: 3px;
+    flex: 1;
+    background: var(--border);
+    border-radius: 2px;
+    transition: background 0.4s;
+  }
+  .p-seg.done { background: var(--amber); }
+  .p-seg.active { background: var(--amber-dim); }
+
+  /* Section */
+  .section {
+    display: none;
+    animation: fadeIn 0.35s ease;
+  }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Scenario block */
+  .scenario {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--amber);
+    padding: 24px 28px;
+    margin-bottom: 32px;
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+    color: #d4d4d4;
+  }
+
+  .scenario strong { color: var(--amber); font-family: var(--mono); font-size: 14px; }
+
+  .question-label {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--amber);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .question-text {
+    font-family: var(--sans);
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  /* Input field */
+  .input-wrap {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  input[type="number"], input[type="text"] {
+    background: var(--surface2);
+    border: 1px solid var(--border-lit);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 20px;
+    padding: 12px 16px;
+    width: 160px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="number"]:focus, input[type="text"]:focus {
+    border-color: var(--amber);
+  }
+  input[type="text"] { width: 100%; }
+
+  .unit-label {
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  /* Buttons */
+  .btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 12px 24px;
+    border: 1px solid var(--amber);
+    background: transparent;
+    color: var(--amber);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .btn:hover { background: var(--amber); color: #000; }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn:disabled:hover { background: transparent; color: var(--amber); }
+
+  .btn-next {
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .btn-next:hover { background: var(--green); color: #000; }
+
+  /* Multiple choice */
+  .choices {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .choice-btn {
+    background: var(--surface);
+    border: 1px solid var(--border-lit);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 14px 20px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    line-height: 1.4;
+  }
+  .choice-btn:hover:not(:disabled) { border-color: var(--amber); background: var(--surface2); }
+  .choice-btn:disabled { cursor: not-allowed; }
+  .choice-btn.selected-wrong { border-color: var(--red); background: rgba(239,68,68,0.06); color: var(--red); }
+  .choice-btn.selected-right { border-color: var(--green); background: rgba(34,197,94,0.06); color: var(--green); }
+  .choice-btn.revealed-right { border-color: var(--green); background: rgba(34,197,94,0.04); }
+
+  /* Feedback box */
+  .feedback {
+    display: none;
+    margin-top: 20px;
+    padding: 20px 24px;
+    border-left: 3px solid var(--red);
+    background: var(--surface);
+    animation: fadeIn 0.3s ease;
+  }
+  .feedback.correct { border-color: var(--green); }
+  .feedback.show { display: block; }
+
+  .feedback-tag {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .feedback.correct .feedback-tag { color: var(--green); }
+  .feedback:not(.correct) .feedback-tag { color: var(--red); }
+
+  .feedback p {
+    font-family: var(--sans);
+    font-size: 14px;
+    color: #d4d4d4;
+    line-height: 1.65;
+  }
+
+  .feedback p + p { margin-top: 10px; }
+
+  .misconception-name {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--red);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* Comparison display */
+  .compare-display {
+    display: flex;
+    gap: 0;
+    margin-top: 16px;
+    font-size: 13px;
+  }
+  .compare-display .cval {
+    padding: 10px 20px;
+    border: 1px solid var(--border);
+    font-family: var(--mono);
+  }
+  .compare-display .cval.yours { border-right: none; color: var(--text-dim); }
+  .compare-display .cval.yours span { color: #fff; }
+  .compare-display .cval.actual { border-color: var(--amber); color: var(--text-dim); }
+  .compare-display .cval.actual span { color: var(--amber); }
+  .compare-display .cval.actual.correct-ans { border-color: var(--green); }
+  .compare-display .cval.actual.correct-ans span { color: var(--green); }
+
+  /* Data table */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 16px 0;
+  }
+  .data-table th {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    color: #d4d4d4;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table td:last-child { color: var(--amber); }
+
+  /* Gauntlet */
+  .gauntlet-header {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 24px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .gauntlet-q {
+    display: none;
+  }
+  .gauntlet-q.active { display: block; }
+
+  .gauntlet-counter {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+  }
+
+  /* Score display */
+  .score-display {
+    text-align: center;
+    padding: 48px 24px;
+  }
+  .score-num {
+    font-family: var(--display);
+    font-size: 96px;
+    color: var(--amber);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .score-denom {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+  }
+  .score-msg {
+    font-family: var(--sans);
+    font-size: 15px;
+    color: #d4d4d4;
+    line-height: 1.6;
+    max-width: 480px;
+    margin: 0 auto 32px;
+  }
+
+  /* Locked state */
+  .locked { opacity: 0.3; pointer-events: none; user-select: none; }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 40px 0;
+  }
+
+  /* Hint text */
+  .hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    font-family: var(--mono);
+  }
+
+  /* True/False */
+  .tf-wrap {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .tf-btn {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border-lit);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .tf-btn:hover:not(:disabled) { border-color: var(--amber); }
+  .tf-btn.wrong { border-color: var(--red); background: rgba(239,68,68,0.06); color: var(--red); }
+  .tf-btn.right { border-color: var(--green); background: rgba(34,197,94,0.06); color: var(--green); }
+
+  .section-title {
+    font-family: var(--display);
+    font-size: 36px;
+    letter-spacing: 0.04em;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .section-title span { color: var(--amber); }
+
+  .section-num {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  /* Retry btn */
+  .btn-retry {
+    border-color: var(--red);
+    color: var(--red);
+    font-size: 11px;
+    padding: 8px 16px;
+  }
+  .btn-retry:hover { background: var(--red); color: #000; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="lesson-tag">Lesson 13 · Layer 1 of 4</div>
+  <h1>EXPOSURE<br><span>LAYER</span></h1>
+  <p class="subtitle">Probability, Sampling &amp; Entropy — confront your intuition before it misleads you</p>
+
+  <div class="progress-strip" id="progressStrip">
+    <div class="p-seg active" id="ps0"></div>
+    <div class="p-seg" id="ps1"></div>
+    <div class="p-seg" id="ps2"></div>
+    <div class="p-seg" id="ps3"></div>
+    <div class="p-seg" id="ps4"></div>
+    <div class="p-seg" id="ps5"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 0: TRAP 1 — Temperature = 0 is best               -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section active" id="sec0">
+    <div class="section-num">Concept 01 / 04 — Prediction Gate</div>
+    <div class="section-title">The <span>Temperature</span> Dial</div>
+
+    <div class="scenario">
+      Your CCP coaching agent needs to generate a response. You have one parameter to set: <strong>temperature</strong>.<br><br>
+      A colleague says: <em>"Always use temperature = 0. It picks the single best token every time, so the output will be the highest quality possible."</em><br><br>
+      You must decide — and you cannot change it later.
+    </div>
+
+    <div class="question-label">Prediction Required</div>
+    <p class="question-text">You run the agent for 200 tokens at temperature = 0. Which of these outputs will you get?</p>
+
+    <div class="choices" id="trap1-choices">
+      <button class="choice-btn" onclick="answerTrap1(this, false)">
+        A — Consistent, high-quality coaching that sounds like the specific coach's Voice DNA
+      </button>
+      <button class="choice-btn" onclick="answerTrap1(this, true)">
+        B — Repetitive, formulaic coaching that may loop: "I believe you need to understand that I believe..."
+      </button>
+      <button class="choice-btn" onclick="answerTrap1(this, false)">
+        C — Creative, diverse coaching with unexpected but valid phrasings
+      </button>
+      <button class="choice-btn" onclick="answerTrap1(this, false)">
+        D — Random, incoherent output with occasional gibberish words
+      </button>
+    </div>
+
+    <div class="feedback" id="trap1-fb-wrong">
+      <div class="misconception-name">Misconception Detected: "Temperature Zero = Maximum Quality"</div>
+      <div class="feedback-tag">Your intuition failed here — and that's the point</div>
+      <p>Temperature = 0 is <em>greedy decoding</em>: always pick the highest-probability token. This maximises the probability of each INDIVIDUAL token — but not the probability of the full SEQUENCE.</p>
+      <p>The result is a model stuck in probability loops. "I believe" is always a high-probability continuation in coaching contexts. Greedy decoding always selects it. Then "that" follows. Then "you". Then "need". Then "to understand". Then "that I believe". Infinite loop.</p>
+      <p>Over a 200-token coaching script, temperature = 0 produces text that sounds robotic, repetitive, and formulaic — not "best quality." The ideal temperature for the CCP is <strong>0.75–0.8</strong>, which is "mostly confident, slightly flexible."</p>
+    </div>
+
+    <div class="feedback correct" id="trap1-fb-right">
+      <div class="feedback-tag">Correct — You resisted the trap</div>
+      <p>Temperature = 0 (greedy decoding) maximises INDIVIDUAL token probability but destroys SEQUENCE quality. The locally-optimal choice at every position creates a globally-suboptimal sequence. The coaching agent loops.</p>
+      <p>The CCP targets temperature = 0.75–0.8: confident enough for Voice DNA consistency, flexible enough to avoid loops. Temperature is NOT a quality dial. It is a shape parameter for the probability distribution.</p>
+    </div>
+
+    <div id="trap1-next" style="margin-top:20px; display:none;">
+      <button class="btn btn-next" onclick="goSection(1)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 1: TRAP 2 — Entropy = bad, minimize it            -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section" id="sec1">
+    <div class="section-num">Concept 02 / 04 — Prediction Gate</div>
+    <div class="section-title">Entropy as <span>Uncertainty</span></div>
+
+    <div class="scenario">
+      You're monitoring the CCP agent's output distribution in real-time using Pipecat. You compute the entropy of the distribution at each token position.<br><br>
+      Your engineering lead sees the entropy trace and says: <em>"We need to get that entropy as close to zero as possible. Zero entropy means the model is certain — that's what we want."</em>
+    </div>
+
+    <div class="question-label">True or False — Lock Your Answer</div>
+    <p class="question-text">Your engineering lead is correct: minimising entropy to near-zero produces the best coaching agent performance.</p>
+
+    <div class="tf-wrap">
+      <button class="tf-btn" id="tf2-true" onclick="answerTF2(true)">TRUE</button>
+      <button class="tf-btn" id="tf2-false" onclick="answerTF2(false)">FALSE</button>
+    </div>
+
+    <div class="feedback" id="tf2-fb-wrong">
+      <div class="misconception-name">Misconception Detected: "Zero Entropy = Best Outcome"</div>
+      <div class="feedback-tag">You fell for a seductive but false equivalence</div>
+      <p>Zero entropy means the model has EXACTLY ONE possible output — same word, every time, in every context. That is not certainty in the useful sense. That is rigidity. A coaching agent with zero output entropy cannot adapt, cannot vary its phrasing, cannot sound human.</p>
+      <p>Maximum entropy means the model has NO preference — complete randomness. That produces incoherent output.</p>
+      <p><strong>Moderate entropy (1.0–2.0 nats) is the target.</strong> Enough certainty for coherence. Enough uncertainty for natural variation. The entropy dial controls quality — not by minimising it, but by tuning it.</p>
+      <p>Crucially: high entropy positions are WHERE CCV STEERING HAS MAXIMUM LEVERAGE. Injecting steering at a zero-entropy position wastes compute — the model has already committed. The Pipecat engine steers ONLY when H > 1.5 nats.</p>
+    </div>
+
+    <div class="feedback correct" id="tf2-fb-right">
+      <div class="feedback-tag">Correct</div>
+      <p>Zero entropy is NOT the goal. A zero-entropy model produces identical output in every context — rigid, robotic, unable to vary phrasing. Maximum entropy produces incoherent randomness.</p>
+      <p>The target is <strong>moderate entropy: 1.0–2.0 nats</strong>. And high-entropy positions are the CCP's MOST VALUABLE moments — where CCV steering shifts the distribution most dramatically.</p>
+    </div>
+
+    <div id="tf2-mastery" style="display:none; margin-top:28px;">
+      <div class="divider"></div>
+      <div class="question-label">Mastery Gate — Different Problem</div>
+      <p class="question-text">The Pipecat engine has a rule: inject CCV steering ONLY when entropy H &gt; 1.5 nats. At token position 47, H = 0.3. At position 52, H = 2.1. At position 58, H = 1.7.</p>
+      <p class="question-text">How many of the three positions receive CCV steering injection?</p>
+      <div class="input-wrap">
+        <input type="number" id="tf2-mastery-input" min="0" max="3" placeholder="0–3">
+        <span class="unit-label">positions</span>
+      </div>
+      <button class="btn" onclick="checkTF2Mastery()">Lock Answer</button>
+      <div class="feedback" id="tf2-mastery-fb"></div>
+      <div id="tf2-next" style="margin-top:16px; display:none;">
+        <button class="btn btn-next" onclick="goSection(2)">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 2: TRAP 3 — KL divergence is symmetric distance    -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section" id="sec2">
+    <div class="section-num">Concept 03 / 04 — Prediction Gate</div>
+    <div class="section-title">KL <span>Divergence</span></div>
+
+    <div class="scenario">
+      In GRPO training from Lesson 12, the objective includes a penalty term:<br><br>
+      <strong>β · KL(π_θ ‖ π_ref)</strong><br><br>
+      This measures how much the trained policy π_θ has drifted from the reference policy π_ref.<br><br>
+      A colleague says: <em>"KL divergence is symmetric — KL(A‖B) = KL(B‖A) — so it doesn't matter which order you write them."</em>
+    </div>
+
+    <div class="question-label">True or False — Lock Your Answer</div>
+    <p class="question-text">KL divergence is symmetric: KL(A‖B) always equals KL(B‖A).</p>
+
+    <div class="tf-wrap">
+      <button class="tf-btn" id="tf3-true" onclick="answerTF3(true)">TRUE</button>
+      <button class="tf-btn" id="tf3-false" onclick="answerTF3(false)">FALSE</button>
+    </div>
+
+    <div class="feedback" id="tf3-fb-wrong">
+      <div class="misconception-name">Misconception Detected: "KL Divergence is a Distance Metric"</div>
+      <div class="feedback-tag">This mistake has concrete consequences in GRPO</div>
+      <p>KL divergence is NOT symmetric. KL(π_θ ‖ π_ref) ≠ KL(π_ref ‖ π_θ) in general. It is not a true distance metric.</p>
+      <p>The direction matters mathematically and behaviourally: <strong>KL(π_θ ‖ π_ref)</strong> — "reverse KL" — is mode-seeking. It penalises the trained policy for placing mass where the reference has little mass. This means the trained policy concentrates on the reference's high-probability regions (its "modes"). It will not spread coverage to everything the reference covers.</p>
+      <p>If you flipped the order to KL(π_ref ‖ π_θ) — "forward KL" — it would be mode-covering: the trained policy would try to spread probability mass everywhere the reference has it, producing a more diffuse, less focused trained model.</p>
+      <p>GRPO specifically uses reverse KL because mode-seeking behaviour is desirable: the trained policy should specialise on the high-reward patterns, not spread itself thin.</p>
+    </div>
+
+    <div class="feedback correct" id="tf3-fb-right">
+      <div class="feedback-tag">Correct — You know your information theory</div>
+      <p>KL divergence is asymmetric. The GRPO penalty uses reverse KL: KL(π_θ ‖ π_ref). This is mode-seeking — it concentrates the trained policy on the reference's peaks. Forward KL would be mode-covering — it would spread the trained policy across everything the reference covers. The order is a deliberate design choice, not a notation convention.</p>
+    </div>
+
+    <div id="tf3-mastery" style="display:none; margin-top:28px;">
+      <div class="divider"></div>
+      <div class="question-label">Mastery Gate — Novel Values</div>
+      <p class="question-text">If KL(π_θ ‖ π_ref) = 0, what is guaranteed about the two distributions?</p>
+      <div class="choices" id="tf3-mastery-choices">
+        <button class="choice-btn" onclick="answerKLMastery(this, false)">A — π_θ has learned nothing; it matches the reference too closely to have improved</button>
+        <button class="choice-btn" onclick="answerKLMastery(this, false)">B — π_ref = 0 everywhere (the reference is undefined)</button>
+        <button class="choice-btn" onclick="answerKLMastery(this, true)">C — π_θ and π_ref assign identical probabilities to every token</button>
+        <button class="choice-btn" onclick="answerKLMastery(this, false)">D — π_θ has maximally diverged from the reference</button>
+      </div>
+      <div class="feedback" id="tf3-mastery-fb"></div>
+      <div id="tf3-next" style="margin-top:16px; display:none;">
+        <button class="btn btn-next" onclick="goSection(3)">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 3: TRAP 4 — Model "picks" a word                  -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section" id="sec3">
+    <div class="section-num">Concept 04 / 04 — Prediction Gate</div>
+    <div class="section-title">What the Model <span>Actually</span> Does</div>
+
+    <div class="scenario">
+      After generating "Here's what I need you to", the model outputs: <strong>"hear"</strong>.<br><br>
+      A client reads the coaching script and says: <em>"The AI chose 'hear' because that was the right word for this moment — it understood the context and made a decision."</em>
+    </div>
+
+    <div class="question-label">Prediction Required</div>
+    <p class="question-text">Which of these most accurately describes what happened computationally when "hear" appeared?</p>
+
+    <div class="choices" id="trap4-choices">
+      <button class="choice-btn" onclick="answerTrap4(this, false)">
+        A — The model evaluated all possible words and selected the one with the highest relevance score
+      </button>
+      <button class="choice-btn" onclick="answerTrap4(this, false)">
+        B — The model's neural network deterministically computed the single correct next word given the context
+      </button>
+      <button class="choice-btn" onclick="answerTrap4(this, true)">
+        C — The model produced a probability distribution over 151,936 tokens; "hear" had the highest probability but was selected by random sampling weighted by those probabilities
+      </button>
+      <button class="choice-btn" onclick="answerTrap4(this, false)">
+        D — The model searched a database of coaching scripts and retrieved the most common next word
+      </button>
+    </div>
+
+    <div class="feedback" id="trap4-fb-wrong">
+      <div class="misconception-name">Misconception Detected: "The Model Thinks in Words"</div>
+      <div class="feedback-tag">The model has never "chosen" a single word in its existence</div>
+      <p>The model does not select words. It does not evaluate words. It does not decide. It computes a <strong>complete probability distribution over all 151,936 vocabulary tokens simultaneously</strong> — every token gets a number between 0 and 1, and the numbers sum to 1.</p>
+      <p>Then a random number generator samples from that distribution. "Hear" at 42% probability gets selected 42% of the time. "Understand" at 18% gets selected 18% of the time. The word you see in the output is ONE SAMPLE from ONE DISTRIBUTION — not a decision, not a selection, not a choice.</p>
+      <p>Run the same prompt again with a different random seed: "understand" appears instead of "hear." Both are correct. The model had no preference between them beyond the probability weights.</p>
+    </div>
+
+    <div class="feedback correct" id="trap4-fb-right">
+      <div class="feedback-tag">Correct — You understand the fundamental mechanism</div>
+      <p>The model outputs a complete probability distribution — 151,936 numbers that sum to 1. Sampling commits to one token from this distribution. "Hear" at 42% is the most likely, but 58% of the time a different token is selected. The model never "picks" — it generates a landscape of probabilities and sampling commits to one point on that landscape.</p>
+    </div>
+
+    <div id="trap4-next" style="display:none; margin-top:20px;">
+      <button class="btn btn-next" onclick="goSection(4)">Proceed to Gauntlet →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 4: EXPOSURE GAUNTLET — 7 rapid-fire questions      -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section" id="sec4">
+    <div class="gauntlet-header">▶ Exposure Gauntlet — 7 Questions · No Scaffolding</div>
+
+    <!-- Q1 -->
+    <div class="gauntlet-q active" id="gq0">
+      <div class="gauntlet-counter">Question 1 of 7</div>
+      <p class="question-text">Top-p sampling with p = 0.95 filters out tokens until the cumulative probability of remaining tokens equals exactly 0.95. True or false?</p>
+      <div class="tf-wrap">
+        <button class="tf-btn" onclick="gauntletTF(0, true, false, 'Top-p keeps the SMALLEST SET of tokens whose cumulative probability ≥ 0.95 — it stops at or just above the threshold, not exactly at it. The remaining tokens are zeroed out and renormalised.')">TRUE</button>
+        <button class="tf-btn" onclick="gauntletTF(0, false, false, 'Correct. Top-p accumulates probability until the threshold is MET OR EXCEEDED — it stops at ≥ 0.95, not exactly 0.95. The remaining tokens\' probabilities are renormalised to sum to 1.')">FALSE</button>
+      </div>
+      <div class="feedback" id="gfb0"></div>
+      <div id="gnext0" style="display:none; margin-top:16px;">
+        <button class="btn btn-next" onclick="nextGauntlet(1)">Next →</button>
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="gauntlet-q" id="gq1">
+      <div class="gauntlet-counter">Question 2 of 7</div>
+      <p class="question-text">At temperature T = 2.0, the token with the highest logit STILL has the highest probability. True or false?</p>
+      <div class="tf-wrap">
+        <button class="tf-btn" onclick="gauntletTF(1, true, true, 'Correct. Temperature NEVER changes which token is most likely — it only changes HOW MUCH more likely the top token is. At T = 2.0, the probabilities are more equal, but the ordering is preserved.')">TRUE</button>
+        <button class="tf-btn" onclick="gauntletTF(1, false, true, 'Incorrect. Temperature preserves the ORDERING of tokens. The highest-logit token remains highest-probability at ANY positive temperature. Temperature changes the SHAPE of the distribution, not the ORDER.')">FALSE</button>
+      </div>
+      <div class="feedback" id="gfb1"></div>
+      <div id="gnext1" style="display:none; margin-top:16px;">
+        <button class="btn btn-next" onclick="nextGauntlet(2)">Next →</button>
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="gauntlet-q" id="gq2">
+      <div class="gauntlet-counter">Question 3 of 7</div>
+      <p class="question-text">A probability distribution over 4 tokens has values [0.7, 0.2, 0.08, 0.02]. The entropy is closest to which value?</p>
+      <div class="choices" id="gq2-choices">
+        <button class="choice-btn" onclick="gauntletMC(2, this, false, 'Not quite. H = 0 only for a one-hot distribution [1,0,0,0]. This distribution has genuine spread.')">A — 0 nats (no uncertainty)</button>
+        <button class="choice-btn" onclick="gauntletMC(2, this, true, 'Correct. H = -(0.7·ln0.7 + 0.2·ln0.2 + 0.08·ln0.08 + 0.02·ln0.02) ≈ 0.36+0.32+0.20+0.08 ≈ 0.96 nats. The dominant token (0.7) keeps entropy moderate despite the long tail.')">B — ~1.0 nats (moderate, one token dominant)</button>
+        <button class="choice-btn" onclick="gauntletMC(2, this, false, 'Too high. Maximum entropy for 4 tokens is ln(4) ≈ 1.39 nats (uniform). This distribution is far from uniform — 0.7 dominates.')">C — ~1.4 nats (near-maximum for 4 tokens)</button>
+        <button class="choice-btn" onclick="gauntletMC(2, this, false, 'Impossible. Entropy for 4 tokens is bounded by ln(4) ≈ 1.39 nats. The entropy cannot exceed the log of the number of outcomes.')">D — ~2.5 nats (high uncertainty)</button>
+      </div>
+      <div class="feedback" id="gfb2"></div>
+      <div id="gnext2" style="display:none; margin-top:16px;">
+        <button class="btn btn-next" onclick="nextGauntlet(3)">Next →</button>
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div class="gauntlet-q" id="gq3">
+      <div class="gauntlet-counter">Question 4 of 7</div>
+      <p class="question-text">The softmax function's output always sums to exactly 1.0, regardless of the input logit values. True or false?</p>
+      <div class="tf-wrap">
+        <button class="tf-btn" onclick="gauntletTF(3, true, true, 'Correct. Softmax is defined as e^z_i / Σ e^z_j. The denominator is the sum of all numerators, so the fractions always sum to exactly 1. This is why softmax produces a valid probability distribution.')">TRUE</button>
+        <button class="tf-btn" onclick="gauntletTF(3, false, true, 'Incorrect. Dividing each e^z_i by the total Σ e^z_j guarantees normalization. Regardless of input magnitude or sign, softmax outputs always sum to 1 — that is its defining property.')">FALSE</button>
+      </div>
+      <div class="feedback" id="gfb3"></div>
+      <div id="gnext3" style="display:none; margin-top:16px;">
+        <button class="btn btn-next" onclick="nextGauntlet(4)">Next →</button>
+      </div>
+    </div>
+
+    <!-- Q5 -->
+    <div class="gauntlet-q" id="gq4">
+      <div class="gauntlet-counter">Question 5 of 7</div>
+      <p class="question-text">In GRPO training, if the KL penalty coefficient β = 0, which outcome is most likely?</p>
+      <div class="choices" id="gq4-choices">
+        <button class="choice-btn" onclick="gauntletMC(4, this, false, 'Incorrect. β = 0 removes the tether entirely — the model has no constraint on how far it drifts from the reference. This is the MAXIMUM opportunity for reward hacking, not prevention of it.')">A — The model learns most efficiently with no constraint on policy change</button>
+        <button class="choice-btn" onclick="gauntletMC(4, this, true, 'Correct. With β = 0, there is no KL penalty. The model can exploit any reward signal without being pulled back toward the reference. It will find ways to maximise reward that are not aligned with the intended behaviour — reward hacking.')">B — The model may exploit the reward signal (reward hacking), drifting far from the reference</button>
+        <button class="choice-btn" onclick="gauntletMC(4, this, false, 'Incorrect. β = 0 is the weakest constraint, not the strongest. The model learns faster but without a tether. β = 1.0 would impose a very strong tether that barely allows learning.')">C — Training halts because the model has no learning signal</button>
+        <button class="choice-btn" onclick="gauntletMC(4, this, false, 'Incorrect. β = 0 does not equalise the distributions. It removes the penalty for divergence, allowing the model to drift freely rather than converging to the reference.')">D — The trained policy converges exactly to the reference policy</button>
+      </div>
+      <div class="feedback" id="gfb4"></div>
+      <div id="gnext4" style="display:none; margin-top:16px;">
+        <button class="btn btn-next" onclick="nextGauntlet(5)">Next →</button>
+      </div>
+    </div>
+
+    <!-- Q6 -->
+    <div class="gauntlet-q" id="gq5">
+      <div class="gauntlet-counter">Question 6 of 7</div>
+      <p class="question-text">Top-k sampling (k = 50) and top-p sampling (p = 0.95) have the same key difference: top-p adapts the number of tokens kept based on the distribution's shape, while top-k always keeps exactly 50. True or false?</p>
+      <div class="tf-wrap">
+        <button class="tf-btn" onclick="gauntletTF(5, true, true, 'Correct. Top-k always keeps exactly k tokens regardless of the distribution shape. Top-p keeps a variable number: when the model is confident (one dominant token), the nucleus may be 1–3 tokens; when uncertain, it may be 50+. Top-p is adaptive; top-k is not.')">TRUE</button>
+        <button class="tf-btn" onclick="gauntletTF(5, false, true, 'Incorrect. Top-p is specifically designed to be adaptive — it expands when the model is uncertain and contracts when confident. Top-k always keeps exactly k. That inflexibility is top-k\'s core limitation.')">FALSE</button>
+      </div>
+      <div class="feedback" id="gfb5"></div>
+      <div id="gnext5" style="display:none; margin-top:16px;">
+        <button class="btn btn-next" onclick="nextGauntlet(6)">Next →</button>
+      </div>
+    </div>
+
+    <!-- Q7 -->
+    <div class="gauntlet-q" id="gq6">
+      <div class="gauntlet-counter">Question 7 of 7</div>
+      <p class="question-text">As temperature T approaches infinity (T → ∞), the token output distribution becomes:</p>
+      <div class="choices" id="gq6-choices">
+        <button class="choice-btn" onclick="gauntletMC(6, this, false, 'Not quite. A one-hot distribution (all mass on one token) is the LIMIT as T → 0 (greedy decoding), not as T → ∞.')">A — A one-hot distribution (all probability on the top token)</button>
+        <button class="choice-btn" onclick="gauntletMC(6, this, true, 'Correct. As T → ∞, z_i/T → 0 for all i, so e^(z_i/T) → 1 for all tokens. Each token\'s softmax value approaches 1/n — the uniform distribution. Maximum entropy. Maximum randomness.')">B — A uniform distribution (equal probability for every token)</button>
+        <button class="choice-btn" onclick="gauntletMC(6, this, false, 'Incorrect. Temperature does not cause the model to output only tokens with zero probability. It flattens ALL probabilities toward equal values, not toward zero.')">C — A distribution concentrated on low-probability tokens only</button>
+        <button class="choice-btn" onclick="gauntletMC(6, this, false, 'Incorrect. The normalization property of softmax guarantees the output sums to 1 at any temperature. The distribution becomes uniform, not undefined.')">D — An undefined distribution (probabilities no longer sum to 1)</button>
+      </div>
+      <div class="feedback" id="gfb6"></div>
+      <div id="gnext6" style="display:none; margin-top:16px;">
+        <button class="btn btn-next" onclick="showScore()">See Results →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 5: SCORE                                           -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div class="section" id="sec5">
+    <div class="score-display">
+      <div class="score-num" id="finalScore">0</div>
+      <div class="score-denom">correct out of 7 in the Gauntlet</div>
+      <div class="score-msg" id="scoreMsg"></div>
+
+      <div style="text-align:left; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--amber); padding: 20px 24px; margin-bottom: 28px;">
+        <div class="question-label">Four Wrong Models You Faced</div>
+        <p style="font-family: var(--sans); font-size: 13px; color: #d4d4d4; line-height: 1.7;">
+          <strong style="color: var(--amber);">❌ → ✓</strong> Temperature = 0 maximises quality → Greedy decoding creates repetition loops<br>
+          <strong style="color: var(--amber);">❌ → ✓</strong> Minimise entropy for best output → Moderate entropy (1–2 nats) is optimal<br>
+          <strong style="color: var(--amber);">❌ → ✓</strong> KL divergence is symmetric → KL(A‖B) ≠ KL(B‖A), direction matters<br>
+          <strong style="color: var(--amber);">❌ → ✓</strong> The model "picks" the right word → It samples from a distribution; the word is a random draw
+        </p>
+      </div>
+
+      <p style="font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-bottom: 20px; letter-spacing: 0.05em;">
+        ▶ LAYER 2 — MECHANISTIC opens next.<br>
+        It begins with an unannounced retrieval probe from this layer.<br>
+        No context. No warning. Answer from memory.
+      </p>
+
+      <button class="btn btn-next" onclick="window.open('2_Mechanistic.html','_self')">Open Layer 2: Mechanistic →</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────
+let gauntletScore = 0;
+let gauntletAnswers = new Array(7).fill(null);
+let tf2MasteryPassed = false;
+let kl3MasteryPassed = false;
+
+// ── Section navigation ─────────────────────────────────────────
+function goSection(n) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec' + n).classList.add('active');
+  // Update progress
+  for (let i = 0; i < 6; i++) {
+    const ps = document.getElementById('ps' + i);
+    ps.classList.remove('done', 'active');
+    if (i < n) ps.classList.add('done');
+    else if (i === n) ps.classList.add('active');
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Trap 1: Temperature ────────────────────────────────────────
+function answerTrap1(btn, correct) {
+  const choices = document.querySelectorAll('#trap1-choices .choice-btn');
+  choices.forEach(b => b.disabled = true);
+  if (correct) {
+    btn.classList.add('selected-right');
+    document.getElementById('trap1-fb-right').classList.add('show');
+  } else {
+    btn.classList.add('selected-wrong');
+    // highlight correct
+    choices[1].classList.add('revealed-right');
+    document.getElementById('trap1-fb-wrong').classList.add('show');
+  }
+  document.getElementById('trap1-next').style.display = 'block';
+}
+
+// ── TF 2: Entropy ──────────────────────────────────────────────
+function answerTF2(answer) {
+  const correct = false; // "minimize entropy" is FALSE → answering FALSE is correct
+  document.getElementById('tf2-true').disabled = true;
+  document.getElementById('tf2-false').disabled = true;
+  if (answer === false) {
+    document.getElementById('tf2-false').classList.add('right');
+    document.getElementById('tf2-fb-right').classList.add('show');
+  } else {
+    document.getElementById('tf2-true').classList.add('wrong');
+    document.getElementById('tf2-fb-wrong').classList.add('show');
+  }
+  document.getElementById('tf2-mastery').style.display = 'block';
+}
+
+function checkTF2Mastery() {
+  const val = parseInt(document.getElementById('tf2-mastery-input').value);
+  const fb = document.getElementById('tf2-mastery-fb');
+  // H=0.3 (no), H=2.1 (yes), H=1.7 (yes) → 2 positions
+  if (val === 2) {
+    fb.className = 'feedback correct show';
+    fb.innerHTML = '<div class="feedback-tag">Correct</div><p>Positions 52 (H=2.1) and 58 (H=1.7) both exceed the threshold of 1.5. Position 47 (H=0.3) does not. CCV is injected at 2 of the 3 positions.</p>';
+    document.getElementById('tf2-next').style.display = 'block';
+    document.querySelector('#tf2-mastery .btn').disabled = true;
+    tf2MasteryPassed = true;
+  } else {
+    fb.className = 'feedback show';
+    fb.innerHTML = '<div class="misconception-name">Not quite</div><p>Check each position against the threshold H > 1.5: Position 47 → H=0.3 ✗ No. Position 52 → H=2.1 ✓ Yes. Position 58 → H=1.7 ✓ Yes. The answer is 2.</p>';
+    document.getElementById('tf2-mastery-input').value = '';
+  }
+}
+
+// ── TF 3: KL asymmetry ────────────────────────────────────────
+function answerTF3(answer) {
+  document.getElementById('tf3-true').disabled = true;
+  document.getElementById('tf3-false').disabled = true;
+  if (answer === false) {
+    document.getElementById('tf3-false').classList.add('right');
+    document.getElementById('tf3-fb-right').classList.add('show');
+  } else {
+    document.getElementById('tf3-true').classList.add('wrong');
+    document.getElementById('tf3-fb-wrong').classList.add('show');
+  }
+  document.getElementById('tf3-mastery').style.display = 'block';
+}
+
+function answerKLMastery(btn, correct) {
+  const choices = document.querySelectorAll('#tf3-mastery-choices .choice-btn');
+  choices.forEach(b => b.disabled = true);
+  const fb = document.getElementById('tf3-mastery-fb');
+  if (correct) {
+    btn.classList.add('selected-right');
+    fb.className = 'feedback correct show';
+    fb.innerHTML = '<div class="feedback-tag">Correct</div><p>KL(p‖q) = 0 if and only if p = q — the two distributions assign identical probabilities to every event. This is the only condition under which KL equals zero. Note: KL = 0 does NOT mean "no learning happened" — it means the two policies have become identical, which would happen if the trained policy was never modified from the reference.</p>';
+    document.getElementById('tf3-next').style.display = 'block';
+  } else {
+    btn.classList.add('selected-wrong');
+    choices[2].classList.add('revealed-right');
+    fb.className = 'feedback show';
+    fb.innerHTML = '<div class="misconception-name">Incorrect</div><p>KL(p‖q) = 0 if and only if p = q — the two distributions are IDENTICAL. It does not imply anything about whether learning occurred or whether the reference is valid.</p>';
+    // allow retry
+    setTimeout(() => {
+      choices.forEach(b => { b.disabled = false; b.classList.remove('selected-wrong','revealed-right'); });
+      fb.className = 'feedback';
+    }, 2500);
+  }
+}
+
+// ── Trap 4: Model picks words ──────────────────────────────────
+function answerTrap4(btn, correct) {
+  const choices = document.querySelectorAll('#trap4-choices .choice-btn');
+  choices.forEach(b => b.disabled = true);
+  if (correct) {
+    btn.classList.add('selected-right');
+    document.getElementById('trap4-fb-right').classList.add('show');
+  } else {
+    btn.classList.add('selected-wrong');
+    choices[2].classList.add('revealed-right');
+    document.getElementById('trap4-fb-wrong').classList.add('show');
+  }
+  document.getElementById('trap4-next').style.display = 'block';
+}
+
+// ── Gauntlet ──────────────────────────────────────────────────
+function gauntletTF(qIdx, answer, correct, explanation) {
+  const trueBtn = document.querySelector('#gq' + qIdx + ' .tf-btn:first-child');
+  const falseBtn = document.querySelector('#gq' + qIdx + ' .tf-btn:last-child');
+  trueBtn.disabled = true;
+  falseBtn.disabled = true;
+  const clicked = answer ? trueBtn : falseBtn;
+
+  if (answer === correct) {
+    clicked.classList.add('right');
+    gauntletScore++;
+    gauntletAnswers[qIdx] = true;
+    const fb = document.getElementById('gfb' + qIdx);
+    fb.className = 'feedback correct show';
+    fb.innerHTML = '<div class="feedback-tag">Correct</div><p>' + explanation + '</p>';
+  } else {
+    clicked.classList.add('wrong');
+    gauntletAnswers[qIdx] = false;
+    const fb = document.getElementById('gfb' + qIdx);
+    fb.className = 'feedback show';
+    fb.innerHTML = '<div class="misconception-name">Incorrect</div><p>' + explanation + '</p>';
+  }
+  document.getElementById('gnext' + qIdx).style.display = 'block';
+}
+
+function gauntletMC(qIdx, btn, correct, explanation) {
+  const choices = document.querySelectorAll('#gq' + qIdx + ' .choice-btn');
+  choices.forEach(b => b.disabled = true);
+  const fb = document.getElementById('gfb' + qIdx);
+  if (correct) {
+    btn.classList.add('selected-right');
+    gauntletScore++;
+    gauntletAnswers[qIdx] = true;
+    fb.className = 'feedback correct show';
+    fb.innerHTML = '<div class="feedback-tag">Correct</div><p>' + explanation + '</p>';
+  } else {
+    btn.classList.add('selected-wrong');
+    gauntletAnswers[qIdx] = false;
+    fb.className = 'feedback show';
+    fb.innerHTML = '<div class="misconception-name">Incorrect</div><p>' + explanation + '</p>';
+  }
+  document.getElementById('gnext' + qIdx).style.display = 'block';
+}
+
+function nextGauntlet(n) {
+  document.getElementById('gq' + (n-1)).classList.remove('active');
+  document.getElementById('gq' + n).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showScore() {
+  goSection(5);
+  document.getElementById('finalScore').textContent = gauntletScore;
+  const msgs = [
+    "Several core concepts need review. Return to each trap — understand WHY your intuition was wrong before proceeding to Layer 2.",
+    "Some concepts are clear, others need reinforcement. Identify which traps caught you and read the misconception feedback carefully.",
+    "Solid foundation. A few edge cases to review before the Mechanistic layer demands precision.",
+    "Strong performance. You recognised the traps and understand the mechanisms. Layer 2 will push deeper.",
+    "Excellent. All four core misconceptions confronted. Layer 2's spaced interrupt will test retention. You are ready."
+  ];
+  const idx = Math.min(Math.floor(gauntletScore / 2), 4);
+  document.getElementById('scoreMsg').textContent = msgs[idx];
+}
+</script>
+</body>
+</html>

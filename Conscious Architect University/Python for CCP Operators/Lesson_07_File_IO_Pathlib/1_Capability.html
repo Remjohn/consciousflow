@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 07 - Capability Layer</title>
+  <style>
+    :root {
+      --bg: #08111a;
+      --line: rgba(255,255,255,0.08);
+      --text: #f3f7fb;
+      --muted: #9ab0c2;
+      --accent: #ff7a18;
+      --good: #2ecc71;
+      --bad: #ff5c73;
+      --gold: #ffd166;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--text);
+      font-family: Georgia, "Times New Roman", serif; line-height: 1.6;
+      background: radial-gradient(circle at 15% 10%, rgba(86,197,255,0.18), transparent 22%),
+                  radial-gradient(circle at 82% 14%, rgba(255,122,24,0.16), transparent 24%),
+                  linear-gradient(180deg, #071018 0%, #08111a 48%, #09131c 100%);
+    }
+    .progress { position: fixed; top: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.05); z-index: 50; }
+    .progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, #ff7a18, #ffd166, #56c5ff); transition: width 0.35s ease; }
+    .shell { max-width: 1120px; margin: 0 auto; padding: 42px 18px 80px; }
+    .stage { display: none; animation: fadeUp 0.45s ease; }
+    .stage.active { display: block; }
+    .hero, .card {
+      border-radius: 26px; border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015)),
+                  linear-gradient(135deg, rgba(143,124,255,0.08), transparent 40%);
+      box-shadow: 0 26px 56px rgba(0,0,0,0.24); overflow: hidden;
+    }
+    .hero { padding: 28px; }
+    .card { padding: 22px; margin-top: 18px; }
+    .eyebrow { color: var(--gold); text-transform: uppercase; letter-spacing: 0.2em; font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif; margin-bottom: 12px; }
+    .section-count { color: #89a1b2; text-transform: uppercase; letter-spacing: 0.12em; font: 700 0.75rem/1.2 Arial, Helvetica, sans-serif; margin-bottom: 10px; }
+    h1, h2, h3 { margin: 0 0 14px; line-height: 1.08; font-weight: 500; }
+    h1 { font-size: clamp(2.5rem, 5vw, 4.8rem); }
+    h2 { font-size: clamp(1.55rem, 2.8vw, 2.35rem); }
+    h3 { font-size: 1.08rem; }
+    p { margin: 0 0 14px; }
+    .lede { max-width: 54rem; font-size: 1.12rem; color: #d9e4ec; }
+    .divider { height: 1px; margin: 24px 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent); }
+    .hero-grid, .grid-2 { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mini-card { border-radius: 18px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); padding: 16px; }
+    .mini-title { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font: 700 0.78rem/1.2 Arial, Helvetica, sans-serif; margin-bottom: 8px; }
+    .mono { font-family: Consolas, Monaco, "Courier New", monospace; font-size: 0.95rem; }
+    .code-block { background: #071018; padding: 16px; border-radius: 12px; font-family: Consolas, monospace; font-size: 0.9rem; color: #56c5ff; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 16px; white-space: pre-wrap; line-height: 1.4; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+    .btn { border: 0; cursor: pointer; padding: 14px 18px; border-radius: 999px; font: 700 0.94rem/1 Arial, Helvetica, sans-serif; transition: transform 0.18s ease, opacity 0.18s ease; }
+    .btn-primary { background: linear-gradient(90deg, #ff7a18, #ff994d); color: white; }
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.15); }
+    .choices { display: grid; gap: 12px; margin-top: 16px; }
+    .choice { width: 100%; text-align: left; padding: 16px 18px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); color: #e7eef5; font: 400 1rem/1.45 Arial, Helvetica, sans-serif; cursor: pointer; transition: border-color 0.18s ease, background 0.18s ease; }
+    .choice.selected { border-color: rgba(255,122,24,0.78); background: rgba(255,122,24,0.08); }
+    .locked { margin-top: 12px; color: #ffd7a6; text-transform: uppercase; letter-spacing: 0.08em; font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif; }
+    .feedback { display: none; margin-top: 18px; padding: 18px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255,255,255,0.04); }
+    .feedback.show { display: block; }
+    .feedback.good { border-color: rgba(46,204,113,0.38); }
+    .feedback.bad { border-color: rgba(255,92,115,0.38); }
+    .hidden { display: none; }
+    input[type="text"], textarea { width: 100%; padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.03); color: var(--text); font: 400 1rem/1.45 Arial, Helvetica, sans-serif; }
+    .gauntlet-grid { display: grid; gap: 14px; margin-top: 18px; }
+    .q-card { padding: 16px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
+    .q-card label { display: block; margin-bottom: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif; }
+    .final-box { margin-top: 18px; padding: 22px; border-radius: 20px; border: 1px solid rgba(86,197,255,0.28); background: linear-gradient(180deg, rgba(86,197,255,0.08), rgba(255,255,255,0.02)); }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true"><div id="progressFill" class="progress-fill"></div></div>
+  <main class="shell">
+    <!-- Stage 0: Hero -->
+    <section id="stage-0" class="stage active">
+      <div class="hero">
+        <p class="eyebrow">Lesson 07 - Capability Layer</p>
+        <h1>File I/O & Pathlib: The Secured Logistics Network</h1>
+        <div class="divider"></div>
+        <p class="lede">Reading and writing files is the act of materialization. If you allow agents to generate raw path strings, they will breach sandboxes, overwrite critical files, and crash your servers. You must enforce physical laws using modern object-based boundaries.</p>
+        <div class="hero-grid">
+          <div class="mini-card">
+            <p class="mini-title">The CCP Crisis Point</p>
+            <p>An agent was tasked to compile coaching artifacts. It used <span class="mono">workspace_path + "\\configs\\" + filename</span>. Mimicking a Windows tutorial, the agent hallucinated backslashes. The Linux cluster crashed, scattering outputs into the root app directory. The JIT Skill Compiler failed extraction.</p>
+          </div>
+          <div class="mini-card">
+            <p class="mini-title">The Sovereign Objective</p>
+            <p>A string has no geographic intelligence. Pathlib objects securely map to the OS, handle limits natively, and ensure an explicit file is closed properly by utilizing <span class="mono">with</span> execution contexts to prevent infinite server asphyxiation.</p>
+          </div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="goToStage(1)">Enter the Factory Floor</button></div>
+      </div>
+    </section>
+
+    <!-- Stage 1 -->
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="section-count">Prediction Gate 1 of 3</p>
+        <h2>The Ephemeral String Hallucination</h2>
+        <p>An unconstrained agent uses raw text data to dictate a physical file destination to the disk OS.</p>
+        <div class="grid-2">
+          <div class="code-block">agent_workspace: str = "agents/session_042"
+output_file: str = "coaching_script.json"
+
+target_destination: str = agent_workspace + output_file</div>
+          <div>
+            <p>Look at the <span class="mono">target_destination</span> resolution. What is the precise string output of this addition?</p>
+            <div class="choices" data-group="p1">
+              <button class="choice" data-value="A" onclick="selectChoice('p1','A',this)">"agents/session_042/coaching_script.json"</button>
+              <button class="choice" data-value="B" onclick="selectChoice('p1','B',this)">"agents/session_042coaching_script.json"</button>
+              <button class="choice" data-value="C" onclick="selectChoice('p1','C',this)">SyntaxError: Cannot concatenate file structures.</button>
+            </div>
+            <div id="p1-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions"><button id="p1-submit" class="btn btn-primary" onclick="submitChoice('p1','B',p1Feedback)">Lock prediction</button></div>
+            <div id="p1-feedback" class="feedback"></div>
+            <div id="p1-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(2)">Next scenario</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stage 2 -->
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="section-count">Prediction Gate 2 of 3</p>
+        <h2>The Sovereign Object Geometry</h2>
+        <p>Replace weak static text with the explicit object constraint utilizing the Python division operator (/).</p>
+        <div class="grid-2">
+          <div class="code-block">from pathlib import Path
+
+agent_workspace: Path = Path("agents/session_042")
+output_file: str = "coaching_script.json"
+
+target_destination: Path = agent_workspace / output_file</div>
+          <div>
+            <p>How does <span class="mono">target_destination</span> resolve this time?</p>
+            <div class="choices" data-group="p2">
+              <button class="choice" data-value="A" onclick="selectChoice('p2','A',this)">It divides the text logically and throws a TypeError.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('p2','B',this)">It natively bridges the hierarchy depending on the current OS format (e.g. inserting slashes perfectly).</button>
+              <button class="choice" data-value="C" onclick="selectChoice('p2','C',this)">It completely disregards output_file as it is not a Path.</button>
+            </div>
+            <div id="p2-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions"><button id="p2-submit" class="btn btn-primary" onclick="submitChoice('p2','B',p2Feedback)">Lock prediction</button></div>
+            <div id="p2-feedback" class="feedback"></div>
+            <div id="p2-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(3)">Next scenario</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stage 3 -->
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="section-count">Prediction Gate 3 of 3</p>
+        <h2>The Context Manager Contract</h2>
+        <p>The system requires appending streaming logs to track interactions across chronological loops. Memory operations must be deterministic even under violent crashes.</p>
+        <div class="grid-2">
+          <div class="code-block">target_log: Path = Path("audit_logs/session_042.jsonl")
+
+with target_log.open("a") as log_file:
+    log_file.write('{"event": "trigger_fired"}\n')
+    # SUDDEN JSONDecodeError THROWN HERE!</div>
+          <div>
+            <p>What happens to the physical <span class="mono">log_file</span> if the execution script throws a fatal exception immediately after writing?</p>
+            <div class="choices" data-group="p3">
+              <button class="choice" data-value="A" onclick="selectChoice('p3','A',this)">The file remains open indefinitely, permanently leaking server memory.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('p3','B',this)">The file is immediately and safely sealed shut at the exact nanosecond the block exits.</button>
+              <button class="choice" data-value="C" onclick="selectChoice('p3','C',this)">The file is violently corrupted and unreadable on disk.</button>
+            </div>
+            <div id="p3-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions"><button id="p3-submit" class="btn btn-primary" onclick="submitChoice('p3','B',p3Feedback)">Lock prediction</button></div>
+            <div id="p3-feedback" class="feedback"></div>
+            <div id="p3-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(4)">Continue to mastery gate</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stage 4 -->
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="eyebrow">Mastery Gate</p>
+        <h2>Compress the structural logic</h2>
+        <p>Explain why we rely purely on <span class="mono">Pathlib</span> and <span class="mono">with</span> rather than string concatenation and un-bound variables when interacting with client workspaces. Use the terms "OS-aware" and "sandboxing".</p>
+        <textarea id="masteryText" placeholder="We use Pathlib because..."></textarea>
+        <div class="actions"><button class="btn btn-primary" onclick="submitMastery()">Lock response</button></div>
+        <div id="mastery-feedback" class="feedback"></div>
+        <div id="mastery-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(5)">Enter the 7-question gauntlet</button></div>
+      </div>
+    </section>
+
+    <!-- Stage 5 Gauntlet -->
+    <section id="stage-5" class="stage">
+      <div class="card">
+        <p class="eyebrow">Capability Gauntlet</p>
+        <h2>Seven rapid checks</h2>
+        <div class="gauntlet-grid">
+          <div class="q-card"><label>1. checkpoint_dir = Path("/models"). What method evaluates if it is physically downloaded? (.exists(), .test(), .is_real())</label><input id="g1" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label>2. session_path = Path("logs/client.json"). What capability ignores the directories and extension to grab 'client'? (.base, .stem, .title)</label><input id="g2" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label>3. What flag MUST be passed to .mkdir() if you want to forge missing parent directories safely? (parents=True, absolute=True)</label><input id="g3" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label>4. If a file is 5GB of raw LLM logs, why is .read_text() extremely dangerous to your memory footprint?</label><input id="g4" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label>5. Does raw .resolve() natively prevent a user from traversing backwards maliciously out of the sandbox using '../'?</label><input id="g5" type="text" placeholder="Yes or No"></div>
+          <div class="q-card"><label>6. Path("hello.txt").open("w") - What happens to 50k previous words if the file exists?</label><input id="g6" type="text" placeholder="Short answer"></div>
+          <div class="q-card"><label>7. Path("/data") / Path("/secret.sh") - What does this target resolve to when joined using division?</label><input id="g7" type="text" placeholder="Short answer"></div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" onclick="gradeGauntlet()">Submit gauntlet</button></div>
+        <div id="gauntlet-feedback" class="feedback"></div>
+        <div id="final-box" class="final-box hidden"><p class="eyebrow" style="margin-bottom:10px;">Layer 1 Complete</p></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const totalStages = 6;
+    const selections = {};
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = 'feedback show ' + type;
+      box.innerHTML = '<h3>' + title + '</h3><p>' + body + '</p>';
+    }
+
+    function selectChoice(groupId, value, element) {
+      if (document.querySelector(`[data-group="${groupId}"]`).dataset.locked === 'true') return;
+      selections[groupId] = value;
+      document.querySelectorAll(`[data-group="${groupId}"] .choice`).forEach(b => b.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function submitChoice(groupId, correct, feedbackPack) {
+      const selected = selections[groupId];
+      if (!selected) {
+        showFeedback(groupId + '-feedback', 'bad', 'Prediction required', 'Commit to an answer before the reveal.');
+        return;
+      }
+      document.querySelector(`[data-group="${groupId}"]`).dataset.locked = 'true';
+      document.getElementById(groupId + '-submit').disabled = true;
+      document.getElementById(groupId + '-lock').classList.remove('hidden');
+      
+      const isCorrect = selected === correct;
+      const payload = isCorrect ? feedbackPack.good : feedbackPack.bad;
+      showFeedback(groupId + '-feedback', isCorrect ? 'good' : 'bad', payload.title, payload.body);
+      document.getElementById(groupId + '-next').classList.remove('hidden');
+    }
+
+    const p1Feedback = {
+      good: { title: 'Correct: Missing path delimiter.', body: 'String addition joins text blindly. Without the slash, it creates "agents/session_042coaching_script.json". The agent attempts to write a malformed path scattering outputs entirely.' },
+      bad: { title: 'Misconception exposed: expecting intelligent joins.', body: 'Strings are completely unaware of their purpose. Python does NOT insert directory slashes for you. It strictly places text back-to-back, mutating the destination structure completely.' }
+    };
+
+    const p2Feedback = {
+      good: { title: 'Correct: OS-Aware resolution.', body: 'The Path object acts as an intelligent joiner. The `/` operator natively understands slashes, preventing concatenation crashes and fixing OS differences (Linux vs Windows) securely.' },
+      bad: { title: 'Misconception exposed.', body: 'This overrides the standard division operator into a structural file-path joiner. It guarantees valid filesystem geometries without hallucinated string boundaries.' }
+    };
+
+    const p3Feedback = {
+      good: { title: 'Correct: The Context Manager ensures closure.', body: 'The <code>with</code> block commands absolute state cleanup. The file is guaranteed to shut securely regardless of a violent crash, keeping available OS locking slots open.' },
+      bad: { title: 'Misconception: assuming un-handled leaks.', body: 'If this was executed utilizing standard <code>log_file = open()</code>, it WOULD leak server resources permanently. The <code>with</code> context manager completely immunizes the IO flow.' }
+    };
+
+    function containsAny(value, options) {
+      return options.some(opt => value.includes(opt));
+    }
+
+    function submitMastery() {
+      const value = document.getElementById('masteryText').value.trim().toLowerCase();
+      const checks = [containsAny(value, ['os-aware', 'os aware']), containsAny(value, ['sandboxing', 'sandbox'])];
+      document.getElementById('masteryText').disabled = true;
+      if (checks.filter(Boolean).length === 2) {
+        showFeedback('mastery-feedback', 'good', 'Gate passed', 'Correct! `Pathlib` serves as a strict OS-aware object contract over the filesystem, ensuring agent behaviors respect the sandboxing boundaries of the platform.');
+        document.getElementById('mastery-next').classList.remove('hidden');
+      } else {
+        showFeedback('mastery-feedback', 'bad', 'Gate failed', 'Missing load-bearing keywords (OS-aware, sandboxing). The core principle centers around creating structural bounds on the factory machinery. Review the keywords.');
+        document.getElementById('masteryText').disabled = false;
+      }
+    }
+
+    function gradeGauntlet() {
+      const answers = { 
+        g1: ['.exists', 'exists()', 'exists'], 
+        g2: ['.stem', 'stem', 'stem()'], 
+        g3: ['parents=true', 'parents'], 
+        g4: ['ram', 'memory', 'monolithic', 'monolith', 'crush', 'crash', 'oom'], 
+        g5: ['no', 'false'], 
+        g6: ['erased', 'replaced', 'deleted', 'overwritten', 'lost'], 
+        g7: ['/secret.sh', 'absolute', 'root', 'secret.sh'] 
+      };
+      let score = 0;
+      Object.entries(answers).forEach(([id, kws]) => {
+        const val = document.getElementById(id).value.trim().toLowerCase();
+        if (val && containsAny(val, kws)) {
+          document.getElementById(id).style.borderColor = 'rgba(46,204,113,0.8)';
+          score++;
+        } else {
+          document.getElementById(id).style.borderColor = 'rgba(255,92,115,0.8)';
+        }
+      });
+      if (score >= 5) {
+        showFeedback('gauntlet-feedback', 'good', `Cleared: ${score}/7`, 'Your capability intuition is aligned. You may proceed to the Application Layer where we integrate these rules directly into Pydantic and FastAPI code.');
+        document.getElementById('final-box').classList.remove('hidden');
+      } else {
+        showFeedback('gauntlet-feedback', 'bad', `Failed: ${score}/7`, 'Re-evaluate the structural commands. Focus on strictly identifying how Pathlib behaves destructively vs safely.');
+      }
+    }
+  </script>
+</body>
+</html>

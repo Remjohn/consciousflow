@@ -4,7 +4,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { db } from '../src/db';
-import { users, dailyLogs, challenges, goals, candidates, candidateLogs, candidateFlags, candidateQuestions, candidateAdjustments, coreTestQuestions, deepWorkSessions } from '../src/db/schema';
+import { users, dailyLogs, challenges, goals, candidates, candidateLogs, candidateFlags, candidateQuestions, candidateAdjustments, coreTestQuestions, deepWorkSessions, acquisitionBatches } from '../src/db/schema';
 import { desc, eq, gte, and, sql } from 'drizzle-orm';
 import { subDays, differenceInDays, format } from 'date-fns';
 import {
@@ -14,9 +14,13 @@ import {
     RED_FLAG_POINTS, GREEN_FLAG_POINTS,
     type CandidateMetrics
 } from '../src/lib/championshipScoring';
+import { setupTelegramBot } from './telegram';
 
 const app = new Hono();
 app.use('/*', cors());
+
+// Initialize Telegram Bot Uplink
+setupTelegramBot();
 
 // Initialize Mistral (using native fetch to avoid extra deps)
 const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
@@ -139,6 +143,27 @@ app.get('/api/health', (c) => {
             NODE_ENV: process.env.NODE_ENV || 'not set'
         }
     });
+});
+
+// GET: List of cover images
+app.get('/api/covers', async (c) => {
+    try {
+        const fs = await import('fs');
+        const path = await import('path');
+        const COVERS_DIR = path.join(process.cwd(), 'public', 'covers');
+        
+        if (!fs.existsSync(COVERS_DIR)) {
+            return c.json({ images: [] });
+        }
+        
+        const files = fs.readdirSync(COVERS_DIR);
+        // filter only images
+        const images = files.filter(f => /\.(png|jpe?g|webp|gif)$/i.test(f));
+        return c.json({ images });
+    } catch (error) {
+        console.error('Covers error:', error);
+        return c.json({ error: 'Failed to read covers', images: [] }, 500);
+    }
 });
 
 // POST: Upload Candidate Photo
@@ -1571,6 +1596,15 @@ app.get('/api/challenge/active', async (c) => {
         // Calculate goals
         const paceRequired = Math.ceil((challenge.targetVideos - videosProduced) / (challenge.targetDays - dayNumber + 1));
 
+        // Generate history grid for dotted calendar
+        const historyGrid: Record<string, boolean> = {};
+        logs.forEach(log => {
+            if (log.isWin !== null) {
+                // Ensure date string matches YYYY-MM-DD format
+                historyGrid[log.date] = log.isWin;
+            }
+        });
+
         return c.json({
             challenge: {
                 ...challenge,
@@ -1582,7 +1616,8 @@ app.get('/api/challenge/active', async (c) => {
                 paceRequired: Math.max(0, paceRequired),
                 // Fitness Goals
                 dailyPushups: challenge.dailyPushupsRequired,
-                dailyAbs: challenge.dailyAbsRequired
+                dailyAbs: challenge.dailyAbsRequired,
+                historyGrid
             }
         });
     } catch (error) {
@@ -1602,17 +1637,26 @@ app.post('/api/challenge/create', async (c) => {
             .set({ status: 'FAILED', failureReason: 'Replaced by new challenge', failedAt: getTodayString() })
             .where(and(eq(challenges.userId, 1), eq(challenges.status, 'ACTIVE')));
 
+        // Calculate targetDays if endDate is provided
+        const startDateStr = body.startDate || getTodayString();
+        let targetDays = body.targetDays || 40;
+        if (body.endDate) {
+            const start = new Date(startDateStr);
+            const end = new Date(body.endDate);
+            targetDays = Math.max(1, Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+        }
+
         // Create new challenge
         const newChallenge = await db.insert(challenges).values({
             userId: 1,
-            name: body.name || '200 Videos in 40 Days',
+            name: body.name || 'The Campaign',
             targetVideos: body.targetVideos || 200,
-            targetDays: body.targetDays || 40,
+            targetDays: targetDays,
             dailyPushupsRequired: body.dailyPushups || 250,
             dailyAbsRequired: body.dailyAbs || 250,
             startTimeDeadline: body.startTimeDeadline || '05:45',
             minVideosPerTwoDays: body.minVideosPerTwoDays || 8,
-            startDate: body.startDate || getTodayString(),
+            startDate: startDateStr,
             status: 'ACTIVE'
         }).returning();
 
@@ -1640,6 +1684,83 @@ app.post('/api/challenge/create', async (c) => {
         return c.json({ status: 'CREATED', challenge: newChallenge[0] });
     } catch (error) {
         console.error("Challenge Create Error:", error);
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+// PUT: Update Active Challenge Parameters
+app.put('/api/challenge/update', async (c) => {
+    try {
+        await ensureUser();
+        const body = await c.req.json();
+
+        const activeChallenge = await db.select().from(challenges).where(and(eq(challenges.userId, 1), eq(challenges.status, 'ACTIVE')));
+        if (activeChallenge.length === 0) return c.json({ error: 'No active challenge' }, 404);
+
+        let targetDays = body.targetDays || activeChallenge[0].targetDays;
+        if (body.endDate) {
+            const start = new Date(activeChallenge[0].startDate);
+            const end = new Date(body.endDate);
+            targetDays = Math.max(1, Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+        }
+
+        const updated = await db.update(challenges).set({
+            name: body.name || activeChallenge[0].name,
+            targetVideos: body.targetVideos || activeChallenge[0].targetVideos,
+            targetDays: targetDays,
+            dailyPushupsRequired: body.dailyPushups || activeChallenge[0].dailyPushupsRequired,
+            dailyAbsRequired: body.dailyAbs || activeChallenge[0].dailyAbsRequired,
+            startTimeDeadline: body.startTimeDeadline || activeChallenge[0].startTimeDeadline,
+            minVideosPerTwoDays: body.minVideosPerTwoDays || activeChallenge[0].minVideosPerTwoDays
+        }).where(eq(challenges.id, activeChallenge[0].id)).returning();
+
+        return c.json({ status: 'UPDATED', challenge: updated[0] });
+    } catch (error) {
+        console.error("Challenge Update Error:", error);
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+// POST: Explicitly Fail Challenge (Sacrifice Failure)
+app.post('/api/challenge/fail', async (c) => {
+    try {
+        await ensureUser();
+        const body = await c.req.json();
+        const reason = body.reason || 'Sacrifice protocol violated';
+
+        const activeChallenge = await db.select()
+            .from(challenges)
+            .where(and(eq(challenges.userId, 1), eq(challenges.status, 'ACTIVE')))
+            .limit(1);
+
+        if (activeChallenge.length > 0) {
+            const ch = activeChallenge[0];
+            
+            // Mark as failed
+            await db.update(challenges)
+                .set({ status: 'FAILED', failureReason: reason, failedAt: getTodayString() })
+                .where(eq(challenges.id, ch.id));
+
+            // Create identical new challenge (Start over)
+            const newChallenge = await db.insert(challenges).values({
+                userId: 1,
+                name: ch.name,
+                targetVideos: ch.targetVideos,
+                targetDays: ch.targetDays,
+                dailyPushupsRequired: ch.dailyPushupsRequired,
+                dailyAbsRequired: ch.dailyAbsRequired,
+                startTimeDeadline: ch.startTimeDeadline,
+                minVideosPerTwoDays: ch.minVideosPerTwoDays,
+                startDate: getTodayString(),
+                status: 'ACTIVE'
+            }).returning();
+            
+            return c.json({ status: 'RESTARTED', challenge: newChallenge[0] });
+        }
+        
+        return c.json({ status: 'NO_ACTIVE_CHALLENGE' });
+    } catch (error) {
+        console.error("Challenge Fail Error:", error);
         return c.json({ error: String(error) }, 500);
     }
 });
@@ -1871,14 +1992,27 @@ app.get('/api/investments/affordability', async (c) => {
 
         // Calculate weekly revenue
         const weekLogs = await db.select().from(dailyLogs).where(gte(dailyLogs.date, weekStart));
-        const weeklyVideos = weekLogs.reduce((sum, log) => sum + (log.videosProduced || 0), 0);
-        const weeklyRevenue = weeklyVideos * 25;
+        const weeklyPackages = weekLogs.reduce((sum, log) => sum + (log.videosProduced || 0), 0);
+        const weeklyRevenue = weeklyPackages * 25;
 
         // Calculate monthly revenue
         const monthLogs = await db.select().from(dailyLogs).where(gte(dailyLogs.date, monthStart));
-        const monthlyVideos = monthLogs.reduce((sum, log) => sum + (log.videosProduced || 0), 0);
-        const monthlyRevenue = monthlyVideos * 25;
-        const availableMonthly = Math.max(0, monthlyRevenue - 1000);
+        const monthlyPackages = monthLogs.reduce((sum, log) => sum + (log.videosProduced || 0), 0);
+        const rawMonthlyRevenue = monthlyPackages * 25;
+        
+        // NEW RULE: Hard cap at $3300 monthly
+        const maxMonthlyCapacity = Math.min(rawMonthlyRevenue, 3300);
+
+        // Define Baseline Buckets
+        const BUCKETS = {
+            WIFE: { capacity: 330, allocated: 0 },
+            DAUGHTER: { capacity: 330, allocated: 0 },
+            ME: { capacity: 330, allocated: 0 },
+            RENT: { capacity: 600, allocated: 0 },
+            CAR: { capacity: 600, allocated: 0 },
+            WEDDING: { capacity: 600, allocated: 0 },
+            GROCERIES: { capacity: 510, allocated: 0 }
+        };
 
         // Get all pending investments
         const allInvestments = await db.select().from(investments).where(eq(investments.status, 'PENDING'));
@@ -1894,28 +2028,69 @@ app.get('/api/investments/affordability', async (c) => {
                 ? subs.reduce((sum, sub) => sum + (sub.quantity || 1) * parseFloat(sub.unitPrice || sub.price || '0'), 0)
                 : parseFloat(master.price || '0');
 
-            const isLargePurchase = computedPrice > 5000;
-            const threshold = isLargePurchase ? availableMonthly : weeklyRevenue;
-            const isAffordable = computedPrice <= threshold;
+            let monthlyAllocation = 0;
+            let isAffordable = false;
+            let affordabilityType = 'SINGLE_PURCHASE';
+            let ruleViolation = null;
+
+            const category = master.category as keyof typeof BUCKETS;
+            const bucket = BUCKETS[category];
+
+            if (!bucket) {
+                ruleViolation = `Invalid Category: ${master.category}`;
+            } else {
+                // If the item costs more than the bucket's max monthly capacity, it must be auto-allocated
+                if (computedPrice > bucket.capacity) {
+                    monthlyAllocation = bucket.capacity;
+                    affordabilityType = 'MONTHLY_ALLOCATION';
+                    
+                    // Special rule for $7,200 absolute ceiling
+                    if (['CAR', 'RENT', 'WEDDING'].includes(category)) {
+                        if (computedPrice > 7200) {
+                            ruleViolation = `Cap exceeded: Max $7200 for ${category}`;
+                        }
+                    }
+                } else {
+                    // Fits within a single month's capacity for that bucket
+                    monthlyAllocation = computedPrice;
+                    affordabilityType = 'SINGLE_PURCHASE';
+                }
+
+                if (!ruleViolation) {
+                    // Check if the bucket has enough remaining space this month
+                    if (bucket.allocated + monthlyAllocation <= bucket.capacity) {
+                        bucket.allocated += monthlyAllocation;
+                        isAffordable = true;
+                    } else {
+                        isAffordable = false;
+                    }
+                }
+            }
 
             return {
                 ...master,
                 subItems: subs,
                 computedPrice,
+                monthlyAllocation,
                 isAffordable,
-                affordabilityType: isLargePurchase ? 'MONTHLY' : 'WEEKLY',
-                availableBudget: threshold,
-                shortfall: isAffordable ? 0 : computedPrice - threshold,
-                videosNeeded: isAffordable ? 0 : Math.ceil((computedPrice - threshold) / 25)
+                affordabilityType,
+                ruleViolation,
+                shortfall: isAffordable ? 0 : computedPrice,
+                packagesNeeded: isAffordable ? 0 : Math.ceil(computedPrice / 25)
             };
         });
 
+        // Compute total allocated costs across all buckets
+        const allocatedMonthlyCosts = Object.values(BUCKETS).reduce((sum, b) => sum + b.allocated, 0);
+
         return c.json({
             weeklyRevenue,
-            weeklyVideos,
-            monthlyRevenue,
-            monthlyVideos,
-            availableMonthly,
+            weeklyPackages,
+            monthlyRevenue: rawMonthlyRevenue,
+            monthlyPackages,
+            maxMonthlyCapacity,
+            allocatedMonthlyCosts,
+            buckets: BUCKETS,
             investments: processed
         });
     } catch (error) {
@@ -2050,7 +2225,175 @@ app.post('/api/investments/renew', async (c) => {
     }
 });
 
-// GET: Investment Context for Commander AI
+// ============================================
+// FINANCE TRACKER ENDPOINTS
+// ============================================
+
+// POST: Log Daily Earnings
+app.post('/api/finance/earnings', async (c) => {
+    try {
+        const body = await c.req.json();
+        const { date, amount, source, notes } = body;
+
+        if (!date || !amount) {
+            return c.json({ error: 'date and amount are required' }, 400);
+        }
+
+        const earningsDate = date;
+        const earningsAmount = parseFloat(amount);
+
+        // Check if a log already exists for this date
+        const existing = await db.select().from(dailyLogs)
+            .where(and(eq(dailyLogs.userId, 1), eq(dailyLogs.date, earningsDate)));
+
+        if (existing.length > 0) {
+            // Append earnings to existing log
+            const currentEarnings = parseFloat(existing[0].dailyEarnings || '0');
+            await db.update(dailyLogs)
+                .set({
+                    dailyEarnings: String(currentEarnings + earningsAmount),
+                    earningsSource: source || existing[0].earningsSource || 'PACKAGE',
+                    earningsNotes: notes ? `${existing[0].earningsNotes || ''} | ${notes}`.trim().replace(/^\| /, '') : existing[0].earningsNotes
+                })
+                .where(eq(dailyLogs.id, existing[0].id));
+            return c.json({ status: 'UPDATED', total: currentEarnings + earningsAmount });
+        } else {
+            // Create new log entry for this date
+            await db.insert(dailyLogs).values({
+                userId: 1,
+                date: earningsDate,
+                dailyEarnings: String(earningsAmount),
+                earningsSource: source || 'PACKAGE',
+                earningsNotes: notes || null
+            });
+            return c.json({ status: 'CREATED', total: earningsAmount });
+        }
+    } catch (error) {
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+// GET: Finance Summary (buckets, revenue, savings)
+app.get('/api/finance/summary', async (c) => {
+    try {
+        const monthStart = getMonthStartDate();
+        const weekStart = getWeekStartDate();
+
+        // Aggregate actual daily earnings for the month
+        const monthLogs = await db.select().from(dailyLogs)
+            .where(and(eq(dailyLogs.userId, 1), gte(dailyLogs.date, monthStart)));
+
+        // Sum actual earnings; fallback to videosProduced * 25 if no dailyEarnings
+        const monthlyEarnings = monthLogs.reduce((sum, log) => {
+            const actual = parseFloat(log.dailyEarnings || '0');
+            const legacy = (log.videosProduced || 0) * 25;
+            return sum + (actual > 0 ? actual : legacy);
+        }, 0);
+
+        // Weekly earnings
+        const weekLogs = await db.select().from(dailyLogs)
+            .where(and(eq(dailyLogs.userId, 1), gte(dailyLogs.date, weekStart)));
+        const weeklyEarnings = weekLogs.reduce((sum, log) => {
+            const actual = parseFloat(log.dailyEarnings || '0');
+            const legacy = (log.videosProduced || 0) * 25;
+            return sum + (actual > 0 ? actual : legacy);
+        }, 0);
+
+        // Hard cap
+        const maxMonthlyCapacity = Math.min(monthlyEarnings, 3300);
+        // Savings = everything you earned that was NOT spent (regardless of cap)
+        // Will be computed after bucket spend is tallied below
+
+        // Baseline Buckets
+        const BUCKETS: Record<string, { capacity: number; allocated: number; spent: number }> = {
+            WIFE:      { capacity: 330, allocated: 0, spent: 0 },
+            DAUGHTER:  { capacity: 330, allocated: 0, spent: 0 },
+            ME:        { capacity: 330, allocated: 0, spent: 0 },
+            RENT:      { capacity: 600, allocated: 0, spent: 0 },
+            CAR:       { capacity: 600, allocated: 0, spent: 0 },
+            WEDDING:   { capacity: 600, allocated: 0, spent: 0 },
+            GROCERIES: { capacity: 510, allocated: 0, spent: 0 },
+        };
+
+        // Pull purchased investments this month to calculate bucket spend
+        const monthlySpend = await db.select().from(investments)
+            .where(and(
+                eq(investments.status, 'PURCHASED'),
+                gte(investments.purchasedAt, monthStart)
+            ));
+
+        for (const inv of monthlySpend) {
+            const cat = (inv.category || '').toUpperCase() as keyof typeof BUCKETS;
+            if (BUCKETS[cat]) {
+                BUCKETS[cat].spent += parseFloat(inv.price || '0');
+            }
+        }
+
+        // Set allocated = spent for display
+        for (const key of Object.keys(BUCKETS)) {
+            BUCKETS[key].allocated = BUCKETS[key].spent;
+        }
+
+        const totalSpent = Object.values(BUCKETS).reduce((sum, b) => sum + b.spent, 0);
+        const monthlySavings = Math.max(0, monthlyEarnings - totalSpent);
+
+        return c.json({
+            weeklyEarnings,
+            monthlyEarnings,
+            maxMonthlyCapacity,
+            monthlySavings,
+            totalSpent,
+            buckets: BUCKETS
+        });
+    } catch (error) {
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+// GET: Month-by-month Finance History
+app.get('/api/finance/history', async (c) => {
+    try {
+        const today = new Date();
+        const months: { month: string; earned: number; spent: number; saved: number }[] = [];
+
+        for (let i = 0; i < 6; i++) {
+            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            const monthStart = d.toISOString().split('T')[0];
+            const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0];
+
+            const logs = await db.select().from(dailyLogs)
+                .where(and(eq(dailyLogs.userId, 1), gte(dailyLogs.date, monthStart)));
+
+            const earned = logs.reduce((sum, log) => {
+                const actual = parseFloat(log.dailyEarnings || '0');
+                const legacy = (log.videosProduced || 0) * 25;
+                return sum + (actual > 0 ? actual : legacy);
+            }, 0);
+
+            const purchasedItems = await db.select().from(investments)
+                .where(and(
+                    eq(investments.status, 'PURCHASED'),
+                    gte(investments.purchasedAt, monthStart)
+                ));
+
+            const spent = purchasedItems.reduce((sum, inv) => sum + parseFloat(inv.price || '0'), 0);
+            const saved = Math.max(0, earned - spent);
+
+            months.push({
+                month: d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+                earned: Math.round(earned),
+                spent: Math.round(spent),
+                saved: Math.round(saved)
+            });
+        }
+
+        return c.json({ history: months.reverse() });
+    } catch (error) {
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+
 app.get('/api/investments/context', async (c) => {
     try {
         const weekStart = getWeekStartDate();

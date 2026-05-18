@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 12 — Master Capstone Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#050505;--bg-card:#0a0a0c;--bg-elevated:#121214;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#8f8f9d;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.15);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.15);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.15);
+  --blue:#3b82f6;
+  --terminal-bg:#000000;
+  --terminal-border:#1e1e24;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(5,5,5,0.85);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1100px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:600;text-decoration:none;cursor:pointer;text-transform:uppercase;letter-spacing:0.05em;}
+.nav-link:hover,.nav-link.active{color:var(--rose);}
+.nav-link.active::after{content:'';position:absolute;bottom:-14px;left:0;right:0;height:2px;background:var(--rose);border-radius:1px;}
+
+.section{min-height:100vh;padding:6rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:980px;margin:0 auto;}
+
+.terminal-card {
+    background: var(--terminal-bg);
+    border: 1px solid var(--terminal-border);
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.terminal-header {
+    background: #111111;
+    border-bottom: 1px solid var(--terminal-border);
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.terminal-dots { display:flex; gap:6px; }
+.terminal-dot { width:10px; height:10px; border-radius:50%; }
+.dot-red { background:#ff5f56; }
+.dot-yellow { background:#ffbd2e; }
+.dot-green { background:#27c93f; }
+.terminal-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-left: 0.5rem;
+}
+.terminal-body { padding: 1.5rem; }
+
+.spec-req {
+    padding: 1rem;
+    border-left: 3px solid var(--amber);
+    background: var(--amber-glow);
+    font-family: inherit;
+    font-size: .95rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+}
+
+.code-editor {
+    font-family: 'JetBrains Mono', monospace;
+    background: #050505;
+    border: 1px solid #1a1a1a;
+    padding: 1rem;
+    color: #e5e5e5;
+    font-size: 0.9rem;
+    min-height: 150px;
+    width: 100%;
+    resize: vertical;
+    border-radius: 4px;
+    line-height: 1.5;
+}
+.code-editor:focus { outline:none; border-color:var(--rose); }
+.code-display {
+    font-family: 'JetBrains Mono', monospace;
+    background: #050505;
+    border: 1px solid #1a1a1a;
+    padding: 1.2rem;
+    color: #a78bfa;
+    font-size: 0.85rem;
+    border-radius: 4px;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    white-space: pre-wrap;
+}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.6rem 1.2rem;border-radius:4px;font-size:.85rem;font-weight:700;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;text-transform:uppercase;letter-spacing:0.05em;}
+.btn-rose{background:var(--rose);color:#fff;}
+.btn-rose:hover{background:#e11d48;transform:translateY(-1px);}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text);color:var(--text);}
+.btn-outline.active{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+
+.feedback-panel {
+    display: none;
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    border-radius: 4px;
+    border: 1px dashed var(--border);
+    animation: fadeIn 0.4s ease;
+}
+.feedback-panel.show { display: block; }
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+.triage-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.t-btn {
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Space Grotesk';
+    font-weight: 600;
+    font-size: .85rem;
+    transition: all .2s;
+}
+.t-btn:hover { border-color: var(--text-muted); }
+.t-btn[data-val="correct"].selected { border-color:var(--emerald); background:var(--emerald-glow); color:var(--emerald); }
+.t-btn[data-val="omission"].selected { border-color:var(--rose); background:var(--rose-glow); color:var(--rose); }
+.t-btn[data-val="hallucination"].selected { border-color:var(--amber); background:var(--amber-glow); color:var(--amber); }
+.t-btn[data-val="misapplication"].selected { border-color:var(--blue); background:var(--blue-glow); color:var(--blue); }
+
+.feynman-box {
+    width: 100%;
+    min-height: 200px;
+    background: #0a0a0c;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 1.5rem;
+    font-family: 'DM Sans', serif;
+    font-size: 1rem;
+    line-height: 1.7;
+    border-radius: 4px;
+    resize: vertical;
+}
+.feynman-box:focus { outline:none; border-color:var(--rose); }
+
+.scroll-hint{animation:bounce 2s ease infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .nav-links{display:none;}
+  .triage-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:800;font-size:.85rem;color:var(--rose);"><i class="fas fa-terminal"></i> CAPSTONE</span>
+    <div class="nav-links">
+      <a href="#intro" class="nav-link active" data-section="intro">Intro</a>
+      <a href="#contracts" class="nav-link" data-section="contracts">Contracts</a>
+      <a href="#triage" class="nav-link" data-section="triage">Triage</a>
+      <a href="#reasoning" class="nav-link" data-section="reasoning">Reasoning</a>
+      <a href="#feynman" class="nav-link" data-section="feynman">Feynman</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero / Intro -->
+<header id="intro" class="section" style="min-height:80vh;display:flex;align-items:center;justify-content:center;text-align:center;">
+    <div style="max-width:800px;position:relative;z-index:2;">
+        <p style="font-family:'JetBrains Mono';font-size:.8rem;color:var(--rose);letter-spacing:0.2em;margin-bottom:1.5rem;">[ ROOT ACCESS GRANTED ]</p>
+        <h1 style="font-size:clamp(2.5rem,6vw,4rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+          FastAPI — The HTTP Backbone
+        </h1>
+        <p style="font-size:1.1rem;color:var(--text-muted);font-family:'JetBrains Mono';line-height:1.7;margin-bottom:2.5rem;">
+            You are the Sovereign Architect. Total framework integrity relies on your code literacy and boundary enforcement. The agents have pushed their generated code payloads to the QA staging branch. You must inspect, triage, and reject any payload violating the CCP's API chassis.
+        </p>
+        <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    
+    <!-- Abstract BG styling -->
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100vw;height:100vh;background:radial-gradient(ellipse at center, rgba(244,63,94,0.06) 0%, transparent 60%);z-index:0;pointer-events:none;"></div>
+</header>
+
+<!-- Section 1: Contract Specification -->
+<section id="contracts" class="section border-top">
+  <div class="section-inner">
+      <p style="font-size:.85rem;font-weight:700;letter-spacing:.1em;color:var(--rose);margin-bottom:.5rem;font-family:'JetBrains Mono';">> SECTION 1</p>
+      <h2 style="font-size:1.8rem;font-weight:800;margin-bottom:2rem;text-transform:uppercase;">Contract Specification (60 Points)</h2>
+
+      <!-- Spec 1.0 -->
+      <div class="terminal-card">
+          <div class="terminal-header">
+              <div class="terminal-dots"><div class="terminal-dot dot-red"></div><div class="terminal-dot dot-yellow"></div><div class="terminal-dot dot-green"></div></div>
+              <div class="terminal-title">spec_1.0_pydantic.py</div>
+          </div>
+          <div class="terminal-body">
+              <div class="spec-req">
+                  "The CCP backend needs a new HTTP data structure that handles inbound signals from the Pipecat WebSocket disconnection hook. It must include: the active session UUID (string), a specific disconnect code (either 1000, 1011, or 4000 acting as integers), a sequence array containing consecutive timestamp floats, and an optional termination reason generated by the client application (string or null). The array of timestamps must contain exactly or more than 2 elements to prevent single-ping false flags."
+              </div>
+              <textarea class="code-editor" id="code1" spellcheck="false" placeholder="class PipecatDisconnectSignal(BaseModel):
+    # Enforce the strict types..."
+></textarea>
+              <div style="margin-top:1rem;text-align:right;">
+                  <button class="btn btn-rose" onclick="gradeSpec('code1', 'fb1')">Compile Contract</button>
+              </div>
+              <div id="fb1" class="feedback-panel">
+                 <p style="font-family:'JetBrains Mono';font-size:.85rem;color:var(--emerald);margin-bottom:1rem;">> Compilation complete. Grading criteria applied.</p>
+                 <div class="code-display" style="color:var(--text);">class PipecatDisconnectSignal(BaseModel):
+    session_id: str
+    disconnect_code: Literal[1000, 1011, 4000]
+    timestamp_sequence: list[float] = Field(min_length=2)
+    termination_reason: Optional[str] = None</div>
+                 <ul style="color:var(--text-muted);font-size:.85rem;line-height:1.6;padding-left:1.5rem;">
+                     <li>Check: <span style="color:var(--text);">disconnect_code</span> utilizes Literal boundary</li>
+                     <li>Check: <span style="color:var(--text);">timestamp_sequence</span> utilizes Field(min_length=2)</li>
+                     <li>Check: structural accuracy implemented cleanly.</li>
+                 </ul>
+              </div>
+          </div>
+      </div>
+
+      <!-- Spec 1.1 -->
+      <div class="terminal-card">
+          <div class="terminal-header">
+              <div class="terminal-dots"><div class="terminal-dot dot-red"></div><div class="terminal-dot dot-yellow"></div><div class="terminal-dot dot-green"></div></div>
+              <div class="terminal-title">spec_1.1_dspy.py</div>
+          </div>
+          <div class="terminal-body">
+              <div class="spec-req">
+                  "The JIT Skill Compiler requires an AI generation structure to compress telemetry data into a structured prompt. The DSPy signature will receive a raw inbound JSON string of real-world coaching dialog, and an integer determining the aggression tier of the coach archetype. The output must strictly return two distinct objects: a psychological breakdown of the user (string) and the generated response dialog (string)."
+              </div>
+              <textarea class="code-editor" id="code2" spellcheck="false" placeholder="class CompilingTelemetry(dspy.Signature):
+    ...
+"
+></textarea>
+              <div style="margin-top:1rem;text-align:right;">
+                  <button class="btn btn-rose" onclick="gradeSpec('code2', 'fb2')">Compile Contract</button>
+              </div>
+              <div id="fb2" class="feedback-panel">
+                 <p style="font-family:'JetBrains Mono';font-size:.85rem;color:var(--emerald);margin-bottom:1rem;">> Compilation complete. Signature verified.</p>
+                 <div class="code-display" style="color:var(--text);">class CompilingTelemetry(dspy.Signature):
+    """Compress real-world conversational telemetry and aggression into structured coaching responses."""
+    dialog_json: str = dspy.InputField(desc="Raw conversational dialog JSON string.")
+    aggression_tier: int = dspy.InputField(desc="Archetype aggression level.")
+    psychological_breakdown: str = dspy.OutputField(desc="Psychological analysis")
+    generated_response: str = dspy.OutputField(desc="Actual dialog")</div>
+              </div>
+          </div>
+      </div>
+  </div>
+</section>
+
+<!-- Section 2: Defect Triage -->
+<section id="triage" class="section">
+  <div class="section-inner">
+      <p style="font-size:.85rem;font-weight:700;letter-spacing:.1em;color:var(--rose);margin-bottom:.5rem;font-family:'JetBrains Mono';">> SECTION 2</p>
+      <h2 style="font-size:1.8rem;font-weight:800;margin-bottom:2rem;text-transform:uppercase;">Defect Triage (60 Points)</h2>
+      <p style="color:var(--text-muted);font-family:'JetBrains Mono';font-size:.9rem;line-height:1.6;margin-bottom:2rem;">
+        > Under extreme time pressure, evaluate the following agent-generated architectural blocks attempting to configure the API Chassis. Reject defects ruthlessly.
+      </p>
+
+      <!-- Triage 1 -->
+      <div class="terminal-card">
+          <div class="terminal-header">
+              <div class="terminal-dots"><div class="terminal-dot dot-red"></div><div class="terminal-dot dot-yellow"></div><div class="terminal-dot dot-green"></div></div>
+              <div class="terminal-title">PR_memory_flush.py</div>
+          </div>
+          <div class="terminal-body">
+              <div class="code-display">@app.get("/system/memory/flush")
+async def flush_memory(auth_token: str):
+    if auth_token != "MASTER_SECRET":
+        return {"error": "Authentication failed"}
+    
+    await ContextEngine.drop_all_nodes()
+    return {"status": "memory flushed"}</div>
+              <div class="triage-grid" id="tg1">
+                  <div class="t-btn" data-val="correct" onclick="selectTriage(this, 'tg1')">✅ Correct</div>
+                  <div class="t-btn" data-val="omission" onclick="selectTriage(this, 'tg1')">🔴 Omission</div>
+                  <div class="t-btn" data-val="hallucination" onclick="selectTriage(this, 'tg1')">🟡 Hallucination</div>
+                  <div class="t-btn" data-val="misapplication" onclick="selectTriage(this, 'tg1')">🔵 Misapplication</div>
+              </div>
+              <div style="text-align:right;">
+                  <button class="btn btn-outline" onclick="revealTriage('tg1', 'omission', 'fb3')">Execute Triage</button>
+              </div>
+              <div id="fb3" class="feedback-panel">
+                 <p style="color:var(--rose);font-weight:700;margin-bottom:.5rem;font-family:'Space Grotesk';">Classification: 🔴 Omission</p>
+                 <p style="color:var(--text-muted);font-size:.9rem;line-height:1.6;">
+                     <strong>The Defect:</strong> The agent bypassed <span style="color:var(--rose);">Depends()</span> and <span style="color:var(--rose);">HTTPException()</span>. It softly returns a 200 OK bearing an error JSON instead of natively rejecting the packet at the HTTP layer with a 401 Unauthorized status.
+                 </p>
+              </div>
+          </div>
+      </div>
+
+      <!-- Triage 2 -->
+      <div class="terminal-card">
+          <div class="terminal-header">
+              <div class="terminal-dots"><div class="terminal-dot dot-red"></div><div class="terminal-dot dot-yellow"></div><div class="terminal-dot dot-green"></div></div>
+              <div class="terminal-title">PR_websocket_stream.py</div>
+          </div>
+          <div class="terminal-body">
+              <div class="code-display">class VoiceStreamMetadata(BaseModel):
+    codec: str
+    packet_rate: int
+
+@app.websocket("/pipecat/stream", payload_model=VoiceStreamMetadata)
+async def process_voice_stream(ws: WebSocket):
+    await ws.accept()
+    audio = await ws.receive_bytes()
+    await send_to_stt_engine(audio)</div>
+              <div class="triage-grid" id="tg2">
+                  <div class="t-btn" data-val="correct" onclick="selectTriage(this, 'tg2')">✅ Correct</div>
+                  <div class="t-btn" data-val="omission" onclick="selectTriage(this, 'tg2')">🔴 Omission</div>
+                  <div class="t-btn" data-val="hallucination" onclick="selectTriage(this, 'tg2')">🟡 Hallucination</div>
+                  <div class="t-btn" data-val="misapplication" onclick="selectTriage(this, 'tg2')">🔵 Misapplication</div>
+              </div>
+              <div style="text-align:right;">
+                  <button class="btn btn-outline" onclick="revealTriage('tg2', 'hallucination', 'fb4')">Execute Triage</button>
+              </div>
+              <div id="fb4" class="feedback-panel">
+                 <p style="color:var(--amber);font-weight:700;margin-bottom:.5rem;font-family:'Space Grotesk';">Classification: 🟡 Hallucination</p>
+                 <p style="color:var(--text-muted);font-size:.9rem;line-height:1.6;">
+                     <strong>The Defect:</strong> The LLM hallucinated <span style="color:var(--amber);">payload_model=VoiceStreamMetadata</span> inside the `@app.websocket` decorator. WebSockets upgrade via standard HTTP GET request handshakes and cannot absorb HTTP body payloads explicitly inside the initial route configuration like a POST route.
+                 </p>
+              </div>
+          </div>
+      </div>
+
+       <!-- Triage 3 -->
+      <div class="terminal-card">
+          <div class="terminal-header">
+              <div class="terminal-dots"><div class="terminal-dot dot-red"></div><div class="terminal-dot dot-yellow"></div><div class="terminal-dot dot-green"></div></div>
+              <div class="terminal-title">PR_db_sync.py</div>
+          </div>
+          <div class="terminal-body">
+              <div class="code-display">@app.post("/client/update_profile")
+def run_db_update(client_data: ProfileUpdateSchema):
+    driver = Neo4jHost.connect_sync()
+    result = driver.execute_write("MERGE (c:Client {id: $id})", id=client_data.id)
+    driver.close()
+    return {"status": "merged"}</div>
+              <div class="triage-grid" id="tg3">
+                  <div class="t-btn" data-val="correct" onclick="selectTriage(this, 'tg3')">✅ Correct</div>
+                  <div class="t-btn" data-val="omission" onclick="selectTriage(this, 'tg3')">🔴 Omission</div>
+                  <div class="t-btn" data-val="hallucination" onclick="selectTriage(this, 'tg3')">🟡 Hallucination</div>
+                  <div class="t-btn" data-val="misapplication" onclick="selectTriage(this, 'tg3')">🔵 Misapplication</div>
+              </div>
+              <div style="text-align:right;">
+                  <button class="btn btn-outline" onclick="revealTriage('tg3', 'misapplication', 'fb5')">Execute Triage</button>
+              </div>
+              <div id="fb5" class="feedback-panel">
+                 <p style="color:var(--blue);font-weight:700;margin-bottom:.5rem;font-family:'Space Grotesk';">Classification: 🔵 Misapplication</p>
+                 <p style="color:var(--text-muted);font-size:.9rem;line-height:1.6;">
+                     <strong>The Defect:</strong> The code initiates synchronous connections inside a `def` function body that touches the DB network. The event loop is paralyzed. It must leverage async execution and `Depends(get_neo4j_adapter)` to safely tear down graphs asynchronously without blocking Uvicorn.
+                 </p>
+              </div>
+          </div>
+      </div>
+  </div>
+</section>
+
+<!-- Section 3: Reasoning & Feynman -->
+<section id="reasoning" class="section">
+  <div class="section-inner">
+      <p style="font-size:.85rem;font-weight:700;letter-spacing:.1em;color:var(--rose);margin-bottom:.5rem;font-family:'JetBrains Mono';">> SECTION 3 & 4</p>
+      <h2 style="font-size:1.8rem;font-weight:800;margin-bottom:2rem;text-transform:uppercase;">Feynman Compression (40 Points)</h2>
+      
+      <div class="terminal-card">
+          <div class="terminal-header">
+              <div class="terminal-dots"><div class="terminal-dot dot-red"></div><div class="terminal-dot dot-yellow"></div><div class="terminal-dot dot-green"></div></div>
+              <div class="terminal-title">feynman_compression.sh</div>
+          </div>
+          <div class="terminal-body">
+              <div class="spec-req">
+                  "Explain in your own words why FastAPI is critical for maintaining sovereign control over the CCP's agentic systems. Your explanation must utilize the Factory Metaphor and include these 3 structural elements: The HTTP Orchestrator, Zero-Trust Contracts, and The Event Loop Lock."
+              </div>
+              <textarea class="feynman-box" placeholder="FastAPI serves naturally as the Foreman of the Factory Floor..."></textarea>
+              <div style="margin-top:1.5rem;text-align:right;">
+                  <button class="btn btn-rose" onclick="document.getElementById('fb6').classList.add('show')">Commit Doctrine</button>
+              </div>
+              <div id="fb6" class="feedback-panel">
+                 <p style="font-family:'JetBrains Mono';font-size:.85rem;color:var(--emerald);margin-bottom:1rem;">> Model Solution Overlay Unlocked</p>
+                 <p style="color:var(--text-muted);font-size:.95rem;line-height:1.7;">
+                     "FastAPI serves natively as <strong>The HTTP Orchestrator</strong>, functioning explicitly as the highly disciplined Foreman standing at the very precipice of the Factory Floor. Without this exact perimeter constraint, the complex machinery operating deep within the CCP would be physically exposed to hostile environments. FastAPI ensures that nothing crosses into the ecosystem without passing rigorously verified <strong>Zero-Trust Input/Output Contracts</strong>, powered structurally by Pydantic... Finally, because its native environment is designed entirely around async Python bindings, it defends the ultimate mechanism of real-time server flow: <strong>The Event Loop Lock</strong>, offloading heavy processing to prevent the architecture from grinding to a halt."
+                 </p>
+              </div>
+          </div>
+      </div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);font-family:'JetBrains Mono';">
+  [ EOF ] SYSTEM ORCHESTRATION COMPLETE. YOU SURVIVED THE 12-MINUTE GAUNTLET.
+</footer>
+
+<script>
+/* Terminal interaction scripts */
+function gradeSpec(inputId, feedbackId) {
+    document.getElementById(inputId).disabled = true;
+    document.getElementById(feedbackId).classList.add('show');
+}
+
+function selectTriage(element, gridId) {
+    if(element.parentElement.dataset.locked) return;
+    document.querySelectorAll(`#${gridId} .t-btn`).forEach(btn => btn.classList.remove('selected'));
+    element.classList.add('selected');
+}
+
+function revealTriage(gridId, correctVal, feedbackId) {
+    const grid = document.getElementById(gridId);
+    grid.dataset.locked = true;
+    
+    // Disable styling internally
+    document.querySelectorAll(`#${gridId} .t-btn`).forEach(btn => {
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'default';
+        if (btn.dataset.val === correctVal) {
+            btn.style.opacity = '1';
+            btn.style.borderColor = 'var(--emerald)';
+        }
+    });
+
+    document.getElementById(feedbackId).classList.add('show');
+}
+
+/* Nav */
+(function(){
+  const links=document.querySelectorAll('.nav-link');
+  const ids=['intro','contracts','triage','reasoning','feynman'];
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+150;let active=ids[0];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+    links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));
+  });
+})();
+</script>
+</body>
+</html>

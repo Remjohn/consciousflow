@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 03 - Functions & Signatures: Capability Layer</title>
+  <style>
+    :root {
+      --bg: #08111a;
+      --panel: rgba(12, 20, 30, 0.88);
+      --panel-2: rgba(21, 31, 43, 0.92);
+      --line: rgba(255,255,255,0.08);
+      --text: #f3f7fb;
+      --muted: #9ab0c2;
+      --accent: #ff7a18;
+      --accent-2: #56c5ff;
+      --good: #2ecc71;
+      --bad: #ff5c73;
+      --gold: #ffd166;
+      --violet: #8f7cff;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(86,197,255,0.18), transparent 22%),
+        radial-gradient(circle at 82% 14%, rgba(255,122,24,0.16), transparent 24%),
+        linear-gradient(180deg, #071018 0%, #08111a 48%, #09131c 100%);
+    }
+
+    .progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: rgba(255,255,255,0.05);
+      z-index: 50;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #ff7a18, #ffd166, #56c5ff);
+      transition: width 0.35s ease;
+    }
+
+    .shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 42px 18px 80px;
+    }
+
+    .stage {
+      display: none;
+      animation: fadeUp 0.45s ease;
+    }
+
+    .stage.active { display: block; }
+
+    .hero, .card {
+      border-radius: 26px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015)),
+        linear-gradient(135deg, rgba(143,124,255,0.08), transparent 40%);
+      box-shadow: 0 26px 56px rgba(0,0,0,0.24);
+      overflow: hidden;
+    }
+
+    .hero { padding: 28px; }
+    .card { padding: 22px; margin-top: 18px; }
+
+    .eyebrow {
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 12px;
+    }
+
+    .section-count {
+      color: #89a1b2;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font: 700 0.75rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 10px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 14px;
+      line-height: 1.08;
+      font-weight: 500;
+    }
+
+    h1 { font-size: clamp(2.5rem, 5vw, 4.8rem); }
+    h2 { font-size: clamp(1.55rem, 2.8vw, 2.35rem); }
+    h3 { font-size: 1.08rem; }
+    p { margin: 0 0 14px; }
+
+    .lede {
+      max-width: 54rem;
+      font-size: 1.12rem;
+      color: #d9e4ec;
+    }
+
+    .divider {
+      height: 1px;
+      margin: 24px 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    }
+
+    .hero-grid,
+    .grid-2 {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .mini-card {
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      padding: 16px;
+    }
+
+    .mini-title {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.78rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 8px;
+    }
+
+    .mono {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.95rem;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      padding: 14px 18px;
+      border-radius: 999px;
+      font: 700 0.94rem/1 Arial, Helvetica, sans-serif;
+      transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: linear-gradient(90deg, #ff7a18, #ff994d);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    /* Pre code blocks mimicking the visual wrappers */
+    pre {
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(5, 14, 22, 0.7);
+      padding: 16px;
+      margin: 0;
+      overflow-x: auto;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .kw { color: #56c5ff; } /* keywords */
+    .fn { color: #ffd166; } /* functions */
+    .type { color: #ff7a18; } /* types */
+    .str { color: #2ecc71; } /* strings */
+    .num { color: #8f7cff; } /* numbers */
+    .comment { color: #89a1b2; font-style: italic; } /* comments */
+
+    .visual-wrap {
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(5, 14, 22, 0.7);
+      padding: 12px;
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 600px;
+      display: block;
+      margin: 0 auto;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(5,14,22,0.98), rgba(11,22,33,0.96));
+    }
+
+    .choices {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .choice {
+      width: 100%;
+      text-align: left;
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      color: #e7eef5;
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      transition: border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .choice.selected {
+      border-color: rgba(255,122,24,0.78);
+      background: rgba(255,122,24,0.08);
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(255,122,24,0.55);
+      box-shadow: 0 0 0 4px rgba(255,122,24,0.12);
+    }
+
+    .locked {
+      margin-top: 12px;
+      color: #ffd7a6;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif;
+    }
+
+    .feedback {
+      display: none;
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .feedback.show { display: block; }
+    .feedback.good { border-color: rgba(46,204,113,0.38); }
+    .feedback.bad { border-color: rgba(255,92,115,0.38); }
+
+    .gauntlet-grid {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .q-card {
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .q-card label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 700 0.76rem/1.2 Arial, Helvetica, sans-serif;
+    }
+
+    .final-box {
+      margin-top: 18px;
+      padding: 22px;
+      border-radius: 20px;
+      border: 1px solid rgba(86,197,255,0.28);
+      background: linear-gradient(180deg, rgba(86,197,255,0.08), rgba(255,255,255,0.02));
+    }
+
+    .hidden { display: none; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 820px) {
+      .hero-grid,
+      .grid-2 { grid-template-columns: 1fr; }
+      .shell { padding: 30px 14px 60px; }
+      .hero, .card { padding: 18px; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true">
+    <div id="progressFill" class="progress-fill"></div>
+  </div>
+
+  <main class="shell">
+    <section id="stage-0" class="stage active">
+      <div class="hero">
+        <p class="eyebrow">Lesson 03 - Capability Layer</p>
+        <h1>The Work Station Plaque</h1>
+        <div class="divider"></div>
+        <p class="lede">A Python function is not just a bundle of code. On the CCP factory floor, a function is a physical Work Station. The signature is the unbreakable contract riveted above the door — without it, the station processes raw garbage and pollutes the assembly line.</p>
+        <div class="hero-grid">
+          <div class="mini-card">
+            <p class="mini-title">The Danger of Implicit Trust</p>
+            <p>If you don't explicitly declare what data goes in and what comes out, the machine will guess. When it guesses wrong, it fails silently, pushing corrupted AI generations directly to actual human users.</p>
+          </div>
+          <div class="mini-card">
+            <p class="mini-title">What This Layer Does</p>
+            <p>You will command execution boundaries. You will see what happens when the plaque is ignored, when data bleeds across channels, and why enforcing boundaries is the Sovereign Architect's absolute duty.</p>
+          </div>
+        </div>
+        <div class="visual-wrap" style="margin-top:18px;">
+          <canvas id="heroCanvas" width="980" height="300"></canvas>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="goToStage(1)">Enter the Factory Floor</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="section-count">Scenario 1 of 3</p>
+        <h2>The Silent Collapse</h2>
+        <p>An untyped function accepts scoring inputs from the Trivianar psychological evaluation system. One agent outputs <span class="mono">10</span> (integer), another outputs <span class="mono">"10"</span> (string). Read the code below. What happens when this executes?</p>
+        <div class="grid-2">
+          <div>
+<pre>
+<span class="kw">def</span> <span class="fn">calculate_base_score</span>(score_a, score_b):
+    <span class="kw">return</span> score_a + score_b
+
+res = calculate_base_score(<span class="num">10</span>, <span class="str">"10"</span>)
+</pre>
+          </div>
+          <div>
+            <div class="choices" data-group="s1">
+              <button class="choice" data-value="A" onclick="selectChoice('s1','A',this)">Python converts the string into an integer automatically and returns 20.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('s1','B',this)">Python converts the integer into a string automatically and returns "1010".</button>
+              <button class="choice" data-value="C" onclick="selectChoice('s1','C',this)">The system crashes immediately with a TypeError before corrupted data continues.</button>
+              <button class="choice" data-value="D" onclick="selectChoice('s1','D',this)">The function randomly guesses which type to favor and fails silently.</button>
+            </div>
+            <div id="s1-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions">
+              <button id="s1-submit" class="btn btn-primary" onclick="submitChoice('s1','C',s1Feedback, () => {})">Lock prediction</button>
+            </div>
+            <div id="s1-feedback" class="feedback"></div>
+            <div id="s1-next" class="actions hidden">
+              <button class="btn btn-secondary" onclick="goToStage(2)">Next scenario</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="section-count">Scenario 2 of 3</p>
+        <h2>The Physical Boundary</h2>
+        <p>You add a literal contract (the signature) to the Work Station. Watch what happens when type hints are explicitly defined. The system relies on Pydantic to strictly enforce this boundary. What does this code do?</p>
+        <div class="grid-2">
+          <div>
+<pre>
+<span class="kw">def</span> <span class="fn">clean_raw_transcript</span>(payload: <span class="type">str</span>) -> <span class="type">dict</span>:
+    <span class="comment"># Factory machine logic inside</span>
+    <span class="kw">return</span> {<span class="str">"cleaned"</span>: payload.lower()}
+</pre>
+          </div>
+          <div>
+            <div class="choices" data-group="s2">
+              <button class="choice" data-value="A" onclick="selectChoice('s2','A',this)">It signals to external CCP systems that this station ONLY accepts a string and promises to spit out a dictionary.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('s2','B',this)">It physically forces base Python to delete the file if an integer is fed in.</button>
+              <button class="choice" data-value="C" onclick="selectChoice('s2','C',this)">It tells the LLM inside the function exactly how to parse its own memory.</button>
+              <button class="choice" data-value="D" onclick="selectChoice('s2','D',this)">It allows the function to accept any payload and automatically turns it into a string.</button>
+            </div>
+            <div id="s2-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions">
+              <button id="s2-submit" class="btn btn-primary" onclick="submitChoice('s2','A',s2Feedback, () => {})">Lock prediction</button>
+            </div>
+            <div id="s2-feedback" class="feedback"></div>
+            <div id="s2-next" class="actions hidden">
+              <button class="btn btn-secondary" onclick="goToStage(3)">Next scenario</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="section-count">Scenario 3 of 3</p>
+        <h2>The Void Return Type</h2>
+        <p>Sometimes a Work Station performs an action (like writing to a log file or sending a network request) but yields no physical materials back onto the assembly line. Which return signature represents this?</p>
+        <div class="grid-2">
+          <div>
+<pre>
+<span class="kw">def</span> <span class="fn">trigger_alarm</span>(severity: <span class="type">int</span>) -> <span class="type">???</span>:
+    print(<span class="str">f"Critical Alarm: {severity}"</span>)
+    <span class="comment"># The alarm rings, nothing drops onto the belt.</span>
+</pre>
+          </div>
+          <div>
+            <div class="choices" data-group="s3">
+              <button class="choice" data-value="A" onclick="selectChoice('s3','A',this)">-> void</button>
+              <button class="choice" data-value="B" onclick="selectChoice('s3','B',this)">-> str</button>
+              <button class="choice" data-value="C" onclick="selectChoice('s3','C',this)">-> None</button>
+              <button class="choice" data-value="D" onclick="selectChoice('s3','D',this)">-> empty</button>
+            </div>
+            <div id="s3-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions">
+              <button id="s3-submit" class="btn btn-primary" onclick="submitChoice('s3','C',s3Feedback, () => {})">Lock prediction</button>
+            </div>
+            <div id="s3-feedback" class="feedback"></div>
+            <div id="s3-next" class="actions hidden">
+              <button class="btn btn-secondary" onclick="goToStage(4)">Continue to mastery gate</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="eyebrow">Mastery Gate</p>
+        <h2>Explain the Boundary Concept</h2>
+        <p>Explain why function signatures are critical to CCP data flow. Use your own words, but your response must address how it prevents hallucinations and acts as a contract.</p>
+        <textarea id="masteryText" placeholder="A function signature is fundamentally..."></textarea>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="submitMastery()">Lock response</button>
+        </div>
+        <div id="mastery-feedback" class="feedback"></div>
+        <div id="mastery-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(5)">Enter the 7-question gauntlet</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-5" class="stage">
+      <div class="card">
+        <p class="eyebrow">Exposure Gauntlet</p>
+        <h2>Seven fast structural checks</h2>
+        <p>Without the code blocks, if the architectural concept is stable, the answers will be obvious.</p>
+        <div class="gauntlet-grid">
+          <div class="q-card">
+            <label for="g1">1. What is the contract indicating what data enters the station called?</label>
+            <input id="g1" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g2">2. What dictates what materials the station yields back out?</label>
+            <input id="g2" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g3">3. If a station executes a database save but gives back nothing, what is its explicit return type?</label>
+            <input id="g3" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g4">4. What error happens if you try to add an integer to a string in base Python?</label>
+            <input id="g4" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g5">5. Can an AI pipeline (like DSPy) use signatures to physically enforce its generation shapes?</label>
+            <input id="g5" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g6">6. What happens if a subsystem expects a string but your untyped function returns a generic dictionary object?</label>
+            <input id="g6" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g7">7. Final summary: "A function signature acts as an unbreakable _____."</label>
+            <input id="g7" type="text" placeholder="Short answer">
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="gradeGauntlet()">Submit gauntlet</button>
+        </div>
+        <div id="gauntlet-feedback" class="feedback"></div>
+        <div id="final-box" class="final-box hidden">
+          <p class="eyebrow" style="margin-bottom:10px;">Layer 1 Complete</p>
+          <p id="final-text"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const totalStages = 6;
+    const selections = {};
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach((stage) => stage.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = 'feedback show ' + type;
+      box.innerHTML = '<h3>' + title + '</h3><p>' + body + '</p>';
+    }
+
+    function selectChoice(groupId, value, element) {
+      if (document.querySelector('[data-group="' + groupId + '"]').dataset.locked === 'true') return;
+      selections[groupId] = value;
+      document.querySelectorAll('[data-group="' + groupId + '"] .choice').forEach((button) => button.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function submitChoice(groupId, correct, feedbackPack, revealFn) {
+      const selected = selections[groupId];
+      if (!selected) {
+        showFeedback(groupId + '-feedback', 'bad', 'Prediction required', 'Commit to a specific answer before the reveal. That commitment is where the learning starts.');
+        return;
+      }
+      document.querySelector('[data-group="' + groupId + '"]').dataset.locked = 'true';
+      document.getElementById(groupId + '-submit').disabled = true;
+      document.getElementById(groupId + '-lock').classList.remove('hidden');
+      revealFn();
+      const isCorrect = selected === correct;
+      const payload = isCorrect ? feedbackPack.good : feedbackPack.bad;
+      showFeedback(groupId + '-feedback', isCorrect ? 'good' : 'bad', payload.title, payload.body);
+      document.getElementById(groupId + '-next').classList.remove('hidden');
+    }
+
+    const s1Feedback = {
+      good: {
+        title: 'Correct: The crash is guaranteed.',
+        body: 'Python aggressively crashes when adding incompatible shapes (integer + string) throwing a TypeError. The crash is your friend. Without it, silence breeds corruption.'
+      },
+      bad: {
+        title: 'Misconception exposed: expecting JavaScript behavior.',
+        body: 'Unlike JS, Python refuses to silently coerce an integer into a string for addition, and does not perform silent logic operations. It physically crashes and stops the line.'
+      }
+    };
+
+    const s2Feedback = {
+      good: {
+        title: 'Correct: The signature is a contract.',
+        body: 'When wrapped in the CCP framework (like FastAPI or Pydantic), this explicitly signals to the boundaries what is acceptable, causing invalid inputs to bounce harmlessly against the outer wall.'
+      },
+      bad: {
+        title: 'Misconception exposed: base Python vs framework boundaries.',
+        body: 'Base Python does not physically block bad types just because of the hint. It signals the framework (the Factory) which uses it as the blueprint for an iron gate.'
+      }
+    };
+
+    const s3Feedback = {
+      good: {
+        title: 'Correct: The void drops.',
+        body: '`-> None` signals functionally that this system is a dead end. Do not expect to daisy-chain another pipeline after it.'
+      },
+      bad: {
+        title: 'Misconception exposed: explicit absence matters.',
+        body: 'If it gives back nothing, you don\'t omit it. You dictate `-> None` explicitly. Removing ambiguity is the primary directive of a Sovereign model.'
+      }
+    };
+
+    function containsAny(value, options) {
+      return options.some((option) => value.includes(option));
+    }
+
+    function submitMastery() {
+      const value = document.getElementById('masteryText').value.trim().toLowerCase();
+      const checks = [
+        containsAny(value, ['contract', 'boundary', 'plaque', 'gate']),
+        containsAny(value, ['hallucination', 'garbage', 'error', 'wrong shape']),
+      ];
+      const hits = checks.filter(Boolean).length;
+      document.getElementById('masteryText').disabled = true;
+      if (hits >= 2) {
+        showFeedback('mastery-feedback', 'good', 'Gate passed', 'Correct structure. The signature acts as a defining contract or gate that blocks corrupt or hallucinated payloads before they cause structural damage.');
+        document.getElementById('mastery-next').classList.remove('hidden');
+      } else {
+        showFeedback('mastery-feedback', 'bad', 'Gate failed', 'The explanation must include both the concept of a strict contract/boundary AND its role in preventing hallucinations/corruption.');
+        document.getElementById('masteryText').disabled = false;
+      }
+    }
+
+    function gradeGauntlet() {
+      const answers = {
+        g1: ['parameter', 'input', 'argument'],
+        g2: ['return type', 'return', 'output'],
+        g3: ['none', 'none type'],
+        g4: ['type', 'typeerror', 'type error', 'crash', 'exception'],
+        g5: ['yes', 'true'],
+        g6: ['crash', 'fail', 'break', 'error'],
+        g7: ['contract', 'boundary', 'rule', 'gate']
+      };
+      let score = 0;
+      Object.entries(answers).forEach(([id, keywords]) => {
+        const value = document.getElementById(id).value.trim().toLowerCase();
+        if (value && containsAny(value, keywords)) score += 1;
+      });
+
+      if (score >= 5) {
+        showFeedback('gauntlet-feedback', 'good', 'Gauntlet cleared: ' + score + '/7', 'The structural intuition is sound. You understand functions not as blocks of text, but as literal, contracted mechanisms that protect the AI workflow.');
+        document.getElementById('final-box').classList.remove('hidden');
+        document.getElementById('final-text').textContent = 'You have mastered the capability layer. You now recognize the function signature as the architectural plaque holding the Factory Floor together.';
+      } else {
+        showFeedback('gauntlet-feedback', 'bad', 'Gauntlet failed: ' + score + '/7', 'Revisit the relationship between inputs (parameters) and outputs (return type).');
+        document.getElementById('final-box').classList.add('hidden');
+      }
+    }
+
+    // Hero Custom Canvas Animation Let's render a factory conveyor belt
+    function drawHero() {
+      const canvas = document.getElementById('heroCanvas');
+      const ctx = canvas.getContext('2d');
+      let offset = 0;
+
+      function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Background grid
+        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+        ctx.lineWidth = 1;
+        for(let i=0; i<canvas.width; i+=40) {
+          ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+        }
+
+        // Conveyor belt
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
+        ctx.fillRect(0, 200, canvas.width, 10);
+        
+        ctx.strokeStyle = '#ff7a18';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for(let i=-40; i<canvas.width; i+=40) {
+           ctx.moveTo(i + offset, 200);
+           ctx.lineTo(i + 20 + offset, 200);
+        }
+        ctx.stroke();
+
+        // The Gate (Signature)
+        ctx.fillStyle = 'rgba(86,197,255,0.1)';
+        ctx.fillRect(300, 100, 400, 150);
+        ctx.strokeStyle = '#56c5ff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(300, 100, 400, 150);
+        ctx.fillStyle = '#56c5ff';
+        ctx.font = 'bold 16px Consolas';
+        ctx.fillText('def process_input(data: dict) -> list:', 320, 130);
+
+        // Moving items
+        let item1X = 100 + offset; 
+        if (item1X > canvas.width + 50) offset = 0; // reset loop roughly
+        
+        // Good typed data
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(item1X, 170, 30, 30);
+        ctx.font = '12px Arial';
+        ctx.fillText('dict', item1X, 160);
+
+        // Bad typed data (bounces at gate)
+        let item2X = 50 + offset * 1.5;
+        let item2Y = 170;
+        if (item2X > 280) { // hits gate
+            item2X = 280 - (item2X - 280);
+            item2Y -= (item2X - 280) * 0.5; // bounce up
+        }
+        ctx.fillStyle = '#ff5c73';
+        ctx.beginPath(); ctx.arc(item2X+15, item2Y+15, 15, 0, Math.PI*2); ctx.fill();
+        ctx.fillText('int', item2X, item2Y-5);
+
+        offset += 0.5;
+        requestAnimationFrame(render);
+      }
+      render();
+    }
+    
+    // Initialize hero canvas on load
+    window.onload = drawHero;
+
+  </script>
+</body>
+</html>

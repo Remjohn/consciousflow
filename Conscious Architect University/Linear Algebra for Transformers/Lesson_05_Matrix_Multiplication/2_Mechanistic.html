@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrix Multiplication — Mechanistic Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:.85em;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1;min-width:280px;}
+.visual-col{flex:1.2;min-width:320px;}
+
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+.insight.teal{border-color:var(--teal);background:var(--teal-glow);}.insight.teal strong{color:var(--teal);}
+.insight.rose{border-color:var(--rose);background:var(--rose-glow);}.insight.rose strong{color:var(--rose);}
+.insight.violet{border-color:var(--violet);background:var(--violet-glow);}.insight.violet strong{color:var(--violet);}
+.insight.emerald{border-color:var(--emerald);background:var(--emerald-glow);}.insight.emerald strong{color:var(--emerald);}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text-muted);color:var(--text);}
+.btn-outline.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow);}
+.btn-sm{padding:.4rem .8rem;font-size:.78rem;}
+
+.quiz-option{display:block;width:100%;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:.88rem;color:var(--text-muted);transition:all .25s;text-align:left;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;}
+.quiz-option:hover{border-color:var(--border-light);color:var(--text);}
+.quiz-option.correct{border-color:var(--emerald);color:var(--emerald);background:var(--emerald-glow);}
+.quiz-option.wrong{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+.quiz-option.disabled{pointer-events:none;opacity:.6;}
+.quiz-explanation{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+.quiz-explanation.show{max-height:300px;}
+
+.step-card{padding:.75rem 1rem;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);cursor:pointer;transition:all .2s;margin-bottom:.5rem;}
+.step-card:hover{border-color:var(--border-light);}
+.step-card.active{border-color:var(--amber);background:var(--amber-glow);}
+
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+.scroll-hint{animation:bounce 2s ease infinite;}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column!important;}
+  .canvas-wrap{min-height:280px!important;}
+  .nav-links{gap:.5rem;}.nav-link{font-size:.7rem;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">MATRIX MULT</span>
+    <div class="nav-links">
+      <a href="#pipeline" class="nav-link active" data-section="pipeline">GPU Pipeline</a>
+      <a href="#lora" class="nav-link" data-section="lora">LoRA Deep Dive</a>
+      <a href="#dualstack" class="nav-link" data-section="dualstack">Dual-Stack</a>
+      <a href="#edges" class="nav-link" data-section="edges">Edge Cases</a>
+      <a href="#checkpoint" class="nav-link" data-section="checkpoint">Checkpoint</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 05 — MECHANISTIC LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Matrix Multiplication<br><span style="color:var(--text-muted);font-weight:300;">The Computational Engine</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      GPU execution of weight matrices, the LoRA rank bottleneck, SparseGrad for MLP blocks, and the Dual-Stack fine-tuning architecture.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: GPU Pipeline -->
+<section id="pipeline" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — TRANSFORMER MATRIX OPERATIONS</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">GPU Execution Pipeline</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          Every computation in the Transformer is a matrix multiplication. Click each stage to trace the shapes through the pipeline.
+        </p>
+        <div class="step-card active" data-pipe="qkv">
+          <span style="font-size:.72rem;font-weight:600;color:var(--amber);letter-spacing:.05em;">STAGE 1</span>
+          <p style="font-size:.88rem;margin-top:.15rem;"><strong>Q/K/V Projection</strong> — X(n×768) · W_Q(768×64) → Q(n×64)</p>
+        </div>
+        <div class="step-card" data-pipe="scores">
+          <span style="font-size:.72rem;font-weight:600;color:var(--teal);letter-spacing:.05em;">STAGE 2</span>
+          <p style="font-size:.88rem;margin-top:.15rem;"><strong>Attention Scores</strong> — Q(n×64) · Kᵀ(64×n) → Scores(n×n)</p>
+        </div>
+        <div class="step-card" data-pipe="agg">
+          <span style="font-size:.72rem;font-weight:600;color:var(--violet);letter-spacing:.05em;">STAGE 3</span>
+          <p style="font-size:.88rem;margin-top:.15rem;"><strong>Value Aggregation</strong> — α(n×n) · V(n×64) → Out(n×64)</p>
+        </div>
+        <div class="step-card" data-pipe="ffn">
+          <span style="font-size:.72rem;font-weight:600;color:var(--rose);letter-spacing:.05em;">STAGE 4</span>
+          <p style="font-size:.88rem;margin-top:.15rem;"><strong>FFN</strong> — GELU(X · W₁(768×3072)) · W₂(3072×768)</p>
+        </div>
+        <div class="insight teal" style="margin-top:.75rem;">
+          <strong>64% of model parameters</strong> live in the FFN matrices (W₁, W₂). The attention projections contain the remaining 36%.
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:420px;">
+          <canvas id="pipeCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: LoRA Deep Dive -->
+<section id="lora" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">02 — PAPERS #31 & #32: THE RANK BOTTLENECK</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">LoRA: Learns Less, Forgets Less</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <div class="card" style="padding:1rem;margin-bottom:.75rem;border-left:3px solid var(--emerald);">
+          <h4 style="color:var(--emerald);font-size:.88rem;margin-bottom:.5rem;">Paper #31: Less Forgetting</h4>
+          <p style="font-size:.85rem;color:var(--text-muted);line-height:1.6;">
+            rank(BA) ≤ r means the update only modifies an r-dimensional slice. The remaining 768−r dimensions stay <strong style="color:var(--text);">exactly as pre-trained</strong>. Base capabilities (reasoning, coherence, world knowledge) remain intact.
+          </p>
+        </div>
+        <div class="card" style="padding:1rem;margin-bottom:.75rem;border-left:3px solid var(--rose);">
+          <h4 style="color:var(--rose);font-size:.88rem;margin-bottom:.5rem;">Paper #32: The Illusion of Equivalence</h4>
+          <p style="font-size:.85rem;color:var(--text-muted);line-height:1.6;">
+            Even at elevated rank, tasks requiring cross-layer synthesis (CA11: Conviction Density + Mood + Interrupt Frequency + Voice DNA) demand ~64+ independent directions. <strong style="color:var(--text);">Rank 16 catastrophically fails</strong> on multi-variable composition.
+          </p>
+        </div>
+        <div class="card" style="padding:1rem;border-left:3px solid var(--teal);">
+          <h4 style="color:var(--teal);font-size:.88rem;margin-bottom:.5rem;">CCP Application: Voice DNA</h4>
+          <p style="font-size:.85rem;color:var(--text-muted);line-height:1.6;">
+            Voice DNA (speaking rhythm, emotional register, vocabulary patterns) has intrinsic dimension ~8-12. Rank 16 captures this comfortably. LoRA is used <strong style="color:var(--text);">exclusively for style adaptation</strong> on attention blocks.
+          </p>
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:400px;">
+          <canvas id="loraDeepCanvas"></canvas>
+        </div>
+        <div style="display:flex;gap:.5rem;justify-content:center;margin-top:.75rem;">
+          <button class="btn btn-outline btn-sm active" data-lview="rank">Rank Analysis</button>
+          <button class="btn btn-outline btn-sm" data-lview="task">Task Fit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: Dual Stack -->
+<section id="dualstack" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">03 — PAPER #50: SPARSGRAD + DUAL-STACK</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">The Complete Fine-Tuning Architecture</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-bottom:1.5rem;">
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--amber);">
+        <div style="font-size:.72rem;color:var(--amber);font-weight:600;letter-spacing:.05em;margin-bottom:.25rem;">ATTENTION BLOCKS</div>
+        <h4 style="margin-bottom:.5rem;">LoRA (r=16)</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">W_Q, W_K, W_V, W_O. Captures Voice DNA, emotional register, conversational style. Low intrinsic dimensionality (~8-12) fits the rank constraint.</p>
+        <div style="font-family:'JetBrains Mono';font-size:.78rem;color:var(--amber);margin-top:.5rem;">24,576 params/matrix (4.2% of full)</div>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--teal);">
+        <div style="font-size:.72rem;color:var(--teal);font-weight:600;letter-spacing:.05em;margin-bottom:.25rem;">MLP BLOCKS</div>
+        <h4 style="margin-bottom:.5rem;">SparseGrad (~1%)</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">W₁, W₂. Captures Markdown compliance, JSON enforcement, CA11 templates. Full-rank expressiveness at PEFT memory cost — no rank bottleneck.</p>
+        <div style="font-family:'JetBrains Mono';font-size:.78rem;color:var(--teal);margin-top:.5rem;">~1% elements updated (full-rank sparse)</div>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--violet);">
+        <div style="font-size:.72rem;color:var(--violet);font-weight:600;letter-spacing:.05em;margin-bottom:.25rem;">KNOWLEDGE</div>
+        <h4 style="margin-bottom:.5rem;">Neo4j + RAG</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">Externalized via CRAL Finder. Not encoded in weights at all. Retrieved dynamically. Never risks catastrophic forgetting.</p>
+        <div style="font-family:'JetBrains Mono';font-size:.78rem;color:var(--violet);margin-top:.5rem;">0 weight params modified</div>
+      </div>
+    </div>
+    <div class="insight emerald">
+      <strong>Result:</strong> Full-model quality across 100% of parameters at PEFT memory cost. LoRA handles style. SparseGrad handles structure. RAG handles knowledge.
+    </div>
+  </div>
+</section>
+
+<!-- Section 4: Edge Cases -->
+<section id="edges" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--rose);margin-bottom:.5rem;">04 — EDGE CASES & INVARIANTS</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Structural Laws</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;">
+      <div class="card" style="padding:1.15rem;border-left:3px solid var(--amber);">
+        <h4 style="color:var(--amber);font-size:.88rem;margin-bottom:.5rem;">Shape Compatibility</h4>
+        <p style="font-size:.82rem;color:var(--text-muted);line-height:1.5;">(m×<strong>n</strong>) × (<strong>n</strong>×p) → (m×p). Inner dims must match. The most common implementation error in deep learning.</p>
+      </div>
+      <div class="card" style="padding:1.15rem;border-left:3px solid var(--teal);">
+        <h4 style="color:var(--teal);font-size:.88rem;margin-bottom:.5rem;">Associativity</h4>
+        <p style="font-size:.82rem;color:var(--text-muted);line-height:1.5;">(AB)C = A(BC). Grouping doesn't change the result. GPUs choose optimal grouping to minimize FLOPS.</p>
+      </div>
+      <div class="card" style="padding:1.15rem;border-left:3px solid var(--rose);">
+        <h4 style="color:var(--rose);font-size:.88rem;margin-bottom:.5rem;">Non-Commutativity</h4>
+        <p style="font-size:.82rem;color:var(--text-muted);line-height:1.5;">AB ≠ BA. Layer order defines the pipeline. Swapping W₁ and W₂ produces a structurally different computation.</p>
+      </div>
+      <div class="card" style="padding:1.15rem;border-left:3px solid var(--violet);">
+        <h4 style="color:var(--violet);font-size:.88rem;margin-bottom:.5rem;">Rank Inequality</h4>
+        <p style="font-size:.82rem;color:var(--text-muted);line-height:1.5;">rank(AB) ≤ min(rank(A), rank(B)). The product's expressiveness is bottlenecked by its least expressive factor. This IS LoRA's constraint.</p>
+      </div>
+      <div class="card" style="padding:1.15rem;border-left:3px solid var(--text-dim);">
+        <h4 style="font-size:.88rem;margin-bottom:.5rem;">Rank-Deficient LoRA</h4>
+        <p style="font-size:.82rem;color:var(--text-muted);line-height:1.5;">If B columns converge during training, effective rank drops below r. Monitor singular values of BA to detect collapse.</p>
+      </div>
+      <div class="card" style="padding:1.15rem;border-left:3px solid var(--emerald);">
+        <h4 style="color:var(--emerald);font-size:.88rem;margin-bottom:.5rem;">SparseGrad Stability</h4>
+        <p style="font-size:.82rem;color:var(--text-muted);line-height:1.5;">The 1% mask is task-dependent. Fixed-mask variants freeze selection after initial identification to prevent drift during curriculum learning.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 5: Checkpoint -->
+<section id="checkpoint" class="section">
+  <div class="section-inner" style="max-width:720px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">05 — CHECKPOINT</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Mechanistic Verification</h2>
+    <div id="quizContainer" style="display:flex;flex-direction:column;gap:1.5rem;"></div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);">
+  Interactive Visual Learning — Lesson 05: Matrix Multiplication Mechanistic Layer
+</footer>
+
+<script>
+const DPR=window.devicePixelRatio||1;
+
+/* Hero */
+(function(){const c=document.getElementById('heroCanvas');let W,H,ctx;
+function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+resize();window.addEventListener('resize',resize);
+let t=0;
+function draw(){ctx.clearRect(0,0,W,H);
+  for(let r=0;r<5;r++)for(let c2=0;c2<8;c2++){
+    const x=W*0.08+c2*(W*0.11),y=H*0.2+r*(H*0.12);
+    const v=Math.sin(t*0.015+r*0.7+c2*0.4)*0.5+0.5;
+    ctx.fillStyle=`rgba(245,158,11,${v*0.04})`;
+    ctx.fillRect(x,y,W*0.07,H*0.07);
+  }
+  t++;requestAnimationFrame(draw);}
+draw();})();
+
+/* Pipeline Canvas */
+(function(){
+  const canvas=document.getElementById('pipeCanvas');
+  let stage='qkv';
+
+  const stages={
+    qkv:{shapes:[{l:'X',d:'n×768',c:'#a1a1aa'},{l:'W_Q',d:'768×64',c:'#f59e0b'},{l:'Q',d:'n×64',c:'#10b981'}],
+      desc:'Each of 64 columns of W_Q is one "question" the head asks. Each row of Q is one token\'s query.'},
+    scores:{shapes:[{l:'Q',d:'n×64',c:'#f59e0b'},{l:'Kᵀ',d:'64×n',c:'#14b8a6'},{l:'Scores',d:'n×n',c:'#10b981'}],
+      desc:'Each (i,j) entry is the dot product between token i\'s query and token j\'s key. Full n×n relevance grid.'},
+    agg:{shapes:[{l:'α',d:'n×n',c:'#8b5cf6'},{l:'V',d:'n×64',c:'#14b8a6'},{l:'Out',d:'n×64',c:'#10b981'}],
+      desc:'Row i of output = linear combination of all value vectors, weighted by attention scores from token i.'},
+    ffn:{shapes:[{l:'X',d:'n×768',c:'#a1a1aa'},{l:'W₁',d:'768×3072',c:'#f43f5e'},{l:'→GELU→',d:'',c:'#52525b'},{l:'W₂',d:'3072×768',c:'#f43f5e'},{l:'Out',d:'n×768',c:'#10b981'}],
+      desc:'W₁ expands to 3072D for GELU gating. W₂ compresses back. These two matrices hold 64% of all parameters.'}
+  };
+
+  function draw(){
+    const p=canvas.parentElement,r=p.getBoundingClientRect();
+    canvas.width=r.width*DPR;canvas.height=r.height*DPR;canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';
+    const ctx=canvas.getContext('2d');ctx.scale(DPR,DPR);
+    const w=r.width,h=r.height;ctx.clearRect(0,0,w,h);
+    const s=stages[stage];
+    const n=s.shapes.length;
+    const totalW=n*80+(n-1)*30;
+    let sx=(w-totalW)/2;
+    const cy=h*0.4;
+
+    s.shapes.forEach((sh,i)=>{
+      const bw=70,bh=sh.d?50:30;
+      const x=sx+i*(80+30);
+      // Box
+      ctx.fillStyle=sh.c+'18';ctx.strokeStyle=sh.c;ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.roundRect(x,cy-bh/2,bw,bh,6);ctx.fill();ctx.stroke();
+      // Label
+      ctx.font='700 12px Space Grotesk';ctx.fillStyle=sh.c;ctx.textAlign='center';
+      ctx.fillText(sh.l,x+bw/2,cy+4);
+      // Dimension
+      if(sh.d){ctx.font='10px JetBrains Mono';ctx.fillStyle='#52525b';ctx.fillText(sh.d,x+bw/2,cy+bh/2+16);}
+      // Arrow
+      if(i<n-1&&s.shapes[i+1].d){
+        const ax=x+bw+5,ax2=x+80+25;
+        ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(ax,cy);ctx.lineTo(ax2,cy);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(ax2-5,cy-3);ctx.lineTo(ax2,cy);ctx.lineTo(ax2-5,cy+3);ctx.fillStyle='rgba(255,255,255,0.15)';ctx.fill();
+      }
+    });
+
+    // Description
+    ctx.font='11px DM Sans';ctx.fillStyle='#a1a1aa';ctx.textAlign='center';
+    const lines=wrapText(s.desc,w*0.8);
+    lines.forEach((l,i)=>ctx.fillText(l,w/2,h*0.7+i*16));
+
+    // Shape rule
+    if(s.shapes.length>=3&&s.shapes[0].d){
+      ctx.font='600 10px JetBrains Mono';ctx.fillStyle='#f59e0b';ctx.textAlign='center';
+      const dims=s.shapes.filter(s2=>s2.d).map(s2=>s2.d);
+      ctx.fillText(dims.join('  ×  '),w/2,h*0.9);
+    }
+  }
+
+  function wrapText(text,maxW){
+    const words=text.split(' ');const lines=[];let line='';
+    const canvas2=document.createElement('canvas');const ctx2=canvas2.getContext('2d');ctx2.font='11px DM Sans';
+    words.forEach(w=>{const test=line?line+' '+w:w;if(ctx2.measureText(test).width>maxW){lines.push(line);line=w;}else line=test;});
+    if(line)lines.push(line);return lines;
+  }
+
+  document.querySelectorAll('.step-card').forEach(card=>{
+    card.addEventListener('click',()=>{
+      document.querySelectorAll('.step-card').forEach(c=>c.classList.remove('active'));
+      card.classList.add('active');
+      stage=card.dataset.pipe;draw();
+    });
+  });
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* LoRA Deep Canvas */
+(function(){
+  const canvas=document.getElementById('loraDeepCanvas');
+  let view='rank';
+
+  function draw(){
+    const p=canvas.parentElement,r=p.getBoundingClientRect();
+    canvas.width=r.width*DPR;canvas.height=r.height*DPR;canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';
+    const ctx=canvas.getContext('2d');ctx.scale(DPR,DPR);
+    const w=r.width,h=r.height;ctx.clearRect(0,0,w,h);
+
+    if(view==='rank'){
+      // Worked example: 4×4 identity + rank-2 update
+      const padL=30,padT=30;
+      ctx.font='700 13px Space Grotesk';ctx.fillStyle='#fafafa';ctx.textAlign='left';
+      ctx.fillText('LoRA Rank-2 Update (4×4 simplified)',padL,padT);
+
+      const cellW=50,cellH=28,gap=2;
+      const matrices=[
+        {label:'W_orig (Identity)',data:[[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]],color:'#52525b',x:padL,y:padT+20},
+        {label:'+ ΔW = B·A',data:[[.2,0,0,.1],[.1,0,0,.05],[0,.3,.1,0],[0,.09,.03,0]],color:'#f59e0b',x:padL,y:padT+170},
+        {label:'= W_new',data:[[1.2,0,0,.1],[.1,1,0,.05],[0,.3,1.1,0],[0,.09,.03,1]],color:'#10b981',x:padL,y:padT+320}
+      ];
+
+      matrices.forEach(m=>{
+        ctx.font='600 10px Space Grotesk';ctx.fillStyle=m.color;ctx.textAlign='left';
+        ctx.fillText(m.label,m.x,m.y);
+        m.data.forEach((row,ri)=>row.forEach((v,ci)=>{
+          const x2=m.x+ci*(cellW+gap),y2=m.y+8+ri*(cellH+gap);
+          const isModified=v!==0&&m.label.includes('ΔW');
+          const isIdentity=m.label.includes('orig')&&ri===ci;
+          ctx.fillStyle=isModified?'rgba(245,158,11,0.15)':isIdentity?'rgba(255,255,255,0.04)':'rgba(255,255,255,0.02)';
+          ctx.fillRect(x2,y2,cellW,cellH);
+          ctx.strokeStyle=isModified?'#f59e0b44':isIdentity?'rgba(255,255,255,0.08)':'rgba(255,255,255,0.04)';
+          ctx.strokeRect(x2,y2,cellW,cellH);
+          ctx.font='600 10px JetBrains Mono';ctx.fillStyle=isModified?'#f59e0b':v===0?'#3f3f46':'#a1a1aa';
+          ctx.textAlign='center';ctx.fillText(v.toString(),x2+cellW/2,y2+cellH/2+4);
+        }));
+      });
+
+      // Rank annotation
+      ctx.font='10px DM Sans';ctx.fillStyle='#f59e0b';ctx.textAlign='left';
+      const ax=padL+(cellW+gap)*4+15;
+      ctx.fillText('Row 2 = 0.5 × Row 1',ax,padT+210);
+      ctx.fillText('Row 4 = 0.3 × Row 3',ax,padT+225);
+      ctx.fillStyle='#f43f5e';
+      ctx.fillText('→ Effective rank = 2',ax,padT+245);
+      ctx.fillStyle='#52525b';
+      ctx.fillText('2 directions modified,',ax,padT+265);
+      ctx.fillText('2 frozen at identity',ax,padT+280);
+    } else {
+      // Task fit view
+      const tasks=[
+        {name:'Voice DNA',dim:'~8-12',rank:16,fit:true,color:'#10b981'},
+        {name:'Emotional Register',dim:'~6-10',rank:16,fit:true,color:'#10b981'},
+        {name:'JSON Formatting',dim:'~20-30',rank:16,fit:false,color:'#f59e0b'},
+        {name:'CA11 Multi-Variable',dim:'~64+',rank:16,fit:false,color:'#f43f5e'},
+        {name:'Algorithmic Reasoning',dim:'~100+',rank:16,fit:false,color:'#f43f5e'}
+      ];
+      const padL=30,padT=30,barH=32,gap=12;
+      ctx.font='700 13px Space Grotesk';ctx.fillStyle='#fafafa';ctx.textAlign='left';
+      ctx.fillText('Task Intrinsic Dimensionality vs LoRA Rank',padL,padT);
+
+      const maxDim=120,barMax=w-padL-100;
+      // Rank line
+      const rankX=padL+(16/maxDim)*barMax;
+      ctx.strokeStyle='#f59e0b44';ctx.lineWidth=1;ctx.setLineDash([4,3]);
+      ctx.beginPath();ctx.moveTo(rankX,padT+20);ctx.lineTo(rankX,padT+20+tasks.length*(barH+gap));ctx.stroke();
+      ctx.setLineDash([]);ctx.font='600 9px Space Grotesk';ctx.fillStyle='#f59e0b';ctx.textAlign='center';
+      ctx.fillText('r=16',rankX,padT+16);
+
+      tasks.forEach((t,i)=>{
+        const y=padT+25+i*(barH+gap);
+        const dimVal=parseInt(t.dim.replace(/[^0-9]/g,''));
+        const bw=Math.min((dimVal/maxDim)*barMax,barMax);
+        ctx.fillStyle=t.color+'22';ctx.fillRect(padL,y,bw,barH);
+        ctx.strokeStyle=t.color;ctx.lineWidth=1.5;ctx.strokeRect(padL,y,bw,barH);
+        ctx.font='600 10px Space Grotesk';ctx.fillStyle=t.color;ctx.textAlign='left';
+        ctx.fillText(t.name,padL+8,y+barH/2+4);
+        ctx.font='10px JetBrains Mono';ctx.fillStyle='#52525b';ctx.textAlign='right';
+        ctx.fillText(t.dim,padL+bw-8,y+barH/2+4);
+        // Status
+        ctx.font='600 10px Space Grotesk';ctx.fillStyle=t.fit?'#10b981':'#f43f5e';ctx.textAlign='left';
+        ctx.fillText(t.fit?'✓ FITS':'✗ FAILS',padL+bw+10,y+barH/2+4);
+      });
+    }
+  }
+
+  document.querySelectorAll('[data-lview]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('[data-lview]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      view=btn.dataset.lview;draw();
+    });
+  });
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Quiz */
+(function(){
+  const questions=[
+    {q:"The attention score matrix Q·Kᵀ has shape n×n for n tokens. What does element (i,j) represent?",
+     opts:["The distance between tokens i and j","The dot product of token i's query with token j's key — their pairwise semantic relevance","The sum of all attention weights for token i","The probability that token j follows token i"],
+     correct:1,explanation:"Each element (i,j) = Q_i · K_j — the dot product between one query and one key. This entire n×n grid of pairwise relevance scores is computed as a single matrix multiplication."},
+    {q:"The rank inequality states rank(AB) ≤ min(rank(A), rank(B)). A LoRA update uses B(768×16)·A(16×768). What is the maximum rank of ΔW?",
+     opts:["768 — the outer dimension","16 — the inner bottleneck. The product can never be more expressive than its most constrained factor.","768×16 = 12,288","It depends on the training data"],
+     correct:1,explanation:"rank(BA) ≤ min(rank(B), rank(A)) ≤ min(768, 16) = 16. No matter what B and A contain, the product can only modify 16 independent directions. The remaining 752 are frozen."},
+    {q:"SparseGrad discovers that only ~1% of MLP elements have significant gradients. What advantage does this have over LoRA for MLP blocks?",
+     opts:["SparseGrad is faster on GPUs","SparseGrad provides full-rank expressiveness — any element can be modified — without the low-rank bottleneck that limits LoRA","SparseGrad uses fewer parameters","SparseGrad doesn't need gradients"],
+     correct:1,explanation:"LoRA constrains updates to a low-rank subspace. SparseGrad constrains to a sparse subset of elements but maintains full-rank expressiveness — the update can modify any direction. For MLP blocks with distributed knowledge patterns that don't decompose into low-rank subspaces, SparseGrad captures what LoRA structurally cannot."},
+    {q:"In the CCP Dual-Stack, knowledge is externalized to Neo4j instead of encoded in weights. Why?",
+     opts:["Neo4j is faster than matrix multiplication","Knowledge requires weight updates spanning many independent directions across multiple matrices — beyond any PEFT method's rank budget. RAG retrieval has zero catastrophic forgetting risk.","The model doesn't have enough parameters","Neo4j provides better formatting"],
+     correct:1,explanation:"Factual knowledge is distributed broadly across weight matrices with high intrinsic dimensionality. Neither LoRA's rank constraint nor SparseGrad's 1% budget can reliably encode it without risking catastrophic forgetting. Externalizing to Neo4j eliminates this entirely — knowledge is retrieved dynamically without modifying any weights."}
+  ];
+  const container=document.getElementById('quizContainer');
+  questions.forEach((q,qi)=>{
+    const card=document.createElement('div');card.className='card';card.style.padding='1.25rem';
+    let optsHTML='';q.opts.forEach((o,oi)=>{optsHTML+=`<button class="quiz-option" data-q="${qi}" data-o="${oi}">${o}</button>`;});
+    card.innerHTML=`<p style="font-size:.82rem;font-weight:600;color:var(--text-dim);margin-bottom:.75rem;">Question ${qi+1}</p>
+      <p style="font-size:.92rem;line-height:1.6;margin-bottom:1rem;">${q.q}</p>
+      <div id="qO${qi}">${optsHTML}</div>
+      <div class="quiz-explanation" id="qE${qi}" style="margin-top:.75rem;"><div class="insight">${q.explanation}</div></div>`;
+    container.appendChild(card);
+  });
+  container.addEventListener('click',(e)=>{
+    const btn=e.target.closest('.quiz-option');if(!btn)return;
+    const qi=+btn.dataset.q,oi=+btn.dataset.o;
+    const opts=document.querySelectorAll(`#qO${qi} .quiz-option`);
+    if(opts[0].classList.contains('disabled'))return;
+    opts.forEach((o,i)=>{o.classList.add('disabled');
+      if(i===questions[qi].correct)o.classList.add('correct');
+      else if(i===oi&&oi!==questions[qi].correct)o.classList.add('wrong');});
+    document.getElementById(`qE${qi}`).classList.add('show');
+  });
+})();
+
+/* Nav */
+(function(){
+  const links=document.querySelectorAll('.nav-link');
+  const ids=['pipeline','lora','dualstack','edges','checkpoint'];
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+100;let active=ids[0];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+    links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));
+  });
+})();
+</script>
+</body>
+</html>

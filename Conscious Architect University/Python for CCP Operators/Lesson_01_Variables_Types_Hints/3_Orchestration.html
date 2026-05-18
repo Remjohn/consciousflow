@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 01 - Orchestration Layer</title>
+  <style>
+    :root {
+      --bg: #08111a;
+      --panel: rgba(12, 20, 30, 0.88);
+      --line: rgba(255,255,255,0.08);
+      --text: #f3f7fb;
+      --muted: #9ab0c2;
+      --accent: #ff7a18;
+      --good: #2ecc71;
+      --bad: #ff5c73;
+      --gold: #ffd166;
+      --violet: #8f7cff;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--text);
+      font-family: Georgia, "Times New Roman", serif; line-height: 1.6;
+      background: radial-gradient(circle at 20% 8%, rgba(143,124,255,0.22), transparent 24%),
+                  radial-gradient(circle at 78% 16%, rgba(255,122,24,0.14), transparent 22%),
+                  linear-gradient(180deg, #071018 0%, #08111a 48%, #09131c 100%);
+    }
+    .progress { position: fixed; top: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.05); z-index: 50; }
+    .progress-fill { height: 100%; width: 0; background: linear-gradient(90deg, #8f7cff, #ff7a18, #56c5ff); transition: width 0.35s ease; }
+    .shell { max-width: 1120px; margin: 0 auto; padding: 42px 18px 80px; }
+    .stage { display: none; animation: fadeUp 0.45s ease; }
+    .stage.active { display: block; }
+    .hero, .card {
+      border-radius: 26px; border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015)),
+                  linear-gradient(135deg, rgba(143,124,255,0.1), transparent 40%);
+      box-shadow: 0 26px 56px rgba(0,0,0,0.24); padding: 28px; margin-top: 18px;
+    }
+    .eyebrow { color: var(--violet); text-transform: uppercase; letter-spacing: 0.2em; font: 700 0.74rem/1.2 Arial; margin-bottom: 12px; }
+    .section-count { color: #89a1b2; text-transform: uppercase; letter-spacing: 0.12em; font: 700 0.75rem/1.2 Arial; margin-bottom: 10px; }
+    h1, h2 { margin: 0 0 14px; line-height: 1.08; font-weight: 500; }
+    h1 { font-size: clamp(2.3rem, 4.6vw, 4.4rem); }
+    h2 { font-size: clamp(1.5rem, 2.8vw, 2.3rem); }
+    .divider { height: 1px; margin: 24px 0; background: linear-gradient(90deg, transparent, rgba(143,124,255,0.28), transparent); }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .mini-card { border-radius: 18px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); padding: 16px; }
+    .mini-title { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font: 700 0.78rem/1.2 Arial; margin-bottom: 8px; }
+    .code-block { background: #071018; padding: 16px; border-radius: 12px; font-family: Consolas, monospace; font-size: 0.9rem; color: #8f7cff; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 16px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+    .btn { border: 0; cursor: pointer; padding: 14px 18px; border-radius: 999px; font: 700 0.94rem/1 Arial; transition: transform 0.18s ease; }
+    .btn-primary { background: linear-gradient(90deg, #8f7cff, #a594ff); color: white; }
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.15); }
+    .choices { display: grid; gap: 12px; margin-top: 16px; }
+    .choice { text-align: left; padding: 16px 18px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); color: #e7eef5; font: 400 1rem/1.45 Arial; cursor: pointer; }
+    .choice.selected { border-color: rgba(143,124,255,0.78); background: rgba(143,124,255,0.08); }
+    .locked { margin-top: 12px; color: #ffd7a6; text-transform: uppercase; font: 700 0.76rem/1.2 Arial; }
+    .feedback { display: none; margin-top: 18px; padding: 18px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255,255,255,0.04); }
+    .feedback.show { display: block; }
+    .feedback.good { border-color: rgba(46,204,113,0.38); }
+    .feedback.bad { border-color: rgba(255,92,115,0.38); }
+    input[type="text"], textarea { width: 100%; padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.03); color: var(--text); font: 400 1rem/1.45 Arial; }
+    textarea { min-height: 130px; resize: vertical; }
+    .hidden { display: none; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true"><div id="progressFill" class="progress-fill"></div></div>
+  <main class="shell">
+    
+    <section id="stage-0" class="stage active">
+      <div class="hero">
+        <p class="eyebrow">Lesson 01 - Orchestration Layer</p>
+        <h1>Type constraints everywhere.</h1>
+        <div class="divider"></div>
+        <p>You have seen Types in raw Python (Layer 1) and evaluated them in production artifacts (Layer 2). Now you will conduct a multi-context tour across distinct CCP engine subsystems (Chassis, Machinist, Robot Arm, Skill Compiler, Memory Engine). If the structure is fundamentally true, it maps perfectly across every sector.</p>
+        <div class="actions"><button class="btn btn-primary" onclick="goToStage(1)">Begin Context Tour</button></div>
+      </div>
+    </section>
+
+    <!-- Context 1: The Robot Arm (Pi Harness) -->
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="section-count">Context 1 — The Robot Arm (Execution)</p>
+        <h2>Detecting missing commands</h2>
+        <p>The Pi Harness executes subprocess commands on the host OS. A misapplied type here leads to prompt injection or filesystem failure.</p>
+        <div class="grid-2">
+          <div class="code-block">import subprocess<br><br>def purge_temp(client_dir: str, force_delete):<br>    if force_delete == "True":<br>        subprocess.run(f"rm -rf /tmp/{client_dir}", shell=True)</div>
+          <div>
+            <p>What is the catastrophic structural defect here?</p>
+            <div class="choices" data-group="c1">
+              <button class="choice" data-value="A" onclick="selectChoice('c1','A',this)">Using a string for a binary decision (force_delete) bypasses exact boolean typing.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('c1','B',this)">The client_dir type hint is incorrectly declared as a string instead of a Pydantic Model.</button>
+            </div>
+            <div id="c1-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions"><button id="c1-submit" class="btn btn-primary" onclick="submitChoice('c1','A',c1Feedback)">Lock prediction</button></div>
+            <div id="c1-feedback" class="feedback"></div>
+            <div id="c1-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(2)">Next Context</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Context 2: Memory Engine (Neo4j) -->
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="section-count">Context 2 — The Memory Engine (Neo4j State)</p>
+        <h2>Graph DB Pointers</h2>
+        <p>Neo4j stores connections, but data boundaries must be explicitly mapped in python before storage.</p>
+        <div class="grid-2">
+          <div class="code-block">def save_node(tx, user_id: int, tags: list[str]):<br>    tx.run("CREATE (u:User {id: $id, tags: $tags})", id=user_id, tags=tags)</div>
+          <div>
+            <p>Why do we force <span class="mono">user_id: int</span> rather than leaving it dynamic before DB insertion?</p>
+            <div class="choices" data-group="c2">
+              <button class="choice" data-value="A" onclick="selectChoice('c2','A',this)">Because Neo4j will crash natively if it encounters dynamic typed JSON.</button>
+              <button class="choice" data-value="B" onclick="selectChoice('c2','B',this)">To prevent a hallucinated UUID string from silently corrupting the graph index match for integers.</button>
+            </div>
+            <div id="c2-lock" class="locked hidden">Prediction locked.</div>
+            <div class="actions"><button id="c2-submit" class="btn btn-primary" onclick="submitChoice('c2','B',c2Feedback)">Lock prediction</button></div>
+            <div id="c2-feedback" class="feedback"></div>
+            <div id="c2-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(3)">Next Context</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scenario Test -->
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="section-count">Synthesis — Critical Thinking</p>
+        <h2>The Skill Compiler Vulnerability</h2>
+        <p>A new developer advocates for removing all <span class="mono">: float</span> type hints from the Context Premise Engine because "LLMs generate raw text, so parsing should just cast everything to float downstream."</p>
+        <textarea id="synthesizerInput" placeholder="Why does the Orchestration Dichotomy mandate rejecting this proposition?"></textarea>
+        <div class="actions"><button class="btn btn-primary" onclick="submitSynthesis()">Lock explanation</button></div>
+        <div id="syn-feedback" class="feedback"></div>
+        <div id="syn-next" class="actions hidden"><button class="btn btn-secondary" onclick="goToStage(4)">Complete Orchestration</button></div>
+      </div>
+    </section>
+
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="eyebrow">Layer Complete</p>
+        <h2>Across all subsystems, Type Hints are physics.</h2>
+        <p>Whether in FastAPI boundaries, Neo4j persistence, or OS Subprocess execution, the presence of immutable Type constraints guarantees the deterministic execution cycle against agentic hallucinations.</p>
+        <div class="actions"><button class="btn btn-secondary" disabled>Proceed to Master Assessment (Layer 4)</button></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const totalStages = 5;
+    const selections = {};
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = 'feedback show ' + type;
+      box.innerHTML = '<h3>' + title + '</h3><p>' + body + '</p>';
+    }
+
+    function selectChoice(groupId, value, element) {
+      if (document.querySelector(`[data-group="${groupId}"]`).dataset.locked === 'true') return;
+      selections[groupId] = value;
+      document.querySelectorAll(`[data-group="${groupId}"] .choice`).forEach(b => b.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function submitChoice(groupId, correct, feedbackPack) {
+      const selected = selections[groupId];
+      if (!selected) {
+        showFeedback(groupId + '-feedback', 'bad', 'Required', 'Lock your prediction.');
+        return;
+      }
+      document.querySelector(`[data-group="${groupId}"]`).dataset.locked = 'true';
+      document.getElementById(groupId + '-submit').disabled = true;
+      document.getElementById(groupId + '-lock').classList.remove('hidden');
+      
+      const isCorrect = selected === correct;
+      const payload = isCorrect ? feedbackPack.good : feedbackPack.bad;
+      showFeedback(groupId + '-feedback', isCorrect ? 'good' : 'bad', payload.title, payload.body);
+      document.getElementById(groupId + '-next').classList.remove('hidden');
+    }
+
+    function containsAny(value, options) { return options.some(opt => value.includes(opt)); }
+
+    function submitSynthesis() {
+      const val = document.getElementById('synthesizerInput').value.trim().toLowerCase();
+      document.getElementById('synthesizerInput').disabled = true;
+      const checks = [containsAny(val, ['hallucinat', 'string', 'text', 'cast']), containsAny(val, ['pydantic', 'dspy', 'chassis', 'qa', 'compile'])];
+      
+      if (checks.filter(Boolean).length >= 1) {
+        showFeedback('syn-feedback', 'good', 'Architectural truth confirmed.', 'By removing the upstream Type Hints, QA (Pydantic) cannot enforce data physics on the LLM output. Hallucinated strings will slip past the Machinist and blow up the downstream execution chassis during parsing.');
+        document.getElementById('syn-next').classList.remove('hidden');
+      } else {
+        showFeedback('syn-feedback', 'bad', 'Missing architectural rationale.', 'Your explanation must reference LLM hallucination risks or downstream parsing/QA failures.');
+        document.getElementById('synthesizerInput').disabled = false;
+      }
+    }
+
+    const c1Feedback = {
+      good: { title: 'Correct', body: 'The binary switch `force_delete` relies on comparing an unstructured string "True" instead of leveraging the deterministic pure `bool`. This pollutes OS-level boundaries with text manipulation vulnerabilities.' },
+      bad: { title: 'Misconception', body: '`client_dir` should genuinely be a string at the point of OS command compilation; the lethal flaw lies in evaluating a boolean command logic identically to unstructured text.' }
+    };
+    
+    const c2Feedback = {
+      good: { title: 'Correct', body: 'Neo4j will willingly accept strings on index nodes. If an LLM suddenly hallucinates user_id="120a", the graph saves it silently, forever breaking Python queries searching for `int: 120`.' },
+      bad: { title: 'Misconception', body: 'Neo4j accepts schemaless injection happily. That is the actual danger. The DB does not crash—it corrupts silently.' }
+    };
+  </script>
+</body>
+</html>

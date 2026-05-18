@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 08 - Orchestration Layer (Context Transfer)</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #09090b;
+      --bg-card: #131316;
+      --bg-elevated: #1a1a1f;
+      --border: #27272a;
+      --border-light: #3f3f46;
+      --text: #fafafa;
+      --text-muted: #a1a1aa;
+      --text-dim: #52525b;
+      --amber: #f59e0b;
+      --amber-glow: rgba(245,158,11,0.12);
+      --teal: #14b8a6;
+      --teal-glow: rgba(20,184,166,0.12);
+      --rose: #f43f5e;
+      --emerald: #10b981;
+      --violet: #8b5cf6;
+      --font-ui: "Space Grotesk", Arial, sans-serif;
+      --font-body: "DM Sans", Arial, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font-body); overflow-x: hidden; }
+
+    h1, h2, h3, h4 { font-family: var(--font-ui); }
+    code, .mono { font-family: "JetBrains Mono", monospace; font-size: 0.85em; }
+
+    .nav-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; backdrop-filter: blur(16px); background: rgba(9,9,11,0.8); border-bottom: 1px solid var(--border); }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; max-width: 1200px; margin: 0 auto; padding: 0 1rem; height: 48px; }
+    .nav-links { display: flex; gap: 1.25rem; }
+    .nav-link { position: relative; color: var(--text-dim); transition: color .3s; font-size: .82rem; font-weight: 500; text-decoration: none; cursor: pointer; }
+    .nav-link:hover, .nav-link.active { color: var(--amber); }
+    .nav-link.active::after { content: ''; position: absolute; bottom: -13px; left: 0; right: 0; height: 2px; background: var(--amber); border-radius: 1px; }
+
+    .section { min-height: 100vh; padding: 5rem 1.5rem 4rem; position: relative; }
+    .section-inner { max-width: 1200px; margin: 0 auto; }
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; padding: 24px; transition: border-color .3s; }
+    
+    .tab-btn { padding: .6rem 1rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-elevated); color: var(--text-dim); cursor: pointer; font-family: var(--font-ui); font-weight: 600; font-size: .85rem; transition: all .2s; }
+    .tab-btn:hover { color: var(--text); border-color: var(--border-light); }
+    .tab-btn.active { background: var(--amber-glow); color: var(--amber); border-color: var(--amber); }
+
+    .domain-content { display: none; animation: fadeIn 0.3s ease; }
+    .domain-content.active { display: block; }
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    .insight { border-left: 3px solid var(--amber); padding: .8rem 1rem; background: var(--amber-glow); border-radius: 0 8px 8px 0; font-size: .88rem; line-height: 1.6; color: var(--text-muted); margin-bottom: 1rem; }
+    .insight strong { color: var(--amber); }
+
+    .flex-layout { display: flex; gap: 1.5rem; }
+    .reading-col { flex: 1.2; min-width: 320px; }
+    .visual-col { flex: 1; min-width: 280px; }
+    
+    .canvas-wrap { position: relative; background: #0d0d10; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; min-height: 380px; }
+    .canvas-wrap canvas { display: block; width: 100%; height: 100%; }
+
+    .btn { display: inline-flex; align-items: center; gap: .5rem; padding: .55rem 1.1rem; border-radius: 8px; font-size: .85rem; font-weight: 600; font-family: var(--font-ui); cursor: pointer; border: none; transition: all .2s; background: var(--amber); color: #000; }
+    .btn:hover { transform: translateY(-1px); background: #fcd34d; }
+
+    input, textarea { width: 100%; padding: .6rem; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--font-body); resize: vertical; }
+    input:focus, textarea:focus { border-color: var(--amber); outline: none; }
+
+    @media(max-width: 800px) {
+      .flex-layout { flex-direction: column-reverse !important; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav-bar">
+    <div class="nav-inner">
+      <span style="font-family: var(--font-ui); font-weight: 700; font-size: .85rem; color: var(--amber);">ORCHESTRATION LAYER</span>
+      <div class="nav-links">
+        <a href="#subsystems" class="nav-link active" data-section="subsystems">6 Subsystems</a>
+        <a href="#crossdomain" class="nav-link" data-section="crossdomain">Cross-Context</a>
+        <a href="#builder" class="nav-link" data-section="builder">Framework Builder</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="section" style="min-height: 80vh; display: flex; align-items: center; justify-content: center; text-align: center;">
+    <div style="max-width: 720px; padding: 0 1rem;">
+      <p style="font-size: .85rem; font-weight: 500; letter-spacing: .1em; color: var(--amber); margin-bottom: 1rem;">LESSON 08 — ORCHESTRATION LAYER</p>
+      <h1 style="font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 1.5rem;">
+        Multi-Context Transfer<br><span style="color: var(--text-muted); font-weight: 300;">The 6 CCP Subsystems</span>
+      </h1>
+      <p style="font-size: 1.1rem; color: var(--text-muted); max-width: 520px; margin: 0 auto; line-height: 1.7;">
+        A single fundamental truth (Event loop health via explicit delegation) solves completely different engineering constraints depending on the CCP subsystem you operate within.
+      </p>
+    </div>
+  </header>
+
+  <!-- THE 6 SUBSYSTEMS -->
+  <section id="subsystems" class="section">
+    <div class="section-inner">
+      <p style="font-size: .82rem; font-weight: 500; letter-spacing: .1em; color: var(--teal); margin-bottom: .5rem;">01 — SYSTEM WIDE MAPPING</p>
+      <h2 style="font-size: 1.8rem; font-weight: 700; margin-bottom: 1.5rem;">The Subsystem Tour</h2>
+      
+      <div style="display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.5rem;">
+        <button class="tab-btn active" data-target="chassis"><i class="fas fa-server"></i> FastAPI Chassis</button>
+        <button class="tab-btn" data-target="qa"><i class="fas fa-clipboard-check"></i> Sovereign QA</button>
+        <button class="tab-btn" data-target="machinist"><i class="fas fa-cogs"></i> The Machinist</button>
+        <button class="tab-btn" data-target="robot"><i class="fas fa-robot"></i> Robot Arm</button>
+        <button class="tab-btn" data-target="memory"><i class="fas fa-database"></i> Memory Engine</button>
+        <button class="tab-btn" data-target="skill"><i class="fas fa-graduation-cap"></i> Skill Compiler</button>
+      </div>
+
+      <div class="flex-layout">
+        <div class="reading-col">
+          
+          <div id="chassis" class="domain-content active">
+            <h3 style="font-size: 1.3rem; margin-bottom: 1rem; color: var(--amber);">FastAPI Chassis</h3>
+            <p style="color: var(--text-muted); line-height: 1.7; margin-bottom: .75rem;"><strong>The Constraint:</strong> WebSocket connections represent real-time voice streams. Dead air breaks the psychological bridge.</p>
+            <div class="insight"><strong>The Execution:</strong> <code>await websocket.receive()</code>.<br>We yield control back to the exact client endpoint only when network data arrives, allowing thousands of simultaneous live connections to multiplex over a single thread.</div>
+          </div>
+
+          <div id="qa" class="domain-content">
+            <h3 style="font-size: 1.3rem; margin-bottom: 1rem; color: var(--amber);">Sovereign QA Subsystem</h3>
+            <p style="color: var(--text-muted); line-height: 1.7; margin-bottom: .75rem;"><strong>The Constraint:</strong> Validating agentic payloads requires 15 concurrent LLM calls to check for hallucination, brand-voice, and logic.</p>
+            <div class="insight"><strong>The Execution:</strong> <code>asyncio.gather(*tasks)</code>.<br>Instead of taking 15×2 seconds to evaluate, the QA subsystem executes all checks in exactly 2 seconds of wall-clock time by awaiting the entire batch.</div>
+          </div>
+
+          <div id="machinist" class="domain-content">
+            <h3 style="font-size: 1.3rem; margin-bottom: 1rem; color: var(--amber);">The Machinist Manager</h3>
+            <p style="color: var(--text-muted); line-height: 1.7; margin-bottom: .75rem;"><strong>The Constraint:</strong> The Machinist must boot up worker Pi agents on the fly, via shell commands, without blocking its own supervision loop.</p>
+            <div class="insight"><strong>The Execution:</strong> <code>asyncio.create_subprocess_exec()</code>.<br>The OS handles the Pi subprocess execution while the Machinist listens for health-check signals via async pipes.</div>
+          </div>
+
+          <div id="robot" class="domain-content">
+            <h3 style="font-size: 1.3rem; margin-bottom: 1rem; color: var(--amber);">Pi Robot Arm (ElevenLabs)</h3>
+            <p style="color: var(--text-muted); line-height: 1.7; margin-bottom: .75rem;"><strong>The Constraint:</strong> Audio bytes from TTS arrive in chunks, not all at once.</p>
+            <div class="insight"><strong>The Execution:</strong> <code>async for chunk in tts.stream():</code>.<br>The loop yields control while waiting for the next TCP packet of audio to arrive, allowing the pipeline to process earlier chunks instantly.</div>
+          </div>
+
+          <div id="memory" class="domain-content">
+            <h3 style="font-size: 1.3rem; margin-bottom: 1rem; color: var(--amber);">Neo4j Memory Engine</h3>
+            <p style="color: var(--text-muted); line-height: 1.7; margin-bottom: .75rem;"><strong>The Constraint:</strong> Writing the finalized coaching transcript to the graph database post-call.</p>
+            <div class="insight"><strong>The Execution:</strong> <code>asyncio.create_task(db.write())</code>.<br>Fire-and-forget. We don't await the result. The task operates in the background, allowing the websocket to cleanly disconnect without making the client wait for database I/O.</div>
+          </div>
+
+          <div id="skill" class="domain-content">
+            <h3 style="font-size: 1.3rem; margin-bottom: 1rem; color: var(--amber);">Skill Compiler (DSPy)</h3>
+            <p style="color: var(--text-muted); line-height: 1.7; margin-bottom: .75rem;"><strong>The Constraint:</strong> Extensive CPU-bound prompt optimization via synthetic data generation.</p>
+            <div class="insight" style="border-color: var(--rose); background: rgba(244,63,94,0.1);"><strong>The Danger:</strong> CPU-bound tasks (math, deep parsing) <strong>do not benefit from async</strong> and will starve the loop. They must be exiled using <code>loop.run_in_executor()</code> or run in a separate synchronous worker process.</div>
+          </div>
+
+        </div>
+
+        <div class="visual-col">
+          <div class="canvas-wrap">
+            <canvas id="sysCanvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CROSS-CONTEXT -->
+  <section id="crossdomain" class="section">
+    <div class="section-inner">
+      <p style="font-size: .82rem; font-weight: 500; letter-spacing: .1em; color: var(--violet); margin-bottom: .5rem;">02 — CROSS-CONTEXT INVARIANTS</p>
+      <h2 style="font-size: 1.8rem; font-weight: 700; margin-bottom: 1.5rem;">The "Cost of Ignorance" Matrix</h2>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        
+        <div class="card" style="border-left: 3px solid var(--rose);">
+          <h4 style="color: var(--rose); margin-bottom: .5rem;">If Chassis ignores Async</h4>
+          <p style="font-size: .85rem; color: var(--text-muted); line-height: 1.5;">Capacity drops from 2,000 WebSocket users to exactly 1. The entire platform queues sequentially behind the slowest speaker.</p>
+        </div>
+        
+        <div class="card" style="border-left: 3px solid var(--amber);">
+          <h4 style="color: var(--amber); margin-bottom: .5rem;">If QA ignores Async</h4>
+          <p style="font-size: .85rem; color: var(--text-muted); line-height: 1.5;">Validation takes 30 seconds instead of 2. The pipeline latency exceeds the human conversational threshold. The product fails.</p>
+        </div>
+        
+        <div class="card" style="border-left: 3px solid var(--violet);">
+          <h4 style="color: var(--violet); margin-bottom: .5rem;">If Memory Engine ignores Async</h4>
+          <p style="font-size: .85rem; color: var(--text-muted); line-height: 1.5;">The client experiences an artificial 3-second delay when attempting to end the call, because the server makes them wait while Neo4j writes data to disk.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- BUILDER -->
+  <section id="builder" class="section">
+    <div class="section-inner" style="max-width: 800px;">
+      <p style="font-size: .82rem; font-weight: 500; letter-spacing: .1em; color: var(--emerald); margin-bottom: .5rem;">03 — ARCHITECTURAL COMMAND</p>
+      <h2 style="font-size: 1.8rem; font-weight: 700; margin-bottom: 1.5rem;">Build-Your-Own Isolation Strategy</h2>
+      
+      <div style="background: var(--bg-elevated); border: 1px dashed var(--amber); border-radius: 12px; padding: 2rem;">
+        <p style="color: var(--text-muted); font-size: .95rem; line-height: 1.7; margin-bottom: 1.5rem;">Suppose you are building a completely new subsystem: the "Avatar Rendering Engine". It combines rapid API calls to fetch 3D coordinates, with heavy 10-second CPU calculations to generate visual paths.</p>
+        
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: .8rem; color: var(--text-dim); margin-bottom: .3rem;">How do you handle the network API calls?</label>
+          <input id="ans1" type="text" placeholder="I would use...">
+        </div>
+        
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: .8rem; color: var(--text-dim); margin-bottom: .3rem;">How do you handle the 10-second CPU calculation without freezing the Event Loop?</label>
+          <input id="ans2" type="text" placeholder="I would use...">
+        </div>
+        
+        <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+          <button class="btn" onclick="checkBuilder()"><i class="fas fa-check"></i> Evaluate Strategy</button>
+        </div>
+
+        <div id="builder-feedback" style="display:none; margin-top:16px; padding:16px; background:rgba(16,185,129,0.1); border:1px solid #10b981; border-radius:8px; color:#10b981;"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer style="text-align: center; padding: 2.5rem 1rem; color: var(--text-dim); font-size: .8rem; border-top: 1px solid var(--border); margin-top: 2rem;">
+    Interactive Visual Learning — Lesson 08: Orchestration Layer
+  </footer>
+
+  <script>
+    // Canvas Visualization for Subsystems
+    const canvas = document.getElementById('sysCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    function resize() {
+      const p = canvas.parentElement;
+      canvas.width = p.offsetWidth;
+      canvas.height = p.offsetHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    let domain = 'chassis';
+    let t = 0;
+
+    function renderCanvas() {
+      ctx.fillStyle = '#0d0d10';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "rgba(245,158,11,0.8)";
+      ctx.font = "14px Space Grotesk";
+      ctx.fillText(domain.toUpperCase() + " OPERATION", 20, 25);
+
+      if (domain === 'chassis') {
+         // Multiplexed connections hitting a single loop
+         for(let i=0; i<6; i++) {
+           let offset = (t * 2 + i*20) % 300;
+           ctx.fillStyle = `rgba(20,184,166,${1 - offset/300})`;
+           ctx.beginPath(); ctx.arc(canvas.width/2 - 150 + offset, 50 + i*40, 5, 0, Math.PI*2); ctx.fill();
+         }
+         ctx.setLineDash([5,5]);
+         ctx.strokeStyle = "rgba(255,255,255,0.2)";
+         ctx.beginPath(); ctx.moveTo(canvas.width/2+100, 30); ctx.lineTo(canvas.width/2+100, 280); ctx.stroke();
+         ctx.setLineDash([]);
+      }
+      else if (domain === 'qa') {
+         // gather(*tasks)
+         let burst = t % 100;
+         ctx.fillStyle = "rgba(139,92,246,0.6)";
+         if (burst < 50) {
+            for(let i=0; i<8; i++) {
+               ctx.fillRect(50 + burst*4, 40 + i*30, 20, 10);
+            }
+         } else {
+            ctx.fillStyle = "rgba(16,185,129,0.8)";
+            ctx.fillRect(canvas.width/2 + 50, 40, 30, 240);
+            ctx.fillStyle = "white"; ctx.fillText("GATHERED = 2 SECONDS", canvas.width/2+90, 160);
+         }
+      }
+      // ... simplistic fillers for others
+      else {
+         let wave = Math.sin(t * 0.05) * 20;
+         ctx.fillStyle = "rgba(244,63,94,0.4)";
+         ctx.fillRect(canvas.width/2 - 50, canvas.height/2 - 50 + wave, 100, 100);
+         ctx.fillStyle = "#fff";
+         ctx.fillText("Abstract Node", canvas.width/2 - 40, canvas.height/2 + wave);
+      }
+
+      t++;
+      requestAnimationFrame(renderCanvas);
+    }
+    renderCanvas();
+
+    // Tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        domain = btn.dataset.target;
+        document.querySelectorAll('.domain-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(domain).classList.add('active');
+        t = 0; // reset anim
+      });
+    });
+
+    function checkBuilder() {
+      const a1 = document.getElementById('ans1').value.toLowerCase();
+      const a2 = document.getElementById('ans2').value.toLowerCase();
+      const fb = document.getElementById('builder-feedback');
+
+      if ((a1.includes('await') || a1.includes('async')) && (a2.includes('executor') || a2.includes('process') || a2.includes('sync'))) {
+         fb.style.display = 'block';
+         fb.style.color = '#10b981';
+         fb.style.borderColor = '#10b981';
+         fb.style.background = 'rgba(16,185,129,0.1)';
+         fb.innerHTML = '<strong>Architecture Valid.</strong> Network calls are awaited via the async Event Loop, while heavy CPU matrix math is exiled via `run_in_executor()` or process handlers so it does not block the WebSocket streams.';
+      } else {
+         fb.style.display = 'block';
+         fb.style.color = '#f43f5e';
+         fb.style.borderColor = '#f43f5e';
+         fb.style.background = 'rgba(244,63,94,0.1)';
+         fb.innerHTML = '<strong>Subsystem Failure.</strong> You must mix architectures. Heavy CPU processing inside the Event Loop causes starvation. Utilize `await` for the network, but exile the math to an executor.';
+      }
+    }
+  </script>
+</body>
+</html>

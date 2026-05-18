@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orchestration Layer — Environment Variables</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+  --sky:#38bdf8;--sky-glow:rgba(56,189,248,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--amber);background:rgba(245,158,11,0.08);padding:.1em .4em;border-radius:4px;}
+pre code{background:transparent;padding:0;color:var(--text-muted);}
+pre{background:var(--bg-elevated);border:1px solid var(--border);padding:1rem;border-radius:8px;overflow-x:auto;margin-bottom:1.5rem;font-size:.85rem;line-height:1.6;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;padding:1.5rem;margin-bottom:1.5rem;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;height:450px;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1;min-width:300px;}
+.visual-col{flex:1.2;min-width:320px;}
+
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);margin-bottom:1rem;}
+.insight strong{color:var(--amber);}
+.insight.rose{border-color:var(--rose);background:var(--rose-glow);}
+.insight.emerald{border-color:var(--emerald);background:var(--emerald-glow);}
+
+.env-switch{display:flex;gap:1rem;margin-bottom:1rem;}
+.env-btn{padding:.6rem 1rem;background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-family:'JetBrains Mono';font-size:.85rem;transition:all .2s;}
+.env-btn.active{background:rgba(20,184,166,0.1);border-color:var(--teal);color:var(--teal);}
+
+.subsystem-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+@media(max-width:768px){
+  .flex-layout{flex-direction:column-reverse!important;}
+  .subsystem-grid{grid-template-columns:1fr;}
+}
+
+.quiz-option{display:block;width:100%;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:.88rem;color:var(--text-muted);transition:all .25s;text-align:left;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;}
+.quiz-option:hover{border-color:var(--border-light);color:var(--text);}
+.quiz-option.correct{border-color:var(--emerald);color:var(--emerald);background:var(--emerald-glow);}
+.quiz-option.wrong{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+.quiz-option.disabled{pointer-events:none;opacity:.6;}
+.quiz-explanation{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+.quiz-explanation.show{max-height:300px;}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--violet);">ENV VARS</span>
+    <div class="nav-links">
+      <a href="#switchboard" class="nav-link active" data-section="switchboard">Switchboard</a>
+      <a href="#subsystems" class="nav-link" data-section="subsystems">Subsystems</a>
+      <a href="#challenges" class="nav-link" data-section="challenges">Challenges</a>
+    </div>
+  </div>
+</nav>
+
+<section id="switchboard" class="section" style="padding-top:7rem;">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:.5rem;">01 — THE CONTROL ROOM</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Orchestrator Switchboard</h2>
+    <div class="flex-layout">
+      <div class="visual-col">
+        <div class="canvas-wrap">
+          <canvas id="switchboardCanvas"></canvas>
+        </div>
+      </div>
+      <div class="reading-col">
+        <p style="color:var(--text-muted);margin-bottom:1.5rem;line-height:1.7;">
+          Environment variables establish a sovereign boundary. The architecture externalizes thresholds, credentials, and routing globally. Observe how toggling the `DEPLOY_ENV` instantly cascades radically different constraints across 6 distinct subsystems simultaneously—without a single line of python changing.
+        </p>
+        <div class="env-switch" id="envDeploy">
+          <button class="env-btn active" data-env="production">DEPLOY_ENV="production"</button>
+          <button class="env-btn" data-env="staging">DEPLOY_ENV="staging"</button>
+        </div>
+        <div class="insight">
+          <strong>Production Mode:</strong> Strict fallbacks, highly secure bounds, Qwen-72b routing, deep Pi Harness recursion timeout limits.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="subsystems" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">02 — STRUCTURAL CONTINUITY</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">The 6-System Case Study</h2>
+    
+    <div class="subsystem-grid">
+      <!-- Chassis -->
+      <div class="card" style="border-left:3px solid var(--sky);">
+        <h4 style="color:var(--sky);margin-bottom:.5rem;font-size:1rem;"><i class="fas fa-server"></i> FastAPI Chassis</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem;">Deterministic Orchestrator & API Router</p>
+<pre><code>host = os.environ.get("CCP_HOST", "0.0.0.0")
+port = int(os.environ.get("CCP_PORT", "8000"))
+uvicorn.run(app, host=host, port=port)</code></pre>
+        <div class="insight" style="margin:0;"><strong>The Strict Crash:</strong> Network bindings dictate physical layer routing. If the port string fails to parse to integer, the sequence crashes with ValueError.</div>
+      </div>
+      
+      <!-- QA -->
+      <div class="card" style="border-left:3px solid var(--rose);">
+        <h4 style="color:var(--rose);margin-bottom:.5rem;font-size:1rem;"><i class="fas fa-microscope"></i> Pydantic QA</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem;">Immutable Data Contracts</p>
+<pre><code>MAX_RETRIES = int(os.environ.get("RETRY", "3"))
+
+@model_validator(mode='after')
+def enfore(self):
+    if self.count > MAX_RETRIES:
+        raise ValueError("Budget exceeded")</code></pre>
+        <div class="insight" style="margin:0;"><strong>The Number Trap:</strong> Pydantic dictates mathematical speed limits. Mismanagement here produces massive TypeErrors at runtime validation.</div>
+      </div>
+
+      <!-- DSPy -->
+      <div class="card" style="border-left:3px solid var(--emerald);">
+        <h4 style="color:var(--emerald);margin-bottom:.5rem;font-size:1rem;"><i class="fas fa-network-wired"></i> DSPy Machinist</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem;">Optimization Compiler</p>
+<pre><code>url = os.environ["NIM_ENDPOINT"]
+name = os.environ.get("MODEL", "qwen")
+lm = dspy.LM(model=name, api_base=url)</code></pre>
+        <div class="insight" style="margin:0;"><strong>The Safe Fallback:</strong> If explicit dynamic endpoints drop, safe routing default `qwen` keeps the execution pipeline alive without developer intervention.</div>
+      </div>
+
+      <!-- Pi -->
+      <div class="card" style="border-left:3px solid var(--amber);">
+        <h4 style="color:var(--amber);margin-bottom:.5rem;font-size:1rem;"><i class="fas fa-robot"></i> Pi Harness</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem;">Execution Sandbox bounds</p>
+<pre><code>budget = int(os.environ.get("TIMEOUT", "45"))
+try:
+    subprocess.run(["bash","-c",cmd], timeout=budget)
+except subprocess.TimeoutExpired:
+    return "__error.md"</code></pre>
+        <div class="insight" style="margin:0;"><strong>The Number Trap:</strong> Unforgiving timeouts. Evaluates strings immediately into operational integers guarding against recursive logic infinite loops.</div>
+      </div>
+
+      <!-- Memory -->
+      <div class="card" style="border-left:3px solid var(--violet);">
+        <h4 style="color:var(--violet);margin-bottom:.5rem;font-size:1rem;"><i class="fas fa-database"></i> Neo4j Memory Engine</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem;">Context DB Credentials</p>
+<pre><code>uri = os.environ.get("NEO4J_URI")
+# MUST NOT FALLBACK!
+password = os.environ["NEO4J_PASSWORD"] </code></pre>
+        <div class="insight" style="margin:0;"><strong>The Strict Crash:</strong> Authentication fails closed. Omitting `NEO4J_PASSWORD` ensures KeyError, protecting active DB graphs from unauthorized states.</div>
+      </div>
+
+      <!-- JIT -->
+      <div class="card" style="border-left:3px solid var(--teal);">
+        <h4 style="color:var(--teal);margin-bottom:.5rem;font-size:1rem;"><i class="fas fa-bolt"></i> JIT Skill Compiler</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);margin-bottom:1rem;">Dynamic Pipeline Branching</p>
+<pre><code>enable_humor = (os.environ.get("HUMOR", "False") == "True")
+if enable_humor:
+    prompt += " Use humor primitives."</code></pre>
+        <div class="insight" style="margin:0;"><strong>Feature Flags:</strong> Safely evaluates the string condition. Real-time extraction of behavior vectors without pushing compiled codebase changes.</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Capstone Gauntlet -->
+<section id="challenges" class="section">
+  <div class="section-inner" style="max-width:800px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--rose);margin-bottom:.5rem;">03 — CRITICAL THINKING</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Defect Identification</h2>
+    <div id="quizContainer" style="display:flex;flex-direction:column;gap:1.5rem;"></div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);margin-top:2rem;">
+  Interactive Visual Learning — Lesson 10: Environment Variables Orchestration Layer
+</footer>
+
+<script>
+const DPR = window.devicePixelRatio || 1;
+function setupCanvas(c) {
+  const p = c.parentElement; const r = p.getBoundingClientRect();
+  c.width = r.width * DPR; c.height = r.height * DPR;
+  c.style.width = r.width + 'px'; c.style.height = r.height + 'px';
+  const ctx = c.getContext('2d'); ctx.scale(DPR, DPR);
+  return { ctx, w: r.width, h: r.height };
+}
+
+/* Switchboard Canvas */
+(function(){
+  const c = document.getElementById('switchboardCanvas');
+  let envMode = 'production';
+  let t = 0;
+
+  document.querySelectorAll('#envDeploy .env-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('#envDeploy .env-btn').forEach(b=>b.classList.remove('active'));
+      e.target.classList.add('active');
+      envMode = e.target.dataset.env;
+    });
+  });
+
+  function draw() {
+    const {ctx, w, h} = setupCanvas(c);
+    ctx.clearRect(0,0,w,h);
+    
+    const cx = w/2, cy = h/2;
+    const r = Math.min(w,h)*0.35;
+    
+    // Core Env Node
+    ctx.beginPath(); ctx.arc(cx, cy, 30, 0, Math.PI*2);
+    ctx.fillStyle = envMode==='production' ? '#f59e0b' : '#14b8a6'; ctx.fill();
+    ctx.textAlign='center'; ctx.fillStyle='#000'; ctx.font='bold 14px Space Grotesk';
+    ctx.fillText('ENV', cx, cy+5);
+
+    const subsystems = [
+      {label: 'FastAPI', p:'Port: 443', s:'Port: 8000', col:'#38bdf8'},
+      {label: 'Pydantic', p:'Retries: 1', s:'Retries: 3', col:'#f43f5e'},
+      {label: 'DSPy', p:'Model: qwen-72', s:'Model: gemma-4', col:'#10b981'},
+      {label: 'Pi Harness', p:'Time: 45s', s:'Time: 90s', col:'#f59e0b'},
+      {label: 'Neo4j', p:'Auth: Strict', s:'Auth: Bypass', col:'#8b5cf6'},
+      {label: 'Skill Compiler', p:'Humor: False', s:'Humor: True', col:'#14b8a6'},
+    ];
+
+    subsystems.forEach((sub, i) => {
+      const angle = (i/subsystems.length)*Math.PI*2 - Math.PI/2;
+      const nx = cx + Math.cos(angle)*r;
+      const ny = cy + Math.sin(angle)*r;
+      
+      // Line
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(nx, ny);
+      ctx.strokeStyle = `rgba(255,255,255,0.1)`; ctx.lineWidth=2; ctx.stroke();
+      
+      // Pulse
+      const pOff = ((t+i*20)%100)/100;
+      const px = cx + Math.cos(angle)*(r*pOff);
+      const py = cy + Math.sin(angle)*(r*pOff);
+      ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI*2);
+      ctx.fillStyle = envMode==='production' ? '#f59e0b' : '#14b8a6'; ctx.fill();
+
+      // Node
+      ctx.beginPath(); ctx.arc(nx, ny, 8, 0, Math.PI*2);
+      ctx.fillStyle=sub.col; ctx.fill();
+
+      // Text
+      ctx.fillStyle='#fafafa'; ctx.font='11px Space Grotesk';
+      ctx.fillText(sub.label, nx, ny + (ny>cy?20:-15));
+      ctx.fillStyle=sub.col; ctx.font='10px JetBrains Mono';
+      ctx.fillText(envMode==='production'?sub.p:sub.s, nx, ny + (ny>cy?35:-25));
+    });
+
+    t += 0.5;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* Quiz */
+(function(){
+  const questions = [
+    {q: 'config_timeout = os.environ.get("TIMEOUT_LIMIT")\nrun_loop(duration=config_timeout)\n\nWhat is the subsystem and subtle defect here?',
+     opts: ['Chassis; It is missing bool() cast.', 'Pi Harness; If TIMEOUT_LIMIT is missing, None is passed into duration, causing an aggressive crash or infinite loop without int() casting.', 'DSPy; It connects to a bad endpoint.', 'JIT; Pydantic cannot track None.'],
+     correct: 1, explanation: 'The Pi Harness sandbox boundary breaks. If omitted, duration is None, breaking subprocess timeout protections directly.'},
+    {q: 'neo4j_password = os.environ.get("NEO4J_PASS", "default_admin")\nconnect(neo4j_password)\n\nWhy is this a severe defect in the Memory Engine?',
+     opts: ['Strings are not secure lengths.', 'Dict lookup is slower than native memory.', 'If the key is missing, it falls back to authenticating with a literal default string "default_admin", failing OPEN instead of CLOSED securely.', 'It does not use BaseSettings.'],
+     correct: 2, explanation: 'Security boundaries mandate failing closed (KeyError). Fallbacks on auth strings leave database routes actively exploitable by default values.'},
+    {q: 'debug_state = bool(os.environ.get("DEBUG_MODE"))\nif debug_state: bypass_auth()\n\nHow does this code behave if the OS dictates DEBUG_MODE="False"?',
+     opts: ['It works correctly and keeps Auth enabled.', 'It parses to False.', 'The string "False" evaluates to True natively in Python, actively bypassing all routing Auth protocols globally.', 'It causes an HTTP 500 error.'],
+     correct: 2, explanation: 'The Boolean String Trap. "False" is a non-empty string evaluating to true. It critically breaks the FastAPI Chassis routing guard.'}
+  ];
+
+  const container = document.getElementById('quizContainer');
+  questions.forEach((q,qi) => {
+    const card = document.createElement('div'); card.className = 'card';
+    let optsHTML = ''; q.opts.forEach((o,oi) => { optsHTML += `<button class="quiz-option" data-q="${qi}" data-o="${oi}">${o}</button>`; });
+    card.innerHTML = `<p style="font-size:.82rem;font-weight:600;color:var(--text-dim);margin-bottom:.75rem;">Challenge ${qi+1}</p>
+      <pre><code>${q.q}</code></pre>
+      <div id="qO${qi}">${optsHTML}</div>
+      <div class="quiz-explanation" id="qE${qi}" style="margin-top:.75rem;"><div class="insight emerald">${q.explanation}</div></div>`;
+    container.appendChild(card);
+  });
+
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('.quiz-option'); if(!btn) return;
+    const qi = +btn.dataset.q, oi = +btn.dataset.o;
+    const opts = document.querySelectorAll(`#qO${qi} .quiz-option`);
+    if(opts[0].classList.contains('disabled')) return;
+    opts.forEach((o,i) => {
+      o.classList.add('disabled');
+      if(i===questions[qi].correct) o.classList.add('correct');
+      else if(i===oi && oi!==questions[qi].correct) o.classList.add('wrong');
+    });
+    document.getElementById(`qE${qi}`).classList.add('show');
+  });
+})();
+
+/* Nav */
+(function(){
+  const links=document.querySelectorAll('.nav-link');
+  const ids=['switchboard','subsystems','challenges'];
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+100; let active=ids[0];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+    links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));
+  });
+})();
+</script>
+</body>
+</html>

@@ -4,7 +4,7 @@ import { API_URL } from '../../lib/api';
 
 type ViewMode = 'GRID' | 'GALLERY' | 'LIST' | 'KANBAN';
 type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-type Category = 'TECH' | 'VEHICLE' | 'HEALTH' | 'GROCERY' | 'LIFESTYLE' | 'BUSINESS' | 'GENERAL';
+type Category = 'TECH' | 'VEHICLE' | 'HEALTH' | 'GROCERY' | 'LIFESTYLE' | 'BUSINESS' | 'GENERAL' | 'CAR' | 'RENT' | 'WEDDING';
 
 interface Investment {
     id: number;
@@ -24,18 +24,22 @@ interface Investment {
     unitPrice?: string;
     subItems?: Investment[];
     computedPrice?: number;
+    monthlyAllocation?: number;
     isAffordable?: boolean;
-    affordabilityType?: 'WEEKLY' | 'MONTHLY';
+    affordabilityType?: 'SINGLE_PURCHASE' | 'MONTHLY_ALLOCATION';
+    ruleViolation?: string;
     shortfall?: number;
-    videosNeeded?: number;
+    packagesNeeded?: number;
 }
 
 interface AffordabilityData {
     weeklyRevenue: number;
-    weeklyVideos: number;
+    weeklyPackages: number;
     monthlyRevenue: number;
-    monthlyVideos: number;
-    availableMonthly: number;
+    monthlyPackages: number;
+    maxMonthlyCapacity: number;
+    allocatedMonthlyCosts: number;
+    buckets: Record<string, { capacity: number, allocated: number }>;
     investments: Investment[];
 }
 
@@ -112,18 +116,18 @@ export const Investments = () => {
         CRITICAL: 'bg-blood/20 text-blood'
     };
 
-    const categoryIcons: Record<Category, string> = {
-        TECH: '💻',
-        VEHICLE: '🚗',
-        HEALTH: '💊',
-        GROCERY: '🛒',
-        LIFESTYLE: '✨',
-        BUSINESS: '💼',
-        GENERAL: '📦'
+    const categoryIcons: Record<string, string> = {
+        WIFE: '❤️',
+        DAUGHTER: '👧',
+        ME: '🧍‍♂️',
+        RENT: '🏠',
+        CAR: '🏎️',
+        WEDDING: '💍',
+        GROCERIES: '🛒'
     };
 
     return (
-        <div className="h-full flex flex-col p-4 gap-4 overflow-y-auto max-w-6xl mx-auto pb-24 scrollbar-hide">
+        <div className="flex flex-col p-4 gap-4">
             {/* HEADER */}
             <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
@@ -138,23 +142,41 @@ export const Investments = () => {
                 </button>
             </div>
 
-            {/* BUDGET SUMMARY */}
-            {affordability && (
-                <div className="grid grid-cols-3 gap-2 bg-steel/5 border border-steel/20 p-3">
-                    <div className="text-center">
-                        <div className="text-[10px] font-mono text-concrete/50 uppercase">Weekly Budget</div>
-                        <div className="text-xl font-black text-emerald-500">${affordability.weeklyRevenue}</div>
-                        <div className="text-[9px] font-mono text-concrete/30">{affordability.weeklyVideos} videos</div>
+            {/* BUDGET BUCKETS SUMMARY */}
+            {affordability && affordability.buckets && (
+                <div className="bg-steel/5 border border-steel/20 p-4 mb-2">
+                    <div className="flex justify-between items-center mb-4 pb-2 border-b border-steel/20">
+                        <div className="font-display font-black text-lg text-concrete uppercase tracking-widest">
+                            Baseline Allocation 
+                            <span className="text-[10px] font-mono text-concrete/40 ml-2">(${affordability.allocatedMonthlyCosts} / ${affordability.maxMonthlyCapacity} USED)</span>
+                        </div>
+                        <div className="text-[10px] font-mono text-emerald-500 uppercase font-bold">
+                            REST OF REVENUE: SECURED TO SAVINGS
+                        </div>
                     </div>
-                    <div className="text-center border-x border-steel/20">
-                        <div className="text-[10px] font-mono text-concrete/50 uppercase">Monthly Budget</div>
-                        <div className="text-xl font-black text-gold">${affordability.monthlyRevenue}</div>
-                        <div className="text-[9px] font-mono text-concrete/30">{affordability.monthlyVideos} videos</div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-[10px] font-mono text-concrete/50 uppercase">Large Purchases</div>
-                        <div className="text-xl font-black text-concrete">${affordability.availableMonthly}</div>
-                        <div className="text-[9px] font-mono text-concrete/30">after $1K buffer</div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {Object.entries(affordability.buckets).map(([key, bucket]) => {
+                            const available = bucket.capacity - bucket.allocated;
+                            const isFull = available <= 0;
+                            return (
+                                <div key={key} className={`border p-2 flex flex-col justify-between ${isFull ? 'border-blood/50 bg-blood/5' : 'border-steel/20 bg-void'}`}>
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="text-[10px] font-mono text-concrete/70 uppercase flex items-center gap-1">
+                                            {categoryIcons[key] || '📦'} {key}
+                                        </div>
+                                        <div className="text-[9px] font-mono text-concrete/40">
+                                            ${bucket.capacity} Cap
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className={`text-xl font-black ${isFull ? 'text-blood' : 'text-emerald-500'}`}>
+                                            ${available.toFixed(0)} <span className="text-[10px] font-mono text-concrete/40">LEFT</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}
@@ -226,7 +248,7 @@ export const Investments = () => {
                             {/* Header */}
                             <div className="flex justify-between items-start">
                                 <div className="flex items-center gap-2">
-                                    <span>{categoryIcons[inv.category as Category] || '📦'}</span>
+                                    <span>{categoryIcons[inv.category as string] || '📦'}</span>
                                     <h3 className="font-bold text-sm text-concrete">{inv.title}</h3>
                                 </div>
                                 <div className="flex items-center gap-1">
@@ -248,11 +270,18 @@ export const Investments = () => {
 
                             {/* Price */}
                             <div className="flex justify-between items-center">
-                                <div className="text-lg font-black text-gold">
-                                    ${(inv.computedPrice || parseFloat(inv.price || '0')).toFixed(2)}
+                                <div>
+                                    <div className="text-lg font-black text-gold">
+                                        ${(inv.computedPrice || parseFloat(inv.price || '0')).toFixed(2)}
+                                    </div>
+                                    {inv.affordabilityType === 'MONTHLY_ALLOCATION' && (
+                                        <div className="text-[9px] font-mono text-orange-400">
+                                            Auto-allocating ${inv.monthlyAllocation}/mo
+                                        </div>
+                                    )}
                                 </div>
                                 <div className={`text-[9px] font-mono ${inv.isAffordable ? 'text-emerald-500' : 'text-blood'}`}>
-                                    {inv.affordabilityType}
+                                    {inv.affordabilityType === 'MONTHLY_ALLOCATION' ? 'MONTHLY DRAW' : 'SINGLE BUY'}
                                 </div>
                             </div>
 
@@ -289,9 +318,15 @@ export const Investments = () => {
                             )}
 
                             {/* Affordability Badge */}
-                            <div className={`mt-auto py-1.5 text-center text-[10px] font-bold uppercase ${inv.isAffordable ? 'bg-emerald-500 text-void' : 'bg-blood text-white'}`}>
-                                {inv.isAffordable ? '✓ CAN AFFORD' : `NEED ${inv.videosNeeded} MORE VIDEOS`}
-                            </div>
+                            {inv.ruleViolation ? (
+                                <div className="mt-auto py-1.5 text-center text-[10px] font-bold uppercase bg-blood text-white truncate px-2">
+                                    {inv.ruleViolation}
+                                </div>
+                            ) : (
+                                <div className={`mt-auto py-1.5 text-center text-[10px] font-bold uppercase ${inv.isAffordable ? 'bg-emerald-500 text-void' : 'bg-blood text-white'}`}>
+                                    {inv.isAffordable ? '✓ CAN AFFORD' : `NEED ${inv.packagesNeeded} MORE PACKS`}
+                                </div>
+                            )}
 
                             {/* Actions */}
                             <div className="flex gap-2 flex-wrap">
@@ -364,7 +399,7 @@ const NewInvestmentModal = ({ onClose, onCreated }: { onClose: () => void; onCre
         description: '',
         price: '',
         priority: 'MEDIUM',
-        category: 'GENERAL',
+        category: 'GROCERIES',
         imageUrl: '',
         targetDate: '',
         isRecurring: false,
@@ -437,13 +472,13 @@ const NewInvestmentModal = ({ onClose, onCreated }: { onClose: () => void; onCre
                     onChange={e => setForm({ ...form, category: e.target.value })}
                     className="w-full bg-steel/10 border border-steel/20 p-3 text-sm font-mono text-concrete"
                 >
-                    <option value="GENERAL">📦 General</option>
-                    <option value="TECH">💻 Tech</option>
-                    <option value="VEHICLE">🚗 Vehicle</option>
-                    <option value="HEALTH">💊 Health</option>
-                    <option value="GROCERY">🛒 Grocery</option>
-                    <option value="LIFESTYLE">✨ Lifestyle</option>
-                    <option value="BUSINESS">💼 Business</option>
+                    <option value="GROCERIES">🛒 Groceries & Lifestyle ($510)</option>
+                    <option value="ME">🧍‍♂️ Me ($330)</option>
+                    <option value="WIFE">❤️ Wife ($330)</option>
+                    <option value="DAUGHTER">👧 Daughter ($330)</option>
+                    <option value="RENT">🏠 Rent ($600/mo)</option>
+                    <option value="CAR">🏎️ Car / Emergency ($600/mo)</option>
+                    <option value="WEDDING">💍 Wedding / Emergency ($600/mo)</option>
                 </select>
 
                 {/* Recurring Toggle */}
@@ -643,7 +678,7 @@ const AddSubItemModal = ({ parent, onClose, onAdd }: { parent: Investment; onClo
         description: '',
         quantity: 1,
         unitPrice: '',
-        category: 'GROCERY'
+        category: 'GROCERIES'
     });
 
     const handleAdd = () => {

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 02: Master Assessment</title>
+    <style>
+        :root {
+            --bg-term: #050505;
+            --text-term: #33ff33;
+            --text-amber: #ffb000;
+            --text-red: #ff3333;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            background-color: var(--bg-term);
+            color: var(--text-term);
+            font-family: var(--font-mono);
+            line-height: 1.5;
+            padding: 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 { font-weight: normal; margin-bottom: 1rem; border-bottom: 1px dotted var(--text-term); }
+        h1 { font-size: 1.5rem; text-transform: uppercase; }
+        
+        .timer-container {
+            position: fixed;
+            top: 20px;
+            right: 30px;
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--text-term);
+            background: #000;
+            padding: 10px;
+            border: 1px solid var(--text-term);
+            z-index: 1000;
+        }
+
+        .timer-pulse { animation: alertPulse 1s infinite; color: var(--text-red); border-color: var(--text-red); }
+        @keyframes alertPulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .raw-code {
+            background-color: #111;
+            padding: 1rem;
+            border: 1px solid #333;
+            white-space: pre;
+            margin-bottom: 1rem;
+            color: #ccc; /* Specifically not syntax highlighted */
+        }
+
+        textarea {
+            width: 100%;
+            background-color: #111;
+            color: var(--text-term);
+            border: 1px solid var(--text-term);
+            font-family: var(--font-mono);
+            padding: 1rem;
+            margin: 1rem 0;
+            resize: vertical;
+        }
+
+        textarea:focus { outline: none; border-color: var(--text-amber); }
+
+        .btn {
+            background-color: transparent;
+            color: var(--text-term);
+            border: 1px solid var(--text-term);
+            padding: 0.5rem 1rem;
+            font-family: var(--font-mono);
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        .btn:hover { background-color: var(--text-term); color: var(--bg-term); }
+
+        .triage-btn { border-color: #555; color: #aaa; margin-right: 0.5rem; }
+        .triage-btn.selected { background-color: var(--text-amber); color: #000; border-color: var(--text-amber); }
+
+        .grading-feedback {
+            margin-top: 1rem;
+            padding: 1rem;
+            border: 1px dashed var(--text-term);
+            display: none;
+        }
+
+        .feynman-status { font-size: 0.9rem; color: #aaa; margin-bottom: 1rem; }
+        .feynman-keyword { color: var(--text-amber); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="timer-container" id="timer">12:00</div>
+
+    <h1>TERMINAL CAPSTONE: DICTIONARIES & JSON</h1>
+    <p>TIME LIMIT: 12 MINUTES. EXTERNAL REFERENCING PROHIBITED.</p>
+
+    <!-- SECTION 1 -->
+    <h2>SEC 1: CONTRACT SPECIFICATION</h2>
+    <p>Scenario: You must bound the LLM's DSPy output mold. The JSON must return three pieces of data: execution script, confidence array of floats, and a dictionary of boolean risk flags.</p>
+    <p>ACTION: Define the exact DSPy <code>OutputField</code> declarations.</p>
+    <textarea id="spec-1" rows="5" placeholder="class LLMMold(dspy.Signature): ..."></textarea>
+
+    <!-- SECTION 2 -->
+    <h2>SEC 2: DEFECT TRIAGE</h2>
+    <p>CLASSIFY THE FOLLOWING SNIPPET'S STATUS.</p>
+
+    <div class="raw-code">
+async def broadcast_state(websocket: WebSocket, state_update: str):
+    # state_update arrives as "{"status": "active"}"
+    current_status = state_update["status"]
+    if current_status == "active":
+        await websocket.send_text("PROCEED")
+    </div>
+    
+    <div>
+        <button class="btn triage-btn" onclick="selectTriage(this)">✅ Correct</button>
+        <button class="btn triage-btn" onclick="selectTriage(this)">🔴 Omission</button>
+        <button class="btn triage-btn" onclick="selectTriage(this)">🟡 Hallucination</button>
+        <button class="btn triage-btn" onclick="selectTriage(this)" data-correct="true">🔵 Misapplication</button>
+    </div>
+    <textarea rows="2" placeholder="Provide architectural justification for the classification..."></textarea>
+
+    <!-- SECTION 3 -->
+    <h2>SEC 3: FEYNMAN COMPRESSION</h2>
+    <p>Explain why json.loads/dumps pipelines are critical for sovereign control. Include: [Memory Engine], [hallucinated keys/types], [QA Department].</p>
+    
+    <textarea id="feynman-text" rows="8" placeholder="Type explanation here..." oninput="evaluateFeynman()"></textarea>
+    <div class="feynman-status" id="feynman-status">Keywords detected: 0/3</div>
+
+    <button class="btn" style="width:100%; padding:1rem; margin-top: 2rem;" onclick="submitExam()">SUBMIT ASSESSMENT</button>
+
+    <div class="grading-feedback" id="grading">
+        <h3>AUTO-GRADING RESULTS</h3>
+        <p id="grade-summary"></p>
+    </div>
+
+    <script>
+        // Timer Logic
+        let timeRemaining = 12 * 60;
+        const timerEl = document.getElementById('timer');
+        const interval = setInterval(() => {
+            timeRemaining--;
+            let m = Math.floor(timeRemaining / 60);
+            let s = timeRemaining % 60;
+            timerEl.innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            
+            if(timeRemaining <= 60) timerEl.classList.add('timer-pulse');
+            
+            if(timeRemaining <= 0) {
+                clearInterval(interval);
+                timerEl.innerText = "00:00";
+                submitExam();
+            }
+        }, 1000);
+
+        // Triage Logic
+        function selectTriage(btn) {
+            let siblings = btn.parentElement.children;
+            for(let sb of siblings) sb.classList.remove('selected');
+            btn.classList.add('selected');
+        }
+
+        // Feynman Parsing
+        const keywords = ["memory engine", "hallucinated keys/types", "qa department"];
+        function evaluateFeynman() {
+            let text = document.getElementById('feynman-text').value.toLowerCase();
+            let count = 0;
+            keywords.forEach(k => {
+                if(text.includes(k) || (k === "hallucinated keys/types" && (text.includes("hallucinated keys") || text.includes("hallucinated types")))) {
+                    count++;
+                }
+            });
+            document.getElementById('feynman-status').innerHTML = `Keywords detected: <span class="${count === 3 ? 'feynman-keyword' : ''}">${count}/3</span>`;
+            return count;
+        }
+
+        // Submission Logic
+        function submitExam() {
+            clearInterval(interval);
+            document.querySelectorAll('textarea, button, input').forEach(el => el.disabled = true);
+            let kCount = evaluateFeynman();
+            let triaged = document.querySelector('.triage-btn.selected');
+            let tScore = (triaged && triaged.getAttribute('data-correct') === "true") ? "PASS" : "FAIL";
+
+            document.getElementById('grading').style.display = 'block';
+            document.getElementById('grade-summary').innerHTML = `
+                Triage Section: ${tScore}<br>
+                Feynman Fidelity: ${kCount}/3 Structural Pillars Present.<br>
+                > SUBMITTING LOGS TO FOREMAN DASHBOARD.
+            `;
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+    </script>
+</body>
+</html>

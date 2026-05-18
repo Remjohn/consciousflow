@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 03 - Master Layer</title>
+  <style>
+    :root {
+      --bg: #09090b;
+      --panel: #111114;
+      --line: rgba(255,255,255,0.08);
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --accent: #f97316;
+      --good: #22c55e;
+      --bad: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #0b0b0e 0%, #09090b 100%);
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+    }
+
+    .hud {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 20;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(9, 9, 11, 0.92);
+      font: 700 0.86rem/1 Arial, Helvetica, sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #f8fafc;
+    }
+
+    .shell {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 34px 18px 90px;
+    }
+
+    .hero,
+    .card,
+    .result {
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+      padding: 24px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 12px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 14px;
+      line-height: 1.08;
+      font-weight: 500;
+    }
+
+    h1 { font-size: clamp(2.2rem, 4vw, 3.8rem); }
+    h2 { font-size: clamp(1.4rem, 2.7vw, 2rem); }
+    h3 { font-size: 1.08rem; }
+    p { margin: 0 0 14px; }
+
+    .divider {
+      height: 1px;
+      margin: 22px 0;
+      background: linear-gradient(90deg, transparent, rgba(249,115,22,0.3), transparent);
+    }
+
+    .mono {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.95rem;
+    }
+
+    .meta {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 18px;
+    }
+
+    .meta div {
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .meta span {
+      display: block;
+      color: var(--muted);
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .card { margin-top: 18px; }
+
+    .qnum {
+      color: #fdba74;
+      font: 700 0.78rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .points {
+      color: var(--muted);
+      font: 700 0.8rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .choices {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .choice {
+      width: 100%;
+      text-align: left;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      transition: border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .choice.selected {
+      border-color: rgba(249,115,22,0.7);
+      background: rgba(249,115,22,0.08);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 170px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(249,115,22,0.55);
+      box-shadow: 0 0 0 4px rgba(249,115,22,0.12);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      padding: 14px 18px;
+      border-radius: 999px;
+      font: 700 0.94rem/1 Arial, Helvetica, sans-serif;
+      transition: transform 0.18s ease, opacity 0.18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .result {
+      margin-top: 22px;
+      display: none;
+    }
+
+    .result.show { display: block; }
+
+    .score {
+      font: 700 1.2rem/1.3 Arial, Helvetica, sans-serif;
+      margin-bottom: 14px;
+    }
+
+    .pass { color: var(--good); }
+    .fail { color: var(--bad); }
+
+    .breakdown {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .breakdown div {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .footnote {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.96rem;
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 720px) {
+      .hud {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        justify-content: space-between;
+      }
+      .meta { grid-template-columns: 1fr; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+      .shell { padding: 74px 14px 60px; }
+      .hero, .card, .result { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <span>Master Exam</span>
+    <span id="timer">10:00</span>
+  </div>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Lesson 03 - Master / Integration Layer</p>
+      <h1>Meaning is manufactured by weighted synthesis.</h1>
+      <div class="divider"></div>
+      <p>This is the terminal assessment for Linear Combinations and Spans. No diagrams. No basis-vector sketches. No convex-hull visuals. You either understand how transformers build meaning from weighted parts, or you do not.</p>
+      <div class="meta">
+        <div><span>Questions</span>12 total</div>
+        <div><span>Time</span>10 minutes</div>
+        <div><span>Passing Score</span>160 / 200</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="startExam()">Start exam</button>
+      </div>
+    </section>
+
+    <form id="examForm" class="hidden" onsubmit="return false;">
+      <section class="card">
+        <div class="qnum">Question 1</div>
+        <div class="points">10 points</div>
+        <h2>Definition</h2>
+        <p>What is a linear combination?</p>
+        <div class="choices" data-question="q1">
+          <button type="button" class="choice" onclick="pickChoice('q1','A',this)">Selecting one vector and copying it unchanged</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','B',this)">Multiplying vectors by scalars and summing the results</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','C',this)">Sorting vectors by magnitude only</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','D',this)">Projecting onto a perpendicular axis</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 2</div>
+        <div class="points">10 points</div>
+        <h2>Span meaning</h2>
+        <p>What does the span of a vector set represent?</p>
+        <input id="q2" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 3</div>
+        <div class="points">10 points</div>
+        <h2>Hard boundary</h2>
+        <p>If a direction is outside the span, what can coefficient changes do about it?</p>
+        <div class="choices" data-question="q3">
+          <button type="button" class="choice" onclick="pickChoice('q3','A',this)">Reach it if the coefficients are large enough</button>
+          <button type="button" class="choice" onclick="pickChoice('q3','B',this)">Approximate it perfectly with Softmax</button>
+          <button type="button" class="choice" onclick="pickChoice('q3','C',this)">Nothing; it remains unreachable without adding a new independent direction</button>
+          <button type="button" class="choice" onclick="pickChoice('q3','D',this)">Escape the span by averaging existing vectors harder</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 4</div>
+        <div class="points">10 points</div>
+        <h2>Attention restriction</h2>
+        <p>Because Softmax weights are non-negative and sum to 1, the attention output lies inside what geometric object?</p>
+        <input id="q4" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 5</div>
+        <div class="points">10 points</div>
+        <h2>Convex-hull consequence</h2>
+        <p>Can an attention output exceed the maximum component value among its value vectors on a single dimension?</p>
+        <div class="choices" data-question="q5">
+          <button type="button" class="choice" onclick="pickChoice('q5','A',this)">Yes, attention always amplifies the strongest token</button>
+          <button type="button" class="choice" onclick="pickChoice('q5','B',this)">No, a convex combination stays bounded by its inputs</button>
+          <button type="button" class="choice" onclick="pickChoice('q5','C',this)">Only if all weights are equal</button>
+          <button type="button" class="choice" onclick="pickChoice('q5','D',this)">Only in low dimensions</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 6</div>
+        <div class="points">10 points</div>
+        <h2>Head pruning</h2>
+        <p>Why can pruning an attention head remove a capability rather than just making the model smaller?</p>
+        <input id="q6" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 7</div>
+        <div class="points">10 points</div>
+        <h2>Dependent vectors</h2>
+        <p>If a new basis vector is already a combination of existing ones, what does it add to the span?</p>
+        <div class="choices" data-question="q7">
+          <button type="button" class="choice" onclick="pickChoice('q7','A',this)">A guaranteed new dimension</button>
+          <button type="button" class="choice" onclick="pickChoice('q7','B',this)">Nothing independent; it is redundant coverage</button>
+          <button type="button" class="choice" onclick="pickChoice('q7','C',this)">An escape route outside the subspace</button>
+          <button type="button" class="choice" onclick="pickChoice('q7','D',this)">Automatic convex amplification</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 8</div>
+        <div class="points">10 points</div>
+        <h2>Dynamic steering</h2>
+        <p>What is the core upgrade WAS makes over static activation steering?</p>
+        <input id="q8" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 9</div>
+        <div class="points">15 points</div>
+        <h2>Worked example</h2>
+        <p>In the lesson's attention example for <span class="mono">kind</span>, what does the output vector represent, and why is it called manufactured meaning rather than retrieval?</p>
+        <textarea id="q9" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 10</div>
+        <div class="points">15 points</div>
+        <h2>Steering stack</h2>
+        <p>Explain the difference between WAS, HYPERSteer, and RISER in terms of how they manage coefficients in a linear combination.</p>
+        <textarea id="q10" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 11</div>
+        <div class="points">15 points</div>
+        <h2>Cross-domain mapping</h2>
+        <p>Pick one non-AI analogy from the lesson and explain how span limits what is possible in that domain.</p>
+        <textarea id="q11" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 12</div>
+        <div class="points">35 points</div>
+        <h2>Feynman Compression</h2>
+        <p>Explain how linear combinations and spans determine what a transformer attention head or steering system can produce. Minimum length: 220 characters.</p>
+        <p class="footnote">Full credit requires all three structural elements: weighted summation from existing components, span as the boundary of reachable outputs, and the attention / steering constraint that outputs remain inside a limited region unless new independent directions are added.</p>
+        <textarea id="q12" placeholder="Write the mechanism, not a slogan."></textarea>
+      </section>
+
+      <div class="actions">
+        <button class="btn btn-primary" type="button" onclick="submitExam(false)">Submit exam</button>
+        <button class="btn btn-secondary" type="button" onclick="scrollToTop()">Back to top</button>
+      </div>
+    </form>
+
+    <section id="result" class="result">
+      <div class="eyebrow">Result</div>
+      <div id="scoreLine" class="score"></div>
+      <p id="resultSummary"></p>
+      <div id="breakdown" class="breakdown"></div>
+      <p id="timeoutNote" class="footnote"></p>
+    </section>
+  </main>
+
+  <script>
+    const answers = {};
+    let examStarted = false;
+    let examSubmitted = false;
+    let secondsRemaining = 600;
+    let timerHandle = null;
+
+    function pickChoice(question, value, element) {
+      if (examSubmitted) return;
+      answers[question] = value;
+      document.querySelectorAll('[data-question="' + question + '"] .choice').forEach((btn) => btn.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function startExam() {
+      if (examStarted) return;
+      examStarted = true;
+      document.getElementById('examForm').classList.remove('hidden');
+      window.scrollTo({ top: document.getElementById('examForm').offsetTop - 20, behavior: 'smooth' });
+      timerHandle = setInterval(tick, 1000);
+    }
+
+    function tick() {
+      if (examSubmitted) return;
+      secondsRemaining -= 1;
+      if (secondsRemaining <= 0) {
+        secondsRemaining = 0;
+        updateTimer();
+        submitExam(true);
+        return;
+      }
+      updateTimer();
+    }
+
+    function updateTimer() {
+      const mins = String(Math.floor(secondsRemaining / 60)).padStart(2, '0');
+      const secs = String(secondsRemaining % 60).padStart(2, '0');
+      document.getElementById('timer').textContent = mins + ':' + secs;
+    }
+
+    function textValue(id) {
+      return (document.getElementById(id)?.value || '').trim().toLowerCase();
+    }
+
+    function containsAny(value, options) {
+      return options.some((option) => value.includes(option));
+    }
+
+    function gradeRichText(value, keywordGroups) {
+      if (!value) return 0;
+      let hits = 0;
+      keywordGroups.forEach((group) => {
+        if (containsAny(value, group)) hits += 1;
+      });
+      return hits;
+    }
+
+    function submitExam(fromTimeout) {
+      if (examSubmitted) return;
+      examSubmitted = true;
+      clearInterval(timerHandle);
+
+      document.querySelectorAll('input, textarea, button.choice').forEach((el) => el.disabled = true);
+
+      let total = 0;
+      const breakdown = [];
+
+      const q1 = answers.q1 === 'B' ? 10 : 0;
+      total += q1;
+      breakdown.push(['Q1', q1, 'Linear combination = weighted sum']);
+
+      const q2hits = gradeRichText(textValue('q2'), [['all possible', 'reachable', 'outputs'], ['weights', 'coefficients'], ['subspace', 'frontier', 'boundary']]);
+      const q2 = Math.min(10, q2hits * 4);
+      total += q2;
+      breakdown.push(['Q2', q2, 'Span is the reachable output universe']);
+
+      const q3 = answers.q3 === 'C' ? 10 : 0;
+      total += q3;
+      breakdown.push(['Q3', q3, 'Outside the span is unreachable without new independent directions']);
+
+      const q4hits = gradeRichText(textValue('q4'), [['convex hull'], ['weighted average', 'softmax', 'non-negative']]);
+      const q4 = q4hits >= 1 ? 10 : 0;
+      total += q4;
+      breakdown.push(['Q4', q4, 'Attention output lies in the convex hull']);
+
+      const q5 = answers.q5 === 'B' ? 10 : 0;
+      total += q5;
+      breakdown.push(['Q5', q5, 'Convex combinations stay bounded by inputs']);
+
+      const q6hits = gradeRichText(textValue('q6'), [['span', 'subspace', 'dimension'], ['independent direction', 'orthogonal', 'capability'], ['cannot recover', 'lost', 'vanish']]);
+      const q6 = Math.min(10, q6hits * 4);
+      total += q6;
+      breakdown.push(['Q6', q6, 'Pruning can remove an entire expressive direction']);
+
+      const q7 = answers.q7 === 'B' ? 10 : 0;
+      total += q7;
+      breakdown.push(['Q7', q7, 'Dependent vectors add nothing new']);
+
+      const q8hits = gradeRichText(textValue('q8'), [['dynamic', 'adaptive', 'input-dependent'], ['weights', 'coefficients'], ['not fixed', 'not constant']]);
+      const q8 = Math.min(10, q8hits * 4);
+      total += q8;
+      breakdown.push(['Q8', q8, 'WAS makes coefficients context-sensitive']);
+
+      const q9hits = gradeRichText(textValue('q9'), [['weighted blend', 'composite', 'manufactured'], ['brave', 'kind', 'female subject', 'contextualized'], ['not retrieved', 'synthesized', 'constructed']]);
+      const q9 = Math.min(15, q9hits * 5);
+      total += q9;
+      breakdown.push(['Q9', q9, 'Attention manufactures a new composite representation']);
+
+      const q10hits = gradeRichText(textValue('q10'), [['was', 'dynamic weights', 'input-adaptive'], ['hypersteer', 'hypernetwork', 'language description'], ['riser', 'token-by-token', 'time-varying', 'dynamic support']]);
+      const q10 = Math.min(15, q10hits * 5);
+      total += q10;
+      breakdown.push(['Q10', q10, 'Steering systems differ by coefficient management sophistication']);
+
+      const q11hits = gradeRichText(textValue('q11'), [['football', 'audio', 'culinary', 'group', 'rpg'], ['span', 'boundary', 'cannot produce', 'unreachable'], ['new independent direction', 'new instrument', 'new archetype', 'new ingredient']]);
+      const q11 = Math.min(15, q11hits * 5);
+      total += q11;
+      breakdown.push(['Q11', q11, 'Cross-domain span limitation']);
+
+      const q12Value = textValue('q12');
+      let q12 = 0;
+      let missing = [];
+      if (q12Value.length < 220) {
+        missing = ['minimum length not met'];
+      } else {
+        const hasWeightedSum = containsAny(q12Value, ['weighted sum', 'sum alpha', 'multiply by scalars', 'combine existing components']);
+        const hasSpanBoundary = containsAny(q12Value, ['span', 'boundary', 'reachable', 'subspace', 'cannot exceed']);
+        const hasConstraint = containsAny(q12Value, ['attention', 'softmax', 'convex hull', 'steering', 'new independent direction', 'basis']);
+        const count = [hasWeightedSum, hasSpanBoundary, hasConstraint].filter(Boolean).length;
+        if (count === 3) q12 = 35;
+        if (count === 2) q12 = 22;
+        if (count < 2) q12 = 0;
+        if (!hasWeightedSum) missing.push('weighted summation from existing components');
+        if (!hasSpanBoundary) missing.push('span as the boundary of reachable outputs');
+        if (!hasConstraint) missing.push('attention / steering constraint on reachable region');
+      }
+      total += q12;
+      breakdown.push(['Q12', q12, missing.length ? 'Missing: ' + missing.join(', ') : 'All three structural elements present']);
+
+      const pass = total >= 160;
+      const scoreLine = document.getElementById('scoreLine');
+      scoreLine.textContent = total + ' / 200';
+      scoreLine.className = 'score ' + (pass ? 'pass' : 'fail');
+
+      document.getElementById('resultSummary').textContent =
+        pass
+          ? 'Passing threshold reached. The lesson held as a full mechanism: weighted synthesis, span as expressive frontier, and attention/steering as bounded composition systems.'
+          : 'Passing threshold not reached. The missing pieces are structural: weighted synthesis, span limits, or the bounded nature of attention and steering outputs is still unstable under pressure.';
+
+      const breakdownNode = document.getElementById('breakdown');
+      breakdownNode.innerHTML = '';
+      breakdown.forEach(([label, score, note]) => {
+        const row = document.createElement('div');
+        row.innerHTML = '<strong>' + label + ': ' + score + ' points</strong><br>' + note;
+        breakdownNode.appendChild(row);
+      });
+
+      document.getElementById('timeoutNote').textContent = fromTimeout
+        ? 'Exam auto-submitted at time expiration.'
+        : 'Exam submitted before time expiration.';
+
+      document.getElementById('result').classList.add('show');
+      document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    updateTimer();
+  </script>
+</body>
+</html>

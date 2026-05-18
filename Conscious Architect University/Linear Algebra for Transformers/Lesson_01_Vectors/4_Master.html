@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 01 - Master Layer</title>
+  <style>
+    :root {
+      --bg: #09090b;
+      --panel: #111114;
+      --line: rgba(255,255,255,0.08);
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --accent: #f97316;
+      --good: #22c55e;
+      --bad: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #0b0b0e 0%, #09090b 100%);
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+    }
+
+    .hud {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 20;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(9, 9, 11, 0.92);
+      font: 700 0.86rem/1 Arial, Helvetica, sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #f8fafc;
+    }
+
+    .hud .timer-warn { color: var(--bad); }
+
+    .shell {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 34px 18px 90px;
+    }
+
+    .hero,
+    .card,
+    .result {
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+      padding: 24px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 12px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 14px;
+      line-height: 1.08;
+      font-weight: 500;
+    }
+
+    h1 { font-size: clamp(2.2rem, 4vw, 3.8rem); }
+    h2 { font-size: clamp(1.4rem, 2.7vw, 2rem); }
+    h3 { font-size: 1.08rem; }
+    p { margin: 0 0 14px; }
+
+    .divider {
+      height: 1px;
+      margin: 22px 0;
+      background: linear-gradient(90deg, transparent, rgba(249,115,22,0.3), transparent);
+    }
+
+    .mono {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.95rem;
+    }
+
+    .meta {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 18px;
+    }
+
+    .meta div {
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .meta span {
+      display: block;
+      color: var(--muted);
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .card { margin-top: 18px; }
+
+    .qnum {
+      color: #fdba74;
+      font: 700 0.78rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .points {
+      color: var(--muted);
+      font: 700 0.8rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .choices {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .choice {
+      width: 100%;
+      text-align: left;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      transition: border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .choice.selected {
+      border-color: rgba(249,115,22,0.7);
+      background: rgba(249,115,22,0.08);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 170px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(249,115,22,0.55);
+      box-shadow: 0 0 0 4px rgba(249,115,22,0.12);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      padding: 14px 18px;
+      border-radius: 999px;
+      font: 700 0.94rem/1 Arial, Helvetica, sans-serif;
+      transition: transform 0.18s ease, opacity 0.18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .result {
+      margin-top: 22px;
+      display: none;
+    }
+
+    .result.show { display: block; }
+
+    .score {
+      font: 700 1.2rem/1.3 Arial, Helvetica, sans-serif;
+      margin-bottom: 14px;
+    }
+
+    .pass { color: var(--good); }
+    .fail { color: var(--bad); }
+
+    .breakdown {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .breakdown div {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .footnote {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.96rem;
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 720px) {
+      .hud {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        justify-content: space-between;
+      }
+      .meta { grid-template-columns: 1fr; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+      .shell { padding: 74px 14px 60px; }
+      .hero, .card, .result { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <span>Master Exam</span>
+    <span id="timer">10:00</span>
+  </div>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Lesson 01 - Master / Integration Layer</p>
+      <h1>A vector is the coordinate that tethers identity to space.</h1>
+      <div class="divider"></div>
+      <p>This is the terminal assessment for Vectors. No diagrams. No coordinate grids. No canvas. Everything you relied on in Layers 1 through 3 is gone. You either hold the structure internally, or you discover which part collapsed.</p>
+      <div class="meta">
+        <div><span>Questions</span>12 total</div>
+        <div><span>Time</span>10 minutes</div>
+        <div><span>Passing Score</span>160 / 200</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="startExam()">Start exam</button>
+      </div>
+    </section>
+
+    <form id="examForm" class="hidden" onsubmit="return false;">
+      <!-- Q1: Formal definition -->
+      <section class="card">
+        <div class="qnum">Question 1</div>
+        <div class="points">10 points</div>
+        <h2>Core identity</h2>
+        <p>What is a vector, structurally?</p>
+        <div class="choices" data-question="q1">
+          <button type="button" class="choice" onclick="pickChoice('q1','A',this)">An unordered collection of numbers that can be rearranged freely without changing meaning.</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','B',this)">An ordered tuple of real numbers specifying a rigid geometric coordinate in a structured space.</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','C',this)">A physical arrow that only exists in 2D or 3D Euclidean space.</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','D',this)">A label or category assigned to data for classification purposes.</button>
+        </div>
+      </section>
+
+      <!-- Q2: Order matters -->
+      <section class="card">
+        <div class="qnum">Question 2</div>
+        <div class="points">10 points</div>
+        <h2>Order constraint</h2>
+        <p>Vectors <span class="mono">(8, 3)</span> and <span class="mono">(3, 8)</span> contain the same numbers. Are they the same vector?</p>
+        <div class="choices" data-question="q2">
+          <button type="button" class="choice" onclick="pickChoice('q2','A',this)">Yes, because they contain identical values.</button>
+          <button type="button" class="choice" onclick="pickChoice('q2','B',this)">No, because the slot order places each number on a different axis, producing a different geometric location.</button>
+          <button type="button" class="choice" onclick="pickChoice('q2','C',this)">It depends on the context — sometimes order matters, sometimes it does not.</button>
+          <button type="button" class="choice" onclick="pickChoice('q2','D',this)">They are opposite vectors that cancel each other.</button>
+        </div>
+      </section>
+
+      <!-- Q3: Component-wise addition -->
+      <section class="card">
+        <div class="qnum">Question 3</div>
+        <div class="points">10 points</div>
+        <h2>Computation: addition</h2>
+        <p>Compute <span class="mono">(4, 7, -2) + (1, 3, 5)</span>. Enter each component.</p>
+        <div style="display:grid; grid-template-columns: repeat(3,1fr); gap:10px; margin-top:12px;">
+          <input id="q3x" type="number" step="1" placeholder="x">
+          <input id="q3y" type="number" step="1" placeholder="y">
+          <input id="q3z" type="number" step="1" placeholder="z">
+        </div>
+      </section>
+
+      <!-- Q4: Scalar multiplication -->
+      <section class="card">
+        <div class="qnum">Question 4</div>
+        <div class="points">10 points</div>
+        <h2>Scalar multiplication</h2>
+        <p>What does scalar multiplication preserve and what does it change?</p>
+        <div class="choices" data-question="q4">
+          <button type="button" class="choice" onclick="pickChoice('q4','A',this)">Preserves magnitude, changes direction.</button>
+          <button type="button" class="choice" onclick="pickChoice('q4','B',this)">Preserves direction (ratio of components), changes magnitude (intensity).</button>
+          <button type="button" class="choice" onclick="pickChoice('q4','C',this)">Changes both direction and magnitude simultaneously.</button>
+          <button type="button" class="choice" onclick="pickChoice('q4','D',this)">Preserves the number of dimensions, changes the vector space.</button>
+        </div>
+      </section>
+
+      <!-- Q5: L2 norm -->
+      <section class="card">
+        <div class="qnum">Question 5</div>
+        <div class="points">10 points</div>
+        <h2>Computation: magnitude</h2>
+        <p>What is the L2 norm of <span class="mono">(3, 4)</span>?</p>
+        <input id="q5" type="number" step="0.1" placeholder="||v|| = ?">
+      </section>
+
+      <!-- Q6: Dimensional lock -->
+      <section class="card">
+        <div class="qnum">Question 6</div>
+        <div class="points">10 points</div>
+        <h2>Dimensional lock</h2>
+        <p>What happens when you attempt to add a vector in <span class="mono">R^768</span> to a vector in <span class="mono">R^512</span>?</p>
+        <div class="choices" data-question="q6">
+          <button type="button" class="choice" onclick="pickChoice('q6','A',this)">The system pads the shorter vector with zeros to make them match.</button>
+          <button type="button" class="choice" onclick="pickChoice('q6','B',this)">The operation is mathematically undefined — dimensions must match coordinate-for-coordinate.</button>
+          <button type="button" class="choice" onclick="pickChoice('q6','C',this)">The extra dimensions are silently ignored.</button>
+          <button type="button" class="choice" onclick="pickChoice('q6','D',this)">The vectors become orthogonal, which makes the addition trivial.</button>
+        </div>
+      </section>
+
+      <!-- Q7: Symmetric annihilation -->
+      <section class="card">
+        <div class="qnum">Question 7</div>
+        <div class="points">10 points</div>
+        <h2>Opposition</h2>
+        <p>Two steering vectors are injected into a transformer: Vector A and Vector B, where <span class="mono">B = -1 × A</span>. What is the net stylistic transformation?</p>
+        <div class="choices" data-question="q7">
+          <button type="button" class="choice" onclick="pickChoice('q7','A',this)">Double the effect of Vector A.</button>
+          <button type="button" class="choice" onclick="pickChoice('q7','B',this)">Absolutely nothing — they annihilate to the zero vector.</button>
+          <button type="button" class="choice" onclick="pickChoice('q7','C',this)">The model becomes unpredictable because of conflicting signals.</button>
+          <button type="button" class="choice" onclick="pickChoice('q7','D',this)">The model picks whichever vector has the larger individual components.</button>
+        </div>
+      </section>
+
+      <!-- Q8: Zero axis paradox -->
+      <section class="card">
+        <div class="qnum">Question 8</div>
+        <div class="points">10 points</div>
+        <h2>Zero axis paradox</h2>
+        <p>A bug forces the 3rd embedding dimension (out of 4096) to zero for every token in a language model. Does the model crash?</p>
+        <input id="q8" type="text" placeholder="Short answer — explain structurally">
+      </section>
+
+      <!-- Q9: Scaling identity destruction -->
+      <section class="card">
+        <div class="qnum">Question 9</div>
+        <div class="points">15 points</div>
+        <h2>Ratio corruption</h2>
+        <p>A FIFA striker is at <span class="mono">(8, 2)</span> [Speed, Strength]. You double him to <span class="mono">(16, 4)</span>. Then a bug adds <span class="mono">(0, 12)</span> to his Strength, making him <span class="mono">(16, 16)</span>. You divide by 2 to "undo" it. What is his final vector, and does it match his original identity?</p>
+        <textarea id="q9" placeholder="Compute the result and explain whether the identity survived."></textarea>
+      </section>
+
+      <!-- Q10: Cross-domain application -->
+      <section class="card">
+        <div class="qnum">Question 10</div>
+        <div class="points">15 points</div>
+        <h2>Cross-domain translation</h2>
+        <p>Pick one non-math domain from this lesson (cooking, music, RPG, football, psychology, or AI) and explain how vector addition governs a core operation in that domain.</p>
+        <textarea id="q10" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <!-- Q11: CCP application -->
+      <section class="card">
+        <div class="qnum">Question 11</div>
+        <div class="points">15 points</div>
+        <h2>Transformer application</h2>
+        <p>Explain how the CCP's CCV framework or LoRA rank collapse directly depends on vector geometry. Reference either dimensional independence or span constraints.</p>
+        <textarea id="q11" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <!-- Q12: Feynman Compression -->
+      <section class="card">
+        <div class="qnum">Question 12</div>
+        <div class="points">35 points</div>
+        <h2>Feynman Compression</h2>
+        <p>Explain what a vector is and how it governs identity, combination, and manipulation inside a transformer. Minimum length: 220 characters.</p>
+        <p class="footnote">Full credit requires all three structural elements: (1) ordered coordinates mapping identity to a geometric position, (2) component-wise operations preserving dimensional independence, (3) magnitude and direction as the carriers of intensity and style.</p>
+        <textarea id="q12" placeholder="Write the mechanism, not a slogan."></textarea>
+      </section>
+
+      <div class="actions">
+        <button class="btn btn-primary" type="button" onclick="submitExam(false)">Submit exam</button>
+        <button class="btn btn-secondary" type="button" onclick="scrollToTop()">Back to top</button>
+      </div>
+    </form>
+
+    <section id="result" class="result">
+      <div class="eyebrow">Result</div>
+      <div id="scoreLine" class="score"></div>
+      <p id="resultSummary"></p>
+      <div id="breakdown" class="breakdown"></div>
+      <p id="timeoutNote" class="footnote"></p>
+    </section>
+  </main>
+
+  <script>
+    var answers = {};
+    var examStarted = false;
+    var examSubmitted = false;
+    var secondsRemaining = 600;
+    var timerHandle = null;
+
+    function pickChoice(question, value, element) {
+      if (examSubmitted) return;
+      answers[question] = value;
+      document.querySelectorAll('[data-question="' + question + '"] .choice').forEach(function(btn) {
+        btn.classList.remove('selected');
+      });
+      element.classList.add('selected');
+    }
+
+    function startExam() {
+      if (examStarted) return;
+      examStarted = true;
+      document.getElementById('examForm').classList.remove('hidden');
+      window.scrollTo({ top: document.getElementById('examForm').offsetTop - 20, behavior: 'smooth' });
+      timerHandle = setInterval(tick, 1000);
+    }
+
+    function tick() {
+      if (examSubmitted) return;
+      secondsRemaining -= 1;
+      if (secondsRemaining <= 0) {
+        secondsRemaining = 0;
+        updateTimer();
+        submitExam(true);
+        return;
+      }
+      updateTimer();
+    }
+
+    function updateTimer() {
+      var mins = String(Math.floor(secondsRemaining / 60)).padStart(2, '0');
+      var secs = String(secondsRemaining % 60).padStart(2, '0');
+      var timerEl = document.getElementById('timer');
+      timerEl.textContent = mins + ':' + secs;
+      if (secondsRemaining <= 120) {
+        timerEl.classList.add('timer-warn');
+      }
+    }
+
+    function textValue(id) {
+      return (document.getElementById(id)?.value || '').trim().toLowerCase();
+    }
+
+    function numValue(id) {
+      return Number(document.getElementById(id)?.value);
+    }
+
+    function containsAny(value, options) {
+      return options.some(function(o) { return value.includes(o); });
+    }
+
+    function gradeRichText(value, keywordGroups) {
+      if (!value) return 0;
+      var hits = 0;
+      keywordGroups.forEach(function(group) {
+        if (containsAny(value, group)) hits += 1;
+      });
+      return hits;
+    }
+
+    function submitExam(fromTimeout) {
+      if (examSubmitted) return;
+      examSubmitted = true;
+      clearInterval(timerHandle);
+
+      document.querySelectorAll('input, textarea, button.choice').forEach(function(el) { el.disabled = true; });
+
+      var total = 0;
+      var breakdown = [];
+
+      // Q1: Ordered tuple defining geometric coordinate (B)
+      var q1 = answers.q1 === 'B' ? 10 : 0;
+      total += q1;
+      breakdown.push(['Q1', q1, 'Ordered tuple mapping identity to geometric space']);
+
+      // Q2: Order matters, different location (B)
+      var q2 = answers.q2 === 'B' ? 10 : 0;
+      total += q2;
+      breakdown.push(['Q2', q2, 'Slot order assigns numbers to axes — different order, different location']);
+
+      // Q3: (5, 10, 3)
+      var q3x = numValue('q3x'), q3y = numValue('q3y'), q3z = numValue('q3z');
+      var q3 = (q3x === 5 && q3y === 10 && q3z === 3) ? 10 : 0;
+      total += q3;
+      breakdown.push(['Q3', q3, 'Component-wise addition: (4+1, 7+3, -2+5) = (5, 10, 3)']);
+
+      // Q4: Preserves direction, changes magnitude (B)
+      var q4 = answers.q4 === 'B' ? 10 : 0;
+      total += q4;
+      breakdown.push(['Q4', q4, 'Scalar multiplication preserves direction, changes magnitude']);
+
+      // Q5: ||v|| = 5
+      var q5val = numValue('q5');
+      var q5 = (Math.abs(q5val - 5) < 0.01) ? 10 : 0;
+      total += q5;
+      breakdown.push(['Q5', q5, 'L2 norm of (3,4) = sqrt(9+16) = sqrt(25) = 5']);
+
+      // Q6: Undefined, dimensions must match (B)
+      var q6 = answers.q6 === 'B' ? 10 : 0;
+      total += q6;
+      breakdown.push(['Q6', q6, 'Dimensional lock: addition requires matching coordinate structures']);
+
+      // Q7: Annihilate to zero (B)
+      var q7 = answers.q7 === 'B' ? 10 : 0;
+      total += q7;
+      breakdown.push(['Q7', q7, 'A + (-A) = zero vector — symmetric annihilation']);
+
+      // Q8: No crash, dimension collapses to subspace
+      var q8val = textValue('q8');
+      var q8hits = gradeRichText(q8val, [
+        ['no', 'does not crash', 'doesn\'t crash', 'still works', 'functions'],
+        ['dimension', '4095', 'subspace', 'one axis', 'collapses']
+      ]);
+      var q8 = Math.min(10, q8hits * 5);
+      total += q8;
+      breakdown.push(['Q8', q8, 'No crash — collapses from 4096D to 4095D subspace']);
+
+      // Q9: (8, 8) — identity destroyed, ratio changed from 4:1 to 1:1
+      var q9val = textValue('q9');
+      var q9hits = gradeRichText(q9val, [
+        ['8, 8', '(8,8)', '8 8'],
+        ['ratio', 'identity', 'different', 'changed', 'destroyed', 'lost', 'mutated'],
+        ['4:1', '1:1', 'speed to strength', 'no longer']
+      ]);
+      var q9 = Math.min(15, q9hits * 5);
+      total += q9;
+      breakdown.push(['Q9', q9, 'Final vector is (8,8) — ratio changed from 4:1 to 1:1, identity destroyed']);
+
+      // Q10: Cross-domain application
+      var q10val = textValue('q10');
+      var q10hits = gradeRichText(q10val, [
+        ['cooking', 'music', 'rpg', 'football', 'personality', 'audio', 'mixing', 'flavor', 'stat'],
+        ['add', 'combin', 'sum', 'layer', 'component'],
+        ['axis', 'dimension', 'independent', 'orthogonal', 'direction']
+      ]);
+      var q10 = Math.min(15, q10hits * 5);
+      total += q10;
+      breakdown.push(['Q10', q10, 'Cross-domain vector addition application']);
+
+      // Q11: CCP application — CCV or LoRA rank collapse
+      var q11val = textValue('q11');
+      var q11hits = gradeRichText(q11val, [
+        ['ccv', 'lora', 'rank', 'embedding', 'combinatorial'],
+        ['independent', 'orthogonal', 'dimension', 'axis', 'span'],
+        ['personality', 'tone', 'collapse', 'scaling', 'steer', 'isolation']
+      ]);
+      var q11 = Math.min(15, q11hits * 5);
+      total += q11;
+      breakdown.push(['Q11', q11, 'CCP transformer application — dimensional independence or span']);
+
+      // Q12: Feynman Compression (35 pts)
+      var q12val = textValue('q12');
+      var q12 = 0;
+      var missing = [];
+      if (q12val.length < 220) {
+        missing = ['minimum length not met'];
+      } else {
+        var hasCoord = containsAny(q12val, ['coordinate', 'ordered', 'position', 'location', 'tuple', 'geometric']);
+        var hasOps = containsAny(q12val, ['component-wise', 'independent', 'dimension', 'axis', 'orthogonal', 'isolation']);
+        var hasMagDir = containsAny(q12val, ['magnitude', 'direction', 'intensity', 'style', 'ratio', 'norm', 'length']);
+        var count = [hasCoord, hasOps, hasMagDir].filter(Boolean).length;
+        if (count === 3) q12 = 35;
+        else if (count === 2) q12 = 22;
+        else q12 = 0;
+        if (!hasCoord) missing.push('ordered coordinates mapping identity to geometric position');
+        if (!hasOps) missing.push('component-wise operations preserving dimensional independence');
+        if (!hasMagDir) missing.push('magnitude and direction as carriers of intensity and style');
+      }
+      total += q12;
+      breakdown.push(['Q12', q12, missing.length ? 'Missing: ' + missing.join(', ') : 'All three structural elements present']);
+
+      // Result display
+      var pass = total >= 160;
+      var scoreLine = document.getElementById('scoreLine');
+      scoreLine.textContent = total + ' / 200';
+      scoreLine.className = 'score ' + (pass ? 'pass' : 'fail');
+
+      document.getElementById('resultSummary').textContent = pass
+        ? 'Passing threshold reached. The vector held as a full mechanism without visual scaffolding: geometric coordinate, dimensional independence, and the magnitude-direction duality that governs every transformer embedding.'
+        : 'Passing threshold not reached. The missing pieces are structural: without the coordinate identity, the component-wise independence, or the magnitude-direction separation, the geometry collapses under pressure. Revisit the layers that covered these foundations.';
+
+      var breakdownNode = document.getElementById('breakdown');
+      breakdownNode.innerHTML = '';
+      breakdown.forEach(function(row) {
+        var label = row[0], score = row[1], note = row[2];
+        var div = document.createElement('div');
+        div.innerHTML = '<strong>' + label + ': ' + score + ' points</strong><br>' + note;
+        breakdownNode.appendChild(div);
+      });
+
+      document.getElementById('timeoutNote').textContent = fromTimeout
+        ? 'Exam auto-submitted at time expiration.'
+        : 'Exam submitted before time expiration.';
+
+      document.getElementById('result').classList.add('show');
+      document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    updateTimer();
+  </script>
+</body>
+</html>

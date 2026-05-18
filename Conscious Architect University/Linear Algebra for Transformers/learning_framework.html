@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Learning Experience Framework — From First Principles</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --ink:#0a0a0a;--ink2:#2d2d2d;--ink3:#5a5a5a;--ink4:#9a9a9a;
+  --paper:#fafaf8;--paper2:#f3f2ee;--paper3:#eae9e4;
+  --rule:#d8d5cc;--rule2:#c5c1b5;
+  --red:#c0392b;--blue:#1a4a8a;--amber:#b8720a;--green:#1a6b3c;
+  --accent:#c0392b;
+  --serif:'Playfair Display',Georgia,serif;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'Inter',system-ui,sans-serif;
+}
+html{scroll-behavior:smooth;font-size:16px;}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-weight:300;line-height:1.7;-webkit-font-smoothing:antialiased;}
+
+/* ── LAYOUT ── */
+.wrapper{max-width:900px;margin:0 auto;padding:0 2.5rem 8rem;}
+
+/* ── MASTHEAD ── */
+.masthead{border-bottom:2px solid var(--ink);padding:3.5rem 0 2.5rem;margin-bottom:4rem;position:relative;}
+.issue-tag{font-family:var(--mono);font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--ink3);margin-bottom:1.5rem;}
+.masthead h1{font-family:var(--serif);font-size:clamp(2.8rem,7vw,5.5rem);font-weight:900;
+  line-height:.95;letter-spacing:-.02em;margin-bottom:1.25rem;}
+.masthead h1 em{font-style:italic;color:var(--accent);}
+.masthead-sub{font-size:1rem;color:var(--ink3);max-width:580px;line-height:1.6;
+  border-left:3px solid var(--accent);padding-left:1rem;}
+.score-strip{display:flex;gap:2.5rem;margin-top:2.5rem;padding-top:2rem;border-top:1px solid var(--rule);}
+.score-item{text-align:center;}
+.score-num{font-family:var(--serif);font-size:2.5rem;font-weight:700;line-height:1;}
+.score-lbl{font-family:var(--mono);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--ink3);margin-top:.3rem;}
+.score-num.red{color:var(--red);}
+.score-num.green{color:var(--green);}
+
+/* ── SECTION HEADERS ── */
+.section{margin-bottom:5rem;}
+.section-label{font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:.75rem;display:flex;align-items:center;gap:.75rem;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--accent);opacity:.3;}
+.section h2{font-family:var(--serif);font-size:clamp(1.8rem,4vw,2.8rem);font-weight:700;
+  line-height:1.1;margin-bottom:1.25rem;letter-spacing:-.01em;}
+.section p{color:var(--ink2);margin-bottom:.9rem;font-size:.92rem;}
+
+/* ── AXIOMS ── */
+.axiom{display:grid;grid-template-columns:3rem 1fr;gap:1.5rem;
+  padding:2rem 0;border-top:1px solid var(--rule);align-items:start;}
+.axiom:last-child{border-bottom:1px solid var(--rule);}
+.axiom-num{font-family:var(--serif);font-size:2rem;font-weight:700;color:var(--rule2);line-height:1;
+  padding-top:.15rem;}
+.axiom-body{}
+.axiom-name{font-family:var(--mono);font-size:.8rem;font-weight:500;letter-spacing:.05em;
+  color:var(--ink3);margin-bottom:.5rem;text-transform:uppercase;}
+.axiom-title{font-family:var(--serif);font-size:1.25rem;font-weight:700;margin-bottom:.5rem;
+  line-height:1.2;}
+.axiom-def{font-size:.88rem;color:var(--ink2);line-height:1.65;}
+.axiom-imp{margin-top:.75rem;padding:.6rem .9rem;background:var(--paper2);
+  border-left:2.5px solid var(--amber);font-size:.82rem;color:var(--amber);
+  font-style:italic;line-height:1.5;}
+.axiom-kill{margin-top:.5rem;font-size:.8rem;color:var(--red);font-family:var(--mono);}
+
+/* ── VERDICT TABLE (why 110 failed) ── */
+.verdict{width:100%;border-collapse:collapse;font-size:.82rem;margin:1.5rem 0;}
+.verdict th{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink3);padding:.6rem .9rem;text-align:left;border-bottom:2px solid var(--ink);
+  background:var(--paper2);}
+.verdict td{padding:.65rem .9rem;border-bottom:1px solid var(--rule);vertical-align:top;}
+.verdict tr:last-child td{border-bottom:2px solid var(--ink);}
+.verdict .metric-name{font-weight:500;color:var(--ink2);}
+.verdict .score-cell{font-family:var(--mono);font-weight:500;text-align:center;min-width:60px;}
+.verdict .why{color:var(--ink3);font-size:.8rem;line-height:1.5;}
+.verdict .pattern{font-family:var(--mono);font-size:.72rem;color:var(--red);}
+.score-pill{display:inline-block;padding:.15rem .5rem;border-radius:3px;font-family:var(--mono);font-size:.78rem;font-weight:500;}
+.sp-bad{background:#fde8e6;color:var(--red);}
+.sp-mid{background:#fef5e4;color:var(--amber);}
+.sp-ok{background:#e6f4ed;color:var(--green);}
+
+/* ── METRIC CARDS ── */
+.metrics-grid{display:grid;gap:1.25rem;margin:1.5rem 0;}
+.metric-card{border:1px solid var(--rule);border-radius:4px;overflow:hidden;}
+.metric-head{display:grid;grid-template-columns:4rem 1fr auto;gap:1rem;
+  padding:1.1rem 1.25rem;align-items:center;background:var(--paper2);
+  border-bottom:1px solid var(--rule);}
+.metric-id{font-family:var(--serif);font-size:2rem;font-weight:700;color:var(--rule2);line-height:1;}
+.metric-title{font-family:var(--sans);font-size:.9rem;font-weight:500;}
+.metric-subtitle{font-size:.75rem;color:var(--ink3);margin-top:.15rem;}
+.metric-pts{font-family:var(--mono);font-size:.72rem;color:var(--ink3);white-space:nowrap;}
+.metric-body{padding:1.1rem 1.25rem;}
+.rubric{display:grid;grid-template-columns:2.5rem 1fr;gap:.6rem .85rem;margin-bottom:.85rem;}
+.rubric-score{font-family:var(--mono);font-size:.78rem;font-weight:500;
+  color:var(--ink3);padding-top:.05rem;}
+.rubric-desc{font-size:.8rem;color:var(--ink2);line-height:1.5;}
+.rubric-score.best{color:var(--green);}
+.rubric-desc.best{color:var(--ink);font-weight:500;}
+.design-patterns{margin-top:.85rem;padding-top:.85rem;border-top:1px solid var(--rule);}
+.dp-label{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink4);margin-bottom:.5rem;}
+.dp-list{display:flex;flex-wrap:wrap;gap:.4rem;}
+.dp-tag{font-size:.75rem;padding:.2rem .6rem;border-radius:3px;font-family:var(--mono);
+  background:var(--paper3);color:var(--ink2);}
+.dp-tag.anti{background:#fde8e6;color:var(--red);text-decoration:line-through;}
+
+/* ── DESIGN PATTERNS ── */
+.pattern-block{background:var(--paper2);border:1px solid var(--rule);border-radius:4px;
+  padding:1.25rem 1.5rem;margin:.75rem 0;}
+.pb-num{font-family:var(--mono);font-size:.65rem;color:var(--accent);letter-spacing:.12em;
+  text-transform:uppercase;margin-bottom:.4rem;}
+.pb-title{font-family:var(--sans);font-size:.95rem;font-weight:500;margin-bottom:.4rem;}
+.pb-desc{font-size:.82rem;color:var(--ink2);line-height:1.6;}
+.pb-compare{display:grid;grid-template-columns:1fr 1fr;gap:.85rem;margin-top:.85rem;}
+.pb-bad,.pb-good{padding:.75rem 1rem;border-radius:3px;font-size:.78rem;line-height:1.5;
+  font-family:var(--mono);}
+.pb-bad{background:#fde8e6;color:#7a1515;border-left:3px solid var(--red);}
+.pb-good{background:#e6f4ed;color:#0e3d22;border-left:3px solid var(--green);}
+.pb-lbl{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;margin-bottom:.3rem;font-weight:500;}
+
+/* ── HIERARCHY DIAGRAM (text-based) ── */
+.hierarchy{background:var(--ink);color:#f0ede4;border-radius:4px;padding:2rem 2rem;
+  font-family:var(--mono);font-size:.8rem;line-height:2;margin:1.5rem 0;}
+.h-l0{color:#fff;font-size:.9rem;font-weight:500;}
+.h-l1{color:#aaa;padding-left:1.75rem;}
+.h-l2{color:#888;padding-left:3.5rem;}
+.h-accent{color:#e8c46a;}
+.h-green{color:#6bcf8f;}
+.h-red{color:#e88a8a;}
+
+/* ── SCORE TRACKER ── */
+.tracker{border:2px solid var(--ink);padding:1.5rem;margin:1.5rem 0;}
+.tracker-title{font-family:var(--serif);font-size:1.1rem;font-weight:700;margin-bottom:1rem;}
+.t-row{display:flex;align-items:center;gap:.75rem;margin:.4rem 0;}
+.t-lbl{font-size:.78rem;min-width:180px;color:var(--ink2);}
+.t-bar{flex:1;height:6px;background:var(--rule);border-radius:3px;overflow:hidden;}
+.t-fill{height:100%;border-radius:3px;transition:width 1s ease;}
+.t-val{font-family:var(--mono);font-size:.78rem;font-weight:500;min-width:40px;text-align:right;}
+
+/* ── BLOCKQUOTE ── */
+blockquote{border-left:3px solid var(--ink);padding:.75rem 1.25rem;margin:1.25rem 0;
+  font-family:var(--serif);font-size:1.05rem;font-style:italic;color:var(--ink2);line-height:1.6;}
+blockquote cite{display:block;font-family:var(--mono);font-size:.65rem;font-style:normal;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);margin-top:.5rem;}
+
+/* ── CALLOUT ── */
+.callout{padding:1.1rem 1.4rem;margin:1.25rem 0;border-radius:0 4px 4px 0;}
+.callout.red{background:#fde8e6;border-left:3px solid var(--red);color:#5a1a1a;}
+.callout.amber{background:#fef5e4;border-left:3px solid var(--amber);color:#4a2e0a;}
+.callout.green{background:#e6f4ed;border-left:3px solid var(--green);color:#0e3d22;}
+.callout-head{font-family:var(--mono);font-size:.68rem;font-weight:500;letter-spacing:.12em;
+  text-transform:uppercase;margin-bottom:.4rem;}
+.callout p{font-size:.85rem;line-height:1.6;margin:0;}
+
+/* ── INLINE CODE ── */
+code{font-family:var(--mono);font-size:.83em;background:var(--paper2);
+  padding:.1rem .35rem;border-radius:2px;color:var(--ink2);}
+
+/* ── DIVIDER ── */
+.div-rule{border:none;border-top:1px solid var(--rule);margin:3.5rem 0;}
+
+/* ── TOC ── */
+.toc{background:var(--paper2);border:1px solid var(--rule);padding:1.5rem 1.75rem;
+  margin-bottom:3rem;display:grid;grid-template-columns:1fr 1fr;gap:.3rem .85rem;}
+.toc-title{grid-column:1/-1;font-family:var(--mono);font-size:.65rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--ink3);margin-bottom:.75rem;}
+.toc a{font-size:.82rem;color:var(--ink2);text-decoration:none;display:flex;
+  align-items:baseline;gap:.4rem;}
+.toc a:hover{color:var(--accent);}
+.toc-num{font-family:var(--mono);font-size:.7rem;color:var(--ink4);}
+
+/* ── FOOTER ── */
+.footer{border-top:2px solid var(--ink);padding:2rem 0;margin-top:4rem;
+  display:flex;justify-content:space-between;align-items:flex-end;}
+.footer-l{font-family:var(--serif);font-size:1.1rem;font-weight:700;font-style:italic;}
+.footer-r{font-family:var(--mono);font-size:.65rem;color:var(--ink3);text-align:right;line-height:1.8;}
+
+@media(max-width:680px){
+  .wrapper{padding:0 1.25rem 5rem;}
+  .pb-compare{grid-template-columns:1fr;}
+  .toc{grid-template-columns:1fr;}
+  .score-strip{gap:1.5rem;}
+  .metric-head{grid-template-columns:3rem 1fr;}
+  .metric-pts{display:none;}
+}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<!-- MASTHEAD -->
+<div class="masthead">
+  <div class="issue-tag">Framework · v1.0 · From First Principles</div>
+  <h1>The <em>Perfect</em><br>Learning Experience</h1>
+  <p class="masthead-sub">A design framework built from cognitive science axioms — not UX trends — for creating interactive experiences that achieve durable understanding, not the illusion of it.</p>
+  <div class="score-strip">
+    <div class="score-item"><div class="score-num red">110</div><div class="score-lbl">Baseline score<br>/ 200</div></div>
+    <div class="score-item"><div class="score-num" style="color:var(--amber);">195</div><div class="score-lbl">Target score<br>/ 200</div></div>
+    <div class="score-item"><div class="score-num" style="color:var(--blue);">10</div><div class="score-lbl">Metrics<br>× 20 pts</div></div>
+    <div class="score-item"><div class="score-num" style="color:var(--ink3);">7</div><div class="score-lbl">First<br>Principles</div></div>
+  </div>
+</div>
+
+<!-- TOC -->
+<nav class="toc">
+  <div class="toc-title">Contents</div>
+  <a href="#zero"><span class="toc-num">00.</span> The Core Problem</a>
+  <a href="#axioms"><span class="toc-num">01.</span> 7 First Principles</a>
+  <a href="#verdict"><span class="toc-num">02.</span> Why 110 Failed</a>
+  <a href="#metrics"><span class="toc-num">03.</span> The 10 Metrics</a>
+  <a href="#patterns"><span class="toc-num">04.</span> Design Patterns</a>
+  <a href="#antis"><span class="toc-num">05.</span> Anti-Patterns to Eliminate</a>
+  <a href="#build"><span class="toc-num">06.</span> The Build Checklist</a>
+  <a href="#scoring"><span class="toc-num">07.</span> Scoring Rubric</a>
+</nav>
+
+<!-- §00 THE CORE PROBLEM -->
+<section class="section" id="zero">
+  <div class="section-label">§ 00</div>
+  <h2>The Core Problem</h2>
+  <p>The baseline experience scored ~110/200. The visual quality was high. The explanations were accurate. The animations were smooth. And yet it fails the only test that matters:</p>
+  <blockquote>
+    Will the learner remember the mechanism — not the experience — in 72 hours?
+    <cite>— The only useful question</cite>
+  </blockquote>
+  <p>The root error is confusing two entirely different phenomena:</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.25rem 0;">
+    <div class="callout red">
+      <div class="callout-head">What we built</div>
+      <p><strong>Cognitive entertainment.</strong> The learner watches beautiful things happen. They feel engaged. They complete the experience. Memory formation: minimal.</p>
+    </div>
+    <div class="callout green">
+      <div class="callout-head">What we need</div>
+      <p><strong>Cognitive construction.</strong> The learner generates, predicts, fails, corrects. They struggle productively. Memory formation: maximal.</p>
+    </div>
+  </div>
+  <p>The neuroscience is unambiguous: the brain encodes what it <em>generates</em>, not what it <em>observes</em>. Every beautiful animation that plays without a preceding prediction is a missed encoding opportunity.</p>
+</section>
+
+<hr class="div-rule">
+
+<!-- §01 FIRST PRINCIPLES -->
+<section class="section" id="axioms">
+  <div class="section-label">§ 01</div>
+  <h2>7 First Principles</h2>
+  <p>These are not guidelines or best practices. They are axioms derived from how human long-term memory actually works. Every design decision must be traceable to one of these.</p>
+
+  <div class="axiom">
+    <div class="axiom-num">P1</div>
+    <div class="axiom-body">
+      <div class="axiom-name">The Encoding Principle</div>
+      <div class="axiom-title">The brain encodes what it generates, not what it observes.</div>
+      <div class="axiom-def">Watching a vector arrow rotate on screen is cognitively equivalent to watching someone else do push-ups. The motor is not yours. The encoding is not yours. The <em>Generation Effect</em> (Slamecka & Graf, 1978) shows that self-produced information is retained 3–10× better than read or watched information.</div>
+      <div class="axiom-imp">→ Implication: Every interaction must demand that the learner <em>produce</em> something — a prediction, a construction, an explanation — before any information is revealed.</div>
+      <div class="axiom-kill">✗ Kills: "Watch this animation", "Press play", "Step through"</div>
+    </div>
+  </div>
+
+  <div class="axiom">
+    <div class="axiom-num">P2</div>
+    <div class="axiom-body">
+      <div class="axiom-name">The Desirable Difficulty Principle</div>
+      <div class="axiom-title">Difficulty is the mechanism, not an obstacle to minimize.</div>
+      <div class="axiom-def">Cognitive science (Bjork, 1994) proves that encoding strength is proportional to the difficulty of the encoding event. Smooth, easy, frictionless experiences feel great and create shallow memory traces. Productive struggle — where the answer is not immediately obvious — creates deep ones. The learner's subjective feeling of learning is inversely correlated with actual learning when the experience is too easy.</div>
+      <div class="axiom-imp">→ Implication: Design for productive failure. The experience should be just hard enough that errors feel instructive, not demoralizing. This requires calibration, not just difficulty addition.</div>
+      <div class="axiom-kill">✗ Kills: Instantly revealing answers, pre-filled examples, zero-stakes sliders</div>
+    </div>
+  </div>
+
+  <div class="axiom">
+    <div class="axiom-num">P3</div>
+    <div class="axiom-body">
+      <div class="axiom-name">The Prediction-Error Signal</div>
+      <div class="axiom-title">The brain pays maximal attention at the moment a prediction fails.</div>
+      <div class="axiom-def">The brain is a prediction machine (Clark, 2016). It processes new information most deeply when that information violates an existing prediction. This prediction-error signal is neurologically distinct from neutral observation — it triggers attention, creates surprise, and demands model updating. An experience with no predictions creates no errors and therefore no signal.</div>
+      <div class="axiom-imp">→ Implication: Every reveal must be preceded by a committed prediction. The learner must stake a claim — type a number, select an outcome, draw a shape — before seeing the answer. Passive "what do you think?" is not a prediction; it requires no commitment and therefore no updating.</div>
+      <div class="axiom-kill">✗ Kills: Every slider that changes something without a prior prediction</div>
+    </div>
+  </div>
+
+  <div class="axiom">
+    <div class="axiom-num">P4</div>
+    <div class="axiom-body">
+      <div class="axiom-name">The Misconception Priority Principle</div>
+      <div class="axiom-title">A wrong model is not empty — it is occupied. You must evict before you can fill.</div>
+      <div class="axiom-def">A learner doesn't arrive at a concept with a blank mind. They arrive with a prior wrong model — sometimes strongly held — that has predictive power in everyday contexts. Presenting the correct model does not displace the wrong one; the wrong one persists beneath the surface. The correct model must be shown to make predictions the wrong model cannot.</div>
+      <div class="axiom-imp">→ Implication: Map the most common misconceptions for each concept. Design scenarios where the wrong model makes an explicit, testable prediction that fails. Force the learner to confront their own model's failure before offering the correct one.</div>
+      <div class="axiom-kill">✗ Kills: Ignoring misconceptions, teaching only correct information</div>
+    </div>
+  </div>
+
+  <div class="axiom">
+    <div class="axiom-num">P5</div>
+    <div class="axiom-body">
+      <div class="axiom-name">The Transfer Principle</div>
+      <div class="axiom-title">Understanding is demonstrated by novel problem performance, not example recall.</div>
+      <div class="axiom-def">A learner who can re-execute the worked example has learned the worked example. A learner who can solve a structurally identical problem in a new context — without cues linking it to the original — has learned the underlying principle. Transfer is the only valid proof of conceptual understanding. Everything before transfer is preparation.</div>
+      <div class="axiom-imp">→ Implication: Every concept section must end with a novel-context problem — same structure, different surface. The learner must map the principle themselves. The system must not provide scaffolding that makes the mapping obvious.</div>
+      <div class="axiom-kill">✗ Kills: Using only the chapter's worked example throughout the experience</div>
+    </div>
+  </div>
+
+  <div class="axiom">
+    <div class="axiom-num">P6</div>
+    <div class="axiom-body">
+      <div class="axiom-name">The Stakes Principle</div>
+      <div class="axiom-title">Motivation and attention are gated by perceived relevance. Stakes are not optional.</div>
+      <div class="axiom-def">Abstract toy examples (<code>v = (4, 7, −2)</code>) contain no emotional hook. The learner processes them as academic exercises — not information that matters. Real failure cases — a deployed model that hallucinates because gradient explosion wasn't caught, a coaching AI that catastrophically merges tone and formality — create genuine stakes. Stakes trigger the amygdala, which amplifies hippocampal encoding. This is not a nice-to-have; it is a neurological lever.</div>
+      <div class="axiom-imp">→ Implication: Every abstract concept must be anchored to a real failure case. Not "here is what would happen" but "here is what actually happened." Consequences, not principles, are the hook.</div>
+      <div class="axiom-kill">✗ Kills: Pure mathematical abstraction without consequence, toy examples</div>
+    </div>
+  </div>
+
+  <div class="axiom">
+    <div class="axiom-num">P7</div>
+    <div class="axiom-body">
+      <div class="axiom-name">The Compression Principle</div>
+      <div class="axiom-title">Understanding is the ability to compress. Requiring compression is requiring understanding.</div>
+      <div class="axiom-def">Feynman's technique is not a memorization hack — it is a test of conceptual depth. True understanding produces compression: the ability to explain a concept to a non-expert in fewer words than the original explanation, without losing accuracy. If the learner can only re-state the explanation using the same words and examples, they have encoded the surface, not the structure. The experience should demand compression explicitly and repeatedly.</div>
+      <div class="axiom-imp">→ Implication: Build explicit "Explain it back" checkpoints. Grade them not on verbatim accuracy but on structural fidelity. The system should compare the learner's compression to expert compressions and identify the missing structural element.</div>
+      <div class="axiom-kill">✗ Kills: Never asking the learner to explain anything in their own words</div>
+    </div>
+  </div>
+</section>
+
+<hr class="div-rule">
+
+<!-- §02 VERDICT -->
+<section class="section" id="verdict">
+  <div class="section-label">§ 02</div>
+  <h2>Why the Baseline Scored 110</h2>
+  <p>A metric-by-metric autopsy. The visual quality inflated scores on emotional resonance and cognitive load management, masking near-zero scores on the retrieval and transfer metrics that actually predict durable learning.</p>
+
+  <table class="verdict">
+    <thead>
+      <tr>
+        <th>Metric</th>
+        <th style="text-align:center;">Score</th>
+        <th>Root Cause</th>
+        <th>Anti-Pattern</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="metric-name">M1 · Conceptual Fidelity</td>
+        <td class="score-cell"><span class="score-pill sp-mid">13/20</span></td>
+        <td class="why">Accurate information presented — but passively. Learner reads correct things without constructing the model.</td>
+        <td class="pattern">Read-only exposure</td>
+      </tr>
+      <tr>
+        <td class="metric-name">M2 · Active Retrieval Rate</td>
+        <td class="score-cell"><span class="score-pill sp-bad">4/20</span></td>
+        <td class="why">Dragging a vector and moving a slider are motor actions, not cognitive retrieval. The brain was never asked to recall anything unprompted.</td>
+        <td class="pattern">Motor ≠ cognitive</td>
+      </tr>
+      <tr>
+        <td class="metric-name">M3 · Misconception Targeting</td>
+        <td class="score-cell"><span class="score-pill sp-bad">3/20</span></td>
+        <td class="why">The edge cases section named failure modes but never made the learner's wrong intuition fail in their own hands. The misconception was described, not confronted.</td>
+        <td class="pattern">Describe, don't confront</td>
+      </tr>
+      <tr>
+        <td class="metric-name">M4 · Prediction-Error Loops</td>
+        <td class="score-cell"><span class="score-pill sp-bad">3/20</span></td>
+        <td class="why">Every "Step Through" button revealed the next step without requiring any prediction about what that step would show. Zero commitment before any reveal.</td>
+        <td class="pattern">Reveal without commit</td>
+      </tr>
+      <tr>
+        <td class="metric-name">M5 · Transfer Architecture</td>
+        <td class="score-cell"><span class="score-pill sp-bad">5/20</span></td>
+        <td class="why">100% of examples used the exact chapter worked examples. No novel contexts were ever introduced. The learner cannot demonstrate transfer because transfer was never demanded.</td>
+        <td class="pattern">Same surface, always</td>
+      </tr>
+      <tr>
+        <td class="metric-name">M6 · Cognitive Load Calibration</td>
+        <td class="score-cell"><span class="score-pill sp-ok">13/20</span></td>
+        <td class="why">Progressive disclosure of sections was well-designed. Content volume per section was appropriate. Slight underload: never challenged the learner to hold multiple concepts simultaneously.</td>
+        <td class="pattern">Never multi-concept</td>
+      </tr>
+      <tr>
+        <td class="metric-name">M7 · Emotional Resonance</td>
+        <td class="score-cell"><span class="score-pill sp-ok">17/20</span></td>
+        <td class="why">Strongest section. The visual design, animated particle network, dark aesthetic, and interactive dragging created genuine engagement. Near-ceiling score.</td>
+        <td class="pattern">—</td>
+      </tr>
+      <tr>
+        <td class="metric-name">M8 · Compression Demand</td>
+        <td class="score-cell"><span class="score-pill sp-bad">2/20</span></td>
+        <td class="why">The learner was never once asked to explain anything in their own words. Not a single "how would you describe this?" prompt appeared anywhere. Total absence.</td>
+        <td class="pattern">Zero explanation demand</td>
+      </tr>
+      <tr>
+        <td class="metric-name">M9 · Interleaving &amp; Spacing</td>
+        <td class="score-cell"><span class="score-pill sp-mid">8/20</span></td>
+        <td class="why">Sections were conceptually linked (basis vectors → steering → CCV) but earlier concepts were never retrieved in later sections. No spaced retrieval probes.</td>
+        <td class="pattern">Linear, unrevisited</td>
+      </tr>
+      <tr>
+        <td class="metric-name">M10 · Failure Honesty</td>
+        <td class="score-cell"><span class="score-pill sp-bad">0/20</span></td>
+        <td class="why">The experience was designed so that no wrong answer was possible. Sliders always produced a valid result. There was nothing to be wrong about, and therefore nothing to learn from being wrong.</td>
+        <td class="pattern">No wrong answer possible</td>
+      </tr>
+      <tr style="background:var(--paper2);">
+        <td class="metric-name" style="font-weight:600;font-size:.9rem;">Total</td>
+        <td class="score-cell"><span class="score-pill sp-bad" style="font-size:.88rem;">68/200</span></td>
+        <td class="why" colspan="2" style="color:var(--red);font-size:.8rem;">Note: Emotional Resonance (M7) inflated subjective perceived score. The cognitive learning metrics averaged 3.8/20.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout amber">
+    <div class="callout-head">The Paradox</div>
+    <p>The experience scored ~17/20 on Emotional Resonance and ~3.8/20 on the 5 metrics that actually predict retention. High emotional engagement while learning almost nothing is the exact failure mode of most "interactive learning" products. The learner leaves feeling like they learned, but the knowledge is gone in 72 hours.</p>
+  </div>
+</section>
+
+<hr class="div-rule">
+
+<!-- §03 THE 10 METRICS -->
+<section class="section" id="metrics">
+  <div class="section-label">§ 03</div>
+  <h2>The 10 Metrics</h2>
+  <p>Each metric is worth 20 points. Each has a 4-level rubric. Design decisions must be traceable to specific rubric levels, not general impressions.</p>
+
+  <div class="metrics-grid">
+
+    <!-- M1 -->
+    <div class="metric-card">
+      <div class="metric-head">
+        <div class="metric-id">01</div>
+        <div><div class="metric-title">Conceptual Fidelity</div>
+          <div class="metric-subtitle">Does the learner form an accurate, derivable mental model?</div></div>
+        <div class="metric-pts">20 pts</div>
+      </div>
+      <div class="metric-body">
+        <div class="rubric">
+          <div class="rubric-score">0–5</div><div class="rubric-desc">Correct information is displayed. Learner is exposed to it.</div>
+          <div class="rubric-score">6–10</div><div class="rubric-desc">Learner can recall the formula with cues (e.g. multiple choice).</div>
+          <div class="rubric-score">11–15</div><div class="rubric-desc">Learner can state the concept and formula without cues, unprompted.</div>
+          <div class="rubric-score best">16–20</div><div class="rubric-desc best">Learner can re-derive the formula from first principles if they forget it. They understand why it couldn't be different.</div>
+        </div>
+        <div class="design-patterns">
+          <div class="dp-label">Patterns that achieve 16–20</div>
+          <div class="dp-list">
+            <span class="dp-tag">Derive-before-define</span>
+            <span class="dp-tag">Show the alternative that fails</span>
+            <span class="dp-tag">Multiple derivation paths</span>
+            <span class="dp-tag">Explain-to-teach prompt</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- M2 -->
+    <div class="metric-card">
+      <div class="metric-head">
+        <div class="metric-id">02</div>
+        <div><div class="metric-title">Active Retrieval Rate</div>
+          <div class="metric-subtitle">What fraction of interactions demand generation, not consumption?</div></div>
+        <div class="metric-pts">20 pts</div>
+      </div>
+      <div class="metric-body">
+        <div class="rubric">
+          <div class="rubric-score">0–5</div><div class="rubric-desc">Pure passive: watch animations, click "next", move sliders with instant feedback.</div>
+          <div class="rubric-score">6–10</div><div class="rubric-desc">Recognition tasks only: "is this correct?", multiple choice with visible options.</div>
+          <div class="rubric-score">11–15</div><div class="rubric-desc">Recall tasks: "what is the formula?", fill-in-blank without options visible.</div>
+          <div class="rubric-score best">16–20</div><div class="rubric-desc best">Construction tasks: build the vector, predict the output before computing, reconstruct a concept from memory. &gt;60% of interactions are generative.</div>
+        </div>
+        <div class="design-patterns">
+          <div class="dp-label">Patterns that achieve 16–20</div>
+          <div class="dp-list">
+            <span class="dp-tag">Predict-then-reveal</span>
+            <span class="dp-tag">Blank-canvas construction</span>
+            <span class="dp-tag">Cloze retrieval</span>
+            <span class="dp-tag">Reconstruct-from-scratch</span>
+            <span class="dp-tag anti">Step-through button</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- M3 -->
+    <div class="metric-card">
+      <div class="metric-head">
+        <div class="metric-id">03</div>
+        <div><div class="metric-title">Misconception Targeting</div>
+          <div class="metric-subtitle">Does the design hunt and destroy wrong prior models?</div></div>
+        <div class="metric-pts">20 pts</div>
+      </div>
+      <div class="metric-body">
+        <div class="rubric">
+          <div class="rubric-score">0–5</div><div class="rubric-desc">Misconceptions are ignored. Correct information is presented into the void.</div>
+          <div class="rubric-score">6–10</div><div class="rubric-desc">Common mistakes are mentioned: "people often think X, but actually Y."</div>
+          <div class="rubric-score">11–15</div><div class="rubric-desc">Learner is asked to predict using their prior model, and the prediction is shown to be wrong.</div>
+          <div class="rubric-score best">16–20</div><div class="rubric-desc best">The experience is designed so the learner's wrong model makes a specific, visible prediction that fails. The learner experiences the failure directly, in their own hands, before the correct model is offered.</div>
+        </div>
+        <div class="design-patterns">
+          <div class="dp-label">Common vector misconceptions to target</div>
+          <div class="dp-list">
+            <span class="dp-tag">Vectors ARE their components (not: they just have them)</span>
+            <span class="dp-tag">Adding vectors = adding magnitudes</span>
+            <span class="dp-tag">High-dim intuition = 3D intuition × more</span>
+            <span class="dp-tag">Orthogonality is rare, not the norm</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- M4 -->
+    <div class="metric-card">
+      <div class="metric-head">
+        <div class="metric-id">04</div>
+        <div><div class="metric-title">Prediction-Error Loops</div>
+          <div class="metric-subtitle">Is every reveal preceded by a committed prediction?</div></div>
+        <div class="metric-pts">20 pts</div>
+      </div>
+      <div class="metric-body">
+        <div class="rubric">
+          <div class="rubric-score">0–5</div><div class="rubric-desc">All reveals are gratuitous. No prediction is ever required before information is shown.</div>
+          <div class="rubric-score">6–10</div><div class="rubric-desc">"What do you think will happen?" — but no commitment is required. The learner can skip.</div>
+          <div class="rubric-score">11–15</div><div class="rubric-desc">Most reveals require a committed prediction. The system records the prediction and shows delta.</div>
+          <div class="rubric-score best">16–20</div><div class="rubric-desc best">Every non-trivial reveal is gated by a committed, graded prediction. The system shows exactly where the prediction failed and why, keyed to a specific concept. The error is the lesson.</div>
+        </div>
+        <div class="design-patterns">
+          <div class="dp-label">Implementation patterns</div>
+          <div class="dp-list">
+            <span class="dp-tag">Numeric input before compute</span>
+            <span class="dp-tag">Drag-to-predict output position</span>
+            <span class="dp-tag">Rank outcomes before reveal</span>
+            <span class="dp-tag">Lock prediction, then show delta</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- M5 -->
+    <div class="metric-card">
+      <div class="metric-head">
+        <div class="metric-id">05</div>
+        <div><div class="metric-title">Transfer Architecture</div>
+          <div class="metric-subtitle">Are novel contexts required that prove principle mastery?</div></div>
+        <div class="metric-pts">20 pts</div>
+      </div>
+      <div class="metric-body">
+        <div class="rubric">
+          <div class="rubric-score">0–5</div><div class="rubric-desc">Only the original worked example context is ever used. The learner never faces anything new.</div>
+          <div class="rubric-score">6–10</div><div class="rubric-desc">Slight numerical variations of the example (different numbers, same structure, obvious mapping).</div>
+          <div class="rubric-score">11–15</div><div class="rubric-desc">Different domain, same principle. Learner must map it themselves with light scaffolding.</div>
+          <div class="rubric-score best">16–20</div><div class="rubric-desc best">Learner is asked to invent their own example demonstrating the principle. Must identify the principle in a disguised context with no scaffolding. Must explain why a surface-different problem has the same deep structure.</div>
+        </div>
+        <div class="design-patterns">
+          <div class="dp-label">Transfer contexts for vectors chapter</div>
+          <div class="dp-list">
+            <span class="dp-tag">Audio mixing → L2 norm as loudness</span>
+            <span class="dp-tag">RGB color as 3D vector</span>
+            <span class="dp-tag">Economic indicators as high-dim vector</span>
+            <span class="dp-tag">Design a new steering vector for given goal</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- M6 -->
+    <div class="metric-card">
+      <div class="metric-head">
+        <div class="metric-id">06</div>
+        <div><div class="metric-title">Cognitive Load Calibration</div>
+          <div class="metric-subtitle">Is working memory optimally loaded — neither flooded nor starved?</div></div>
+        <div class="metric-pts">20 pts</div>
+      </div>
+      <div class="metric-body">
+        <div class="rubric">
+          <div class="rubric-score">0–5</div><div class="rubric-desc">Everything at once (overload) or one trivial thing at a time for too long (underload). No calibration.</div>
+          <div class="rubric-score">6–10</div><div class="rubric-desc">Reasonable pacing. Content per section is appropriate but static. No adaptation to learner.</div>
+          <div class="rubric-score">11–15</div><div class="rubric-desc">Progressive disclosure. Concepts are chunked explicitly. Prerequisite concepts are confirmed before dependent concepts are introduced.</div>
+          <div class="rubric-score best">16–20</div><div class="rubric-desc best">Adaptive: the system detects mastery signals (fast, accurate prediction) and increases complexity. Detects struggle (slow, inaccurate) and offers a simpler scaffold. Working memory is treated as a resource to be managed, not a sink to fill.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- M7 -->
+    <div class="metric-card">
+      <div class="metric-head">
+        <div class="metric-id">07</div>
+        <div><div class="metric-title">Emotional Resonance</div>
+          <div class="metric-subtitle">Does it create genuine curiosity, surprise, and the satisfaction of hard-won understanding?</div></div>
+        <div class="metric-pts">20 pts</div>
+      </div>
+      <div class="metric-body">
+        <div class="rubric">
+          <div class="rubric-score">0–5</div><div class="rubric-desc">Purely informational. No emotional hooks. Academic exercise aesthetic.</div>
+          <div class="rubric-score">6–10</div><div class="rubric-desc">Interesting content, some engaging visuals. The learner is interested but not gripped.</div>
+          <div class="rubric-score">11–15</div><div class="rubric-desc">Genuine "wait, what?" moments. Real stakes examples. Surprise at counterintuitive results.</div>
+          <div class="rubric-score best">16–20</div><div class="rubric-desc best">The learner experiences: (1) surprise at their own misconception failing, (2) genuine satisfaction at solving something hard, (3) the specific pleasure of a concept clicking into place. These are distinct emotional events, not ambient engagement.</div>
+        </div>
+        <div class="callout amber" style="margin-top:.85rem;">
+          <div class="callout-head">Critical note</div>
+          <p>M7 is the most seductive metric and the least predictive of actual learning. A score of 17/20 on M7 combined with 3/20 across M2–M5 produces the exact "great experience, learned nothing" failure pattern. M7 is necessary but cannot compensate for M2–M5 failures.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- M8 -->
+    <div class="metric-card">
+      <div class="metric-head">
+        <div class="metric-id">08</div>
+        <div><div class="metric-title">Compression Demand</div>
+          <div class="metric-subtitle">Does the system require the learner to compress and explain what they've understood?</div></div>
+        <div class="metric-pts">20 pts</div>
+      </div>
+      <div class="metric-body">
+        <div class="rubric">
+          <div class="rubric-score">0–5</div><div class="rubric-desc">Never asks the learner to explain. Provides summaries for the learner to read.</div>
+          <div class="rubric-score">6–10</div><div class="rubric-desc">Asks "in your own words" questions but accepts any response without grading.</div>
+          <div class="rubric-score">11–15</div><div class="rubric-desc">Requires written or selected explanations. Checks structural accuracy, not verbatim accuracy. Shows what structural element was missing from an inadequate explanation.</div>
+          <div class="rubric-score best">16–20</div><div class="rubric-desc best">Feynman checkpoints: learner must explain to a fictional non-expert. AI grades the explanation on structural fidelity, identifies the exact missing piece, and provides a targeted micro-lesson for that specific gap.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- M9 -->
+    <div class="metric-card">
+      <div class="metric-head">
+        <div class="metric-id">09</div>
+        <div><div class="metric-title">Interleaving &amp; Spacing</div>
+          <div class="metric-subtitle">Are earlier concepts strategically retrieved in later contexts?</div></div>
+        <div class="metric-pts">20 pts</div>
+      </div>
+      <div class="metric-body">
+        <div class="rubric">
+          <div class="rubric-score">0–5</div><div class="rubric-desc">Strictly linear. Each section is sealed. Earlier concepts are never revisited.</div>
+          <div class="rubric-score">6–10</div><div class="rubref-desc">Sections explicitly reference earlier concepts in text. Conceptual callbacks, no retrieval callbacks.</div>
+          <div class="rubric-score">11–15</div><div class="rubric-desc">Later problems require application of earlier concepts as prerequisites, without re-explaining them.</div>
+          <div class="rubric-score best">16–20</div><div class="rubric-desc best">Spaced retrieval is designed in: the system interrupts later sections with retrieval probes from earlier sections ("Before we continue — without looking back, what is the L2 norm formula?"). Spacing follows the forgetting curve: 5 min, 20 min, end-of-session.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- M10 -->
+    <div class="metric-card">
+      <div class="metric-head">
+        <div class="metric-id">10</div>
+        <div><div class="metric-title">Failure Honesty</div>
+          <div class="metric-subtitle">Does the system tell the learner exactly what they got wrong and why — keyed to a specific misconception?</div></div>
+        <div class="metric-pts">20 pts</div>
+      </div>
+      <div class="metric-body">
+        <div class="rubric">
+          <div class="rubric-score">0–5</div><div class="rubric-desc">No feedback system. Wrong answers impossible (everything "works"). OR: silent wrong answers.</div>
+          <div class="rubric-score">6–10</div><div class="rubric-desc">Right/wrong indicator only. The learner knows they were wrong but not why.</div>
+          <div class="rubric-score">11–15</div><div class="rubric-desc">"You got this wrong because [specific reason]." The error is explained in the context of the problem.</div>
+          <div class="rubric-score best">16–20</div><div class="rubric-desc best">The system identifies which misconception from the pre-mapped list the error reveals. It delivers a targeted micro-lesson addressing exactly that misconception. The learner must then solve a near-identical problem to confirm the misconception is resolved before proceeding.</div>
+        </div>
+        <div class="callout red" style="margin-top:.85rem;">
+          <div class="callout-head">The baseline's fatal flaw</div>
+          <p>Every interaction in the baseline experience was designed so that no wrong answer was possible. Sliders returned valid outputs. Dragging arrows produced valid vectors. There was nothing to fail at. This scores 0/20 and is the single biggest learning opportunity wasted.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="div-rule">
+
+<!-- §04 DESIGN PATTERNS -->
+<section class="section" id="patterns">
+  <div class="section-label">§ 04</div>
+  <h2>Core Design Patterns</h2>
+  <p>The 8 implementation patterns that, combined, achieve 195/200. Each maps to multiple metrics.</p>
+
+  <div class="pattern-block">
+    <div class="pb-num">Pattern 01 · Targets M2, M4, M10</div>
+    <div class="pb-title">The Predict-Lock-Reveal-Grade Loop</div>
+    <div class="pb-desc">The atomic unit of every interaction with a non-trivial reveal. The learner makes a specific, numerical or categorical prediction. The system locks it (visible, un-editable). The reveal happens. The system shows the delta between prediction and reality and explains why the gap exists — keyed to the relevant concept.</div>
+    <div class="pb-compare">
+      <div class="pb-bad"><div class="pb-lbl">❌ Anti-pattern</div>"Here is what happens when you scale a vector by α = 0.6: [animation plays]"</div>
+      <div class="pb-good"><div class="pb-lbl">✓ This pattern</div>"Before we compute: what will h_new[0] be after the steering? Type your prediction, then compute." [locks input] [reveals] "You predicted 0.40. Actual: 0.30. The gap is 0.10. Why? You forgot to multiply α by the steering component before adding. α × (−1.0) = −0.6, not −1.0. Try the next dimension."</div>
+    </div>
+  </div>
+
+  <div class="pattern-block">
+    <div class="pb-num">Pattern 02 · Targets M3, M4, M7</div>
+    <div class="pb-title">The Misconception Trap</div>
+    <div class="pb-desc">Identify the single most common wrong intuition for this concept. Design a scenario where the wrong intuition makes a specific, testable prediction. Let the learner act on that intuition. Show the prediction fail visually, dramatically, and irreversibly. Only then explain the correct model.</div>
+    <div class="pb-compare">
+      <div class="pb-bad"><div class="pb-lbl">❌ Anti-pattern</div>"Common mistake: people think vector addition mixes dimensions. It doesn't." [explanation]</div>
+      <div class="pb-good"><div class="pb-lbl">✓ This pattern</div>"If adding v = (3, 0) and u = (0, 4) mixed dimensions, what would you expect ‖v+u‖ to be? [learner inputs: 7] Now compute it. [shows: 5] You predicted 7. Actual: 5. If dimensions mixed, you'd be right. They don't — that's why the Pythagorean theorem applies and your intuition failed. This is the entire point of orthogonality."</div>
+    </div>
+  </div>
+
+  <div class="pattern-block">
+    <div class="pb-num">Pattern 03 · Targets M5, M1</div>
+    <div class="pb-title">The Transfer Challenge</div>
+    <div class="pb-desc">After every concept section: present a novel domain. Same structure, completely different surface. No hint that it maps to the prior concept. The learner must recognize the deep structure themselves. If they can't, they haven't learned the concept — they've learned the example.</div>
+    <div class="pb-compare">
+      <div class="pb-bad"><div class="pb-lbl">❌ Anti-pattern</div>[Repeat the same worked example with α = 0.7 instead of α = 0.6]</div>
+      <div class="pb-good"><div class="pb-lbl">✓ This pattern</div>"A chef has 5 ingredients: sweetness 0.8, saltiness 0.4, umami 0.9, acidity 0.3, bitterness 0.1. They want to reduce acidity by 0.3 without changing anything else. Using only what you learned — write the steering vector that accomplishes this."</div>
+    </div>
+  </div>
+
+  <div class="pattern-block">
+    <div class="pb-num">Pattern 04 · Targets M8, M1</div>
+    <div class="pb-title">The Feynman Checkpoint</div>
+    <div class="pb-desc">At the midpoint and end of each concept section: "Explain this to a 10-year-old who has never heard of vectors." The system (AI-powered) reads the explanation, identifies which structural element is missing or wrong, and returns a single targeted micro-lesson. The learner then tries again.</div>
+    <div class="pb-compare">
+      <div class="pb-bad"><div class="pb-lbl">❌ Anti-pattern</div>[Section summary auto-displayed: "In summary, vectors are ordered tuples..."]</div>
+      <div class="pb-good"><div class="pb-lbl">✓ This pattern</div>"Without looking back — explain in 2 sentences why vector addition is component-wise and not any other way." [AI reads response] "Your explanation covers the operation but misses the reason. You didn't mention why orthogonality forces this structure. The key word missing: independence."</div>
+    </div>
+  </div>
+
+  <div class="pattern-block">
+    <div class="pb-num">Pattern 05 · Targets M9, M2</div>
+    <div class="pb-title">The Spaced Interrupt</div>
+    <div class="pb-desc">The system tracks what was learned when. At calculated intervals (5 min, 20 min, session end) it interrupts the current section with an unannounced retrieval probe from an earlier section. The probe offers no context clues linking it to the earlier material. This feels surprising and slightly unfair — which is exactly why it works.</div>
+    <div class="pb-compare">
+      <div class="pb-bad"><div class="pb-lbl">❌ Anti-pattern</div>[Linear progression: §01 → §02 → §03 → §04 → §05, never revisiting]</div>
+      <div class="pb-good"><div class="pb-lbl">✓ This pattern</div>[Mid-way through §04 Transformer section] "Quick check — without looking: what is the L2 norm formula? Type it." [learner types] "Correct. Continue." — 15 seconds, maximum impact, no disruption to flow.</div>
+    </div>
+  </div>
+
+  <div class="pattern-block">
+    <div class="pb-num">Pattern 06 · Targets M3, M7</div>
+    <div class="pb-title">The Real Failure Anchor</div>
+    <div class="pb-desc">Every abstract concept is introduced via a real consequence, not an abstract definition. The hook is not "here is what this means" — it is "here is what went wrong because someone didn't know this." Stakes precede structure.</div>
+    <div class="pb-compare">
+      <div class="pb-bad"><div class="pb-lbl">❌ Anti-pattern</div>"A vector v ∈ ℝⁿ is an ordered tuple of n real numbers..."</div>
+      <div class="pb-good"><div class="pb-lbl">✓ This pattern</div>"In March 2023, an AI coaching system began responding to every user with identically structured, stiff replies regardless of their emotional state. The diagnosis: the formality steering vector had been applied with α = 2.0 instead of 0.3, and the 'sensitivity' dimension wasn't orthogonal — so formality overwrote it. The mechanism that broke it: vectors."</div>
+    </div>
+  </div>
+
+  <div class="pattern-block">
+    <div class="pb-num">Pattern 07 · Targets M10, M4</div>
+    <div class="pb-title">Misconception-Keyed Error Feedback</div>
+    <div class="pb-desc">Pre-map the top 4–6 misconceptions for each concept. Every graded interaction maps wrong answers to the misconception they reveal. Error feedback is not "wrong — try again" but "this error reveals misconception #3: you're treating the vector's magnitude as its identity. Here's why that fails."</div>
+  </div>
+
+  <div class="pattern-block">
+    <div class="pb-num">Pattern 08 · Targets M6, M4</div>
+    <div class="pb-title">Mastery-Gated Progression</div>
+    <div class="pb-desc">Sections do not unlock on click — they unlock on demonstrated understanding. The gate is a prediction task on the core concept of the current section. If the learner cannot predict the output of a novel problem (not the worked example), the section is not complete. This is the single highest-leverage structural change available.</div>
+    <div class="pb-compare">
+      <div class="pb-bad"><div class="pb-lbl">❌ Anti-pattern</div>"§ 05 Transformer Mapping →" [always clickable, regardless of prior understanding]</div>
+      <div class="pb-good"><div class="pb-lbl">✓ This pattern</div>"Before moving to §05: Given h = (0.5, 0.9, 0.3) and v_steer = (0.0, −1.0, 0.5) with α = 0.4, compute h_new by hand. All three components." [if correct → unlocks §05] [if wrong → "Component 2: 0.9 + (0.4 × −1.0) = 0.5, not [their answer]. The multiplication happens before the addition."]</div>
+    </div>
+  </div>
+
+</section>
+
+<hr class="div-rule">
+
+<!-- §05 ANTI-PATTERNS -->
+<section class="section" id="antis">
+  <div class="section-label">§ 05</div>
+  <h2>Anti-Patterns to Eliminate</h2>
+  <p>These are the specific design decisions that look like learning but sabotage it. Each one felt justified when built into the baseline experience.</p>
+
+  <div class="hierarchy">
+    <div class="h-l0">Anti-patterns by failure mode</div>
+    <div class="h-l1">── <span class="h-red">Passive Consumption Disguised as Interaction</span></div>
+    <div class="h-l2">Step-through buttons with no prior prediction requirement</div>
+    <div class="h-l2">Sliders that instantly show output (no commit → no error → no encoding)</div>
+    <div class="h-l2">Animations that play automatically or on click-to-play</div>
+    <div class="h-l2">Progress bars that advance on time, not on demonstrated mastery</div>
+    <div class="h-l1">── <span class="h-red">Structural Safety Without Learning</span></div>
+    <div class="h-l2">Interactions where no wrong answer is possible</div>
+    <div class="h-l2">Worked examples with all values pre-filled</div>
+    <div class="h-l2">Drag interactions with no correctness criterion</div>
+    <div class="h-l1">── <span class="h-red">Surface Transfer Only</span></div>
+    <div class="h-l2">Using the exact same numbers as the chapter throughout</div>
+    <div class="h-l2">Only varying α while keeping h₁₂ and v_steer identical</div>
+    <div class="h-l2">Domain-locked examples (only the CCP/AI coaching context)</div>
+    <div class="h-l1">── <span class="h-red">Explanation as Learning</span></div>
+    <div class="h-l2">Auto-generated summaries the learner reads</div>
+    <div class="h-l2">"Insight" callout boxes that state the insight for the learner</div>
+    <div class="h-l2">Tooltips and popovers that explain rather than probe</div>
+    <div class="h-l1">── <span class="h-red">Emotional Resonance Substituting for Cognitive Work</span></div>
+    <div class="h-l2">Beautiful particle animations that create engagement without encoding</div>
+    <div class="h-l2">High-production visual polish compensating for absent retrieval</div>
+    <div class="h-l2">Dark theme + glow effects creating a "feels like learning" experience</div>
+    <div class="h-l1">── <span class="h-accent">The core trap</span></div>
+    <div class="h-l2"><span class="h-accent">The experience feels good → Learner rates it highly → No durable memory → Framework fails → Repeat</span></div>
+  </div>
+</section>
+
+<hr class="div-rule">
+
+<!-- §06 BUILD CHECKLIST -->
+<section class="section" id="build">
+  <div class="section-label">§ 06</div>
+  <h2>The Build Checklist</h2>
+  <p>Before writing a single line of code for the next version, every section must pass this gate. If a section fails any gate, it is redesigned before implementation.</p>
+
+  <div style="font-family:var(--mono);font-size:.8rem;background:var(--paper2);border:1px solid var(--rule);padding:1.5rem 1.75rem;line-height:2.1;">
+    <div style="font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);margin-bottom:.75rem;">Per-Section Gates</div>
+
+    <div style="color:var(--ink3);">For each concept section, before coding:</div>
+    <br>
+    <div>□ <strong>Map the misconceptions.</strong> List the top 3 wrong prior models learners bring to this concept.</div>
+    <div>□ <strong>Design the misconception trap.</strong> What scenario makes the wrong model produce a testable, failing prediction?</div>
+    <div>□ <strong>Identify the prediction point.</strong> What specific value/outcome will the learner predict before any reveal?</div>
+    <div>□ <strong>Design the error-key.</strong> What misconception does each wrong prediction reveal? What is the micro-lesson for that misconception?</div>
+    <div>□ <strong>Write the transfer challenge.</strong> What novel-domain problem tests the same principle?</div>
+    <div>□ <strong>Write the Feynman prompt.</strong> What is the 1-sentence explanation task that tests structural fidelity?</div>
+    <div>□ <strong>Design the mastery gate.</strong> What prediction task must succeed before the next section unlocks?</div>
+    <br>
+    <div style="color:var(--ink3);">System-level gates:</div>
+    <br>
+    <div>□ <strong>Spaced interrupt schedule.</strong> At which timestamps/section-transitions will retrieval probes from earlier sections appear?</div>
+    <div>□ <strong>Wrong-answer coverage.</strong> For every gradable interaction, is there a wrong answer? Is it keyed to a misconception?</div>
+    <div>□ <strong>Generation rate.</strong> Of all interactions in this section, what % require generation vs. consumption? Must exceed 60%.</div>
+    <div>□ <strong>Context variety.</strong> How many different domains are used? Must be ≥ 2, at least one with no explicit link to the chapter context.</div>
+  </div>
+</section>
+
+<hr class="div-rule">
+
+<!-- §07 SCORING RUBRIC -->
+<section class="section" id="scoring">
+  <div class="section-label">§ 07</div>
+  <h2>Scoring Rubric: What 195/200 Looks Like</h2>
+
+  <div class="tracker" id="targetTracker">
+    <div class="tracker-title">Target Score Distribution</div>
+
+    <div class="t-row"><span class="t-lbl">M1 · Conceptual Fidelity</span>
+      <div class="t-bar"><div class="t-fill" style="width:90%;background:var(--green)"></div></div>
+      <span class="t-val" style="color:var(--green)">18/20</span></div>
+
+    <div class="t-row"><span class="t-lbl">M2 · Active Retrieval Rate</span>
+      <div class="t-bar"><div class="t-fill" style="width:90%;background:var(--green)"></div></div>
+      <span class="t-val" style="color:var(--green)">18/20</span></div>
+
+    <div class="t-row"><span class="t-lbl">M3 · Misconception Targeting</span>
+      <div class="t-bar"><div class="t-fill" style="width:85%;background:var(--green)"></div></div>
+      <span class="t-val" style="color:var(--green)">17/20</span></div>
+
+    <div class="t-row"><span class="t-lbl">M4 · Prediction-Error Loops</span>
+      <div class="t-bar"><div class="t-fill" style="width:95%;background:var(--green)"></div></div>
+      <span class="t-val" style="color:var(--green)">19/20</span></div>
+
+    <div class="t-row"><span class="t-lbl">M5 · Transfer Architecture</span>
+      <div class="t-bar"><div class="t-fill" style="width:85%;background:var(--green)"></div></div>
+      <span class="t-val" style="color:var(--green)">17/20</span></div>
+
+    <div class="t-row"><span class="t-lbl">M6 · Cognitive Load Calibration</span>
+      <div class="t-bar"><div class="t-fill" style="width:90%;background:var(--green)"></div></div>
+      <span class="t-val" style="color:var(--green)">18/20</span></div>
+
+    <div class="t-row"><span class="t-lbl">M7 · Emotional Resonance</span>
+      <div class="t-bar"><div class="t-fill" style="width:90%;background:var(--green)"></div></div>
+      <span class="t-val" style="color:var(--green)">18/20</span></div>
+
+    <div class="t-row"><span class="t-lbl">M8 · Compression Demand</span>
+      <div class="t-bar"><div class="t-fill" style="width:80%;background:var(--amber)"></div></div>
+      <span class="t-val" style="color:var(--amber)">16/20</span></div>
+
+    <div class="t-row"><span class="t-lbl">M9 · Interleaving &amp; Spacing</span>
+      <div class="t-bar"><div class="t-fill" style="width:80%;background:var(--amber)"></div></div>
+      <span class="t-val" style="color:var(--amber)">16/20</span></div>
+
+    <div class="t-row"><span class="t-lbl">M10 · Failure Honesty</span>
+      <div class="t-bar"><div class="t-fill" style="width:90%;background:var(--green)"></div></div>
+      <span class="t-val" style="color:var(--green)">18/20</span></div>
+
+    <div class="t-row" style="border-top:2px solid var(--ink);margin-top:.75rem;padding-top:.75rem;">
+      <span class="t-lbl" style="font-weight:500;color:var(--ink);">Total</span>
+      <div class="t-bar"><div class="t-fill" style="width:97.5%;background:var(--ink)"></div></div>
+      <span class="t-val" style="color:var(--ink);font-size:.9rem;font-weight:500;">195/200</span></div>
+  </div>
+
+  <div class="callout green">
+    <div class="callout-head">Why not 200/200</div>
+    <p>True 200/200 requires adaptive real-time calibration of difficulty, full Feynman-graded AI explanations for every concept, and individually targeted misconception sequences based on per-learner error history. These are achievable — M8 and M9 are capped at 16 because they require either more AI integration or more session time than a single-session experience allows. 195 is the realistic ceiling for a well-built single-session experience without persistent user state.</p>
+  </div>
+
+</section>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-l">The Learning<br>Experience Framework</div>
+  <div class="footer-r">
+    7 First Principles · 10 Metrics · 8 Design Patterns<br>
+    Built from cognitive science, not UX trends<br>
+    v1.0 — Apply before writing any code
+  </div>
+</div>
+
+</div>
+</body>
+</html>

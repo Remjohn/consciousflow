@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distance Metrics — Analogy Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0b0d;
+  --surface: #111318;
+  --surface2: #181c22;
+  --surface3: #20252f;
+  --text: #dde2ec;
+  --muted: #606880;
+  --border: #1e2330;
+  --accent: #c8a96e;
+  --accent2: #6eb5c8;
+  --red: #c86e7a;
+  --green: #6ec88a;
+  --mono: 'DM Mono', monospace;
+  --display: 'Playfair Display', serif;
+  --sans: 'DM Sans', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+.container {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 5rem 2rem 10rem;
+}
+
+/* — Typography — */
+.lesson-tag {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  margin-bottom: 1.2rem;
+}
+
+h1 {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 3.2rem;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.6rem;
+  color: #fff;
+}
+
+.subtitle {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 2rem;
+  letter-spacing: 0.04em;
+}
+
+.intro-text {
+  font-size: 1rem;
+  color: #8a92a8;
+  max-width: 680px;
+  line-height: 1.8;
+  margin-bottom: 3.5rem;
+  border-left: 2px solid var(--border);
+  padding-left: 1.2rem;
+}
+
+h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.7rem;
+  color: #fff;
+  margin: 3.5rem 0 0.3rem;
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 2rem 0 0.75rem;
+}
+
+p {
+  font-size: 0.9rem;
+  color: #8a92a8;
+  margin-bottom: 1.1rem;
+  line-height: 1.8;
+}
+
+strong { color: var(--text); font-weight: 500; }
+em { color: #a0a8c0; }
+
+hr { border: none; border-top: 1px solid var(--border); margin: 3rem 0; }
+
+/* — Domain Cards — */
+.domain-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.domain-emoji {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.domain-title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.4rem;
+  color: #fff;
+}
+
+.domain-subtitle {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 0.2rem;
+}
+
+/* — Mapping grid — */
+.map-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin: 1.2rem 0;
+}
+
+@media (max-width: 580px) { .map-grid { grid-template-columns: 1fr; } }
+
+.map-item {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.9rem 1rem;
+}
+
+.map-key {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--accent2);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.3rem;
+}
+
+.map-val {
+  font-size: 0.82rem;
+  color: #a0a8c0;
+  line-height: 1.5;
+}
+
+/* — Three cases — */
+.cases { margin: 1.5rem 0; }
+
+.case {
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+
+.case-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: var(--surface2);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.case-header:hover { background: var(--surface3); }
+
+.case-pip {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.case-pip.high { background: var(--green); }
+.case-pip.zero { background: var(--muted); }
+.case-pip.conflict { background: var(--red); }
+
+.case-label {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  flex: 1;
+}
+
+.case-arrow {
+  font-size: 0.7rem;
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+
+.case-body {
+  padding: 1rem 1.1rem;
+  font-size: 0.85rem;
+  color: #8a92a8;
+  line-height: 1.75;
+  border-top: 1px solid var(--border);
+  display: none;
+}
+
+.case.open .case-body { display: block; }
+.case.open .case-arrow { transform: rotate(90deg); }
+
+.math-tie {
+  background: var(--surface);
+  border-left: 2px solid var(--accent);
+  padding: 0.9rem 1.1rem;
+  margin: 1.2rem 0;
+  font-size: 0.82rem;
+  color: #a0a8c0;
+  line-height: 1.7;
+  border-radius: 0 4px 4px 0;
+}
+
+.math-tie-label {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 0.4rem;
+}
+
+/* — Interaction boxes — */
+.interact {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2rem 2.2rem;
+  margin: 2.5rem 0;
+  position: relative;
+}
+
+.interact::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  border-radius: 6px 6px 0 0;
+}
+
+.interact-tag {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  margin-bottom: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.interact-tag::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.q-text {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  color: #ccd0de;
+  margin-bottom: 1.6rem;
+  line-height: 1.75;
+}
+
+/* Canvas */
+canvas {
+  border-radius: 4px;
+  display: block;
+}
+
+#drag-readout {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: center;
+  height: 1.4rem;
+  margin: 0.75rem 0 1.2rem;
+}
+
+/* Buttons */
+.btn {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  padding: 0.65rem 1.4rem;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn:hover:not(:disabled) { background: #dfc08a; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 0.55rem 1.2rem;
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 0.82rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-ghost:hover { border-color: var(--text); color: var(--text); }
+
+/* Feedback */
+.feedback {
+  display: none;
+  margin-top: 1.4rem;
+  padding: 1.1rem 1.3rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+.feedback.show { display: block; animation: rise 0.3s ease; }
+.feedback.ok { background: rgba(110,200,138,0.08); border-left: 2px solid var(--green); color: #9ee8b5; }
+.feedback.fail { background: rgba(200,110,122,0.08); border-left: 2px solid var(--red); color: #e8a0a8; }
+
+.fb-label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.4rem;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Gated */
+.gated {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(14px);
+  transition: all 0.5s ease;
+  display: none;
+}
+
+.gated.on {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  display: block;
+}
+
+/* Card picker */
+.card-pick {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.pick-card {
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.pick-card:hover { border-color: var(--accent); }
+.pick-card.selected { border-color: var(--accent); background: rgba(200,169,110,0.06); }
+
+.pick-card canvas { width: 100%; border-radius: 3px; margin-bottom: 0.6rem; }
+
+.pick-label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Input */
+.input-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0;
+}
+
+.text-in {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  padding: 0.6rem 0.9rem;
+  flex: 1;
+  border-radius: 4px;
+  transition: border-color 0.2s;
+}
+
+.text-in:focus { outline: none; border-color: var(--accent); }
+.text-in:disabled { opacity: 0.5; }
+
+/* Scenario / Puzzle / Failure cards */
+.scenario-list, .puzzle-list, .failure-list { margin: 1.5rem 0; }
+
+.scenario-item, .puzzle-item, .failure-item {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1.2rem 1.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.scenario-num, .puzzle-num, .failure-num {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+}
+
+.scenario-q, .puzzle-q, .failure-q {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+  margin-bottom: 0.6rem;
+}
+
+.scenario-a, .puzzle-a, .failure-a {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+/* Build task steps */
+.build-steps { counter-reset: step; margin: 1.2rem 0; }
+
+.build-step {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+  align-items: flex-start;
+}
+
+.build-step-num {
+  min-width: 1.8rem;
+  height: 1.8rem;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--accent);
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.build-step-body { flex: 1; }
+
+.build-step-title {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+}
+
+.build-step-desc {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* Gauntlet */
+.gauntlet-section {
+  margin-top: 4rem;
+  border-top: 1px solid var(--border);
+  padding-top: 3rem;
+}
+
+.drill {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1.4rem;
+  margin-bottom: 1rem;
+}
+
+.drill-num {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.6rem;
+}
+
+.drill-q {
+  font-size: 0.9rem;
+  color: var(--text);
+  margin-bottom: 1.1rem;
+  line-height: 1.65;
+  font-weight: 400;
+}
+
+.bool-row { display: flex; gap: 0.75rem; }
+
+/* Compression block */
+.compression {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2rem 2.2rem;
+  margin: 3rem 0;
+}
+
+.compression-label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--accent2);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-bottom: 1rem;
+}
+
+.compression p {
+  font-size: 0.92rem;
+  color: #a0a8c0;
+  line-height: 1.85;
+}
+
+.compression p:last-child {
+  font-family: var(--display);
+  font-size: 1.05rem;
+  color: var(--text);
+  font-style: italic;
+  margin-top: 1rem;
+  margin-bottom: 0;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="lesson-tag">Lesson 09 · Analogy Layer</div>
+  <h1>Multi-Domain Discovery Vectors</h1>
+  <div class="subtitle">Analogy / Geometric Engine</div>
+
+  <p class="intro-text">Clustering is the mathematics of discovering natural groups by measuring how similar or dissimilar entities are. The algorithm picks centroids, assigns every point to its nearest center, recomputes the centers as the average of their members, and repeats until nothing changes. The distance metric — Euclidean for absolute position, Cosine for directional alignment, Manhattan for grid-based robustness — fundamentally determines what "similar" means.</p>
+
+  <!-- ── SECTION 1: RECAP ── -->
+  <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:0.5rem;">§1 — Core Concept Recap</div>
+  <p>The centroid is the platonic ideal of a group. The distance metric is the definition of similarity. The iteration is the algorithm learning to see structure. Across every domain below, the mathematics is identical — only the interpretation of "cluster" changes.</p>
+
+  <hr>
+
+  <!-- ── SECTION 2: ANALOGY SYSTEM ── -->
+  <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:0.5rem;">§2 — Analogy System</div>
+
+  <!-- FOOTBALL -->
+  <div class="domain-header">
+    <div class="domain-emoji">⚽</div>
+    <div>
+      <div class="domain-title">Football: The Scouting Department Clusters the Squad</div>
+      <div class="domain-subtitle">K-Means on Player Stat Vectors</div>
+    </div>
+  </div>
+
+  <div class="map-grid">
+    <div class="map-item"><div class="map-key">Vectors</div><div class="map-val">Player stat profiles: [xG, Pass %, Tackles/90, Sprint Distance, Cross Accuracy, Aerial Duels]</div></div>
+    <div class="map-item"><div class="map-key">Distance</div><div class="map-val">Euclidean = raw volume difference. Cosine = playstyle similarity regardless of minutes played.</div></div>
+    <div class="map-item"><div class="map-key">Centroids</div><div class="map-val">The "average stat profile" of each tactical role cluster.</div></div>
+    <div class="map-item"><div class="map-key">K-Means Loop</div><div class="map-val">The scouting department iteratively sorting prospects into roles by statistical fingerprints.</div></div>
+  </div>
+
+  <p>The Inter Milan scouting department receives sixty prospect profiles from across Europe. Each profile contains six numerical stats. They want to discover how many distinct tactical roles these prospects naturally represent — without imposing pre-defined positions like "striker" or "midfielder." They initialize three centroids randomly. Every prospect is assigned to the nearest centroid by Euclidean distance. The centroids are recalculated as the mean of their assigned players. After four iterations, three clear clusters emerge.</p>
+
+  <div class="cases">
+    <div class="case open">
+      <div class="case-header" onclick="toggleCase(this)">
+        <div class="case-pip high"></div>
+        <div class="case-label">Case A — High Alignment (Tight Cluster)</div>
+        <div class="case-arrow">›</div>
+      </div>
+      <div class="case-body">Lautaro Martínez, Marcus Thuram, and a Porto prospect all land within 0.3 units of the same centroid. Their stat vectors are nearly identical: high xG, moderate passing, low tackling. The centroid represents the "Clinical Forward" archetype. Any scout looking for this profile searches within this cluster exclusively.</div>
+    </div>
+    <div class="case">
+      <div class="case-header" onclick="toggleCase(this)">
+        <div class="case-pip zero"></div>
+        <div class="case-label">Case B — Zero Alignment (Orthogonal Roles)</div>
+        <div class="case-arrow">›</div>
+      </div>
+      <div class="case-body">A defensive midfielder [0.1 xG, 88% Pass, 4.2 Tackles, low Sprint, 0% Cross, 0 Aerials] and a target striker [0.8 xG, 52% Pass, 0.3 Tackles, low Sprint, 0%, 8.5 Aerials] have virtually zero overlap. Their Cosine similarity approaches zero — they exist on perpendicular planes of the tactical space. Clustering correctly separates them into independent groups.</div>
+    </div>
+    <div class="case">
+      <div class="case-header" onclick="toggleCase(this)">
+        <div class="case-pip conflict"></div>
+        <div class="case-label">Case C — Conflicting Assignment (Metric Trap)</div>
+        <div class="case-arrow">›</div>
+      </div>
+      <div class="case-body">A young prospect plays only 200 minutes but posts extraordinary per-90 stats. A veteran plays 3,000 minutes with solid unspectacular per-90 numbers. Under Euclidean distance on raw totals, the veteran's accumulated numbers place him far from the prospect. Under Cosine distance, their per-90 directional signatures may be nearly identical. The scouting department must decide: are we clustering by <em>volume</em> or by <em>style</em>?</div>
+    </div>
+  </div>
+
+  <div class="math-tie">
+    <div class="math-tie-label">Math Tie-Back</div>
+    Player profiling is K-Means on stat vectors. The centroid is the platonic ideal of a tactical role. Transfer targets are found by computing distance to the desired centroid — the closer the better. The choice between Euclidean and Cosine determines whether the club recruits for raw production or stylistic compatibility.
+  </div>
+
+  <!-- TYPE A INTERACT: Football Cosine/Euclidean Canvas -->
+  <div class="interact" id="football-box">
+    <div class="interact-tag">Type A Canvas — The Football Prospect Correlator</div>
+    <div class="q-text">
+      The Inter Milan scouting department needs to replace their retiring Defensive Anchor (the <strong style="color:var(--green);">green veteran dot</strong>). X-axis = Total Minutes Played, Y-axis = Total Tackles.<br><br>
+      <strong>Challenge:</strong> Drag the <strong style="color:var(--accent);">gold Rookie Prospect</strong> to a coordinate where their Cosine Distance to the Veteran is exactly 0.0 (identical playstyle ratio), while their Euclidean Distance is massive (&gt; 150 units) because the rookie has barely played any minutes.
+    </div>
+    <div style="position:relative;">
+      <canvas id="football-canvas" width="620" height="300" style="width:100%;background:#06080c;border:1px solid var(--border);border-radius:4px;cursor:crosshair;"></canvas>
+    </div>
+    <div id="drag-readout">Rookie Coordinates: X <span id="x-pos">0</span> | Y <span id="y-pos">0</span></div>
+    <div style="text-align:center;">
+      <button class="btn" id="lock-football" onclick="lockFootball()">Lock Transfer Target</button>
+    </div>
+    <div class="feedback" id="fb-football"></div>
+  </div>
+
+  <div class="gated" id="gate-football">
+    <p>By enforcing the vector along the exact same angular ray from the origin, you replicated the precise <em>Tackles-per-Minute</em> ratio of the veteran. Cosine evaluates playstyle. Euclidean evaluates volume. You recruited correctly.</p>
+
+    <hr>
+
+    <!-- RPG -->
+    <div class="domain-header">
+      <div class="domain-emoji">🎮</div>
+      <div>
+        <div class="domain-title">RPG: The Monster Bestiary Gets Clustered</div>
+        <div class="domain-subtitle">K-Means on Monster Resistance Vectors</div>
+      </div>
+    </div>
+
+    <div class="map-grid">
+      <div class="map-item"><div class="map-key">Vectors</div><div class="map-val">Monster stat profiles: [Fire Resistance, Ice Resistance, Physical Armor, Magic Armor, HP Pool, Attack Speed]</div></div>
+      <div class="map-item"><div class="map-key">Distance</div><div class="map-val">Similarity between two monsters' defensive profiles.</div></div>
+      <div class="map-item"><div class="map-key">Centroids</div><div class="map-val">The "average weakness profile" of each monster archetype.</div></div>
+      <div class="map-item"><div class="map-key">K-Means Loop</div><div class="map-val">The game's AI balancing system automatically discovering monster archetypes from 200 monsters at k=4.</div></div>
+    </div>
+
+    <p>Four natural archetypes emerge: "Glass Cannons" (low everything except Attack Speed), "Elemental Tanks" (high Fire+Ice, low Physical), "Bruisers" (high Physical+HP, low elemental), and "Balanced" (moderate across all axes).</p>
+
+    <div class="cases">
+      <div class="case open">
+        <div class="case-header" onclick="toggleCase(this)">
+          <div class="case-pip high"></div>
+          <div class="case-label">Case A — High Alignment (Perfect Counter)</div>
+          <div class="case-arrow">›</div>
+        </div>
+        <div class="case-body">A Fire Mage's attack vector [9, 0, 0, 0, −, −] maximally aligns with the "Elemental Tank" cluster's fire weakness. The Dot Product between attack and weakness is enormous. The centroid tells the player: this archetype melts to fire.</div>
+      </div>
+      <div class="case">
+        <div class="case-header" onclick="toggleCase(this)">
+          <div class="case-pip zero"></div>
+          <div class="case-label">Case B — Zero Alignment (Orthogonal Matchup)</div>
+          <div class="case-arrow">›</div>
+        </div>
+        <div class="case-body">A Pure Physical Fighter [0, 0, 9, 0, −, −] against the "Elemental Tank" whose weakness exists exclusively on Fire/Ice dimensions. Zero overlap. The clustering reveals physical attacks are structurally useless against this archetype — not because of a label, but because the geometric distance between attack vector and weakness centroid is maximal.</div>
+      </div>
+      <div class="case">
+        <div class="case-header" onclick="toggleCase(this)">
+          <div class="case-pip conflict"></div>
+          <div class="case-label">Case C — Negative/Conflicting (Healing the Enemy)</div>
+          <div class="case-arrow">›</div>
+        </div>
+        <div class="case-body">An Ice Mage attacks a monster whose Ice Resistance is negative (it absorbs ice). The distance metric shows this monster is in the opposite hemisphere of the weakness space. Clustering correctly places ice-absorbing monsters far from the "Weak to Ice" centroid.</div>
+      </div>
+    </div>
+
+    <div class="math-tie">
+      <div class="math-tie-label">Math Tie-Back</div>
+      Optimal party composition is a covering problem: select members whose combined attack vectors achieve low distance to the largest number of monster cluster centroids. Min-maxing is gradient descent over the K-Means objective.
+    </div>
+
+    <hr>
+
+    <!-- MUSIC -->
+    <div class="domain-header">
+      <div class="domain-emoji">🎵</div>
+      <div>
+        <div class="domain-title">Music: Auto-Genre Detection via Frequency Clustering</div>
+        <div class="domain-subtitle">K-Means on Audio Fingerprint Vectors</div>
+      </div>
+    </div>
+
+    <div class="map-grid">
+      <div class="map-item"><div class="map-key">Vectors</div><div class="map-val">Track audio fingerprints: [Sub-Bass Energy, Mid-Range Density, Treble Brightness, BPM, Reverb Depth, Vocal Presence]</div></div>
+      <div class="map-item"><div class="map-key">Distance</div><div class="map-val">Spectral similarity between two tracks.</div></div>
+      <div class="map-item"><div class="map-key">Centroids</div><div class="map-val">The "average sonic fingerprint" of each genre.</div></div>
+      <div class="map-item"><div class="map-key">K-Means Loop</div><div class="map-val">Spotify's genre auto-classification on 50,000 new tracks per week — no artist-submitted tags needed.</div></div>
+    </div>
+
+    <div class="cases">
+      <div class="case open">
+        <div class="case-header" onclick="toggleCase(this)">
+          <div class="case-pip high"></div>
+          <div class="case-label">Case A — High Alignment (Genre Purity)</div>
+          <div class="case-arrow">›</div>
+        </div>
+        <div class="case-body">A new track with [9, 2, 1, 140, 0, 0] — heavy sub-bass, high BPM, no vocals — lands 0.2 units from the "Drum & Bass" centroid. The assignment is immediate and confident. Silhouette score: 0.95.</div>
+      </div>
+      <div class="case">
+        <div class="case-header" onclick="toggleCase(this)">
+          <div class="case-pip zero"></div>
+          <div class="case-label">Case B — Zero Alignment (Genre Independence)</div>
+          <div class="case-arrow">›</div>
+        </div>
+        <div class="case-body">A classical piano piece [0, 8, 7, 72, 5, 0] and a trap beat [9, 1, 0, 145, 0, 3] sit in completely separate regions. Their Cosine similarity approaches zero. They are orthogonal genres — knowing about one tells you nothing about the other.</div>
+      </div>
+      <div class="case">
+        <div class="case-header" onclick="toggleCase(this)">
+          <div class="case-pip conflict"></div>
+          <div class="case-label">Case C — Conflicting (The Boundary Track)</div>
+          <div class="case-arrow">›</div>
+        </div>
+        <div class="case-body">An experimental track blends classical strings with trap hi-hats: [4, 6, 5, 130, 3, 2]. Its distance to "Classical" and "Trap" centroids is nearly equal. Silhouette score ≈ 0. The system must either expand k to create an "Experimental Fusion" cluster or accept the ambiguity. This is the clustering equivalent of a player who can play both midfielder and forward.</div>
+      </div>
+    </div>
+
+    <div class="math-tie">
+      <div class="math-tie-label">Math Tie-Back</div>
+      A genre is a centroid in audio feature space. Genre purity is intra-cluster distance. Genre boundaries are Voronoi edges where tracks are equidistant from two centroids. When critics argue whether an album is "hip-hop or R&B," they are debating which centroid the sonic vector is closer to.
+    </div>
+
+    <!-- TYPE B INTERACT: Genre Boundary Canvas -->
+    <div class="interact" id="music-box">
+      <div class="interact-tag">Type B Canvas — The Musical Genre Boundary Trap</div>
+      <div class="q-text">
+        In automated Genre Detection, tracks are routed based on spatial alignment. Not every track rests safely near the center of a dense genre centroid.<br><br>
+        <strong>Challenge:</strong> Which of these two clusters explicitly isolates a "Fusion Genre" track sitting at a Silhouette Score of 0.0?
+      </div>
+      <div class="card-pick">
+        <div class="pick-card" id="cardA" onclick="selectCard('A')">
+          <canvas id="canvasA" height="130" width="280"></canvas>
+          <div class="pick-label">Graph A</div>
+        </div>
+        <div class="pick-card" id="cardB" onclick="selectCard('B')">
+          <canvas id="canvasB" height="130" width="280"></canvas>
+          <div class="pick-label">Graph B</div>
+        </div>
+      </div>
+      <div style="text-align:center;">
+        <button class="btn" id="lock-card" onclick="lockCard()" disabled>Lock Geometry Prediction</button>
+      </div>
+      <div class="feedback" id="fb-card"></div>
+    </div>
+
+    <div class="gated" id="gate-music">
+
+      <hr>
+
+      <!-- COOKING -->
+      <div class="domain-header">
+        <div class="domain-emoji">🍳</div>
+        <div>
+          <div class="domain-title">Cooking: Discovering Cuisine Archetypes via Flavor Clustering</div>
+          <div class="domain-subtitle">K-Means on Recipe Flavor Profiles</div>
+        </div>
+      </div>
+
+      <div class="map-grid">
+        <div class="map-item"><div class="map-key">Vectors</div><div class="map-val">Recipe flavor profiles: [Salt, Umami, Acid, Sweet, Bitter, Fat, Heat]</div></div>
+        <div class="map-item"><div class="map-key">Distance</div><div class="map-val">Flavor similarity between two recipes.</div></div>
+        <div class="map-item"><div class="map-key">Centroids</div><div class="map-val">The "average flavor signature" of each cuisine family.</div></div>
+        <div class="map-item"><div class="map-key">K-Means Loop</div><div class="map-val">A culinary AI discovering cuisine families from 10,000 unlabeled global recipes at k=5.</div></div>
+      </div>
+
+      <p>Five centroids emerge: "Mediterranean" (high Acid, moderate Fat, low Heat), "East Asian" (high Umami, high Salt, moderate Heat), "Latin American" (high Heat, high Acid, moderate Sweet), "Northern European" (high Fat, high Salt, low everything else), "South Asian" (extreme Heat, high Sweet+Acid combinations).</p>
+
+      <div class="cases">
+        <div class="case open">
+          <div class="case-header" onclick="toggleCase(this)">
+            <div class="case-pip high"></div>
+            <div class="case-label">Case A — High Alignment (Cluster Purity)</div>
+            <div class="case-arrow">›</div>
+          </div>
+          <div class="case-body">A traditional Thai green curry [6, 7, 4, 3, 0, 5, 9] lands squarely within the "South Asian" centroid. The high Heat and complex Sweet-Acid balance are the defining directional characteristics. Euclidean distance to centroid: 0.8 units.</div>
+        </div>
+        <div class="case">
+          <div class="case-header" onclick="toggleCase(this)">
+            <div class="case-pip zero"></div>
+            <div class="case-label">Case B — Zero Alignment (Independent Cuisines)</div>
+            <div class="case-arrow">›</div>
+          </div>
+          <div class="case-body">Japanese sashimi [5, 9, 2, 1, 0, 0, 0] and French butter sauce [7, 3, 0, 0, 0, 9, 0] have virtually zero Cosine similarity. Their flavor vectors point in completely different directions in the 7D space. They are orthogonal cuisines existing on independent flavor axes.</div>
+        </div>
+        <div class="case">
+          <div class="case-header" onclick="toggleCase(this)">
+            <div class="case-pip conflict"></div>
+            <div class="case-label">Case C — Conflicting (Fusion Cuisine)</div>
+            <div class="case-arrow">›</div>
+          </div>
+          <div class="case-body">A "Korean-Mexican taco" [6, 5, 5, 2, 0, 3, 8] blends Heat from Latin and Umami from East Asian. It sits equidistant between two centroids. K-Means must force a hard assignment, but the Silhouette score reveals this recipe straddles a Voronoi boundary. Fusion cuisine is mathematically a point in the boundary zone.</div>
+        </div>
+      </div>
+
+      <div class="math-tie">
+        <div class="math-tie-label">Math Tie-Back</div>
+        A cuisine is not defined by cultural rules — it is a centroid in flavor space. When a chef "innovates," they are geometrically moving a recipe vector toward a region that no existing centroid occupies. True culinary innovation is the discovery of unclaimed territory in multi-dimensional flavor geometry.
+      </div>
+
+      <hr>
+
+      <!-- PSYCHOLOGY -->
+      <div class="domain-header">
+        <div class="domain-emoji">🧠</div>
+        <div>
+          <div class="domain-title">Psychology: CBCS Behavioral Archetype Discovery</div>
+          <div class="domain-subtitle">K-Means on Client Psychological Profiles</div>
+        </div>
+      </div>
+
+      <div class="map-grid">
+        <div class="map-item"><div class="map-key">Vectors</div><div class="map-val">Client profiles: [Self-Disclosure Depth, Message Frequency, Change Talk Ratio, Emotional Valence, Confrontation Tolerance, Session Consistency]</div></div>
+        <div class="map-item"><div class="map-key">Distance</div><div class="map-val">Behavioral similarity between two clients.</div></div>
+        <div class="map-item"><div class="map-key">Centroids</div><div class="map-val">The "average behavioral fingerprint" of each psychological archetype.</div></div>
+        <div class="map-item"><div class="map-key">K-Means Loop</div><div class="map-val">CBCS engine discovering 4 archetypes from 200 clients over 90 days — no labels provided.</div></div>
+      </div>
+
+      <p>Four archetypes crystallize: <strong>Cluster 1</strong> "Active Seekers" (high Change Talk, high Session Consistency). <strong>Cluster 2</strong> "Processing Introverts" (high Self-Disclosure, low Frequency, high Emotional Valence). <strong>Cluster 3</strong> "Surface Broadcasters" (high Frequency, low Depth, low Change Talk). <strong>Cluster 4</strong> "Resistant Deflectors" (low everything except Confrontation Tolerance).</p>
+
+      <div class="cases">
+        <div class="case open">
+          <div class="case-header" onclick="toggleCase(this)">
+            <div class="case-pip high"></div>
+            <div class="case-label">Case A — High Alignment (Archetype Clarity)</div>
+            <div class="case-arrow">›</div>
+          </div>
+          <div class="case-body">Client Maria's vector is 0.15 units from the "Active Seekers" centroid. Her Silhouette score is 0.91. The JIT Skill Compiler confidently assigns her the Socratic Confrontation protocol — she wants to be challenged. The mathematical distance confirms what a human coach would feel intuitively.</div>
+        </div>
+        <div class="case">
+          <div class="case-header" onclick="toggleCase(this)">
+            <div class="case-pip zero"></div>
+            <div class="case-label">Case B — Zero Alignment (Independent Behavioral Axes)</div>
+            <div class="case-arrow">›</div>
+          </div>
+          <div class="case-body">A client who messages constantly but never self-discloses (high Frequency, zero Depth) is orthogonal to one who sends one message per week but pours their soul into it (zero Frequency, maximum Depth). Cosine similarity = 0. These are independent behavioral strategies requiring completely different protocols.</div>
+        </div>
+        <div class="case">
+          <div class="case-header" onclick="toggleCase(this)">
+            <div class="case-pip conflict"></div>
+            <div class="case-label">Case C — Conflicting (The Transitioning Client)</div>
+            <div class="case-arrow">›</div>
+          </div>
+          <div class="case-body">Client João has been in "Resistant Deflector" for 8 weeks. This week his Change Talk ratio suddenly spikes. His vector shifts toward the "Active Seeker" centroid. His Silhouette score drops from 0.85 to 0.35, triggering a Concept Drift alert. The system recognizes João is mid-transition — a critical moment where the coaching protocol must adapt.</div>
+        </div>
+      </div>
+
+      <div class="math-tie">
+        <div class="math-tie-label">Math Tie-Back</div>
+        Therapy has always been about pattern recognition. The CBCS replaces subjective intuition with geometric proof. A client's "readiness for breakthrough" is a measurable distance to the "Active Seeker" centroid. When that distance drops below the epsilon threshold, the system triggers the <code style="font-family:var(--mono);font-size:0.8em;color:var(--accent2);">72-Hour Identity Anchor Protocol</code> automatically.
+      </div>
+
+      <hr>
+
+      <!-- AI / CCP -->
+      <div class="domain-header">
+        <div class="domain-emoji">🤖</div>
+        <div>
+          <div class="domain-title">AI / CCP: CRAL Embedding Clustering</div>
+          <div class="domain-subtitle">K-Means on 768D Document Embeddings</div>
+        </div>
+      </div>
+
+      <div class="map-grid">
+        <div class="map-item"><div class="map-key">Vectors</div><div class="map-val">Article/document embeddings: 768-dimensional vectors from the CRAL Research Engine.</div></div>
+        <div class="map-item"><div class="map-key">Distance</div><div class="map-val">Semantic similarity between documents — always Cosine.</div></div>
+        <div class="map-item"><div class="map-key">Centroids</div><div class="map-val">The "average semantic fingerprint" of each topic cluster.</div></div>
+        <div class="map-item"><div class="map-key">K-Means Loop</div><div class="map-val">CRAL pre-clustering 10,000 articles into 50 clusters for sub-linear retrieval: O(N) → O(k + N/k).</div></div>
+      </div>
+
+      <div class="cases">
+        <div class="case open">
+          <div class="case-header" onclick="toggleCase(this)">
+            <div class="case-pip high"></div>
+            <div class="case-label">Case A — High Alignment (Semantic Match)</div>
+            <div class="case-arrow">›</div>
+          </div>
+          <div class="case-body">A query about "overcoming public speaking anxiety" is embedded and compared to 50 cluster centroids. The "Performance Psychology" cluster scores Cosine similarity 0.94. The system searches only those ~200 articles, finding precise frameworks in milliseconds.</div>
+        </div>
+        <div class="case">
+          <div class="case-header" onclick="toggleCase(this)">
+            <div class="case-pip zero"></div>
+            <div class="case-label">Case B — Zero Alignment (Irrelevant Cluster)</div>
+            <div class="case-arrow">›</div>
+          </div>
+          <div class="case-body">The same query scores Cosine similarity 0.02 against the "Database Optimization" cluster centroid. The system never opens those articles. Semantic orthogonality means zero compute wasted on irrelevant content.</div>
+        </div>
+        <div class="case">
+          <div class="case-header" onclick="toggleCase(this)">
+            <div class="case-pip conflict"></div>
+            <div class="case-label">Case C — Conflicting (Multi-Topic Query)</div>
+            <div class="case-arrow">›</div>
+          </div>
+          <div class="case-body">A complex query like "using AI to personalize anxiety coaching protocols" spans multiple clusters — "Performance Psychology," "AI Architecture," and "Coaching Methodology." The system identifies the top-3 nearest centroids and searches all three, merging results. This is the multi-centroid retrieval pattern.</div>
+        </div>
+      </div>
+
+      <div class="math-tie">
+        <div class="math-tie-label">Math Tie-Back</div>
+        The JIT Skill Compiler does not say: "Find me articles about coaching." It says: <code style="font-family:var(--mono);font-size:0.8em;color:var(--accent2);">SEARCH CLUSTER_ID = 7 WHERE COSINE_DISTANCE &lt; 0.3</code>. The centroid is a search index. The cluster boundary is a computational firewall. Clustering turns a 10,000-document library into 50 organized drawers.
+      </div>
+
+      <hr>
+
+      <!-- §3 SCENARIOS -->
+      <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:1rem;">§3 — Scenario-Based Thinking</div>
+      <div class="scenario-list">
+        <div class="scenario-item">
+          <div class="scenario-num">Scenario 01</div>
+          <div class="scenario-q">What happens if all data points are equidistant from every centroid?</div>
+          <div class="scenario-a">This occurs in extremely high-dimensional spaces with insufficient data. K-Means cannot differentiate — assignments become arbitrary. The Silhouette score approaches zero globally. The solution: reduce dimensionality via PCA before clustering.</div>
+        </div>
+        <div class="scenario-item">
+          <div class="scenario-num">Scenario 02</div>
+          <div class="scenario-q">What happens if one cluster's centroid absorbs 95% of all data points?</div>
+          <div class="scenario-a">The remaining centroids govern tiny, potentially meaningless clusters. This usually indicates the dominant cluster contains the true population center, and the algorithm is chasing outliers. The fix: examine whether k is too high, or whether the data has one dominant mode.</div>
+        </div>
+        <div class="scenario-item">
+          <div class="scenario-num">Scenario 03</div>
+          <div class="scenario-q">What happens if the data's natural structure is non-spherical?</div>
+          <div class="scenario-a">K-Means assumes spherical clusters (Euclidean distance treats all directions equally). A crescent-shaped cluster is forcibly split into two spherical approximations. DBSCAN (density-based clustering) becomes necessary — it defines clusters by density connectivity rather than centroid proximity.</div>
+        </div>
+        <div class="scenario-item">
+          <div class="scenario-num">Scenario 04</div>
+          <div class="scenario-q">What happens if you cluster on the wrong features?</div>
+          <div class="scenario-a">The algorithm finds perfect, well-separated clusters based on meaningless attributes. Silhouette scores are high. WCSS is low. But the archetypes carry zero behavioral insight. This is the most dangerous failure mode: the math works beautifully on garbage.</div>
+        </div>
+        <div class="scenario-item">
+          <div class="scenario-num">Scenario 05</div>
+          <div class="scenario-q">What happens if a client's behavior shifts gradually over months?</div>
+          <div class="scenario-a">Their vector drifts through the space, potentially crossing cluster boundaries. The hard assignment snaps them into a new archetype overnight, even though the transition was gradual. A smoothing mechanism (exponential moving average of cluster assignments) can prevent jarring protocol switches.</div>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- §4 CROSS-DOMAIN -->
+      <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:1rem;">§4 — Cross-Domain Comparison</div>
+      <p>Clustering behaves identically in mathematical structure across all six domains, but the interpretation of "cluster boundary" diverges. In <strong>football</strong>, crossing a boundary means a player has transitioned from one tactical role to another — a career-defining shift visible over seasons. In <strong>music</strong>, a track on a genre boundary is called "experimental" — the boundary is celebrated as creative innovation. In <strong>cooking</strong>, fusion cuisine lives on cluster boundaries and is commercially valued. But in <strong>psychology</strong>, a client crossing a cluster boundary may signal a breakthrough <em>or</em> a crisis — the system must determine context before changing the protocol.</p>
+      <p>The <strong>distance metric choice</strong> diverges most sharply between cooking and AI. In cooking, Euclidean captures absolute flavor intensity (a dish with 10× the salt is categorically different). In the CRAL engine, Cosine is almost always preferred because semantic meaning lives in direction, not magnitude — a short article and a long article on the same topic should cluster together.</p>
+      <p>The <strong>centroid interpretation</strong> also shifts. In RPGs, the centroid is an archetype to min-max against. In psychology, it is a diagnostic reference point. In music, it is a genre definition. The mathematical object is identical; the operational meaning is domain-specific.</p>
+
+      <hr>
+
+      <!-- §5 LOGIC PUZZLES -->
+      <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:1rem;">§5 — Logic Puzzles</div>
+      <div class="puzzle-list">
+        <div class="puzzle-item">
+          <div class="puzzle-num">Puzzle 01 — The Semantic Affinity Curse</div>
+          <div class="puzzle-q">You cluster 200 CCP clients on their Telegram message embeddings. All clients who read the same viral post cluster tightly together. Their behavioral archetypes are destroyed. Why?</div>
+          <div class="puzzle-a"><em>Resolution:</em> The embedding captures <em>topic</em> (what they read), not <em>behavior</em> (what they did). Feature selection is wrong — you must cluster on behavioral metrics, not content embeddings.</div>
+        </div>
+        <div class="puzzle-item">
+          <div class="puzzle-num">Puzzle 02 — The K=100 Problem</div>
+          <div class="puzzle-q">You set k=100 for 150 clients. WCSS drops to near-zero. Silhouette scores are 0.99. Everything looks perfect. Why is this a disaster?</div>
+          <div class="puzzle-a"><em>Resolution:</em> With k=100, most clusters contain 1–2 clients. Each centroid is a memorized client vector, not a generalizable archetype. The CCP cannot design 100 bespoke coaching protocols. This is overfitting — the algorithm memorized the data rather than discovering structure.</div>
+        </div>
+        <div class="puzzle-item">
+          <div class="puzzle-num">Puzzle 03 — The Feature Trap (User ID)</div>
+          <div class="puzzle-q">You include the Telegram User_ID as a normalized numerical feature. K-Means produces pristine clusters with Silhouette scores approaching 1.0. But the archetypes are meaningless. Why?</div>
+          <div class="puzzle-a"><em>Resolution:</em> User IDs are unique identifiers with no behavioral content. Once normalized, they provide perfect separability because every user has a unique value. The algorithm clusters by identity, not behavior. Features must encode behavioral variation, never demographic uniqueness.</div>
+        </div>
+        <div class="puzzle-item">
+          <div class="puzzle-num">Puzzle 04 — The Drift Illusion</div>
+          <div class="puzzle-q">The Guardian Agent fires a Concept Drift alert: average Silhouette dropped from 0.72 to 0.38. You re-cluster. The new centroids are identical to the old ones. What happened?</div>
+          <div class="puzzle-a"><em>Resolution:</em> An influx of new, homogeneous clients (from a large ad campaign) concentrated variance around one edge of an existing cluster. The new arrivals sit near the boundary, dragging the average down. The centroids haven't moved because the structural architecture is intact — the alert was caused by data demographics, not genuine archetype evolution.</div>
+        </div>
+        <div class="puzzle-item">
+          <div class="puzzle-num">Puzzle 05 — The Cosine-Euclidean Contradiction</div>
+          <div class="puzzle-q">Client A: (1, 1). Client B: (10, 10). Client C: (10, 1). Under Cosine, A and B are identical (distance = 0). Under Euclidean, A and B are far apart (distance ≈ 12.73). Which metric is "correct"?</div>
+          <div class="puzzle-a"><em>Resolution:</em> Neither is universally correct. Cosine says A and B share the same behavioral pattern (1:1 ratio). Euclidean says B operates at 10× the intensity. If the CCP cares about coaching <em>style</em>, use Cosine. If it cares about coaching <em>load</em>, use Euclidean. The metric must match the operational question.</div>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- §6 BUILD YOUR OWN -->
+      <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:1rem;">§6 — Build-Your-Own Analogy Task</div>
+      <p>Choose a domain you know well — fitness, investing, real estate, photography, competitive esports, language learning — and construct a complete clustering analogy.</p>
+      <div class="build-steps">
+        <div class="build-step">
+          <div class="build-step-num">1</div>
+          <div class="build-step-body">
+            <div class="build-step-title">Define the Vectors</div>
+            <div class="build-step-desc">Identify 3–6 measurable, independent dimensions that describe entities in your domain. Each entity becomes a vector across these dimensions.</div>
+          </div>
+        </div>
+        <div class="build-step">
+          <div class="build-step-num">2</div>
+          <div class="build-step-body">
+            <div class="build-step-title">Define the Distance Metric</div>
+            <div class="build-step-desc">Which metric maps to your domain's concept of "similarity"? Does similarity mean absolute closeness (Euclidean), proportional alignment (Cosine), or component-wise comparison (Manhattan)? Justify your choice.</div>
+          </div>
+        </div>
+        <div class="build-step">
+          <div class="build-step-num">3</div>
+          <div class="build-step-body">
+            <div class="build-step-title">Run a Mental K-Means</div>
+            <div class="build-step-desc">Imagine k=3 clusters. Where would the centroids land? What would each cluster represent in domain terms? Name them.</div>
+          </div>
+        </div>
+        <div class="build-step">
+          <div class="build-step-num">4</div>
+          <div class="build-step-body">
+            <div class="build-step-title">Identify the Boundary Case</div>
+            <div class="build-step-desc">Find an entity that sits ambiguously between two centroids. What makes it hard to classify? What would its Silhouette score look like?</div>
+          </div>
+        </div>
+        <div class="build-step">
+          <div class="build-step-num">5</div>
+          <div class="build-step-body">
+            <div class="build-step-title">Test for the Feature Trap</div>
+            <div class="build-step-desc">Is there a tempting-but-meaningless feature you might accidentally include (like a User ID or a date)? What damage would it cause? If your analogy breaks on any step, the structural mapping is flawed — go back and verify.</div>
+          </div>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- §7 COMMON FAILURES -->
+      <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:1rem;">§7 — Common Analogy Failures</div>
+      <div class="failure-list">
+        <div class="failure-item">
+          <div class="failure-num">Failure 01</div>
+          <div class="failure-q">Confusing Clusters with Labels</div>
+          <div class="failure-a">People often think clustering assigns pre-existing categories. It does not. Clusters are <em>discovered</em>, not <em>imposed</em>. K-Means does not know "striker" exists — it finds a group with high xG and low tackle rates and you, the human, label it "striker" after the fact. Forcing a pre-labeled cluster is classification, not clustering.</div>
+        </div>
+        <div class="failure-item">
+          <div class="failure-num">Failure 02</div>
+          <div class="failure-q">Assuming Centroids Are Real Entities</div>
+          <div class="failure-a">The centroid is a mathematical ghost — an average. There may be no player, track, recipe, or client that actually sits at the centroid's exact coordinates. It represents the gravitational center, not an actual inhabitant.</div>
+        </div>
+        <div class="failure-item">
+          <div class="failure-num">Failure 03</div>
+          <div class="failure-q">Ignoring the Metric's Worldview</div>
+          <div class="failure-a">Saying "these two things are similar" without specifying the metric is meaningless. Two tracks may be similar in BPM (Euclidean on BPM) but completely dissimilar in frequency profile (Cosine on the full spectral vector). "Similar" is always relative to the chosen geometric lens.</div>
+        </div>
+        <div class="failure-item">
+          <div class="failure-num">Failure 04</div>
+          <div class="failure-q">Treating All Dimensions as Equal Without Normalization</div>
+          <div class="failure-a">In cooking, Salt ranges [0, 10] while Heat ranges [0, 1,000,000] (Scoville units). Without normalization, every recipe clusters purely by heat intensity. The algorithm cannot detect variation on Salt, Acid, or Umami. Dimensions must be equalized before distance computation.</div>
+        </div>
+        <div class="failure-item">
+          <div class="failure-num">Failure 05</div>
+          <div class="failure-q">Expecting Clusters to Be Permanent</div>
+          <div class="failure-a">In psychology, client archetypes shift. In music, genres evolve. In football, tactical meta-games rotate yearly. Clusters are snapshots of current geometric structure. The Guardian Agent exists precisely because centroids have an expiration date.</div>
+        </div>
+      </div>
+
+      <!-- §8 COMPRESSION -->
+      <div class="compression">
+        <div class="compression-label">§8 — Compression Layer</div>
+        <p>Across football pitches, RPG bestiaries, streaming platforms, restaurant kitchens, therapy sessions, and AI retrieval engines, clustering performs the identical mathematical operation: measure the geometric distance between complex entities, group the closest ones together, compute the arithmetic average of each group as its representative anchor, and repeat until stability. The centroid is the platonic ideal of a tribe. The distance metric is the definition of similarity. The iteration is the algorithm learning to see structure.</p>
+        <p>Clustering is the cartographer of chaos. It takes the unmapped wilderness of high-dimensional data and draws borders — not arbitrary political borders, but natural geographic ones, following the rivers and mountain ridges of genuine behavioral similarity.</p>
+        <p>Across all systems, clustering is the mathematics of asking "who belongs together?" and letting the geometry of the data — not the assumptions of the operator — provide the answer.</p>
+      </div>
+
+      <!-- GAUNTLET -->
+      <div class="gauntlet-section">
+        <h2>Analogy Gauntlet</h2>
+        <p style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-bottom:2rem;">Cross-domain rapid-fire. Lock your answers.</p>
+        <div id="drills"></div>
+      </div>
+
+    </div><!-- /gate-music -->
+  </div><!-- /gate-football -->
+
+</div>
+
+<script>
+/* ── Case toggles ── */
+function toggleCase(header) {
+  const c = header.parentElement;
+  c.classList.toggle('open');
+}
+
+/* ── Football Canvas ── */
+const FC = document.getElementById('football-canvas');
+const ctx = FC.getContext('2d');
+const W = FC.width, H = FC.height;
+
+// Veteran: normalized position on grid — about x=400, y=200 (high minutes, high tackles)
+const VET = { x: 420, y: 80 };  // canvas y inverted: high tackles = low y
+let rookie = { x: 60, y: 260 };
+let dragging = false;
+
+function drawFootball() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = '#1a2030';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < W; i += 60) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,H); ctx.stroke(); }
+  for (let j = 0; j < H; j += 60) { ctx.beginPath(); ctx.moveTo(0,j); ctx.lineTo(W,j); ctx.stroke(); }
+
+  // Axis labels
+  ctx.fillStyle = '#3a4050';
+  ctx.font = '11px DM Mono, monospace';
+  ctx.fillText('Minutes Played →', 8, H - 8);
+  ctx.save(); ctx.translate(14, H - 30); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Total Tackles →', 0, 0); ctx.restore();
+
+  // Ray from origin through VET (Cosine = same direction)
+  const vetMag = Math.sqrt(VET.x * VET.x + (H - VET.y) * (H - VET.y));
+  const unitX = VET.x / vetMag;
+  const unitY = (H - VET.y) / vetMag;
+  ctx.strokeStyle = '#1e2840';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  ctx.lineTo(unitX * 700, H - unitY * 700);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Euclidean distance line
+  ctx.strokeStyle = '#2a3048';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(rookie.x, rookie.y);
+  ctx.lineTo(VET.x, VET.y);
+  ctx.stroke();
+
+  // Veteran
+  ctx.beginPath();
+  ctx.arc(VET.x, VET.y, 8, 0, Math.PI*2);
+  ctx.fillStyle = '#6ec88a';
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = '10px DM Mono, monospace';
+  ctx.fillText('Veteran', VET.x + 12, VET.y + 4);
+
+  // Rookie
+  ctx.beginPath();
+  ctx.arc(rookie.x, rookie.y, 9, 0, Math.PI*2);
+  ctx.fillStyle = '#c8a96e';
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.fillText('Rookie', rookie.x + 12, rookie.y + 4);
+
+  // Metrics
+  const dx = rookie.x - VET.x;
+  const dy = rookie.y - VET.y;
+  const eucl = Math.sqrt(dx*dx + dy*dy).toFixed(1);
+
+  // Cosine in canvas coords (y flipped)
+  const rX = rookie.x, rY = H - rookie.y;
+  const vX = VET.x,    vY = H - VET.y;
+  const dot = rX*vX + rY*vY;
+  const rMag = Math.sqrt(rX*rX + rY*rY);
+  const vMag = Math.sqrt(vX*vX + vY*vY);
+  const cosSim = (rMag > 0 && vMag > 0) ? dot / (rMag * vMag) : 0;
+  const cosDist = (1 - cosSim).toFixed(3);
+
+  ctx.fillStyle = '#606880';
+  ctx.font = '11px DM Mono, monospace';
+  ctx.fillText(`Euclidean: ${eucl}`, 12, 20);
+  ctx.fillText(`Cosine Distance: ${cosDist}`, 12, 36);
+
+  document.getElementById('x-pos').textContent = Math.round(rookie.x);
+  document.getElementById('y-pos').textContent = Math.round(H - rookie.y);
+}
+
+FC.addEventListener('mousedown', e => {
+  const r = FC.getBoundingClientRect();
+  const sx = (e.clientX - r.left) * (W / r.width);
+  const sy = (e.clientY - r.top) * (H / r.height);
+  if (Math.hypot(sx - rookie.x, sy - rookie.y) < 18) dragging = true;
+});
+
+FC.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const r = FC.getBoundingClientRect();
+  rookie.x = Math.max(5, Math.min(W-5, (e.clientX - r.left) * (W / r.width)));
+  rookie.y = Math.max(5, Math.min(H-5, (e.clientY - r.top) * (H / r.height)));
+  drawFootball();
+});
+
+FC.addEventListener('mouseup', () => dragging = false);
+FC.addEventListener('mouseleave', () => dragging = false);
+
+// Touch support
+FC.addEventListener('touchstart', e => { e.preventDefault(); const t = e.touches[0]; const r = FC.getBoundingClientRect(); const sx = (t.clientX - r.left) * (W / r.width); const sy = (t.clientY - r.top) * (H / r.height); if (Math.hypot(sx - rookie.x, sy - rookie.y) < 24) dragging = true; }, { passive: false });
+FC.addEventListener('touchmove', e => { e.preventDefault(); if (!dragging) return; const t = e.touches[0]; const r = FC.getBoundingClientRect(); rookie.x = Math.max(5, Math.min(W-5, (t.clientX - r.left) * (W / r.width))); rookie.y = Math.max(5, Math.min(H-5, (t.clientY - r.top) * (H / r.height))); drawFootball(); }, { passive: false });
+FC.addEventListener('touchend', () => dragging = false);
+
+drawFootball();
+
+function lockFootball() {
+  const rX = rookie.x, rY = H - rookie.y;
+  const vX = VET.x,    vY = H - VET.y;
+  const dot = rX*vX + rY*vY;
+  const rMag = Math.sqrt(rX*rX + rY*rY);
+  const vMag = Math.sqrt(vX*vX + vY*vY);
+  const cosDist = (rMag > 0 && vMag > 0) ? 1 - dot / (rMag * vMag) : 1;
+
+  const dx = rookie.x - VET.x;
+  const dy = rookie.y - VET.y;
+  const eucl = Math.sqrt(dx*dx + dy*dy);
+
+  document.getElementById('lock-football').disabled = true;
+  const fb = document.getElementById('fb-football');
+  fb.classList.add('show');
+
+  if (cosDist < 0.05 && eucl > 130) {
+    fb.className = 'feedback show ok';
+    fb.innerHTML = `<div class="fb-label">Target Acquired</div>Correct. By placing the rookie along the exact same angular ray from the origin, you replicated the precise Tackles-per-Minute ratio of the veteran. Cosine Distance ≈ ${cosDist.toFixed(3)}, Euclidean Distance ≈ ${eucl.toFixed(1)}. Cosine evaluates playstyle. Euclidean evaluates volume. You recruited correctly.`;
+    setTimeout(() => { document.getElementById('gate-football').classList.add('on'); drawGenreCanvases(); }, 1000);
+  } else {
+    fb.className = 'feedback show fail';
+    let hint = '';
+    if (cosDist >= 0.05) hint += 'The Cosine Distance must be near 0 — place the rookie on the same directional ray from the origin as the veteran (same Tackles-per-Minute ratio). ';
+    if (eucl <= 130) hint += 'The Euclidean Distance must exceed 130 — place the rookie far from the veteran (fewer minutes played). ';
+    fb.innerHTML = `<div class="fb-label">Placement Error</div>${hint}<br><br><button class="btn-ghost" onclick="resetFootball()" style="margin-top:0.5rem;">Retry</button>`;
+  }
+}
+
+function resetFootball() {
+  document.getElementById('lock-football').disabled = false;
+  const fb = document.getElementById('fb-football');
+  fb.className = 'feedback';
+}
+
+/* ── Genre Canvas ── */
+let selectedCard = '';
+
+function drawGenreCanvases() {
+  ['A','B'].forEach(id => {
+    const canvas = document.getElementById('canvas' + id);
+    const c = canvas.getContext('2d');
+    const cW = canvas.width, cH = canvas.height;
+    c.clearRect(0, 0, cW, cH);
+    c.fillStyle = '#06080c';
+    c.fillRect(0, 0, cW, cH);
+
+    // Two cluster backgrounds
+    c.fillStyle = 'rgba(110,180,200,0.12)';
+    c.beginPath(); c.arc(75, cH/2, 42, 0, Math.PI*2); c.fill();
+    c.fillStyle = 'rgba(200,110,122,0.12)';
+    c.beginPath(); c.arc(cW-75, cH/2, 42, 0, Math.PI*2); c.fill();
+
+    // White cluster dots
+    c.fillStyle = 'rgba(180,190,210,0.7)';
+    for (let i = 0; i < 14; i++) {
+      const cx = 75 + (Math.random() - 0.5) * 46;
+      const cy = cH/2 + (Math.random() - 0.5) * 46;
+      c.beginPath(); c.arc(cx, cy, 2, 0, Math.PI*2); c.fill();
+      const cx2 = cW-75 + (Math.random() - 0.5) * 46;
+      const cy2 = cH/2 + (Math.random() - 0.5) * 46;
+      c.beginPath(); c.arc(cx2, cy2, 2, 0, Math.PI*2); c.fill();
+    }
+
+    // Gold track
+    const goldX = (id === 'B') ? cW / 2 : cW - 88;
+    const goldY = cH / 2;
+    c.beginPath(); c.arc(goldX, goldY, 6, 0, Math.PI*2);
+    c.fillStyle = '#c8a96e'; c.fill();
+  });
+}
+
+function selectCard(card) {
+  if (selectedCard) document.getElementById('card' + selectedCard).classList.remove('selected');
+  selectedCard = card;
+  document.getElementById('card' + card).classList.add('selected');
+  document.getElementById('lock-card').disabled = false;
+}
+
+function lockCard() {
+  document.getElementById('lock-card').disabled = true;
+  document.getElementById('cardA').onclick = null;
+  document.getElementById('cardB').onclick = null;
+  const fb = document.getElementById('fb-card');
+  fb.classList.add('show');
+
+  if (selectedCard === 'B') {
+    fb.className = 'feedback show ok';
+    fb.innerHTML = `<div class="fb-label">Geometry Confirmed</div>Correct. In Graph B, the gold track sits perfectly equidistant between both genre centroids. Because a(i) ≈ b(i), the Silhouette Score collapses to 0.0. The track straddles the Voronoi boundary — it belongs mathematically to neither cluster, and experientially to both.`;
+    setTimeout(() => { document.getElementById('gate-music').classList.add('on'); renderGauntlet(); setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 400); }, 1200);
+  } else {
+    fb.className = 'feedback show fail';
+    fb.innerHTML = `<div class="fb-label">Analytical Error</div>Incorrect. In Graph A, the gold track sits deeply within the red cluster territory — far from the boundary. Its Silhouette score is high (near +1), not 0. Graph B is the fusion track: it is equidistant between both centroids, placing it at a Silhouette score of 0.0.<br><br><button class="btn-ghost" onclick="resetCard()" style="margin-top:0.75rem;">Retry</button>`;
+  }
+}
+
+function resetCard() {
+  selectedCard = '';
+  ['A','B'].forEach(id => {
+    const c = document.getElementById('card' + id);
+    c.classList.remove('selected');
+    c.onclick = () => selectCard(id);
+  });
+  document.getElementById('lock-card').disabled = true;
+  document.getElementById('fb-card').className = 'feedback';
+}
+
+/* ── Gauntlet ── */
+const DRILLS = [
+  {
+    type: 'text',
+    q: 'The CRAL Engine clusters 10,000 articles into topical bundles. When comparing a short 1-paragraph summary to a long 30-page report covering the same topic, which distance metric correctly groups them together regardless of document length?',
+    match: 'cosine',
+    exp: 'Cosine. Cosine similarity measures directional alignment in feature space — a short summary and a long report on the same topic share the same semantic direction, regardless of their vector magnitudes.'
+  },
+  {
+    type: 'bool',
+    q: 'True or False: Discovering a genuinely new fusion cuisine requires placing an experimental flavor vector precisely at the Voronoi boundary between two existing cuisine centroids.',
+    ans: true,
+    exp: 'True. To innovate culinarily is to deliberately move into unclaimed Voronoi boundary regions — territory that no existing centroid occupies, where a new centroid could eventually crystallize.'
+  },
+  {
+    type: 'text',
+    q: 'In RPG combat, if a monster archetype is maximally vulnerable to fire and has zero physical resistance, the Cosine distance between a Fire Mage\'s attack vector and this monster\'s weakness centroid approaches ____. (Enter: 0 or 2)',
+    match: '0',
+    exp: '0. Maximum alignment produces identical geometric trajectories — the attack vector and weakness centroid point in the same direction, yielding a Cosine distance of 0.0.'
+  },
+  {
+    type: 'bool',
+    q: 'True or False: The K-Means algorithm directly generates and assigns descriptive human-friendly labels (e.g., "Analytical Introvert") to its discovered clusters.',
+    ans: false,
+    exp: 'False. K-Means derives spatial separation and coordinates only. Labeling the discovered clusters with human-meaningful names is a subsequent, manual interpretation step performed by the operator.'
+  },
+  {
+    type: 'text',
+    q: 'The CBCS automates triggering the 72-Hour Identity Anchor Protocol when a client\'s continuous numerical distance to the "Active Seeker" ____ drops below the epsilon threshold.',
+    match: 'centroid',
+    exp: 'Centroid. The centroid is the mathematical anchor of the archetype. When a client\'s distance to it crosses the threshold, the system triggers the protocol automatically — replacing intuition with geometry.'
+  },
+  {
+    type: 'text',
+    q: 'When clustering focuses purely on angular direction and ignores absolute magnitude, Euclidean creates spherical cluster regions while Cosine creates wide angular ____ projecting outward from the origin.',
+    match: 'cone',
+    exp: 'Cones (or angular sectors). Euclidean distance defines spherical boundaries around centroids. Cosine distance defines angular sectors — all points within the same directional range cluster together regardless of their distance from the origin.'
+  },
+  {
+    type: 'text',
+    q: 'In the K=100 Problem, WCSS is near-zero and Silhouette scores approach 1.0 — yet the clustering is operationally useless. What machine learning failure mode does this represent?',
+    match: 'overfit',
+    exp: 'Overfitting. The algorithm has memorized individual data points rather than discovering generalizable structure. With k=100 for 150 clients, most "clusters" contain a single client — the centroid is simply that client\'s own vector.'
+  }
+];
+
+function renderGauntlet() {
+  const c = document.getElementById('drills');
+  let html = '';
+  DRILLS.forEach((d, i) => {
+    html += `<div class="drill" id="drill-${i}">
+      <div class="drill-num">Drill ${String(i+1).padStart(2,'0')}</div>
+      <div class="drill-q">${d.q}</div>`;
+    if (d.type === 'bool') {
+      html += `<div class="bool-row"><button class="btn" onclick="answerBool(${i},true,this)">True</button><button class="btn-ghost" onclick="answerBool(${i},false,this)">False</button></div>`;
+    } else {
+      html += `<div class="input-row"><input type="text" id="di-${i}" class="text-in" placeholder="Type keyword…"><button class="btn" onclick="answerText(${i},this)">Lock</button></div>`;
+    }
+    html += `<div class="feedback" id="dfb-${i}"></div></div>`;
+  });
+  c.innerHTML = html;
+}
+
+function answerBool(i, val, btn) {
+  document.getElementById(`drill-${i}`).querySelectorAll('button').forEach(b => b.style.pointerEvents = 'none');
+  const fb = document.getElementById(`dfb-${i}`);
+  const ok = val === DRILLS[i].ans;
+  fb.className = `feedback show ${ok ? 'ok' : 'fail'}`;
+  fb.innerHTML = `<div class="fb-label">${ok ? 'Correct' : 'Incorrect'}</div>${DRILLS[i].exp}`;
+}
+
+function answerText(i, btn) {
+  const inp = document.getElementById(`di-${i}`);
+  const val = inp.value.toLowerCase().trim();
+  if (!val) return;
+  inp.disabled = true; btn.disabled = true;
+  const fb = document.getElementById(`dfb-${i}`);
+  const ok = val.includes(DRILLS[i].match);
+  fb.className = `feedback show ${ok ? 'ok' : 'fail'}`;
+  fb.innerHTML = `<div class="fb-label">${ok ? 'Correct' : 'Incorrect'}</div>${DRILLS[i].exp}`;
+}
+</script>
+</body>
+</html>

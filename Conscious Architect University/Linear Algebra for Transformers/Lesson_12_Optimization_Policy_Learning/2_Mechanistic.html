@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 12 - Mechanistic Layer</title>
+  <style>
+    :root {
+      --bg: #09090b;
+      --panel: #111114;
+      --panel-2: #18181b;
+      --line: rgba(255, 255, 255, 0.08);
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --accent: #f97316;
+      --good: #22c55e;
+      --bad: #ef4444;
+      --warn: #f59e0b;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+      background:
+        radial-gradient(circle at top, rgba(249,115,22,0.08), transparent 26%),
+        linear-gradient(180deg, #0b0b0e 0%, #09090b 100%);
+    }
+
+    .progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.05);
+      z-index: 10;
+    }
+
+    .progress-fill {
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, #ea580c, #fb923c);
+      transition: width 0.35s ease;
+    }
+
+    .shell {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    .stage {
+      display: none;
+      animation: fadeUp 0.35s ease;
+    }
+
+    .stage.active { display: block; }
+
+    .card {
+      margin-top: 18px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+      padding: 24px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font: 600 0.75rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 12px;
+    }
+
+    .section-count {
+      color: #71717a;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font: 600 0.75rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 10px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 14px;
+      line-height: 1.1;
+      font-weight: 500;
+    }
+
+    h1 { font-size: clamp(2.1rem, 4.5vw, 3.8rem); }
+    h2 { font-size: clamp(1.55rem, 2.8vw, 2.2rem); }
+    h3 { font-size: 1.08rem; }
+    p { margin: 0 0 15px; }
+
+    .divider {
+      height: 1px;
+      margin: 24px 0;
+      background: linear-gradient(90deg, transparent, rgba(249,115,22,0.32), transparent);
+    }
+
+    .mono, code {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.96rem;
+    }
+
+    .equation, .data-block, .table-block {
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      padding: 16px 18px;
+      margin: 16px 0;
+    }
+
+    .equation {
+      font-size: 1rem;
+      overflow-x: auto;
+      color: #f5f5f5;
+    }
+
+    .grid-2 {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      font: 600 0.95rem/1 Arial, Helvetica, sans-serif;
+      transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn {
+      padding: 14px 18px;
+      border-radius: 999px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(249,115,22,0.28);
+    }
+
+    input[type="number"],
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      font: 400 1rem/1.4 Arial, Helvetica, sans-serif;
+      outline: none;
+    }
+
+    textarea { min-height: 120px; resize: vertical; }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(249,115,22,0.55);
+      box-shadow: 0 0 0 4px rgba(249,115,22,0.12);
+    }
+
+    .field-row {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 14px;
+    }
+
+    .field label,
+    .mini-label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 600 0.76rem/1.2 Arial, Helvetica, sans-serif;
+    }
+
+    .choices {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .choice {
+      width: 100%;
+      text-align: left;
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      color: #e4e4e7;
+    }
+
+    .choice.selected {
+      border-color: rgba(249,115,22,0.8);
+      background: rgba(249,115,22,0.08);
+    }
+
+    .feedback {
+      display: none;
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .feedback.show { display: block; }
+    .feedback.good { border-color: rgba(34,197,94,0.34); }
+    .feedback.bad { border-color: rgba(239,68,68,0.34); }
+
+    .locked {
+      margin-top: 12px;
+      color: #fdba74;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font: 600 0.8rem/1.2 Arial, Helvetica, sans-serif;
+    }
+
+    .hidden { display: none; }
+
+    .badge {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(249,115,22,0.1);
+      color: #fdba74;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font: 600 0.78rem/1 Arial, Helvetica, sans-serif;
+      margin-bottom: 14px;
+    }
+
+    .table-grid {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .table-row {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 1.2fr 1fr 1fr 1fr 0.8fr;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .table-row.header {
+      color: var(--muted);
+      font: 600 0.76rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .final-box {
+      margin-top: 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(249,115,22,0.25);
+      background: linear-gradient(180deg, rgba(249,115,22,0.08), rgba(255,255,255,0.02));
+      padding: 20px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 720px) {
+      .grid-2, .field-row, .table-row { grid-template-columns: 1fr; }
+      .shell { padding: 30px 14px 60px; }
+      .card { padding: 18px; }
+      .btn { width: 100%; }
+      .actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true">
+    <div id="progressFill" class="progress-fill"></div>
+  </div>
+
+  <main class="shell">
+    <section id="stage-0" class="stage active">
+      <div class="card">
+        <div class="badge">Spaced Retrieval Interrupt</div>
+        <h1>Without notes: what are the six GRPO steps?</h1>
+        <p>Use plain language. Order matters.</p>
+        <textarea id="interruptAnswer" placeholder="generate..., score..., normalize..., ratio..., clip..., update..."></textarea>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="submitInterrupt()">Lock answer</button>
+        </div>
+        <div id="interrupt-feedback" class="feedback"></div>
+        <div id="interrupt-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(1)">Unlock mechanistic layer</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="eyebrow">Lesson 12 - Mechanistic Layer</p>
+        <h2>The policy is the model</h2>
+        <p>The core object is the policy <span class="mono">pi_theta(y|x)</span>: the probability distribution over output sequences given a prompt. In a Transformer, it factorizes autoregressively across token positions.</p>
+        <div class="equation mono">
+          pi_theta(y|x) = product from t=1 to T of pi_theta(y_t | x, y_&lt;t)
+        </div>
+        <p>The GRPO objective maximizes clipped, group-relative advantage while penalizing divergence from the reference policy.</p>
+        <div class="equation mono">
+          J_GRPO(theta) = E_x [ (1/G) sum_i (1/T_i) sum_t min(w_i,t Ahat_i, clip(w_i,t, 1-eps, 1+eps) Ahat_i) ] - beta KL(pi_theta || pi_ref)
+        </div>
+        <div class="divider"></div>
+        <p>The formal pieces you need for the rest of this layer:</p>
+        <div class="grid-2">
+          <div class="data-block">
+            <p><strong>Advantage</strong></p>
+            <p class="mono">Ahat_i = (r_i - mu_r) / sigma_r</p>
+          </div>
+          <div class="data-block">
+            <p><strong>Importance ratio</strong></p>
+            <p class="mono">w_i,t = pi_theta / pi_theta_old</p>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-secondary" onclick="goToStage(2)">Proceed to baseline computation</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="section-count">Mechanistic Gate 1</p>
+        <h2>PPO versus GRPO</h2>
+        <p>PPO estimates a baseline with a separate value network. GRPO removes that second network and uses the sampled group itself.</p>
+        <div class="equation mono">
+          baseline = mu_r = (1/G) sum_j r(x, y_j)
+        </div>
+        <div class="data-block">
+          <p>Suppose one prompt produces four rewards: <span class="mono">[7.33, 2.67, 8.33, 3.67]</span>.</p>
+          <p>Compute the group mean and the strongest positive advantage direction.</p>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="gate1-mean">Mean reward</label>
+            <input id="gate1-mean" type="number" step="0.01" placeholder="5.50">
+          </div>
+          <div class="field">
+            <label for="gate1-best">Best response index</label>
+            <input id="gate1-best" type="number" step="1" placeholder="3">
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="submitGate1()">Lock computation</button>
+        </div>
+        <div id="gate1-feedback" class="feedback"></div>
+        <div id="gate1-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(3)">Proceed to clipped update</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="section-count">Mechanistic Gate 2</p>
+        <h2>Importance ratio and clipping</h2>
+        <p>A token in Response 3 had old probability <span class="mono">0.03</span> and new probability <span class="mono">0.045</span>. The response advantage is <span class="mono">+1.17</span>. Let <span class="mono">epsilon = 0.2</span>.</p>
+        <div class="field-row">
+          <div class="field">
+            <label for="gate2-ratio">Importance ratio w</label>
+            <input id="gate2-ratio" type="number" step="0.01" placeholder="1.50">
+          </div>
+          <div class="field">
+            <label for="gate2-clipped">Clipped ratio</label>
+            <input id="gate2-clipped" type="number" step="0.01" placeholder="1.20">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="gate2-objective">Objective contribution</label>
+            <input id="gate2-objective" type="number" step="0.01" placeholder="1.40">
+          </div>
+          <div class="field">
+            <label for="gate2-sign">Update direction</label>
+            <input id="gate2-sign" type="text" placeholder="increase or decrease">
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="submitGate2()">Lock computation</button>
+        </div>
+        <div id="gate2-feedback" class="feedback"></div>
+        <div id="gate2-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(4)">Proceed to asymmetry check</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="section-count">Mechanistic Gate 3</p>
+        <h2>Why the min operator matters</h2>
+        <p>For positive advantages, the clipped term caps over-amplification. For negative advantages, the unclipped term can remain the more severe penalty.</p>
+        <div class="choices" data-group="gate3">
+          <button class="choice" data-value="A">Clipping symmetrically caps both positive and negative updates, so good and bad responses are treated identically.</button>
+          <button class="choice" data-value="B">For positive advantages, clipping limits improvement speed; for negative advantages, the more negative term can still win, allowing aggressive suppression of bad behavior.</button>
+          <button class="choice" data-value="C">The min operator is only there to make the equation look like PPO; it does not alter gradient behavior.</button>
+          <button class="choice" data-value="D">The min operator prevents the KL term from being computed.</button>
+        </div>
+        <div id="gate3-lock" class="locked hidden">Prediction locked.</div>
+        <div class="actions">
+          <button id="gate3-submit" class="btn btn-primary" onclick="submitChoice('gate3', 'B', gate3Feedback)">Lock prediction</button>
+        </div>
+        <div id="gate3-feedback" class="feedback"></div>
+        <div id="gate3-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(5)">Proceed to architecture map</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-5" class="stage">
+      <div class="card">
+        <p class="section-count">Mechanistic Gate 4</p>
+        <h2>System-level mapping</h2>
+        <p>This lesson composes earlier math into one training loop. Match the component to its role.</p>
+        <div class="table-block">
+          <div class="table-row header">
+            <div>Component</div>
+            <div>Meaning</div>
+            <div>Computation</div>
+            <div>Prior lesson</div>
+            <div>Status</div>
+          </div>
+          <div class="table-row">
+            <div>Z-score advantage</div>
+            <div>relative reward</div>
+            <div class="mono">(r - mu)/sigma</div>
+            <div>L10</div>
+            <div>loaded</div>
+          </div>
+          <div class="table-row">
+            <div>Importance ratio</div>
+            <div>policy change</div>
+            <div class="mono">pi_new / pi_old</div>
+            <div>L1.5</div>
+            <div>loaded</div>
+          </div>
+          <div class="table-row">
+            <div>Clipping</div>
+            <div>bounded step</div>
+            <div class="mono">clip(w, 1-eps, 1+eps)</div>
+            <div>L4</div>
+            <div>loaded</div>
+          </div>
+          <div class="table-row">
+            <div>Policy gradient</div>
+            <div>parameter update direction</div>
+            <div class="mono">theta &larr; theta + eta grad J</div>
+            <div>L11</div>
+            <div>loaded</div>
+          </div>
+        </div>
+        <p class="mini-label">Mastery check</p>
+        <input id="gate4-input" type="text" placeholder="What does the KL term prevent?">
+        <div class="actions">
+          <button class="btn btn-primary" onclick="submitGate4()">Lock answer</button>
+        </div>
+        <div id="gate4-feedback" class="feedback"></div>
+        <div id="gate4-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(6)">Enter mastery gate</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-6" class="stage">
+      <div class="card">
+        <p class="eyebrow">Mastery Gate</p>
+        <h2>Trace one GRPO step in sequence</h2>
+        <p>Use the worked example structure from this lesson. Your explanation must mention the group, the baseline from the group, the ratio, the clip, and the final ascent update.</p>
+        <textarea id="masteryText" placeholder="Start with sampling G responses, then..."></textarea>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="submitMastery()">Lock response</button>
+        </div>
+        <div id="mastery-feedback" class="feedback"></div>
+        <div id="mastery-next" class="actions hidden">
+          <button class="btn btn-secondary" onclick="goToStage(7)">Enter mechanistic gauntlet</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-7" class="stage">
+      <div class="card">
+        <p class="eyebrow">Mechanistic Gauntlet</p>
+        <h2>Seven short checks</h2>
+        <p>No diagrams. No hand-holding. Just the equations and what they mean.</p>
+        <div class="table-grid">
+          <div class="field">
+            <label for="g1">1. Why can GRPO eliminate the value network?</label>
+            <input id="g1" type="text" placeholder="Short answer">
+          </div>
+          <div class="field">
+            <label for="g2">2. What breaks when G = 1?</label>
+            <input id="g2" type="text" placeholder="Short answer">
+          </div>
+          <div class="field">
+            <label for="g3">3. What does sigma_r do besides standardization?</label>
+            <input id="g3" type="text" placeholder="Short answer">
+          </div>
+          <div class="field">
+            <label for="g4">4. Reverse KL is mode-covering or mode-seeking?</label>
+            <input id="g4" type="text" placeholder="Short answer">
+          </div>
+          <div class="field">
+            <label for="g5">5. What happens as beta becomes extremely large?</label>
+            <input id="g5" type="text" placeholder="Short answer">
+          </div>
+          <div class="field">
+            <label for="g6">6. With G = 2, what does GRPO approximate?</label>
+            <input id="g6" type="text" placeholder="Short answer">
+          </div>
+          <div class="field">
+            <label for="g7">7. What internal effect can reward gradients create in attention?</label>
+            <input id="g7" type="text" placeholder="Short answer">
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="gradeGauntlet()">Submit gauntlet</button>
+        </div>
+        <div id="gauntlet-feedback" class="feedback"></div>
+        <div id="final-box" class="final-box hidden">
+          <div class="badge">Layer 2 complete</div>
+          <p id="final-text"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const totalStages = 8;
+    const selections = {};
+
+    document.querySelectorAll('.choices').forEach((group) => {
+      group.addEventListener('click', (event) => {
+        const choice = event.target.closest('.choice');
+        if (!choice) return;
+        if (group.dataset.locked === 'true') return;
+        group.querySelectorAll('.choice').forEach((item) => item.classList.remove('selected'));
+        choice.classList.add('selected');
+        selections[group.dataset.group] = choice.dataset.value;
+      });
+    });
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      document.querySelectorAll('.stage').forEach((stage) => stage.classList.remove('active'));
+      document.getElementById('stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function approx(value, expected, tolerance) {
+      return Math.abs(value - expected) <= tolerance;
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = 'feedback show ' + type;
+      box.innerHTML = '<h3>' + title + '</h3><p>' + body + '</p>';
+    }
+
+    function submitInterrupt() {
+      const value = document.getElementById('interruptAnswer').value.trim().toLowerCase();
+      const required = ['generate', 'score', 'normalize', 'ratio', 'clip'];
+      const hasUpdate = value.includes('update') || value.includes('ascent') || value.includes('gradient');
+      const hits = required.filter((word) => value.includes(word)).length + (hasUpdate ? 1 : 0);
+      if (hits >= 5) {
+        document.getElementById('interruptAnswer').disabled = true;
+        showFeedback('interrupt-feedback', 'good', 'Interrupt passed', 'You retrieved the pipeline without scaffolding. That is the correct opening condition for Layer 2.');
+        document.getElementById('interrupt-next').classList.remove('hidden');
+      } else {
+        showFeedback('interrupt-feedback', 'bad', 'Interrupt failed', 'The mechanistic layer stays locked until the sequence is recalled: generate, score, normalize, measure the policy shift with a ratio, clip it, then update via ascent.');
+      }
+    }
+
+    function submitGate1() {
+      const mean = parseFloat(document.getElementById('gate1-mean').value);
+      const best = parseFloat(document.getElementById('gate1-best').value);
+      if (Number.isNaN(mean) || Number.isNaN(best)) {
+        showFeedback('gate1-feedback', 'bad', 'Computation required', 'Both the mean reward and the strongest response index must be committed before reveal.');
+        return;
+      }
+      document.getElementById('gate1-mean').disabled = true;
+      document.getElementById('gate1-best').disabled = true;
+      if (approx(mean, 5.5, 0.05) && best === 3) {
+        showFeedback('gate1-feedback', 'good', 'Gate passed', 'Correct. GRPO gets its baseline from the group mean, and Response 3 receives the strongest positive push because it sits furthest above that baseline.');
+        document.getElementById('gate1-next').classList.remove('hidden');
+      } else {
+        showFeedback('gate1-feedback', 'bad', 'Gate failed', 'The group baseline is 5.50, not a value guessed by a second network. Response 3 is the strongest performer because 8.33 is furthest above the mean.');
+        document.getElementById('gate1-mean').disabled = false;
+        document.getElementById('gate1-best').disabled = false;
+      }
+    }
+
+    function submitGate2() {
+      const ratio = parseFloat(document.getElementById('gate2-ratio').value);
+      const clipped = parseFloat(document.getElementById('gate2-clipped').value);
+      const objective = parseFloat(document.getElementById('gate2-objective').value);
+      const sign = document.getElementById('gate2-sign').value.trim().toLowerCase();
+      if ([ratio, clipped, objective].some(Number.isNaN) || !sign) {
+        showFeedback('gate2-feedback', 'bad', 'Computation required', 'This gate needs all four commitments: raw ratio, clipped ratio, clipped contribution, and direction of policy change.');
+        return;
+      }
+      document.querySelectorAll('#gate2-ratio, #gate2-clipped, #gate2-objective, #gate2-sign').forEach((el) => el.disabled = true);
+      const signOk = sign.includes('increase') || sign.includes('more likely') || sign.includes('toward');
+      if (approx(ratio, 1.5, 0.02) && approx(clipped, 1.2, 0.02) && approx(objective, 1.404, 0.03) && signOk) {
+        showFeedback('gate2-feedback', 'good', 'Gate passed', 'Correct. The raw ratio is 1.50, clipping caps it at 1.20, the effective token contribution is 1.404, and the positive advantage means the policy shifts toward this behavior.');
+        document.getElementById('gate2-next').classList.remove('hidden');
+      } else {
+        showFeedback('gate2-feedback', 'bad', 'Gate failed', 'Check the arithmetic: 0.045 / 0.03 = 1.50, clip to 1.20, then min(1.50 x 1.17, 1.20 x 1.17) = 1.404. Positive advantage means increase, not suppress.');
+        document.querySelectorAll('#gate2-ratio, #gate2-clipped, #gate2-objective, #gate2-sign').forEach((el) => el.disabled = false);
+      }
+    }
+
+    const gate3Feedback = {
+      good: {
+        title: 'Correct: clipping is asymmetric in effect.',
+        body: 'The conservative min operator caps over-amplification of good behavior while still allowing strong suppression of bad behavior when the unclipped penalty is more negative.'
+      },
+      bad: {
+        title: 'Misconception exposed: assuming clipping is neutral.',
+        body: 'The equation is not symmetric in practice. GRPO is cautious about amplifying apparently good behavior but can remain harsh toward bad behavior, which is exactly why the min operator matters.'
+      }
+    };
+
+    function submitChoice(groupId, correct, feedbackPack) {
+      const selected = selections[groupId];
+      if (!selected) {
+        showFeedback(groupId + '-feedback', 'bad', 'Prediction required', 'Choose an answer before locking it. Layer 2 still uses predict-then-reveal.');
+        return;
+      }
+      const group = document.querySelector('[data-group="' + groupId + '"]');
+      group.dataset.locked = 'true';
+      document.getElementById(groupId + '-submit').disabled = true;
+      document.getElementById(groupId + '-lock').classList.remove('hidden');
+      const isCorrect = selected === correct;
+      const payload = isCorrect ? feedbackPack.good : feedbackPack.bad;
+      showFeedback(groupId + '-feedback', isCorrect ? 'good' : 'bad', payload.title, payload.body);
+      document.getElementById(groupId + '-next').classList.remove('hidden');
+    }
+
+    function submitGate4() {
+      const value = document.getElementById('gate4-input').value.trim().toLowerCase();
+      if (!value) {
+        showFeedback('gate4-feedback', 'bad', 'Answer required', 'Commit an answer before reveal.');
+        return;
+      }
+      document.getElementById('gate4-input').disabled = true;
+      const ok = value.includes('diverge') || value.includes('drift') || value.includes('catastrophic') || value.includes('reference');
+      if (ok) {
+        showFeedback('gate4-feedback', 'good', 'Gate passed', 'Correct. The KL term prevents the policy from drifting too far from the reference model and acts as a stability constraint against catastrophic divergence.');
+        document.getElementById('gate4-next').classList.remove('hidden');
+      } else {
+        showFeedback('gate4-feedback', 'bad', 'Gate failed', 'The KL term is not decorative. It keeps the learned policy tethered to the reference distribution so reward optimization does not run away from the base model.');
+        document.getElementById('gate4-input').disabled = false;
+      }
+    }
+
+    function submitMastery() {
+      const value = document.getElementById('masteryText').value.trim().toLowerCase();
+      const checks = [
+        value.includes('sample') || value.includes('generate'),
+        value.includes('reward') || value.includes('score'),
+        value.includes('mean') || value.includes('baseline') || value.includes('group'),
+        value.includes('ratio'),
+        value.includes('clip'),
+        value.includes('ascent') || value.includes('update') || value.includes('gradient')
+      ];
+      const hits = checks.filter(Boolean).length;
+      document.getElementById('masteryText').disabled = true;
+      if (hits >= 5) {
+        showFeedback('mastery-feedback', 'good', 'Gate passed', 'You traced the loop mechanistically: sample a group, score it, derive group-relative advantages, compute ratios, clip unsafe movement, and ascend the objective under constraint.');
+        document.getElementById('mastery-next').classList.remove('hidden');
+      } else {
+        showFeedback('mastery-feedback', 'bad', 'Gate failed', 'The sequence is still missing structural machinery. Layer 2 requires the mechanism, not just the intuition.');
+        document.getElementById('masteryText').disabled = false;
+      }
+    }
+
+    function containsAny(value, options) {
+      return options.some((option) => value.includes(option));
+    }
+
+    function gradeGauntlet() {
+      const answers = {
+        g1: ['group mean', 'baseline from the group', 'sample mean', 'no value network'],
+        g2: ['sigma 0', 'undefined', 'z-score undefined', 'division by zero'],
+        g3: ['scale invariance', 'stability', 'numerical stability', 'unit variance'],
+        g4: ['mode-seeking'],
+        g5: ['revert', 'freeze', 'reference model', 'no learning', 'kl dominates'],
+        g6: ['dpo', 'direct preference optimization'],
+        g7: ['attention head', 'specialized head', 'circuit', 'thinking spark']
+      };
+      let score = 0;
+      Object.entries(answers).forEach(([id, keywords]) => {
+        const value = document.getElementById(id).value.trim().toLowerCase();
+        if (value && containsAny(value, keywords)) score += 1;
+      });
+      if (score >= 5) {
+        showFeedback('gauntlet-feedback', 'good', 'Gauntlet cleared: ' + score + '/7', 'The mechanism is now stable in memory: GRPO replaces the value network with a group baseline, standardizes reward, clips unsafe policy jumps, and uses reverse KL to keep optimization focused and tethered.');
+        document.getElementById('final-box').classList.remove('hidden');
+        document.getElementById('final-text').textContent = 'GRPO is now visible as a full training loop rather than a slogan: the Transformer samples responses, the reward function scores them, the group creates its own baseline, clipping bounds policy motion, and gradient ascent reshapes the model toward higher-quality behavior while KL keeps it from drifting into collapse.';
+      } else {
+        showFeedback('gauntlet-feedback', 'bad', 'Gauntlet failed: ' + score + '/7', 'Rework the mechanism. The weak spots are usually the group baseline, the undefined G=1 edge case, reverse KL behavior, and the role of the clipping/min pair.');
+        document.getElementById('final-box').classList.add('hidden');
+      }
+    }
+
+    setProgress(0);
+  </script>
+</body>
+</html>

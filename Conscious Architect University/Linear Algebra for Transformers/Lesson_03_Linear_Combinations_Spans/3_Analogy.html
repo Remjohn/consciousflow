@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linear Combinations & Spans — Analogy Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1.2;min-width:320px;}
+.visual-col{flex:1;min-width:280px;}
+
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+
+.tab-btn{padding:.6rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-dim);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.85rem;transition:all .2s;}
+.tab-btn:hover{color:var(--text);border-color:var(--border-light);}
+.tab-btn.active{background:var(--amber-glow);color:var(--amber);border-color:var(--amber);}
+
+.domain-content{display:none;}
+.domain-content.active{display:block;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+
+.puzzle-card{border:1px solid var(--border);background:var(--bg-card);border-radius:8px;margin-bottom:.75rem;overflow:hidden;}
+.puzzle-header{padding:1rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:600;background:var(--bg-elevated);}
+.puzzle-header:hover{background:rgba(255,255,255,0.05);}
+.puzzle-body{padding:0 1rem;max-height:0;overflow:hidden;transition:all .3s;color:var(--text-muted);font-size:.9rem;line-height:1.6;}
+.puzzle-card.open .puzzle-body{padding:1rem;max-height:500px;}
+.puzzle-card.open .puzzle-icon{transform:rotate(180deg);}
+.puzzle-icon{transition:transform .3s;}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+
+input[type=range]{-webkit-appearance:none;background:transparent;width:100%;}
+input[type=range]::-webkit-slider-track{height:4px;background:var(--border);border-radius:2px;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--amber);border-radius:50%;margin-top:-6px;cursor:pointer;}
+
+.scroll-hint{animation:bounce 2s ease infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column-reverse!important;}
+  .canvas-wrap{min-height:300px!important;}
+  .nav-links{display:none;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">LINEAR COMBINATIONS</span>
+    <div class="nav-links">
+      <a href="#domains" class="nav-link active" data-section="domains">6 Domains</a>
+      <a href="#crossdomain" class="nav-link" data-section="crossdomain">Cross-Domain</a>
+      <a href="#puzzles" class="nav-link" data-section="puzzles">Logic Puzzles</a>
+      <a href="#builder" class="nav-link" data-section="builder">Builder</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 03 — ANALOGY LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Linear Combinations<br><span style="color:var(--text-muted);font-weight:300;">Blending Creates Boundaries</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      See how tactical roles, RPG builds, audio mixes, recipes, group dynamics, and AI personas all follow the same weighted-sum architecture — and break at the same non-linear walls.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: 6-Domain System -->
+<section id="domains" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — UNIVERSAL MAPPING</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">The 6-Domain System</h2>
+
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.5rem;">
+      <button class="tab-btn active" data-target="sports"><i class="fas fa-futbol"></i> Football</button>
+      <button class="tab-btn" data-target="gaming"><i class="fas fa-gamepad"></i> RPG Builds</button>
+      <button class="tab-btn" data-target="music"><i class="fas fa-sliders-h"></i> Mixing</button>
+      <button class="tab-btn" data-target="cooking"><i class="fas fa-utensils"></i> Recipes</button>
+      <button class="tab-btn" data-target="psych"><i class="fas fa-users"></i> Group Dynamics</button>
+      <button class="tab-btn" data-target="ai"><i class="fas fa-brain"></i> CCP Steering</button>
+    </div>
+
+    <div class="flex-layout">
+      <div class="reading-col">
+        <!-- SPORTS -->
+        <div id="sports" class="domain-content active">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Tactical Role Composition</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            Barella's match-day role is not a pure archetype. It is a linear combination of tactical primitives:
+          </p>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'Space Grotesk';font-size:.88rem;margin-bottom:1rem;">
+            Barella = <span style="color:var(--amber);">0.6</span>·Box-to-Box + <span style="color:var(--teal);">0.25</span>·Playmaker + <span style="color:var(--rose);">0.15</span>·Destroyer
+          </div>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+            Change the weights for a Champions League knockout and Barella shifts to 0.4 B2B + 0.15 Playmaker + 0.45 Destroyer. Same player, same basis — completely different tactical output.
+          </p>
+          <div class="insight">
+            <strong>Span:</strong> All tactical roles achievable from 3 primitives. Without a genuine creative Number 10 (independent 4th basis), that function is permanently outside the span.
+          </div>
+        </div>
+
+        <!-- GAMING -->
+        <div id="gaming" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Hybrid Build Construction</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            Basis vectors are pure archetypes across [Str, Sta, Int, Wis, Cha]:
+          </p>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'Space Grotesk';font-size:.85rem;margin-bottom:1rem;">
+            Battlemage = <span style="color:var(--amber);">0.5</span>·Warrior(10,8,0,0,0) + <span style="color:var(--teal);">0.5</span>·Mage(0,0,10,0,8)<br>
+            = <span style="color:var(--emerald);">(5, 4, 5, 0, 4)</span>
+          </div>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+            A "Spellsword" with stats (5,4,5,0,4) is literally the Battlemage — a dependent vector. Adding it expands nothing.
+          </p>
+          <div class="insight">
+            <strong>Span boundary:</strong> If all archetypes have zero Dexterity, the Rogue build is unreachable. You need an independent 4th basis.
+          </div>
+        </div>
+
+        <!-- MUSIC -->
+        <div id="music" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">The Mixing Console</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+            The most literal physical linear combination machine. Each fader = weight. Each stem = basis vector.
+          </p>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'Space Grotesk';font-size:.85rem;margin-bottom:1rem;">
+            Master = <span style="color:var(--amber);">0.7</span>·Bass + <span style="color:var(--teal);">0.5</span>·Drums + <span style="color:var(--violet);">0.8</span>·Vocals + <span style="color:var(--rose);">0.3</span>·Synth + <span style="color:var(--emerald);">0.2</span>·Guitar
+          </div>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+            Two rhythm guitars with identical tone are nearly dependent — mixing both adds negligible content. A lead guitar with a different register is independent.
+          </p>
+          <div class="insight">
+            <strong>Span:</strong> No strings recorded? No fader manipulation produces strings. That timbre is outside your stem's span forever.
+          </div>
+        </div>
+
+        <!-- COOKING -->
+        <div id="cooking" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Recipe as Linear Combination</h3>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'Space Grotesk';font-size:.85rem;margin-bottom:1rem;">
+            Vinaigrette = <span style="color:var(--amber);">3</span>·Oil + <span style="color:var(--teal);">1</span>·Lemon + <span style="color:var(--violet);">0.5</span>·Mustard + <span style="color:var(--rose);">0.2</span>·Salt
+          </div>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+            Pantry of flour, butter, sugar → span limited to shortbread, pie crust, cookies. Add eggs (independent vector: protein + emulsification) → span explodes to include cakes, custards, meringues, soufflés.
+          </p>
+          <div class="insight">
+            <strong>Dependence trap:</strong> Table salt ≈ sea salt ≈ pink salt. Fifty types of salt give you the same span as one.
+          </div>
+        </div>
+
+        <!-- PSYCH -->
+        <div id="psych" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Group Dynamic Composition</h3>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'Space Grotesk';font-size:.82rem;margin-bottom:1rem;line-height:1.8;">
+            Group = <span style="color:var(--amber);">0.5</span>·CEO(9,8,9,3,2) + <span style="color:var(--teal);">0.3</span>·CTO(7,9,3,5,4) + <span style="color:var(--violet);">0.2</span>·CMO(8,4,10,8,6)<br>
+            = <span style="color:var(--emerald);">(8.2, 7.5, 7.4, 4.6, 3.4)</span>
+          </div>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+            If all 3 have near-zero Neuroticism, the group can never produce high-anxiety dynamics — outside the span. Need a 4th person with independent high Neuroticism.
+          </p>
+          <div class="insight">
+            <strong>Break:</strong> Emotional contagion is non-linear — one anxious person can infect the entire group far beyond their proportional weight.
+          </div>
+        </div>
+
+        <!-- AI -->
+        <div id="ai" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">CCP Behavioral Composition</h3>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'Space Grotesk';font-size:.85rem;margin-bottom:1rem;">
+            Steer = <span style="color:var(--amber);">0.6</span>·e_motivational + <span style="color:var(--teal);">0.25</span>·e_technical + <span style="color:var(--violet);">0.15</span>·e_humorous
+          </div>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+            RISER (Paper #34) changes weights <em>at every token</em>. Token 5: heavy empathy. Token 20: analytical logic. Token 35: humor activates. Same formula, shifting coefficients.
+          </p>
+          <div class="insight">
+            <strong>Span constraint:</strong> No "Personal Storytelling" direction extracted? No weight manipulation produces storytelling. You need an independent new primitive.
+          </div>
+        </div>
+      </div>
+
+      <!-- Visual Column: Blend Simulator -->
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:400px;">
+          <canvas id="domainCanvas"></canvas>
+        </div>
+        <div style="padding:.75rem 1rem;" id="sliderPanel">
+          <div style="margin-bottom:.5rem;">
+            <label style="font-size:.78rem;font-weight:600;display:flex;justify-content:space-between;"><span style="color:var(--amber);" id="s1Label">α₁ Box-to-Box</span><span id="s1Val" style="color:var(--amber);">0.60</span></label>
+            <input type="range" id="s1" min="0" max="100" value="60" class="domSlider">
+          </div>
+          <div style="margin-bottom:.5rem;">
+            <label style="font-size:.78rem;font-weight:600;display:flex;justify-content:space-between;"><span style="color:var(--teal);" id="s2Label">α₂ Playmaker</span><span id="s2Val" style="color:var(--teal);">0.25</span></label>
+            <input type="range" id="s2" min="0" max="100" value="25" class="domSlider">
+          </div>
+          <div>
+            <label style="font-size:.78rem;font-weight:600;display:flex;justify-content:space-between;"><span style="color:var(--violet);" id="s3Label">α₃ Destroyer</span><span id="s3Val" style="color:var(--violet);">0.15</span></label>
+            <input type="range" id="s3" min="0" max="100" value="15" class="domSlider">
+          </div>
+          <div class="card" style="padding:.5rem;margin-top:.5rem;text-align:center;">
+            <span style="font-size:.72rem;color:var(--text-dim);">BLEND OUTPUT</span>
+            <div id="blendOut" style="font-size:1rem;font-weight:700;font-family:'Space Grotesk';color:var(--emerald);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: Cross-Domain Breaks -->
+<section id="crossdomain" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:.5rem;">02 — WHERE LINEARITY BREAKS</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Cross-Domain Comparison</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin-bottom:1.5rem;">
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--emerald);">
+        <h4 style="color:var(--emerald);margin-bottom:.5rem;">🤖 AI: Perfect Linearity</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">Attention output is <strong style="color:var(--text);">rigorously</strong> a weighted sum. Softmax guarantees non-negative weights summing to 1. The geometry is mathematically exact.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--teal);">
+        <h4 style="color:var(--teal);margin-bottom:.5rem;">🎵 Music: Almost Exact</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">Gain staging (fader volumes) IS linear addition. But <strong style="color:var(--text);">compression, distortion, reverb</strong> are non-linear transforms that break the model.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--amber);">
+        <h4 style="color:var(--amber);margin-bottom:.5rem;">🍳 Cooking: Input Only</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">Ingredient ratios are linear. But <strong style="color:var(--text);">sugar + heat ≠ more sugar — it equals caramel</strong>. Maillard reactions transform ingredients into qualitatively new molecules.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--rose);">
+        <h4 style="color:var(--rose);margin-bottom:.5rem;">🧠 Psychology: First-Order</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">Group composition is a reasonable linear model. But <strong style="color:var(--text);">emotional contagion, groupthink, power dynamics</strong> are fundamentally non-linear emergent phenomena.</p>
+      </div>
+    </div>
+    <div class="insight">
+      <strong>The takeaway:</strong> Linear combinations model structural composition. Reality applies non-linear transformations on top. Knowing where the linear model holds — and where it breaks — is the difference between a naive engineer and a Sovereign Architect.
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: Logic Puzzles -->
+<section id="puzzles" class="section">
+  <div class="section-inner" style="max-width:800px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">03 — REASONING TRAPS</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Logic Puzzles</h2>
+
+    <div class="puzzle-card">
+      <div class="puzzle-header"><span>1. The Phantom Independence</span><i class="fas fa-chevron-down puzzle-icon"></i></div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Setup:</strong> v₁=(1,0,0), v₂=(0,1,0), v₃=(1,1,0). Are these 3 vectors independent? What dimension is their span?</p>
+        <div class="insight" style="border-color:var(--rose);background:var(--rose-glow);">
+          <strong style="color:var(--rose);">Dependent.</strong> v₃ = v₁ + v₂. Span is 2D (the XY plane). Despite having 3 vectors, the Z-axis is completely unreachable. The third vector is dead weight.
+        </div>
+      </div>
+    </div>
+
+    <div class="puzzle-card">
+      <div class="puzzle-header"><span>2. The Negative Weight Paradox</span><i class="fas fa-chevron-down puzzle-icon"></i></div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Setup:</strong> steer = 1.0·e_empathy + (-1.0)·e_aggression. Is this identical to a dedicated "anti-aggression" vector?</p>
+        <div class="insight" style="border-color:var(--violet);background:var(--violet-glow);">
+          <strong style="color:var(--violet);">No.</strong> Subtracting aggression removes that geometric component. But if "anti-aggression" includes positive attributes (patience, tolerance) orthogonal to the aggression axis, a dedicated vector would steer <em>toward</em> those. Subtraction removes; it does not replace.
+        </div>
+      </div>
+    </div>
+
+    <div class="puzzle-card">
+      <div class="puzzle-header"><span>3. The Convex Hull Trap</span><i class="fas fa-chevron-down puzzle-icon"></i></div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Setup:</strong> Softmax weights are non-negative, sum to 1. Can the attention output ever lie OUTSIDE the convex hull of value vectors?</p>
+        <div class="insight">
+          <strong>No.</strong> Non-negative weights summing to 1 = convex combination. Output is geometrically confined inside the convex hull. Steering interventions CAN escape it because they use unconstrained weights.
+        </div>
+      </div>
+    </div>
+
+    <div class="puzzle-card">
+      <div class="puzzle-header"><span>4. The Rank Collapse</span><i class="fas fa-chevron-down puzzle-icon"></i></div>
+      <div class="puzzle-body">
+        <p style="margin-bottom:.75rem;"><strong>Setup:</strong> LoRA rank r=8, but during training 2 of the 8 basis directions converge to near-identical orientations. What's the effective rank?</p>
+        <div class="insight" style="border-color:var(--rose);background:var(--rose-glow);">
+          <strong style="color:var(--rose);">Effective rank ≈ 6.</strong> Two converged directions function as one, collapsing a dimension. The behavioral nuance that required those two directions to be distinct is permanently lost.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 4: Builder -->
+<section id="builder" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">04 — KINESTHETIC TASK</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Build-Your-Own Analogy</h2>
+    <div style="background:var(--bg-elevated);border:1px dashed var(--amber);border-radius:12px;padding:2rem;">
+      <p style="color:var(--text-muted);font-size:.95rem;line-height:1.7;margin-bottom:1.5rem;">
+        Choose a domain where outputs compose from weighted parts. Define 3 basis vectors, compute a blend, identify the span boundary, and find a redundancy.
+      </p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;">
+        <div><label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Domain</label><input type="text" placeholder="e.g. Investment Portfolios" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';"></div>
+        <div><label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Basis 1 (name + vector)</label><input type="text" placeholder="e.g. Growth (8,2,1)" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';"></div>
+        <div><label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Basis 2 (name + vector)</label><input type="text" placeholder="e.g. Bonds (1,9,6)" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';"></div>
+        <div><label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Basis 3 (name + vector)</label><input type="text" placeholder="e.g. Crypto (9,0,0)" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';"></div>
+      </div>
+      <div style="margin-top:1rem;">
+        <label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">What is outside your span? What independent vector would you need?</label>
+        <textarea rows="3" placeholder="Name one output unreachable from your 3 basis vectors and the independent vector needed to reach it..." style="width:100%;padding:.8rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';resize:vertical;"></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:1rem;">
+        <button class="btn" style="background:var(--amber);color:#000;"><i class="fas fa-save"></i> Save Framework</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);margin-top:2rem;">
+  <p style="max-width:600px;margin:0 auto 1rem;line-height:1.5;">
+    <strong>Compression:</strong> A linear combination manufactures new meaning by weighting old parts. The span is the wall. Independence is the door.
+  </p>
+  Interactive Visual Learning — Lesson 03: Linear Combinations & Spans Analogy Layer
+</footer>
+
+<script>
+const DPR=window.devicePixelRatio||1;
+function setupCanvas(c){const p=c.parentElement,r=p.getBoundingClientRect();c.width=r.width*DPR;c.height=r.height*DPR;c.style.width=r.width+'px';c.style.height=r.height+'px';const ctx=c.getContext('2d');ctx.scale(DPR,DPR);return{ctx,w:r.width,h:r.height};}
+
+/* Hero */
+(function(){const c=document.getElementById('heroCanvas');let W,H,ctx;
+function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+resize();window.addEventListener('resize',resize);
+let t=0;
+function draw(){ctx.clearRect(0,0,W,H);
+  for(let i=0;i<5;i++){
+    const y=H*0.3+i*H*0.12;const x1=W*0.1;const x2=W*0.9;
+    const faderX=x1+(x2-x1)*(0.5+0.35*Math.sin(t*0.01+i*1.2));
+    ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x2,y);ctx.stroke();
+    ctx.beginPath();ctx.arc(faderX,y,5,0,Math.PI*2);
+    ctx.fillStyle=['rgba(245,158,11,0.3)','rgba(20,184,166,0.3)','rgba(139,92,246,0.3)','rgba(244,63,94,0.2)','rgba(16,185,129,0.2)'][i];
+    ctx.fill();
+  }
+  t++;requestAnimationFrame(draw);}
+draw();})();
+
+/* Domain Canvas */
+(function(){
+  const canvas=document.getElementById('domainCanvas');
+  const sliders=[document.getElementById('s1'),document.getElementById('s2'),document.getElementById('s3')];
+  const valEls=[document.getElementById('s1Val'),document.getElementById('s2Val'),document.getElementById('s3Val')];
+  const lblEls=[document.getElementById('s1Label'),document.getElementById('s2Label'),document.getElementById('s3Label')];
+  let domain='sports';
+
+  const domainCfg={
+    sports:{labels:['Box-to-Box','Playmaker','Destroyer'],axes:['Running','Passing','Tackling'],
+      bases:[[8,4,3],[3,9,2],[4,2,9]],defaults:[60,25,15]},
+    gaming:{labels:['Warrior','Mage','Healer'],axes:['Str','Int','Wis'],
+      bases:[[10,0,0],[0,10,0],[0,5,10]],defaults:[50,50,0]},
+    music:{labels:['Bass','Drums','Vocals'],axes:['Sub','Mid','Treble'],
+      bases:[[9,2,0],[1,8,3],[0,3,9]],defaults:[70,50,80]},
+    cooking:{labels:['Oil','Lemon','Mustard'],axes:['Fat','Acid','Heat'],
+      bases:[[9,0,1],[0,9,0],[1,1,7]],defaults:[60,20,10]},
+    psych:{labels:['CEO','CTO','CMO'],axes:['Open','Consc','Extra'],
+      bases:[[9,8,9],[7,9,3],[8,4,10]],defaults:[50,30,20]},
+    ai:{labels:['Motivational','Technical','Humorous'],axes:['Energy','Precision','Levity'],
+      bases:[[9,2,3],[1,9,0],[4,1,9]],defaults:[60,25,15]}
+  };
+
+  function updateLabels(){
+    const cfg=domainCfg[domain];
+    lblEls.forEach((l,i)=>{l.textContent='α'+(i+1)+' '+cfg.labels[i];});
+    cfg.defaults.forEach((d,i)=>{sliders[i].value=d;});
+  }
+
+  function getWeights(){
+    const raw=sliders.map(s=>parseFloat(s.value));
+    const sum=raw.reduce((a,b)=>a+b,0)||1;
+    return raw.map(r=>r/sum);
+  }
+
+  function draw(){
+    const{ctx,w,h}=setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+    const cfg=domainCfg[domain];
+    const weights=getWeights();
+    valEls.forEach((v,i)=>v.textContent=weights[i].toFixed(2));
+
+    // Compute blend
+    const blend=[0,0,0];
+    cfg.bases.forEach((b,i)=>{b.forEach((v,d)=>{blend[d]+=v*weights[i];});});
+    document.getElementById('blendOut').textContent=`(${blend.map(v=>v.toFixed(1)).join(', ')})`;
+
+    const cx=w/2,cy=h/2,R=Math.min(w,h)*0.3;
+    const colors=['#f59e0b','#14b8a6','#8b5cf6'];
+
+    // Draw radar axes
+    const n=3;
+    for(let i=0;i<n;i++){
+      const ang=-Math.PI/2+i*Math.PI*2/n;
+      const ax=cx+Math.cos(ang)*R*1.2,ay=cy+Math.sin(ang)*R*1.2;
+      ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ax,ay);ctx.stroke();
+      ctx.font='10px DM Sans';ctx.fillStyle='#52525b';ctx.textAlign='center';
+      ctx.fillText(cfg.axes[i],ax+(Math.cos(ang)*18),ay+(Math.sin(ang)*18));
+    }
+
+    // Radar circles
+    for(let r=0.25;r<=1;r+=0.25){
+      ctx.beginPath();
+      for(let i=0;i<=n;i++){
+        const ang=-Math.PI/2+(i%n)*Math.PI*2/n;
+        const px=cx+Math.cos(ang)*R*r,py=cy+Math.sin(ang)*R*r;
+        if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+      }
+      ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.stroke();
+    }
+
+    // Draw basis vector shapes (faded)
+    cfg.bases.forEach((b,bi)=>{
+      const maxV=10;
+      ctx.beginPath();
+      b.forEach((v,di)=>{
+        const ang=-Math.PI/2+di*Math.PI*2/n;
+        const px=cx+Math.cos(ang)*R*(v/maxV)*weights[bi]*3;
+        const py=cy+Math.sin(ang)*R*(v/maxV)*weights[bi]*3;
+        if(di===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+      });
+      ctx.closePath();ctx.strokeStyle=colors[bi]+'44';ctx.lineWidth=1;ctx.stroke();
+      ctx.fillStyle=colors[bi]+'11';ctx.fill();
+    });
+
+    // Draw blend shape
+    const maxV=10;
+    ctx.beginPath();
+    blend.forEach((v,di)=>{
+      const ang=-Math.PI/2+di*Math.PI*2/n;
+      const px=cx+Math.cos(ang)*R*(v/maxV);
+      const py=cy+Math.sin(ang)*R*(v/maxV);
+      if(di===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    });
+    ctx.closePath();
+    ctx.save();ctx.shadowColor='#10b981';ctx.shadowBlur=12;
+    ctx.strokeStyle='#10b981';ctx.lineWidth=2.5;ctx.stroke();ctx.restore();
+    ctx.fillStyle='rgba(16,185,129,0.1)';ctx.fill();
+
+    // Blend vertices
+    blend.forEach((v,di)=>{
+      const ang=-Math.PI/2+di*Math.PI*2/n;
+      const px=cx+Math.cos(ang)*R*(v/maxV);
+      const py=cy+Math.sin(ang)*R*(v/maxV);
+      ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.fillStyle='#10b981';ctx.fill();
+    });
+
+    // Labels
+    ctx.font='700 12px Space Grotesk';ctx.fillStyle='#10b981';ctx.textAlign='center';
+    ctx.fillText('Blend',cx,cy+R*1.15+8);
+  }
+
+  // Tab events
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      domain=btn.dataset.target;
+      document.querySelectorAll('.domain-content').forEach(c=>c.classList.remove('active'));
+      document.getElementById(domain).classList.add('active');
+      updateLabels();draw();
+    });
+  });
+
+  sliders.forEach(s=>s.addEventListener('input',draw));
+  updateLabels();draw();window.addEventListener('resize',draw);
+})();
+
+/* Puzzles */
+(function(){
+  document.querySelectorAll('.puzzle-header').forEach(hdr=>{
+    hdr.addEventListener('click',()=>{
+      const c=hdr.parentElement;const isOpen=c.classList.contains('open');
+      document.querySelectorAll('.puzzle-card').forEach(p=>p.classList.remove('open'));
+      if(!isOpen)c.classList.add('open');
+    });
+  });
+})();
+
+/* Nav */
+(function(){
+  const links=document.querySelectorAll('.nav-link');
+  const ids=['domains','crossdomain','puzzles','builder'];
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+100;let active=ids[0];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+    links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));
+  });
+})();
+</script>
+</body>
+</html>

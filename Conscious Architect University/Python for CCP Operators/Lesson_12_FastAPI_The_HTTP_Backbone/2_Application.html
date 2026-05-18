@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 12 — Application Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+  --blue:#3b82f6;--blue-glow:rgba(59,130,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:.85em;color:var(--blue);background:rgba(59,130,246,0.08);padding:.1em .4em;border-radius:4px;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--blue);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--blue);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-blue{background:var(--blue);color:#fff;}
+.btn-blue:hover{background:#2563eb;transform:translateY(-1px);}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text-muted);color:var(--text);}
+.btn-outline.active{border-color:var(--blue);color:var(--blue);background:var(--blue-glow);}
+.btn-sm{padding:.4rem .8rem;font-size:.78rem;}
+
+.insight{border-left:3px solid var(--blue);padding:.8rem 1rem;background:var(--blue-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--blue);}
+.insight.rose{border-color:var(--rose);background:var(--rose-glow);}
+.insight.rose strong{color:var(--rose);}
+.insight.emerald{border-color:var(--emerald);background:var(--emerald-glow);}
+.insight.emerald strong{color:var(--emerald);}
+.insight.amber{border-color:var(--amber);background:var(--amber-glow);}
+.insight.amber strong{color:var(--amber);}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1;min-width:280px;}
+.visual-col{flex:1.2;min-width:320px;}
+
+.formula-block{background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--text-muted);line-height:1.8;overflow-x:auto;margin-bottom:1rem;white-space:pre-wrap;}
+.formula-block .hl{color:var(--blue);font-weight:600;}
+.formula-block .tl{color:var(--teal);}
+.formula-block .rl{color:var(--rose);}
+.formula-block .am{color:var(--amber);}
+
+.quiz-option{display:block;width:100%;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:.88rem;color:var(--text-muted);transition:all .25s;text-align:left;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;}
+.quiz-option:hover{border-color:var(--border-light);color:var(--text);}
+.quiz-option.correct{border-color:var(--emerald);color:var(--emerald);background:var(--emerald-glow);}
+.quiz-option.wrong{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+.quiz-option.disabled{pointer-events:none;opacity:.6;}
+.quiz-explanation{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+.quiz-explanation.show{max-height:300px;}
+
+.step-indicator{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--blue-glow);border:1px solid var(--blue);color:var(--blue);font-family:'Space Grotesk';font-weight:700;font-size:.78rem;margin-right:.5rem;}
+
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+.scroll-hint{animation:bounce 2s ease infinite;}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column!important;}
+  .canvas-wrap{min-height:280px!important;}
+  .nav-links{gap:.5rem;}.nav-link{font-size:.7rem;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--blue);">FASTAPI — APPLICATION Y</a>
+    <div class="nav-links">
+      <a href="#qos" class="nav-link active" data-section="qos">QoS Entry</a>
+      <a href="#memory" class="nav-link" data-section="memory">Memory Hook</a>
+      <a href="#qa" class="nav-link" data-section="qa">Zero-Trust QA</a>
+      <a href="#websocket" class="nav-link" data-section="websocket">Socket Flow</a>
+      <a href="#checkpoint" class="nav-link" data-section="checkpoint">Gauntlet</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--blue);margin-bottom:1rem;">LESSON 12 — APPLICATION LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      FastAPI<br><span style="color:var(--text-muted);font-weight:300;">Tracer Bullets on the Factory Floor</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      In this layer, we abandon abstract concepts. Trace exact data flows through QoS entry gates, database locks, and Zero-Trust JSON validation using real Conscious Coaching Platform artifacts.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: QoS Entrance Gate -->
+<section id="qos" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">01 — ARTIFACT A</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">The QoS Entrance Gate (FastAPI + Depends)</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <div class="formula-block">
+<span class="hl">@app.post("/session/v1/trigger", response_model=ScriptOutput)</span>
+async def invoke_coaching_trigger(
+    client_state: ClientEmotionalMatrix,
+    db_session = <span class="tl">Depends(get_neo4j_adapter)</span>,
+    token: str = <span class="rl">Depends(verify_bearer_token)</span>
+) -> dict:
+    <span style="color:var(--text-dim)"># ... Execution Logic ...</span>
+    return raw_script</div>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          This code from the <strong>Coaching Session Orchestrator</strong> operates as The Chassis. Removing this endpoint strips the client of any capability to trigger the LLM inference.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          <strong style="color:var(--text);">The Data Flow:</strong><br>
+          1. Request gets intercepted by the <span class="mono">@app.post</span> gateway.<br>
+          2. <span class="mono">verify_bearer_token</span> runs synchronously yielding unauthorized rejections instantly.<br>
+          3. <span class="mono">get_neo4j_adapter</span> fires to acquire DB lock.<br>
+          4. FastAPI enforces <span class="mono">ClientEmotionalMatrix</span> model.<br>
+          5. DSPy inference resolves internally. <br>
+          6. <span class="mono">response_model</span> verifies the final JSON matches <span class="mono">ScriptOutput</span> before responding.
+        </p>
+        <div class="insight amber">
+          <strong>If the DSPy worker pool suddenly errors out</strong> and returns <span class="mono">{"error": "timeout"}</span>, FastAPI violently rejects sending this back to the client because it violates the <span class="mono">ScriptOutput</span> outbound schema. An HTTP 500 error is thrown natively instead, preventing client ingestion of raw system errors.
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:380px;">
+          <canvas id="qosCanvas"></canvas>
+        </div>
+        <div style="padding:.75rem 1rem; text-align:center;">
+          <button id="trigQoS" class="btn btn-blue" style="width:100%;justify-content:center;"><i class="fas fa-play"></i> Trace End-to-End Request</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: Memory Context -->
+<section id="memory" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">02 — ARTIFACT B</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Dependency Teardown & Lock Safe-Guarding</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <div class="formula-block">
+async def get_neo4j_adapter() -> AsyncSession:
+    <span class="tl">try:</span>
+        session = driver.session(database="neo4j")
+        <span class="hl">yield</span> session
+    <span class="tl">finally:</span>
+        <span class="rl">await session.close()</span></div>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          How do we ensure that DB Sessions inside the Memory Engine never leak when the LLM generates a fatal error deep in the pipeline? 
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          FastAPI implements <strong>Generators inside Dependencies</strong>. The execution hits <span class="mono">yield session</span> and logically pauses. The external path logic executes the DB operations. When the API replies to the client, execution resumes inside the <span class="mono">finally</span> block, safely ripping down the socket connection. 
+        </p>
+        <div class="insight teal">
+          <strong>Prediction Gate Check:</strong> If the API endpoint crashes violently with an unexpected <span class="mono">KeyError</span> on Line 12, the <span class="mono">finally</span> block is STILL GUARANTEED to execute by FastAPI's orchestrator layer. The lock never leaks.
+        </div>
+      </div>
+      <div class="visual-col">
+          <div class="card" style="padding:1.5rem;">
+            <p style="font-weight:600;margin-bottom:1rem;color:var(--text);">Simulate Dependency Failure State</p>
+            <div id="simLog" style="background:#000;padding:1rem;border-radius:8px;font-family:'JetBrains Mono';font-size:.8rem;color:var(--text-muted);min-height:200px;margin-bottom:1rem;">
+                > Ready.
+            </div>
+            <div style="display:flex;gap:1rem;">
+              <button id="simSuccess" class="btn btn-outline" style="flex:1;">Run Success Path</button>
+              <button id="simCrash" class="btn btn-emerald" style="flex:1;background:var(--rose);color:#fff;border-color:var(--rose);">Trigger Exception</button>
+            </div>
+          </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: Zero Trust QA -->
+<section id="qa" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--rose);margin-bottom:.5rem;">03 — ARTIFACT C</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Zero-Trust Pydantic Outputs</h2>
+    <div class="flex-layout">
+        <div class="reading-col">
+          <div class="formula-block">
+class ScriptOutput(BaseModel):
+    coach_id: str
+    script_text: str = Field(..., max_length=1200)
+    trigger_count: int
+    cbcs_score: float = Field(ge=0.0, le=1.0)
+    
+    <span class="hl">@field_validator</span>("script_text")
+    def prevent_markdown_leak(cls, v: str) -> str:
+        if "```" in v:
+            <span class="rl">raise ValueError("LLM leaked thinking tags")</span>
+        return v</div>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+           When the raw LLM output finally returns through DSPy, Pydantic processes it synchronously. It drops all unmapped JSON tokens. 
+          </p>
+        </div>
+        <div class="visual-col">
+            <div class="card" style="padding:1rem;margin-bottom:1rem;border-left:3px solid var(--emerald);">
+              <h4 style="color:var(--emerald);margin-bottom:.5rem;">Before Validation (LLM Output)</h4>
+              <pre style="font-family:'JetBrains Mono';font-size:.8rem;color:var(--text-dim);">
+{
+  "coach_id": "JP",
+  "script_text": "Let's begin.",
+  "trigger_count": 1,
+  "cbcs_score": 0.9,
+  <span style="color:var(--rose);">"rogue_variable": True,</span>
+  <span style="color:var(--rose);">"latency": 450</span>
+}</pre>
+            </div>
+            <div class="card" style="padding:1rem;border-left:3px solid var(--blue);">
+              <h4 style="color:var(--blue);margin-bottom:.5rem;">After Validation (Client Payload)</h4>
+              <pre style="font-family:'JetBrains Mono';font-size:.8rem;color:var(--text);">
+{
+  "coach_id": "JP",
+  "script_text": "Let's begin.",
+  "trigger_count": 1,
+  "cbcs_score": 0.9
+}</pre>
+              <p style="font-size:.8rem;color:var(--text-muted);margin-top:10px;"><i>FastAPI natively filters hidden keys, enforcing defensive structural integrity gracefully.</i></p>
+            </div>
+        </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 4: Socket Flow -->
+<section id="websocket" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:.5rem;">04 — DATA FLOW TRACING</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">WebSocket Handshake & DSPy Timing Fixation</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem;">
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--violet);">
+        <div style="font-size:.78rem;color:var(--violet);font-weight:600;margin-bottom:.25rem;">STAGE 1</div>
+        <h4 style="margin-bottom:.5rem;">The Handshake</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;margin-bottom:.5rem;">
+          The app initiates <span class="mono">ws://api.ccp.dev</span> upgrade. <span class="mono">Depends(auth)</span> intercepts. If the JWT expired, it throws <span class="mono">WS_1008</span> violation cutting the bridge before the route even acknowledges execution.
+        </p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--amber);">
+        <div style="font-size:.78rem;color:var(--amber);font-weight:600;margin-bottom:.25rem;">STAGE 2</div>
+        <h4 style="margin-bottom:.5rem;">Data Normalization</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;margin-bottom:.5rem;">
+          {"pulse": "fast"} sent to <span class="mono">BiometricState</span>. Because it's a socket, FastAPI can't auto HTTP 422. It must be manually Try/Except trapped in the Chassis loop.
+        </p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--rose);">
+        <div style="font-size:.78rem;color:var(--rose);font-weight:600;margin-bottom:.25rem;">STAGE 3</div>
+        <h4 style="margin-bottom:.5rem;">LLM Timeout Wrapper</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;margin-bottom:.5rem;">
+          <span class="mono">dspy.Predict()</span> executes. If the local Qwen model hangs, <span class="mono">asyncio.wait_for(timeout=4.5)</span> executes its guillotine to save the async thread.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 5: Checkpoint -->
+<section id="checkpoint" class="section">
+  <div class="section-inner" style="max-width:720px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">05 — CHECKPOINT</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Application Gauntlet</h2>
+    <div id="quizContainer" style="display:flex;flex-direction:column;gap:1.5rem;"></div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);">
+  Interactive Visual Learning — Lesson 12: FastAPI Application Layer
+</footer>
+
+<script>
+const DPR=window.devicePixelRatio||1;
+function setupCanvas(c){const p=c.parentElement,r=p.getBoundingClientRect();c.width=r.width*DPR;c.height=r.height*DPR;c.style.width=r.width+'px';c.style.height=r.height+'px';const ctx=c.getContext('2d');ctx.scale(DPR,DPR);return{ctx,w:r.width,h:r.height};}
+
+/* Hero bg */
+(function(){const c=document.getElementById('heroCanvas');let W,H,ctx;
+function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+resize();window.addEventListener('resize',resize);
+let t=0;
+function draw(){ctx.clearRect(0,0,W,H);
+  // Grid lines scrolling
+  ctx.strokeStyle='rgba(59, 130, 246, 0.05)';
+  ctx.lineWidth=1;
+  const step = 40;
+  for(let x=(t*0.5)%step; x<W; x+=step){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=(t*0.5)%step; y<H; y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  t++;requestAnimationFrame(draw);}
+draw();})();
+
+/* QoS Request Visualizer */
+(function(){
+  const canvas=document.getElementById('qosCanvas');
+  let phase = 0; // 0=idle, 1=auth, 2=db, 3=llm, 4=done
+  function drawFrame() {
+      const{ctx,w,h}=setupCanvas(canvas);
+      ctx.clearRect(0,0,w,h);
+      
+      // Request Box
+      ctx.strokeStyle='rgba(255,255,255,0.1)';
+      ctx.strokeRect(40, 40, w-80, h-80);
+      
+      const states = [
+          {y: 80, text: "Wait... verify_bearer_token", color: '#a1a1aa', active: phase >= 1},
+          {y: 130, text: "Wait... get_neo4j_adapter", color: '#f59e0b', active: phase >= 2},
+          {y: 180, text: "Parse: ClientEmotionalMatrix", color: '#10b981', active: phase >= 3},
+          {y: 230, text: "EXECUTE DSPy Worker()", color: '#3b82f6', active: phase >= 4},
+          {y: 280, text: "Validate: ScriptOutput && Clean up lock", color: '#f43f5e', active: phase >= 5}
+      ];
+      
+      states.forEach(s => {
+         if(!s.active) return;
+         ctx.fillStyle = s.color;
+         ctx.fillRect(80, s.y, 10, 10);
+         ctx.font = '12px JetBrains Mono';
+         ctx.fillText(s.text, 110, s.y + 10);
+      });
+  }
+  drawFrame();
+  
+  document.getElementById('trigQoS').addEventListener('click', () => {
+      phase = 0;
+      const interval = setInterval(() => {
+          phase++;
+          drawFrame();
+          if(phase >= 5) clearInterval(interval);
+      }, 600);
+  });
+})();
+
+/* Sim Log */
+(function(){
+    const l = document.getElementById('simLog');
+    document.getElementById('simSuccess').addEventListener('click', () => {
+        l.innerHTML = "> Initiating API Request Context<br>";
+        setTimeout(()=> l.innerHTML += "> [TRY] Acquired session driver lock.<br>", 400);
+        setTimeout(()=> l.innerHTML += "> [YIELD] Passing lock to API path...<br>", 800);
+        setTimeout(()=> l.innerHTML += "> Code execution completes normally.<br>", 1200);
+        setTimeout(()=> l.innerHTML += "> <span style='color:var(--emerald)'>[FINALLY] Executing session.close() correctly. Lock released.</span><br>", 1600);
+    });
+    document.getElementById('simCrash').addEventListener('click', () => {
+        l.innerHTML = "> Initiating API Request Context<br>";
+        setTimeout(()=> l.innerHTML += "> [TRY] Acquired session driver lock.<br>", 400);
+        setTimeout(()=> l.innerHTML += "> [YIELD] Passing lock to API path...<br>", 800);
+        setTimeout(()=> l.innerHTML += "> <span style='color:var(--rose)'>FATAL EXCEPTION: KeyError('client_id')</span><br>", 1200);
+        setTimeout(()=> l.innerHTML += "> Exception caught by FastAPI dependency router.<br>", 1600);
+        setTimeout(()=> l.innerHTML += "> <span style='color:var(--emerald)'>[FINALLY] Executing session.close() BEFORE escalating 500 error. Lock released.</span><br>", 2000);
+    });
+})();
+
+/* Quiz */
+(function(){
+  const questions=[
+    {q:"What concept handles dynamically generated dependencies via closure factories?",
+     opts:["Pydantic BaseModels","Background Tasks","Dependencies utilizing Closures/Factories","Neo4j Direct Locks"],
+     correct:2,explanation:"Using a function that returns a validation function inside `Depends(check_rlm_budget(limit=3))` is a dependency closure factory used for dynamic guardrail thresholding."},
+    {q:"Changing the `model_config = {'extra': 'forbid'}` in an Admin payload does what?",
+     opts:["It actively raises a 422 error and crashes the pipeline when unexpected JSON keys arrive from hostile networks.","It silently accepts the payload and ignores the extra data","It speeds up CPU time limit","It prevents the Swagger documentation from rendering"],
+     correct:0,explanation:"Normally Pydantic explicitly drops extra data silently. Setting `forbid` enforces rigid structural compliance on critical JIT execution deployments."},
+    {q:"What happens if you run `time.sleep(3)` inside an async WebSockets loop structure in FastAPI?",
+     opts:["The websocket sleeps gracefully.","Only that specific client socket timeouts.","The entire Uvicorn microservice instance freezes processing all other sockets aggressively.","FastAPI spawns a sub-thread automatically to absorb it."],
+     correct:2,explanation:"Because the event loop is globally shared, hard-blocking operations like `time.sleep` halt every socket stream mapped to the process, producing horrific spikes in real-time latency."},
+    {q:"What occurs if `background_tasks.add_task(func)` is replaced with `await func()` for a 5-hour LoRA compilation request?",
+     opts:["The memory graph dumps instantly.","The API endpoint physically hangs forever, starving Uvicorn edge capacity until the client sees a Gateway Timeout 504.","It will compile faster.","Dependencies will execute smoothly."],
+     correct:1,explanation:"Background Tasks explicitly offload Heavy non-blocking execution safely. Wrapping huge computation behind `await` makes the HTTP client stream freeze permanently on the connection."},
+    {q:"If a Dependency `Depends(requires_admin)` expects a MASTER_KEY env variable that is currently unmounted (missing), what happens to the endpoint?",
+     opts:["It automatically skips the validation check.","It defaults to True.","`.get()` returns None. The token validation evaluates to failing organically, securing the route defensively.","It crashes the entire server OS memory space."],
+     correct:2,explanation:"Because `.get()` safely handles missing keys, the endpoint reliably returns a 401/403 HTTP Exception, failing closed rather than failing open."},
+    {q:"How does FastAPI hide specific routes from the OpenAPI/Swagger discovery interface?",
+     opts:["Using `include_in_schema=False` inside the `@app.post` decorator.","Placing the def function in another file format.","Removing all comments from the route python.","By typing `include=Hidden` at the bottom of the config."],
+     correct:0,explanation:"Internal automation scripts for subprocess handling rely on mapping hidden `include_in_schema=False` shadow routes, protecting them from public endpoint scrapers."},
+    {q:"If you pass an untyped dictionary payload to a DSPy `Agent` and it hits a KeyError internally, why does this violate the Orchestration Dichotomy?",
+     opts:["Because DSPy is bad at formatting strings.","Because you failed to type the logic in Pydantic BaseModels first, forcing the AI module to perform structural routing parsing, which should be purely the job of The Chassis.","Because dictionaries use up too much RAM constraint bounds.", "Because dependencies require integers."],
+     correct:1,explanation:"Dictum 2 of the Orchestration Dichotomy: Immutable Separation of Responsibilities. FastAPI and Pydantic must handle strictly ALL data modeling boundaries before passing variables into internal Machine Inference layers."}
+  ];
+  const container=document.getElementById('quizContainer');
+  questions.forEach((q,qi)=>{
+    const card=document.createElement('div');card.className='card';card.style.padding='1.25rem';
+    let optsHTML='';q.opts.forEach((o,oi)=>{optsHTML+=`<button class="quiz-option" data-q="${qi}" data-o="${oi}">${o}</button>`;});
+    card.innerHTML=`<p style="font-size:.82rem;font-weight:600;color:var(--text-dim);margin-bottom:.75rem;">Question ${qi+1}</p>
+      <p style="font-size:.92rem;line-height:1.6;margin-bottom:1rem;">${q.q}</p>
+      <div id="qO${qi}">${optsHTML}</div>
+      <div class="quiz-explanation" id="qE${qi}" style="margin-top:.75rem;"><div class="insight">${q.explanation}</div></div>`;
+    container.appendChild(card);
+  });
+  container.addEventListener('click',(e)=>{
+    const btn=e.target.closest('.quiz-option');if(!btn)return;
+    const qi=+btn.dataset.q,oi=+btn.dataset.o;
+    const opts=document.querySelectorAll(`#qO${qi} .quiz-option`);
+    if(opts[0].classList.contains('disabled'))return;
+    opts.forEach((o,i)=>{o.classList.add('disabled');
+      if(i===questions[qi].correct)o.classList.add('correct');
+      else if(i===oi&&oi!==questions[qi].correct)o.classList.add('wrong');});
+    document.getElementById(`qE${qi}`).classList.add('show');
+  });
+})();
+
+/* Nav */
+(function(){
+  const links=document.querySelectorAll('.nav-link');
+  const ids=['qos','memory','qa','websocket','checkpoint'];
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+100;let active=ids[0];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+    links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));
+  });
+})();
+</script>
+</body>
+</html>

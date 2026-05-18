@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linear Transformations — The System Changes the Player</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1;min-width:280px;}
+.visual-col{flex:1.2;min-width:320px;}
+
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+.insight.teal{border-color:var(--teal);background:var(--teal-glow);}.insight.teal strong{color:var(--teal);}
+.insight.rose{border-color:var(--rose);background:var(--rose-glow);}.insight.rose strong{color:var(--rose);}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text-muted);color:var(--text);}
+.btn-outline.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow);}
+.btn-sm{padding:.4rem .8rem;font-size:.78rem;}
+
+.quiz-option{display:block;width:100%;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:.88rem;color:var(--text-muted);transition:all .25s;text-align:left;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;}
+.quiz-option:hover{border-color:var(--border-light);color:var(--text);}
+.quiz-option.correct{border-color:var(--emerald);color:var(--emerald);background:var(--emerald-glow);}
+.quiz-option.wrong{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+.quiz-option.disabled{pointer-events:none;opacity:.6;}
+.quiz-explanation{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+.quiz-explanation.show{max-height:300px;}
+
+input[type=range]{-webkit-appearance:none;background:transparent;width:100%;}
+input[type=range]::-webkit-slider-track{height:4px;background:var(--border);border-radius:2px;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--amber);border-radius:50%;margin-top:-6px;cursor:pointer;}
+
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+.scroll-hint{animation:bounce 2s ease infinite;}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column!important;}
+  .canvas-wrap{min-height:300px!important;}
+  .nav-links{gap:.5rem;}.nav-link{font-size:.7rem;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">TRANSFORMATIONS</span>
+    <div class="nav-links">
+      <a href="#axioms" class="nav-link active" data-section="axioms">Axioms</a>
+      <a href="#types" class="nav-link" data-section="types">Types</a>
+      <a href="#pipeline" class="nav-link" data-section="pipeline">Transformer Pipeline</a>
+      <a href="#edges" class="nav-link" data-section="edges">Edge Cases</a>
+      <a href="#checkpoint" class="nav-link" data-section="checkpoint">Checkpoint</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 04 — EXPOSURE LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Linear Transformations<br><span style="color:var(--text-muted);font-weight:300;">The System Changes the Player</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      How consistent, predictable rules reshape vectors across space — rotating meaning, compressing dimensions, and enforcing the geometry that makes neural networks both powerful and steerable.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: Axioms & Interactive Tester -->
+<section id="axioms" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — THE TWO AXIOMS</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">What Makes a Transformation Linear</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          A transformation T is a function that takes a vector in and produces a vector out: T: ℝⁿ → ℝᵐ. It is <strong style="color:var(--text);">linear</strong> if it satisfies two axioms:
+        </p>
+        <div class="card" style="padding:1rem;margin-bottom:.75rem;border-left:3px solid var(--amber);">
+          <h4 style="color:var(--amber);font-size:.9rem;margin-bottom:.25rem;">Axiom 1: Additivity</h4>
+          <p style="font-family:'Space Grotesk';font-size:.88rem;">T(v + w) = T(v) + T(w)</p>
+          <p style="font-size:.82rem;color:var(--text-dim);margin-top:.25rem;">Transforming a combination = combining the transformations</p>
+        </div>
+        <div class="card" style="padding:1rem;margin-bottom:.75rem;border-left:3px solid var(--teal);">
+          <h4 style="color:var(--teal);font-size:.9rem;margin-bottom:.25rem;">Axiom 2: Homogeneity</h4>
+          <p style="font-family:'Space Grotesk';font-size:.88rem;">T(α·v) = α·T(v)</p>
+          <p style="font-size:.82rem;color:var(--text-dim);margin-top:.25rem;">Scaling the input scales the output proportionally</p>
+        </div>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;font-size:.92rem;">
+          <strong style="color:var(--rose);">What breaks linearity?</strong> Constant shifts (T(0) ≠ 0) and squaring (T(2v) ≠ 2·T(v)). Rotations, scaling, and projections all pass.
+        </p>
+        <div class="insight teal">
+          <strong>Select a transformation type</strong> to watch it reshape the entire grid of points. Linear transforms move the grid predictably; non-linear transforms distort it chaotically.
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:420px;">
+          <canvas id="transformCanvas"></canvas>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-top:.75rem;">
+          <button class="btn btn-outline btn-sm active" data-tf="identity">Identity</button>
+          <button class="btn btn-outline btn-sm" data-tf="scale">Scale 2×</button>
+          <button class="btn btn-outline btn-sm" data-tf="rotate">Rotate 45°</button>
+          <button class="btn btn-outline btn-sm" data-tf="shear">Shear</button>
+          <button class="btn btn-outline btn-sm" data-tf="project">Project</button>
+          <button class="btn btn-outline btn-sm" data-tf="shift" style="border-color:var(--rose);color:var(--rose);">Shift ✗</button>
+        </div>
+        <div id="tfLabel" style="font-size:.78rem;color:var(--text-dim);text-align:center;margin-top:.5rem;">
+          Identity — T(v) = v. No change. Linear ✓
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: Types of Transformations -->
+<section id="types" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:.5rem;">02 — GEOMETRIC TYPES</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">How Transformer Layers Reshape Meaning</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;">
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--amber);">
+        <h4 style="color:var(--amber);margin-bottom:.5rem;">Scaling</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">T(v) = 3v. Stretches every vector to triple length. Directions stay identical; only magnitude changes. <strong style="color:var(--text);">Amplifies or dampens activation strength</strong> without changing semantic identity.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--teal);">
+        <h4 style="color:var(--teal);margin-bottom:.5rem;">Rotation</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">Rotates every vector by a fixed angle. <strong style="color:var(--text);">Lengths perfectly preserved.</strong> Changes semantic content ("formal" → "informal") while keeping confidence unchanged. Paper #35 uses this for norm-preserving steering.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--rose);">
+        <h4 style="color:var(--rose);margin-bottom:.5rem;">Projection</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;"><strong style="color:var(--text);">Destructive</strong> — drops a vector onto a lower-dimensional subspace. Q, K, V projections compress 768D → 64D, deliberately destroying 704 dimensions to keep only what's relevant for that head's task.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--violet);">
+        <h4 style="color:var(--violet);margin-bottom:.5rem;">Shearing</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">Skews the space — dragging one axis while leaving others fixed. Creates oblique outputs from perpendicular inputs. Feed-forward layers implement this to <strong style="color:var(--text);">mix information across feature dimensions</strong>.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--text-dim);">
+        <h4 style="margin-bottom:.5rem;">The Null Space</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">Every transformation has a <strong style="color:var(--text);">null space</strong>: input vectors mapped to zero. Information in the null space is irretrievably destroyed. W_Q's null space = all features the head's Query simply cannot see.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: Transformer Pipeline -->
+<section id="pipeline" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">03 — THE TRANSFORMER LAYER</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Linear + Non-Linear Cascade</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          A single Transformer layer is a cascade of linear and non-linear operations. Without the non-linear steps (Softmax, GELU), 24 stacked layers would collapse into a single linear transformation.
+        </p>
+        <div id="pipeSteps" style="display:flex;flex-direction:column;gap:.5rem;">
+          <div class="card pipe-step" data-step="0" style="padding:.75rem 1rem;cursor:pointer;border-left:3px solid var(--amber);">
+            <span style="font-size:.75rem;color:var(--amber);font-weight:700;">LINEAR</span>
+            <p style="font-size:.85rem;color:var(--text-muted);">Q = W_Q · x &nbsp;|&nbsp; K = W_K · x &nbsp;|&nbsp; V = W_V · x</p>
+          </div>
+          <div class="card pipe-step" data-step="1" style="padding:.75rem 1rem;cursor:pointer;border-left:3px solid var(--rose);">
+            <span style="font-size:.75rem;color:var(--rose);font-weight:700;">NON-LINEAR</span>
+            <p style="font-size:.85rem;color:var(--text-muted);">α = softmax(Q·Kᵀ / √d_k)</p>
+          </div>
+          <div class="card pipe-step" data-step="2" style="padding:.75rem 1rem;cursor:pointer;border-left:3px solid var(--teal);">
+            <span style="font-size:.75rem;color:var(--teal);font-weight:700;">LINEAR</span>
+            <p style="font-size:.85rem;color:var(--text-muted);">output = Σ α_j · V_j (linear combination)</p>
+          </div>
+          <div class="card pipe-step" data-step="3" style="padding:.75rem 1rem;cursor:pointer;border-left:3px solid var(--rose);">
+            <span style="font-size:.75rem;color:var(--rose);font-weight:700;">NON-LINEAR</span>
+            <p style="font-size:.85rem;color:var(--text-muted);">h = GELU(W₁ · output)</p>
+          </div>
+          <div class="card pipe-step" data-step="4" style="padding:.75rem 1rem;cursor:pointer;border-left:3px solid var(--amber);">
+            <span style="font-size:.75rem;color:var(--amber);font-weight:700;">LINEAR</span>
+            <p style="font-size:.85rem;color:var(--text-muted);">final = W₂ · h</p>
+          </div>
+          <div class="card pipe-step" data-step="5" style="padding:.75rem 1rem;cursor:pointer;border-left:3px solid var(--emerald);">
+            <span style="font-size:.75rem;color:var(--emerald);font-weight:700;">RESIDUAL</span>
+            <p style="font-size:.85rem;color:var(--text-muted);">output = input + final</p>
+          </div>
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:450px;">
+          <canvas id="pipelineCanvas"></canvas>
+        </div>
+        <div class="insight" style="margin-top:.75rem;">
+          <strong>Critical:</strong> Non-linearity makes depth meaningful. Each layer computes genuinely new features that no single linear pass could express.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 4: Edge Cases -->
+<section id="edges" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--rose);margin-bottom:.5rem;">04 — EDGE CASES</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Extremes & Invariants</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;">
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--emerald);">
+        <h4 style="color:var(--emerald);margin-bottom:.5rem;">Identity Transformation</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">T(v) = v. Does nothing. The residual connection is an identity bypass — even if attention produces garbage, the original signal survives via addition: output = v + T(v).</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--text-dim);">
+        <h4 style="margin-bottom:.5rem;">Zero Transformation</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">T(v) = 0 for all inputs. Technically linear, but information-destroying. The null space = the entire input space. This is what a dead attention head looks like — head pruning exploits it.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--rose);">
+        <h4 style="color:var(--rose);margin-bottom:.5rem;">Counter-Correction</h4>
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;">Inject a steering vector at layer 10; by layer 20 the model rotates the hidden state back toward pre-trained equilibrium. The downstream transformations have an <strong style="color:var(--text);">immune system</strong> against misaligned interventions.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 5: Checkpoint -->
+<section id="checkpoint" class="section">
+  <div class="section-inner" style="max-width:720px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">05 — CHECKPOINT</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Test Your Understanding</h2>
+    <div id="quizContainer" style="display:flex;flex-direction:column;gap:1.5rem;"></div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);">
+  <p style="max-width:600px;margin:0 auto 1rem;line-height:1.5;">
+    <strong>Compression:</strong> A linear transformation reshapes meaning. The Transformer is a stack of them. Understand which layers reshape which features, and you can steer the model surgically.
+  </p>
+  Interactive Visual Learning — Lesson 04: Linear Transformations Exposure
+</footer>
+
+<script>
+const DPR=window.devicePixelRatio||1;
+function setupCanvas(c){const p=c.parentElement,r=p.getBoundingClientRect();c.width=r.width*DPR;c.height=r.height*DPR;c.style.width=r.width+'px';c.style.height=r.height+'px';const ctx=c.getContext('2d');ctx.scale(DPR,DPR);return{ctx,w:r.width,h:r.height};}
+
+/* Hero */
+(function(){const c=document.getElementById('heroCanvas');let W,H,ctx;
+function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+resize();window.addEventListener('resize',resize);
+let t=0;
+function draw(){ctx.clearRect(0,0,W,H);
+  const cx=W/2,cy=H/2;
+  for(let i=0;i<6;i++){
+    const a=t*0.003+i*Math.PI/3;
+    const x1=cx+Math.cos(a)*80,y1=cy+Math.sin(a)*80;
+    const x2=cx+Math.cos(a)*250,y2=cy+Math.sin(a)*250;
+    ctx.strokeStyle=`rgba(245,158,11,${0.04})`;ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    // Transformed version
+    const a2=a+Math.PI*0.4;
+    ctx.strokeStyle='rgba(20,184,166,0.03)';
+    ctx.beginPath();ctx.moveTo(cx+Math.cos(a2)*80,cy+Math.sin(a2)*80);
+    ctx.lineTo(cx+Math.cos(a2)*250,cy+Math.sin(a2)*250);ctx.stroke();
+  }
+  t++;requestAnimationFrame(draw);}
+draw();})();
+
+/* Section 1: Transform Canvas */
+(function(){
+  const canvas=document.getElementById('transformCanvas');
+  let tfType='identity',animProgress=0,animTarget=1;
+
+  const transforms={
+    identity:{fn:(x,y)=>[x,y],label:'Identity — T(v) = v. No change. Linear ✓',linear:true},
+    scale:{fn:(x,y)=>[x*2,y*2],label:'Scale 2× — T(v) = 2v. Lengths double. Linear ✓',linear:true},
+    rotate:{fn:(x,y)=>{const a=Math.PI/4;return[x*Math.cos(a)-y*Math.sin(a),x*Math.sin(a)+y*Math.cos(a)];},label:'Rotate 45° — Norm preserved. Linear ✓',linear:true},
+    shear:{fn:(x,y)=>[x+0.5*y,y],label:'Shear — Skews x by 0.5y. Linear ✓',linear:true},
+    project:{fn:(x,y)=>[x,0],label:'Project onto X-axis — Y destroyed (null space). Linear ✓',linear:true},
+    shift:{fn:(x,y)=>[x+1,y+1],label:'Shift (+1,+1) — T(0) ≠ 0. NOT linear ✗',linear:false}
+  };
+
+  function draw(){
+    const{ctx,w,h}=setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+    const cx=w/2,cy=h/2,scale=Math.min(w,h)/8;
+    const tf=transforms[tfType];
+    const t=animProgress;
+
+    // Grid
+    for(let i=-4;i<=4;i++){
+      // Original grid dots
+      for(let j=-4;j<=4;j++){
+        const ox=i,oy=j;
+        const [tx,ty]=tf.fn(ox,oy);
+        const px=cx+(ox+(tx-ox)*t)*scale;
+        const py=cy-(oy+(ty-oy)*t)*scale;
+        ctx.beginPath();ctx.arc(px,py,2.5,0,Math.PI*2);
+        ctx.fillStyle=tf.linear?'rgba(20,184,166,0.4)':'rgba(244,63,94,0.4)';ctx.fill();
+      }
+    }
+
+    // Axes (original faded)
+    ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(w,cy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,0);ctx.lineTo(cx,h);ctx.stroke();
+
+    // Draw basis vectors e1, e2 and their transformations
+    const bases=[[1,0,'e₁','#f59e0b'],[0,1,'e₂','#14b8a6']];
+    bases.forEach(([bx,by,label,color])=>{
+      const [tx,ty]=tf.fn(bx,by);
+      const px=cx+(bx+(tx-bx)*t)*scale;
+      const py=cy-(by+(ty-by)*t)*scale;
+      // Original (faded)
+      ctx.setLineDash([4,3]);ctx.strokeStyle=color+'44';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+bx*scale,cy-by*scale);ctx.stroke();ctx.setLineDash([]);
+      // Transformed
+      ctx.save();ctx.shadowColor=color;ctx.shadowBlur=6;ctx.strokeStyle=color;ctx.lineWidth=2.5;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(px,py);ctx.stroke();ctx.restore();
+      const ang=Math.atan2(py-cy,px-cx),hl=10;
+      ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px-hl*Math.cos(ang-0.35),py-hl*Math.sin(ang-0.35));
+      ctx.lineTo(px-hl*Math.cos(ang+0.35),py-hl*Math.sin(ang+0.35));ctx.fillStyle=color;ctx.fill();
+      ctx.font='600 11px Space Grotesk';ctx.fillStyle=color;ctx.textAlign='left';
+      ctx.fillText(label,px+8,py-8);
+    });
+
+    // Linear label
+    ctx.font='700 13px Space Grotesk';ctx.textAlign='left';
+    ctx.fillStyle=tf.linear?'#10b981':'#f43f5e';
+    ctx.fillText(tf.linear?'LINEAR ✓':'NOT LINEAR ✗',12,24);
+
+    // Animate
+    if(animProgress<animTarget){animProgress=Math.min(animProgress+0.04,animTarget);requestAnimationFrame(draw);}
+  }
+
+  document.querySelectorAll('[data-tf]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('[data-tf]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      tfType=btn.dataset.tf;
+      document.getElementById('tfLabel').textContent=transforms[tfType].label;
+      animProgress=0;animTarget=1;draw();
+    });
+  });
+  draw();window.addEventListener('resize',()=>{animProgress=1;draw();});
+})();
+
+/* Section 3: Pipeline Canvas */
+(function(){
+  const canvas=document.getElementById('pipelineCanvas');
+  let activeStep=-1;
+
+  function draw(){
+    const{ctx,w,h}=setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+    const steps=[
+      {label:'W_Q, W_K, W_V',type:'linear',c:'#f59e0b',desc:'Project 768D → 64D'},
+      {label:'Softmax',type:'non-linear',c:'#f43f5e',desc:'Attention weights'},
+      {label:'Σ α·V',type:'linear',c:'#14b8a6',desc:'Value blend'},
+      {label:'GELU',type:'non-linear',c:'#f43f5e',desc:'Activation'},
+      {label:'W₂',type:'linear',c:'#f59e0b',desc:'Project back'},
+      {label:'+ residual',type:'residual',c:'#10b981',desc:'Identity bypass'}
+    ];
+    const n=steps.length,padT=30,padB=30;
+    const boxH=(h-padT-padB)/n-8;
+    const boxW=Math.min(w*0.7,300);
+    const startX=(w-boxW)/2;
+
+    steps.forEach((s,i)=>{
+      const y=padT+i*(boxH+8);
+      const active=i===activeStep;
+      // Box
+      ctx.fillStyle=active?s.c+'22':'rgba(255,255,255,0.02)';
+      ctx.strokeStyle=active?s.c:s.c+'44';ctx.lineWidth=active?2:1;
+      ctx.beginPath();ctx.roundRect(startX,y,boxW,boxH,6);ctx.fill();ctx.stroke();
+      // Type badge
+      ctx.font='600 9px Space Grotesk';ctx.textAlign='left';
+      ctx.fillStyle=s.c;ctx.fillText(s.type.toUpperCase(),startX+10,y+16);
+      // Label
+      ctx.font='700 12px Space Grotesk';ctx.fillStyle=active?'#fafafa':'#a1a1aa';
+      ctx.fillText(s.label,startX+10,y+boxH/2+5);
+      // Desc
+      ctx.font='10px DM Sans';ctx.fillStyle='#52525b';ctx.textAlign='right';
+      ctx.fillText(s.desc,startX+boxW-10,y+boxH/2+5);
+      // Arrow
+      if(i<n-1){
+        const ax=w/2,ay=y+boxH+2;
+        ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(ax,ay+6);
+        ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1;ctx.stroke();
+      }
+    });
+
+    // Signal flow arrow on left
+    ctx.save();ctx.strokeStyle='rgba(245,158,11,0.1)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(startX-20,padT);ctx.lineTo(startX-20,h-padB);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(startX-24,h-padB-8);ctx.lineTo(startX-20,h-padB);ctx.lineTo(startX-16,h-padB-8);ctx.fillStyle='rgba(245,158,11,0.2)';ctx.fill();
+    ctx.restore();
+  }
+
+  document.querySelectorAll('.pipe-step').forEach(s=>{
+    s.addEventListener('click',()=>{
+      activeStep=parseInt(s.dataset.step);
+      draw();
+    });
+  });
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Quiz */
+(function(){
+  const questions=[
+    {q:"Is T(v) = ‖v‖·(1,0) — mapping every vector to a horizontal vector of the same length — a linear transformation?",
+     opts:["Yes — it preserves length so it must be linear","Yes — it produces valid output vectors","No — T(v+w) ≠ T(v)+T(w). The norm of a sum is not the sum of norms.","No — but only because it reduces dimensionality"],
+     correct:2,explanation:"Test additivity: ‖v+w‖ ≠ ‖v‖+‖w‖ in general (triangle inequality). So T(v+w) ≠ T(v)+T(w). The norm function is non-linear, which makes this transformation non-linear despite preserving magnitude."},
+    {q:"W_Q projects 768D → 64D. What happens to the 704 'lost' dimensions?",
+     opts:["They are stored in a buffer for later retrieval","They lie in W_Q's null space — irretrievably destroyed. The head cannot see those features.","They are compressed into the 64 remaining dimensions","They overflow into adjacent attention heads"],
+     correct:1,explanation:"The 704 dimensions lie in the null space of W_Q — the set of input directions that map to zero. Information in the null space is permanently annihilated by the projection. This is by design: each head only needs 64 dimensions for its specific cognitive task."},
+    {q:"You compose two linear transformations: first rotate 90°, then scale 2×. Is the result linear?",
+     opts:["No — composing different types of transformations breaks linearity","Yes — the composition of any two linear transformations is always linear, regardless of order","Only if applied in a specific order","It depends on the input vector"],
+     correct:1,explanation:"Composing linear functions always yields another linear function. T₂(T₁(αv+βw)) = T₂(αT₁(v)+βT₁(w)) = αT₂(T₁(v))+βT₂(T₁(w)). Both axioms are preserved through composition. This is why stacking Transformer layers without non-linearity collapses to a single linear transform."},
+    {q:"Without GELU between feed-forward layers, what would happen to a 24-layer Transformer?",
+     opts:["It would become 24× more powerful","Each layer would learn completely independent features","The entire 24-layer stack would mathematically collapse into a single linear transformation — making depth meaningless","The model would train faster"],
+     correct:2,explanation:"Composing linear transforms yields linear transforms. Without non-linear activations, 24 layers of linear operations = one equivalent linear operation. Non-linearity is what makes depth meaningful — each layer can compute genuinely new features impossible for any single linear pass."}
+  ];
+  const container=document.getElementById('quizContainer');
+  questions.forEach((q,qi)=>{
+    const card=document.createElement('div');card.className='card';card.style.padding='1.25rem';
+    let optsHTML='';q.opts.forEach((o,oi)=>{optsHTML+=`<button class="quiz-option" data-q="${qi}" data-o="${oi}">${o}</button>`;});
+    card.innerHTML=`<p style="font-size:.82rem;font-weight:600;color:var(--text-dim);margin-bottom:.75rem;">Question ${qi+1}</p>
+      <p style="font-size:.92rem;line-height:1.6;margin-bottom:1rem;">${q.q}</p>
+      <div id="qO${qi}">${optsHTML}</div>
+      <div class="quiz-explanation" id="qE${qi}" style="margin-top:.75rem;"><div class="insight">${q.explanation}</div></div>`;
+    container.appendChild(card);
+  });
+  container.addEventListener('click',(e)=>{
+    const btn=e.target.closest('.quiz-option');if(!btn)return;
+    const qi=+btn.dataset.q,oi=+btn.dataset.o;
+    const opts=document.querySelectorAll(`#qO${qi} .quiz-option`);
+    if(opts[0].classList.contains('disabled'))return;
+    opts.forEach((o,i)=>{o.classList.add('disabled');
+      if(i===questions[qi].correct)o.classList.add('correct');
+      else if(i===oi&&oi!==questions[qi].correct)o.classList.add('wrong');});
+    document.getElementById(`qE${qi}`).classList.add('show');
+  });
+})();
+
+/* Nav */
+(function(){
+  const links=document.querySelectorAll('.nav-link');
+  const ids=['axioms','types','pipeline','edges','checkpoint'];
+  window.addEventListener('scroll',()=>{
+    const y=window.scrollY+100;let active=ids[0];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});
+    links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));
+  });
+})();
+</script>
+</body>
+</html>

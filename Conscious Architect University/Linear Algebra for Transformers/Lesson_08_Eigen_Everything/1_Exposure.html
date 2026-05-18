@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eigen-Everything — Exposure & Intuition</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050505;--surface:#111;--surface2:#1a1a1a;--surface3:#252525;
+  --text:#FAFAFA;--muted:#888;--border:#333;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--serif:'Playfair Display',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.7;overflow-x:hidden;}
+.container{max-width:800px;margin:0 auto;padding:4rem 2rem 8rem;}
+
+h1{font-family:var(--serif);font-size:3.2rem;line-height:1.05;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-family:var(--serif);font-size:1.9rem;margin:3rem 0 1rem;letter-spacing:-0.01em;}
+p{margin-bottom:1.4rem;color:var(--muted);font-size:1.02rem;}
+strong{color:#fff;}
+
+.lesson-tag{font-family:var(--mono);font-size:0.72rem;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.12em;display:block;}
+
+/* INTERACTION BOX */
+.interaction-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2.5rem;margin:2rem 0;position:relative;}
+.interaction-header{font-family:var(--mono);font-size:0.72rem;color:var(--accent);text-transform:uppercase;margin-bottom:1.5rem;letter-spacing:0.1em;border-bottom:1px solid var(--border);padding-bottom:0.5rem;}
+.question-text{font-size:1.12rem;font-weight:500;margin-bottom:2rem;color:#fff;line-height:1.65;}
+
+/* BUTTONS */
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.7rem 1.4rem;font-family:var(--sans);font-weight:600;font-size:0.95rem;border-radius:4px;cursor:pointer;transition:all 0.18s;}
+.btn:hover:not(:disabled){transform:translateY(-2px);background:#fff;box-shadow:0 4px 14px rgba(255,255,255,0.1);}
+.btn:disabled{opacity:0.45;cursor:not-allowed;transform:none !important;}
+.btn-outline{background:transparent;border:1px solid var(--muted);color:var(--text);}
+.btn-outline:hover:not(:disabled){background:var(--surface3);border-color:#ccc;}
+.bool-group{display:flex;gap:1rem;flex-wrap:wrap;}
+
+/* INPUT */
+.input-group{display:flex;gap:1rem;margin-bottom:0;}
+.input-text{background:var(--bg);border:2px solid var(--border);color:#fff;font-family:var(--mono);font-size:1.05rem;padding:0.7rem 1rem;flex:1;border-radius:4px;transition:border-color 0.2s;}
+.input-text:focus{outline:none;border-color:var(--accent);}
+.input-text:disabled{opacity:0.5;}
+.input-text::placeholder{color:#555;}
+
+/* INLINE MATH / CODE */
+.im{font-family:var(--mono);background:var(--surface2);padding:0.15rem 0.45rem;border-radius:3px;color:var(--accent);font-size:0.9rem;}
+
+/* TABLE */
+.truth-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.88rem;margin:1.5rem 0;}
+.truth-table th{border-bottom:1px solid var(--border);padding:0.5rem 0.75rem;text-align:left;color:var(--muted);font-weight:500;}
+.truth-table td{padding:0.5rem 0.75rem;border-bottom:1px solid #1c1c1c;color:#ccc;}
+.truth-table tr:last-child td{border-bottom:none;}
+.yes{color:var(--green);}
+.no{color:var(--red);}
+
+/* FEEDBACK */
+.feedback{display:none;margin-top:1.75rem;padding:1.4rem 1.6rem;border-radius:5px;font-size:0.95rem;line-height:1.65;}
+.feedback.visible{display:block;animation:fadein 0.35s ease;}
+.feedback.error{background:rgba(231,111,81,0.08);border-left:3px solid var(--red);color:#ffb9a6;}
+.feedback.success{background:rgba(42,157,143,0.08);border-left:3px solid var(--green);color:#a5ebe1;}
+.feedback-title{font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.6rem;font-weight:700;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* GATES */
+.gated{opacity:0;pointer-events:none;transform:translateY(18px);transition:all 0.45s ease;display:none;}
+.gated.unlocked{opacity:1;pointer-events:auto;transform:translateY(0);display:block;}
+
+/* EIGENSPECTRUM DISPLAY */
+.spectrum-row{display:flex;gap:0.5rem;align-items:center;margin:0.75rem 0;flex-wrap:wrap;}
+.spec-label{font-family:var(--mono);font-size:0.8rem;color:var(--muted);min-width:160px;}
+.spec-bar-wrap{flex:1;background:var(--surface2);border-radius:3px;height:18px;overflow:hidden;position:relative;border:1px solid var(--border);}
+.spec-bar{height:100%;border-radius:3px;transition:width 0.4s;}
+.spec-val{font-family:var(--mono);font-size:0.78rem;color:#aaa;min-width:50px;text-align:right;}
+
+/* GAUNTLET */
+.gauntlet-wrap{margin-top:4rem;border-top:2px solid var(--border);padding-top:3rem;}
+.q-block{background:var(--surface2);padding:1.5rem 1.75rem;border-radius:6px;margin-bottom:1.5rem;border:1px solid var(--border);}
+.q-num{font-family:var(--mono);font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;}
+.q-text{font-size:1.02rem;margin-bottom:1.4rem;font-weight:500;color:#fff;line-height:1.6;}
+
+/* SECTION DIVIDER */
+.section-div{border-top:1px solid var(--border);margin:3rem 0;padding-top:3rem;}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <span class="lesson-tag">Lesson 08 · Layer 1 — Exposure &amp; Intuition</span>
+  <h1>The Grain of the Wood</h1>
+
+  <p>Every woodworker knows: wood has a grain. Cut <strong>with</strong> the grain and the blade slides effortlessly — the wood splits along its natural direction. Cut <strong>against</strong> it and you fight the material. The blade catches, the wood splinters, the cut is jagged and ugly.</p>
+  <p>The grain <em>is</em> the wood's eigenvector. It is the direction where the material's response is <strong>pure</strong> — simple, predictable, efficient. Every other direction produces a complex, mixed response: splitting, splintering, and tearing in unpredictable combination.</p>
+  <p>Linear transformations have a grain too. A matrix acting on most vectors rotates them — shears, stretches, mixes them asymmetrically. But there are special directions where the matrix's action is <strong>pure</strong>: the output is parallel to the input. No rotation. No mixing. Just scaling. These special directions are <strong>eigenvectors</strong>. The scaling factor along each is the <strong>eigenvalue</strong>.</p>
+  <p>The defining equation: <span class="im">Av = λv</span> — apply transformation <span class="im">A</span> to vector <span class="im">v</span>, and the result is <span class="im">v</span> itself, scaled by <span class="im">λ</span>. Direction unchanged. Only magnitude changes.</p>
+
+  <!-- ════════════════════════════════════════════════════
+       TRAP 01 — Direction change misconception
+  ═══════════════════════════════════════════════════════ -->
+  <div class="interaction-box" id="trap-1">
+    <div class="interaction-header">Trap 01 — The Matrix Response</div>
+    <div class="question-text">
+      Apply the transformation matrix <span class="im">A = [[3, 1], [0, 2]]</span> to the vector <span class="im">v = [1, −1]</span>.<br><br>
+      Does the output vector rotate away from its original direction, or does it keep pointing along the exact same line?
+    </div>
+    <div class="bool-group">
+      <button class="btn btn-outline" id="t1-rotate" onclick="answerTrap1('rotate', this)">It Rotates / Changes Direction</button>
+      <button class="btn btn-outline" id="t1-scale"  onclick="answerTrap1('scale',  this)">It Only Scales / Keeps Direction</button>
+    </div>
+    <div class="feedback" id="fb-t1"></div>
+  </div>
+
+  <!-- Gate 1 content -->
+  <div class="gated" id="gate-1">
+    <p>You have found an <strong>eigenvector</strong>. The vast majority of inputs fed to <span class="im">A</span> would be rotated into completely new orientations. But <span class="im">[1, −1]</span> is perfectly aligned with one of this matrix's natural "grain" directions — multiplication merely doubled its length.</p>
+    <p>The two eigenvectors of this matrix are <span class="im">[1, 0]</span> (eigenvalue = 3) and <span class="im">[1, −1]</span> (eigenvalue = 2). Every other direction is a mixture of these two and gets rotated when processed.</p>
+
+    <!-- GATE 1 MASTERY CHALLENGE -->
+    <div class="interaction-box">
+      <div class="interaction-header">Gate Challenge 01 — Verify the Other Eigenvector</div>
+      <div class="question-text">
+        Matrix <span class="im">A = [[3, 1], [0, 2]]</span>, eigenvector candidate <span class="im">v = [1, 0]</span>.<br><br>
+        Compute <span class="im">A × [1, 0]</span> by hand. What integer eigenvalue (scale factor) does this produce?
+      </div>
+      <div class="input-group">
+        <input type="text" id="g1-input" class="input-text" placeholder="Integer eigenvalue…">
+        <button class="btn" id="g1-btn" onclick="checkGate1()">Lock Answer</button>
+      </div>
+      <div class="feedback" id="fb-g1"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       GATE 1 CONTENT — Why Eigenvectors Matter
+  ═══════════════════════════════════════════════════════ -->
+  <div class="gated" id="section-2">
+    <div class="section-div">
+      <h2>Why Eigenvectors Simplify Everything</h2>
+      <p>You might think: "So some vectors don't rotate. Why should I care?" Because the eigenvector basis <em>diagonalizes</em> the matrix — and a diagonal matrix is the simplest matrix that exists.</p>
+      <p>Express any matrix in its eigenvector basis and you get: <span class="im">A = PDP⁻¹</span>, where <span class="im">D</span> is a diagonal matrix containing only the eigenvalues on the main diagonal and zeros everywhere else. In the eigenvector basis, <strong>every dimension is independent</strong> — dimension 1 scales by λ₁, dimension 2 scales by λ₂. No mixing. No coupling. No cross-dimensional effects.</p>
+      <p>This has direct operational consequences. Computing <span class="im">A¹⁰⁰</span> normally requires 99 matrix multiplications. In the eigenvector basis: <span class="im">D¹⁰⁰ = diag(λ₁¹⁰⁰, λ₂¹⁰⁰)</span> — just raise each eigenvalue to the 100th power. Done.</p>
+      <p>More critically: <strong>stability analysis</strong>. If all <span class="im">|λᵢ| &lt; 1</span>, repeated application of <span class="im">A</span> shrinks everything to zero — the system is stable. If <em>any</em> <span class="im">|λᵢ| &gt; 1</span>, the system explodes along that eigenvector.</p>
+    </div>
+
+    <!-- TRAP 02 — Stability misconception -->
+    <div class="interaction-box" id="trap-2">
+      <div class="interaction-header">Trap 02 — Gradient Stability</div>
+      <div class="question-text">
+        During backpropagation through a Transformer, the gradient signal is multiplied by each layer's weight matrix transpose at every layer.<br><br>
+        If the eigenvalues of these weight matrices are consistently <strong>greater than 1</strong> across many layers, what happens to the gradient signal?
+      </div>
+      <div class="bool-group">
+        <button class="btn btn-outline" onclick="answerTrap2('vanish', this)">It Vanishes (Shrinks to Zero)</button>
+        <button class="btn btn-outline" onclick="answerTrap2('stable', this)">It Remains Stable</button>
+        <button class="btn btn-outline" onclick="answerTrap2('explode', this)">It Explodes (Grows Exponentially)</button>
+      </div>
+      <div class="feedback" id="fb-t2"></div>
+    </div>
+  </div>
+
+  <!-- Gate 2 content -->
+  <div class="gated" id="gate-2">
+    <p>The gradient <strong>explodes</strong> when eigenvalues are consistently above 1 — each layer multiplies the signal by a factor > 1, so across N layers the gradient grows as <span class="im">λᴺ → ∞</span>. This is why careful initialization, LayerNorm, and residual connections in Transformers are engineered to keep eigenvalues near 1.</p>
+    <p>The reverse is also dangerous: eigenvalues consistently below 1 cause the gradient to <strong>vanish</strong> — it decays to zero and early layers receive no learning signal. Both failure modes are pure eigenvalue phenomena.</p>
+
+    <!-- GATE 2 MASTERY CHALLENGE -->
+    <div class="interaction-box">
+      <div class="interaction-header">Gate Challenge 02 — Stability Condition</div>
+      <div class="question-text">
+        A matrix has eigenvalues <span class="im">λ₁ = 0.8</span> and <span class="im">λ₂ = 1.4</span>.<br><br>
+        Is this system stable when applied repeatedly — True or False?
+      </div>
+      <div class="bool-group">
+        <button class="btn btn-outline" id="g2-true"  onclick="checkGate2(true,  this)">True — Stable</button>
+        <button class="btn btn-outline" id="g2-false" onclick="checkGate2(false, this)">False — Unstable</button>
+      </div>
+      <div class="feedback" id="fb-g2"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       SECTION 3 — Attention Eigenspectra
+  ═══════════════════════════════════════════════════════ -->
+  <div class="gated" id="section-3">
+    <div class="section-div">
+      <h2>Attention Eigenspectra — Head Function Typing</h2>
+      <p>An attention head produces a matrix where each row sums to 1 (softmax normalization). The <strong>eigenspectrum</strong> of this matrix reveals what the head actually does functionally:</p>
+
+      <p><strong>Sharp Eigenspectrum — Focused Retriever:</strong></p>
+      <div class="spectrum-row">
+        <span class="spec-label">λ₁ = 0.92</span>
+        <div class="spec-bar-wrap"><div class="spec-bar" style="width:92%;background:var(--green);"></div></div>
+        <span class="spec-val">dominant</span>
+      </div>
+      <div class="spectrum-row">
+        <span class="spec-label">λ₂ = 0.04</span>
+        <div class="spec-bar-wrap"><div class="spec-bar" style="width:4%;background:var(--muted);"></div></div>
+        <span class="spec-val">residual</span>
+      </div>
+      <div class="spectrum-row">
+        <span class="spec-label">λ₃ = 0.02</span>
+        <div class="spec-bar-wrap"><div class="spec-bar" style="width:2%;background:var(--muted);"></div></div>
+        <span class="spec-val">noise</span>
+      </div>
+      <p style="margin-top:0.5rem;">One eigenvalue dominates → this head concentrates nearly all attention on one token. In a coaching model, this might be a "quote retriever" head — it consistently attends to the client's exact words.</p>
+
+      <p style="margin-top:1.5rem;"><strong>Flat Eigenspectrum — Broad Integrator:</strong></p>
+      <div class="spectrum-row">
+        <span class="spec-label">λ₁ = 0.28</span>
+        <div class="spec-bar-wrap"><div class="spec-bar" style="width:28%;background:var(--accent);opacity:0.7;"></div></div>
+        <span class="spec-val">near-equal</span>
+      </div>
+      <div class="spectrum-row">
+        <span class="spec-label">λ₂ = 0.26</span>
+        <div class="spec-bar-wrap"><div class="spec-bar" style="width:26%;background:var(--accent);opacity:0.55;"></div></div>
+        <span class="spec-val"></span>
+      </div>
+      <div class="spectrum-row">
+        <span class="spec-label">λ₃ = 0.24</span>
+        <div class="spec-bar-wrap"><div class="spec-bar" style="width:24%;background:var(--accent);opacity:0.4;"></div></div>
+        <span class="spec-val"></span>
+      </div>
+      <p style="margin-top:0.5rem;">No eigenvalue dominates → this head spreads attention across many tokens. It computes a broad weighted average — a "context summarizer" that aggregates emotional tone across the whole conversation.</p>
+      <p>HeadKV (Paper #46) uses this distinction operationally: <strong>sharp-spectrum heads are CRITICAL</strong> for reasoning and are protected. <strong>Flat-spectrum heads are REDUNDANT</strong> and are compressed during KV cache optimization for long sessions.</p>
+    </div>
+
+    <!-- TRAP 03 — Sharp vs. flat spectrum -->
+    <div class="interaction-box" id="trap-3">
+      <div class="interaction-header">Trap 03 — Head Classification</div>
+      <div class="question-text">
+        HeadKV compresses a KV cache for a long Roleplay session. A head has eigenspectrum: <span class="im">[0.91, 0.04, 0.03, 0.02]</span>.<br><br>
+        Should HeadKV <strong>protect</strong> this head's KV cache (keep full precision) or <strong>compress</strong> it?
+      </div>
+      <div class="bool-group">
+        <button class="btn btn-outline" onclick="answerTrap3('protect', this)">Protect It — Full Precision</button>
+        <button class="btn btn-outline" onclick="answerTrap3('compress', this)">Compress It — Redundant</button>
+      </div>
+      <div class="feedback" id="fb-t3"></div>
+    </div>
+  </div>
+
+  <!-- Gate 3 content -->
+  <div class="gated" id="gate-3">
+    <p>A spectrum of <span class="im">[0.91, 0.04, 0.03, 0.02]</span> is sharply dominated by one eigenvalue — this is a Focused Retriever. It deterministically routes specific, high-impact information. Evicting its KV cache would destroy that specific retrieval path. HeadKV <strong>protects</strong> it.</p>
+    <p>The flat-spectrum heads — those with eigenvalues like <span class="im">[0.28, 0.26, 0.24, 0.22]</span> — are broad integrators. Their averaged output can be approximated cheaply. Those get compressed.</p>
+
+    <!-- GATE 3 MASTERY -->
+    <div class="interaction-box">
+      <div class="interaction-header">Gate Challenge 03 — Condition Number</div>
+      <div class="question-text">
+        The condition number is defined as <span class="im">κ = λ_max / λ_min</span>. A head has eigenvalues <span class="im">[0.90, 0.10]</span>.<br><br>
+        What is its condition number? (Integer.)
+      </div>
+      <div class="input-group">
+        <input type="text" id="g3-input" class="input-text" placeholder="Integer…">
+        <button class="btn" id="g3-btn" onclick="checkGate3()">Lock Answer</button>
+      </div>
+      <div class="feedback" id="fb-g3"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       SECTION 4 — Rogue Scalpel
+  ═══════════════════════════════════════════════════════ -->
+  <div class="gated" id="section-4">
+    <div class="section-div">
+      <h2>Rogue Scalpel — Adversarial Attacks Along Eigenvectors</h2>
+      <p>An adversarial attack seeks to change the model's behavior using the <strong>smallest possible input perturbation</strong>. Where should the attacker aim?</p>
+      <p><strong>Along the dominant eigenvector of the Value projection W_V.</strong></p>
+      <p>The Value projection determines what information each token contributes to the attention output. Its dominant eigenvector is the direction of <strong>maximum sensitivity</strong> — a perturbation along this direction produces the largest possible change in attention output per unit of perturbation magnitude.</p>
+      <p>If the dominant eigenvector of a Thinking Sparks head aligns with "coaching tone," then a tiny perturbation along this eigenvector could flip the coaching agent from empathetic to aggressive — with minimal detectable input change.</p>
+      <p>The <strong>Guardian Agent defense</strong> counters this: pre-compute the dominant eigenvectors of each critical head's W_V; for each incoming prompt, project it onto these eigenvectors; if any component is anomalously large, flag the prompt. This is an eigenvalue-based anomaly detector.</p>
+    </div>
+
+    <!-- TRAP 04 — Rogue Scalpel -->
+    <div class="interaction-box" id="trap-4">
+      <div class="interaction-header">Trap 04 — Maximum Vulnerability Direction</div>
+      <div class="question-text">
+        An adversary wants to maximally disrupt a coaching model with the <strong>smallest possible perturbation</strong>.<br><br>
+        In which mathematical direction should they inject the perturbation to maximize their damage per unit of perturbation magnitude?
+      </div>
+      <div class="bool-group">
+        <button class="btn btn-outline" onclick="answerTrap4('random', this)">A Random Direction</button>
+        <button class="btn btn-outline" onclick="answerTrap4('smallest', this)">Along the Smallest Eigenvector of W_V</button>
+        <button class="btn btn-outline" onclick="answerTrap4('dominant', this)">Along the Dominant Eigenvector of W_V</button>
+      </div>
+      <div class="feedback" id="fb-t4"></div>
+    </div>
+  </div>
+
+  <!-- Gate 4 content -->
+  <div class="gated" id="gate-4">
+    <p>The dominant eigenvector of <span class="im">W_V</span> is the direction of <strong>maximum amplification</strong>. A unit-length perturbation along this direction produces the largest possible change in output — because the eigenvalue is the amplification factor, and the dominant eigenvalue is the largest one. The adversary is exploiting the same grain-of-the-wood phenomenon: maximum effect for minimum effort.</p>
+    <p>The smallest eigenvector is the direction the head <em>ignores</em> — a perturbation there causes near-zero change in output. That would be the wrong target.</p>
+
+    <!-- GATE 4 MASTERY -->
+    <div class="interaction-box">
+      <div class="interaction-header">Gate Challenge 04 — DCoT Reasoning Subspace</div>
+      <div class="question-text">
+        Decoupled Chain-of-Thought (DCoT) places the reasoning pathway in a <strong>separate subspace</strong> from the token generation pathway. What geometric property of these two subspaces ensures reasoning cannot be disrupted by token generation?
+      </div>
+      <div class="bool-group">
+        <button class="btn btn-outline" onclick="checkGate4('parallel', this)">They Are Parallel</button>
+        <button class="btn btn-outline" onclick="checkGate4('orthogonal', this)">They Are Orthogonal</button>
+        <button class="btn btn-outline" onclick="checkGate4('nested', this)">One Is Nested Inside the Other</button>
+      </div>
+      <div class="feedback" id="fb-g4"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       GAUNTLET
+  ═══════════════════════════════════════════════════════ -->
+  <div class="gated" id="gauntlet-section">
+    <div class="gauntlet-wrap">
+      <h2>Geometric Logic Gauntlet</h2>
+      <p style="color:var(--muted);font-size:0.92rem;margin-bottom:2.5rem;">Rapid-fire evaluation across all Lesson 08 concepts. No visuals. No scaffolding. Pure structural recall.</p>
+      <div id="q-container"></div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ─── UTILITY ──────────────────────────────────────────────────────────────────
+function disableBoolGroup(blockId) {
+  document.querySelectorAll(`#${blockId} .bool-group button`).forEach(b => {
+    b.disabled = true; b.style.pointerEvents = 'none';
+  });
+}
+function unlock(id) {
+  setTimeout(() => {
+    const el = document.getElementById(id);
+    el.style.display = 'block';
+    requestAnimationFrame(() => el.classList.add('unlocked'));
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 700);
+}
+function showFB(id, type, html) {
+  const fb = document.getElementById(id);
+  fb.className = `feedback ${type} visible`;
+  fb.innerHTML = html;
+}
+function fbTitle(t) { return `<div class="feedback-title">${t}</div>`; }
+
+// ─── TRAP 01 ─────────────────────────────────────────────────────────────────
+function answerTrap1(val, btn) {
+  disableBoolGroup('trap-1');
+  btn.style.background = 'var(--accent)'; btn.style.color = '#000';
+
+  if (val === 'rotate') {
+    showFB('fb-t1', 'error',
+      fbTitle('Intuition Failed — Do the Math') +
+      `Your instinct is reasonable — matrix multiplication almost always rotates vectors. Let's verify:<br><br>
+      <code>[3(1) + 1(−1), 0(1) + 2(−1)] = [2, −2]</code><br><br>
+      The output <code>[2, −2]</code> is exactly 2× the input <code>[1, −1]</code>. Zero rotation occurred. The vector is an eigenvector of A — it lies along one of A's natural "grain" directions.`
+    );
+  } else {
+    showFB('fb-t1', 'success',
+      fbTitle('Correct — You Did the Math') +
+      `Output is <code>[2, −2]</code> = 2 × <code>[1, −1]</code>. Eigenvalue λ = 2. No rotation — pure scaling along the eigenvector direction.`
+    );
+  }
+  unlock('gate-1');
+}
+
+// ─── GATE 01 ─────────────────────────────────────────────────────────────────
+function checkGate1() {
+  const val = document.getElementById('g1-input').value.trim();
+  if (!val) return;
+  document.getElementById('g1-input').disabled = true;
+  document.getElementById('g1-btn').disabled = true;
+
+  if (val === '3') {
+    showFB('fb-g1', 'success',
+      fbTitle('Gate Cleared') +
+      `Correct. A × [1, 0] = [3(1) + 1(0), 0(1) + 2(0)] = [3, 0] = 3 × [1, 0]. Eigenvalue λ₁ = 3.`
+    );
+    unlock('section-2');
+  } else {
+    showFB('fb-g1', 'error',
+      fbTitle('Computation Error') +
+      `Multiply row 1 of A by [1, 0]: 3(1) + 1(0) = 3. Row 2: 0(1) + 2(0) = 0. Output = [3, 0] = 3 × [1, 0]. The eigenvalue is 3.<br><br>
+      <button class="btn btn-outline" style="margin-top:1rem;" onclick="resetGate('g1-input','g1-btn','fb-g1')">Retry</button>`
+    );
+  }
+}
+
+// ─── TRAP 02 ─────────────────────────────────────────────────────────────────
+function answerTrap2(val, btn) {
+  disableBoolGroup('trap-2');
+  btn.style.background = 'var(--accent)'; btn.style.color = '#000';
+
+  if (val === 'explode') {
+    showFB('fb-t2', 'success',
+      fbTitle('Correct — Eigenvalue Explosion') +
+      `When eigenvalues > 1, each layer multiplies the gradient by a factor > 1. Over N layers, the gradient grows as λᴺ → ∞. This is gradient explosion — the cardinal training instability in deep networks. Residual connections, LayerNorm, and careful initialization all exist specifically to hold eigenvalues near 1.`
+    );
+    unlock('gate-2');
+  } else if (val === 'vanish') {
+    showFB('fb-t2', 'error',
+      fbTitle('Reversed — You Swapped the Two Failure Modes') +
+      `Vanishing gradients occur when eigenvalues are consistently BELOW 1 (each layer multiplies by < 1, so λᴺ → 0). Eigenvalues consistently ABOVE 1 cause the OPPOSITE failure: exponential growth — gradient explosion. Both are pure eigenvalue phenomena, but they're in opposite directions.`
+    );
+  } else {
+    showFB('fb-t2', 'error',
+      fbTitle('Incorrect — No Safety Exists Here') +
+      `A single layer with eigenvalue 1.2 multiplies the gradient by 1.2. After 24 layers: 1.2²⁴ ≈ 114×. The gradient explodes. There is no stabilizing force in a plain chain of matrix multiplications with eigenvalues > 1.`
+    );
+  }
+  if (val !== 'explode') {
+    // Still unlock after delay so the learner can see the correction and try to understand before continuing
+    unlock('gate-2');
+  }
+}
+
+// ─── GATE 02 ─────────────────────────────────────────────────────────────────
+function checkGate2(val, btn) {
+  disableBoolGroup('gate-2');
+  btn.style.background = 'var(--accent)'; btn.style.color = '#000';
+  const correct = val === false; // λ₂ = 1.4 > 1 → unstable
+
+  if (correct) {
+    showFB('fb-g2', 'success',
+      fbTitle('Gate Cleared — Correct') +
+      `λ₂ = 1.4 > 1, so the system is UNSTABLE. Even though λ₁ = 0.8 < 1, it only takes ONE eigenvalue above 1 to make the system explode along that eigenvector. ALL eigenvalues must satisfy |λᵢ| < 1 for stability.`
+    );
+    unlock('section-3');
+  } else {
+    showFB('fb-g2', 'error',
+      fbTitle('Incorrect') +
+      `λ₁ = 0.8 is fine. But λ₂ = 1.4 > 1 — that direction will amplify without bound on repeated application. One unstable eigenvalue makes the whole system unstable. The stability condition requires ALL |λᵢ| < 1.`
+    );
+    // Still unlock after correction
+    unlock('section-3');
+  }
+}
+
+// ─── TRAP 03 ─────────────────────────────────────────────────────────────────
+function answerTrap3(val, btn) {
+  disableBoolGroup('trap-3');
+  btn.style.background = 'var(--accent)'; btn.style.color = '#000';
+
+  if (val === 'protect') {
+    showFB('fb-t3', 'success',
+      fbTitle('Correct — Focused Retriever, Protect It') +
+      `Spectrum [0.91, 0.04, 0.03, 0.02] is sharply dominated by λ₁. This is a Focused Retriever: it deterministically routes specific, high-impact information to one token. Compressing its KV cache would destroy that retrieval path. HeadKV marks it CRITICAL and assigns full-precision storage.`
+    );
+  } else {
+    showFB('fb-t3', 'error',
+      fbTitle('Misconception — You Compressed a Critical Head') +
+      `A spectrum of [0.91, 0.04, 0.03, 0.02] is NOT flat. One eigenvalue dominates with 91% of the weight — this is a Focused Retriever. Its narrow, deterministic routing is exactly what makes it irreplaceable. Flat-spectrum heads (like [0.28, 0.26, 0.24, 0.22]) are the compression candidates, not this one.`
+    );
+  }
+  unlock('gate-3');
+}
+
+// ─── GATE 03 ─────────────────────────────────────────────────────────────────
+function checkGate3() {
+  const val = document.getElementById('g3-input').value.trim();
+  if (!val) return;
+  document.getElementById('g3-input').disabled = true;
+  document.getElementById('g3-btn').disabled = true;
+
+  if (val === '9') {
+    showFB('fb-g3', 'success',
+      fbTitle('Gate Cleared') +
+      `Correct. κ = 0.90 / 0.10 = 9. This head has moderately anisotropic behavior — it responds 9× more strongly to inputs aligned with its dominant eigenvector than to inputs along its minimal eigenvector.`
+    );
+    unlock('section-4');
+  } else {
+    showFB('fb-g3', 'error',
+      fbTitle('Computation Error') +
+      `κ = λ_max / λ_min = 0.90 / 0.10 = 9. You divide the largest eigenvalue by the smallest.<br><br>
+      <button class="btn btn-outline" style="margin-top:1rem;" onclick="resetGate('g3-input','g3-btn','fb-g3')">Retry</button>`
+    );
+  }
+}
+
+// ─── TRAP 04 ─────────────────────────────────────────────────────────────────
+function answerTrap4(val, btn) {
+  disableBoolGroup('trap-4');
+  btn.style.background = 'var(--accent)'; btn.style.color = '#000';
+
+  if (val === 'dominant') {
+    showFB('fb-t4', 'success',
+      fbTitle('Correct — Maximum Amplification Direction') +
+      `The dominant eigenvector of W_V is the direction of maximum sensitivity. The eigenvalue is the amplification factor — the largest eigenvalue means the largest output change per unit of input perturbation. The adversary exploits the same grain-of-the-wood phenomenon: maximum effect for minimum effort. This is exactly what Rogue Scalpel documents.`
+    );
+  } else if (val === 'smallest') {
+    showFB('fb-t4', 'error',
+      fbTitle('Reversed — You Found the Dead Zone') +
+      `The smallest eigenvector is the direction the head IGNORES. Inputs along this direction produce near-zero change in output — it's the hardest direction to cause disruption. The adversary wants the OPPOSITE: the dominant eigenvector, where amplification is maximum.`
+    );
+  } else {
+    showFB('fb-t4', 'error',
+      fbTitle('Inefficient — Random Directions Dilute Impact') +
+      `A random direction is a mix of all eigenvector components. Most of that energy is in non-dominant directions and is barely amplified. The adversary is constrained to a small total perturbation budget — they need to concentrate that budget where amplification is highest: the dominant eigenvector.`
+    );
+  }
+  unlock('gate-4');
+}
+
+// ─── GATE 04 ─────────────────────────────────────────────────────────────────
+function checkGate4(val, btn) {
+  disableBoolGroup('gate-2'); // gate-4 bool group shares no ids, so target by context
+  btn.disabled = true; btn.style.background = 'var(--accent)'; btn.style.color = '#000';
+  // also disable siblings
+  btn.closest('.bool-group').querySelectorAll('button').forEach(b => { b.disabled = true; });
+
+  if (val === 'orthogonal') {
+    showFB('fb-g4', 'success',
+      fbTitle('Gate Cleared — Orthogonality') +
+      `Correct. The reasoning subspace and the token generation subspace have orthogonal eigenvectors. Orthogonal subspaces cannot influence each other — a perturbation in one has zero projection onto the other. This is the mathematical guarantee that the Socratic questioning chain ("Client believes X → ask about Y") remains internally consistent even while token generation simultaneously handles Voice DNA and conviction density.`
+    );
+    unlock('gauntlet-section');
+    renderGauntlet();
+  } else if (val === 'parallel') {
+    showFB('fb-g4', 'error',
+      fbTitle('Incorrect — Parallel Subspaces Fully Overlap') +
+      `Parallel subspaces point in the SAME direction — a perturbation in one completely disrupts the other. That's the opposite of what DCoT needs. DCoT requires ORTHOGONALITY: zero projection, zero interference.`
+    );
+  } else {
+    showFB('fb-g4', 'error',
+      fbTitle('Incorrect — Nesting Creates Interference') +
+      `If one subspace is nested inside the other, they share directions — activations in the outer space project into the inner space. DCoT requires ORTHOGONALITY: the two subspaces share no directions and cannot influence each other.`
+    );
+  }
+}
+
+// ─── GATE RESET UTILITY ───────────────────────────────────────────────────────
+function resetGate(inputId, btnId, fbId) {
+  const input = document.getElementById(inputId);
+  const btn   = document.getElementById(btnId);
+  const fb    = document.getElementById(fbId);
+  input.disabled = false; input.value = '';
+  btn.disabled = false;
+  fb.className = 'feedback';
+}
+
+// ─── GAUNTLET ─────────────────────────────────────────────────────────────────
+const GAUNTLET = [
+  {
+    q: "True or False: Every matrix that exists is mathematically guaranteed to have real eigenvectors.",
+    type: "bool", ans: false,
+    exp: "False. A pure 90° rotation matrix rotates every vector — no real vector maintains its direction. It has no real eigenvectors (only complex ones). Eigenvectors are guaranteed to be real only for special matrix types (e.g. symmetric matrices)."
+  },
+  {
+    q: "True or False: The eigenvectors of any matrix are mathematically guaranteed to be perpendicular (orthogonal) to one another.",
+    type: "bool", ans: false,
+    exp: "False — this is the most common misconception. Eigenvectors are guaranteed orthogonal only for SYMMETRIC matrices (A = Aᵀ). Symmetric products like WᵀW and the Hessian qualify. General weight matrices and attention matrices are NOT symmetric — their eigenvectors may point in arbitrary, non-orthogonal directions."
+  },
+  {
+    q: "The diagonalization formula is A = PDP⁻¹. In this formula, what do the COLUMNS of matrix P represent?",
+    type: "text", match: ["eigenvector"],
+    exp: "The columns of P are the eigenvectors of A. D is the diagonal matrix of eigenvalues. The formula says: change to the eigenvector basis (P⁻¹), apply pure scaling (D), then change back (P)."
+  },
+  {
+    q: "A Transformer head has eigenspectrum [0.29, 0.25, 0.24, 0.22]. Is this head a Focused Retriever or a Broad Integrator?",
+    type: "text", match: ["integrator", "broad"],
+    exp: "Broad Integrator. The eigenvalues are nearly equal — no single direction dominates. This head spreads attention across many tokens, computing a weighted average. HeadKV would classify this as a compression candidate, not a critical head."
+  },
+  {
+    q: "The condition number κ = λ_max / λ_min for a matrix with eigenvalues [12, 0.5] equals what value? (Integer.)",
+    type: "text", match: ["24"],
+    exp: "κ = 12 / 0.5 = 24. A condition number of 24 means this matrix amplifies inputs along its dominant direction 24× more than along its minimal direction — highly anisotropic behavior."
+  },
+  {
+    q: "True or False: Computing the top-3 eigenvalues of a large 2560×2560 matrix is computationally prohibitive for practical use in Transformer analysis.",
+    type: "bool", ans: false,
+    exp: "False. Computing ALL eigenvalues of a large matrix is expensive. But computing only the top few is efficient — the Lanczos algorithm computes the k dominant eigenvalues in O(nk) time. HeadKV only needs the top 3–5 per head. Practical eigenvalue analysis is fast because we almost never need the full spectrum."
+  },
+  {
+    q: "If a negative eigenvalue λ = −2 acts on an eigenvector, what geometrically happens to that vector?",
+    type: "text", match: ["flip", "reverse", "180", "opposite"],
+    exp: "It flips direction (180°) and doubles in length. The negative sign reverses the vector's orientation along its eigenvector line — it points the opposite way, scaled by |−2| = 2. It has NOT rotated off-axis to a new direction."
+  }
+];
+
+function renderGauntlet() {
+  const container = document.getElementById('q-container');
+  if (container.innerHTML.trim()) return; // already rendered
+  let html = '';
+  GAUNTLET.forEach((item, i) => {
+    html += `<div class="q-block" id="gq-${i}">
+      <div class="q-num">Drill 0${i+1} / ${GAUNTLET.length}</div>
+      <div class="q-text">${item.q}</div>`;
+    if (item.type === 'bool') {
+      html += `<div class="bool-group">
+        <button class="btn btn-outline" onclick="answerG(${i}, true, this)">True</button>
+        <button class="btn btn-outline" onclick="answerG(${i}, false, this)">False</button>
+      </div>`;
+    } else {
+      html += `<div class="input-group">
+        <input type="text" id="gi-${i}" class="input-text" placeholder="Primary keyword or value…">
+        <button class="btn" onclick="answerGText(${i}, this)">Lock</button>
+      </div>`;
+    }
+    html += `<div class="feedback" id="gfb-${i}"></div></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function answerG(i, val, btn) {
+  btn.closest('.bool-group').querySelectorAll('button').forEach(b => { b.disabled = true; });
+  const correct = (val === GAUNTLET[i].ans);
+  const fb = document.getElementById(`gfb-${i}`);
+  fb.className = `feedback ${correct ? 'success' : 'error'} visible`;
+  if (correct) {
+    btn.style.background = 'rgba(42,157,143,0.2)'; btn.style.borderColor = 'var(--green)';
+  } else {
+    btn.style.background = 'rgba(231,111,81,0.2)'; btn.style.borderColor = 'var(--red)';
+  }
+  fb.innerHTML = fbTitle(correct ? 'Correct' : 'Incorrect') + GAUNTLET[i].exp;
+}
+
+function answerGText(i, btn) {
+  const input = document.getElementById(`gi-${i}`);
+  const val = input.value.toLowerCase().trim();
+  if (!val) return;
+  input.disabled = true; btn.disabled = true;
+  const correct = GAUNTLET[i].match.some(m => val.includes(m.toLowerCase()));
+  const fb = document.getElementById(`gfb-${i}`);
+  fb.className = `feedback ${correct ? 'success' : 'error'} visible`;
+  fb.innerHTML = fbTitle(correct ? 'Correct' : 'Incorrect') + GAUNTLET[i].exp;
+}
+</script>
+</body>
+</html>

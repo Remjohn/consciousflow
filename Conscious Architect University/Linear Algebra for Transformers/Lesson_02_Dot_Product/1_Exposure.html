@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dot Product — The Geometry of the Pass</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;
+  --amber:#f59e0b;--amber-dim:#92400e;--amber-glow:rgba(245,158,11,0.12);
+  --teal:#14b8a6;--teal-dim:#0f766e;--teal-glow:rgba(20,184,166,0.12);
+  --rose:#f43f5e;--rose-dim:#9f1239;--rose-glow:rgba(244,63,94,0.12);
+  --emerald:#10b981;--emerald-dim:#065f46;--emerald-glow:rgba(16,185,129,0.12);
+  --violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1.2;min-width:320px;}
+.visual-col{flex:1;min-width:280px;}
+
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.btn-amber{background:var(--amber);color:#000;}
+.btn-amber:hover{background:#fbbf24;transform:translateY(-1px);}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border);}
+.btn-outline:hover{border-color:var(--text-muted);color:var(--text);}
+.btn-outline.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow);}
+.btn-sm{padding:.4rem .8rem;font-size:.78rem;}
+
+.quiz-option{display:block;width:100%;padding:.8rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:.88rem;color:var(--text-muted);transition:all .25s;text-align:left;font-family:'DM Sans',sans-serif;margin-bottom:.5rem;}
+.quiz-option:hover{border-color:var(--border-light);color:var(--text);}
+.quiz-option.correct{border-color:var(--emerald);color:var(--emerald);background:var(--emerald-glow);}
+.quiz-option.wrong{border-color:var(--rose);color:var(--rose);background:var(--rose-glow);}
+.quiz-option.disabled{pointer-events:none;opacity:.6;}
+.quiz-explanation{max-height:0;overflow:hidden;transition:max-height .5s ease;}
+.quiz-explanation.show{max-height:300px;}
+
+input[type=range]{-webkit-appearance:none;background:transparent;width:100%;}
+input[type=range]::-webkit-slider-track{height:4px;background:var(--border);border-radius:2px;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--amber);border-radius:50%;margin-top:-6px;cursor:pointer;}
+
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+.scroll-hint{animation:bounce 2s ease infinite;}
+
+@media(max-width:768px){
+  .section{padding:5rem 1rem 3rem;}
+  .flex-layout{flex-direction:column-reverse!important;}
+  .canvas-wrap{min-height:300px!important;}
+  .nav-links{display:none;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav-bar">
+  <div class="nav-inner">
+    <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">DOT PRODUCT</span>
+    <div class="nav-links">
+      <a href="#pitch" class="nav-link active" data-section="pitch">The Pitch</a>
+      <a href="#math" class="nav-link" data-section="math">The Math</a>
+      <a href="#scenarios" class="nav-link" data-section="scenarios">Scenarios</a>
+      <a href="#checkpoint" class="nav-link" data-section="checkpoint">Checkpoint</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 02 — EXPOSURE LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Dot Product<br><span style="color:var(--text-muted);font-weight:300;">The Geometry of the Pass</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      How to collapse two massive structures into a single score that encodes both <em>how perfectly they align</em> and <em>how loudly they scream</em>.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<!-- Section 1: The Intuition -->
+<section id="pitch" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — THE INTUITION</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Scoring the Run</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          You are a midfielder in a Champions League final. You receive the ball. You have 1.5 seconds to make a decision. You scan every teammate and compute a "quality" score for each potential pass.
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          How do you calculate that score? It relies on two physical factors:
+        </p>
+        <ul style="color:var(--text-muted);line-height:1.7;padding-left:1.2rem;margin-bottom:1.5rem;font-size:.95rem;">
+          <li style="margin-bottom:.5rem;"><strong style="color:var(--text);">Direction:</strong> Are they running toward the goal? If they run back toward their own defense, passing to them destroys your attack.</li>
+          <li><strong style="color:var(--text);">Magnitude:</strong> How intensely are they committing? If they perfectly face the goal but stand completely still, the pass is worthless. If they face the goal and sprint at maximum velocity, the pass is devastating.</li>
+        </ul>
+        <div class="insight">
+          <strong>The "pass quality" score is the Dot Product.</strong> It multiplies their alignment with your intent by the raw volume of speed they are committing to that trajectory.
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:350px;">
+          <canvas id="pitchCanvas"></canvas>
+        </div>
+        <p style="font-size:.78rem;color:var(--text-dim);text-align:center;margin-top:.75rem;">
+          <i class="fas fa-hand-pointer"></i> Drag the striker around to see the Midfielder calculate the pass quality score.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 2: The Core Math -->
+<section id="math" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">02 — PROGRESSIVE FORMALIZATION</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Multiply and Add</h2>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          We translate this into programmable arithmetic. Let's take two 2D vectors: [Empathy, Logic].
+        </p>
+        <p style="color:var(--text-muted);line-height:1.7;margin-bottom:1rem;">
+          Vector <strong style="color:var(--amber);">A</strong> = <code style="font-family:'Space Grotesk';color:var(--amber);">(2, 4)</code> — A calming coaching persona (2 Empathy, 4 Logic).<br>
+          Vector <strong style="color:var(--teal);">B</strong> = <code style="font-family:'Space Grotesk';color:var(--teal);">(3, 1)</code> — A highly structured coaching prompt (3 Empathy, 1 Logic).
+        </p>
+        <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-bottom:1rem;font-family:'Space Grotesk';">
+          <div style="display:flex;justify-content:space-between;margin-bottom:.5rem;">
+            <span>Empathy: <span style="color:var(--amber);">2</span> × <span style="color:var(--teal);">3</span></span>
+            <span style="font-weight:700;">= 6</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:.5rem;">
+            <span>Logic: <span style="color:var(--amber);">4</span> × <span style="color:var(--teal);">1</span></span>
+            <span style="font-weight:700;">= 4</span>
+          </div>
+          <hr style="border-color:var(--border-light);margin:1rem 0;">
+          <div style="display:flex;justify-content:space-between;font-size:1.2rem;">
+            <span>Dot Product Score:</span>
+            <span style="font-weight:800;color:var(--emerald);">10</span>
+          </div>
+        </div>
+        <p style="color:var(--text-muted);line-height:1.7;font-size:.9rem;">
+          By multiplying aligned dimensions, the math geometrically rewards concepts that possess magnitude in the <em>exact same categories</em>. If you possess a massive score in Empathy, but the other vector has zero, the multiplication instantly annihilates your advantage.
+        </p>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:350px;">
+          <canvas id="mathCanvas"></canvas>
+        </div>
+        <div class="card" style="padding:1rem;margin-top:1rem;text-align:center;">
+          <h4 style="font-size:1rem;margin-bottom:.5rem;">The Magnitude Difference</h4>
+          <p style="color:var(--text-dim);font-size:.85rem;">Cosine Similarity strips volume away. The <strong>Dot Product</strong> multiplies alignment by physical magnitude. A bolded paragraph generates a massively higher score than a tiny footnote, allowing the network to prioritize loud signals.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 3: Scenarios & Extremes -->
+<section id="scenarios" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--rose);margin-bottom:.5rem;">03 — OPERATIONAL ZONES</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Basic Exampiles & Edge Cases</h2>
+    
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem;" id="scenarioToggles">
+      <button class="btn btn-outline active" data-scenario="aligned">Highly Aligned Reinforcement</button>
+      <button class="btn btn-outline" data-scenario="orthogonal">Pristine Orthogonality</button>
+      <button class="btn btn-outline" data-scenario="hostile">Hostile Opposition</button>
+      <button class="btn btn-outline" data-scenario="inflation">Magnitude Inflation</button>
+    </div>
+
+    <div class="flex-layout">
+      <div class="visual-col" style="flex:1;">
+        <div class="canvas-wrap" style="min-height:300px;">
+          <canvas id="scenarioCanvas"></canvas>
+        </div>
+      </div>
+      <div class="reading-col" style="flex:1;">
+        <div class="card" style="padding:1.5rem;height:100%;display:flex;flex-direction:column;justify-content:center;" id="scenarioDesc">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Section 4: Quiz -->
+<section id="checkpoint" class="section">
+  <div class="section-inner" style="max-width:800px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">04 — CHECKPOINT</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Test Your Intuition</h2>
+    <div id="quizContainer" style="display:flex;flex-direction:column;gap:1.5rem;"></div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem 4rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);margin-top:2rem;">
+  <p style="max-width:600px;margin:0 auto 1.5rem;line-height:1.6;">
+    <strong>Compression Layer:</strong> The Dot Product calculates how deeply one concept formally projects its explicit structure onto another, generating a single scalar metric systematically encoding both pristine alignment accuracy and the raw brute-force magnitude of the projection.
+  </p>
+  Interactive Visual Learning — Lesson 02: Dot Product Exposure
+</footer>
+
+<script>
+const DPR = window.devicePixelRatio || 1;
+function setupCanvas(c){
+  const p=c.parentElement,r=p.getBoundingClientRect();
+  c.width=r.width*DPR;c.height=r.height*DPR;
+  c.style.width=r.width+'px';c.style.height=r.height+'px';
+  const ctx=c.getContext('2d');ctx.scale(DPR,DPR);
+  return{ctx,w:r.width,h:r.height};
+}
+
+/* Hero Canvas - Moving matrix dots */
+(function(){
+  const c=document.getElementById('heroCanvas');
+  let W,H,ctx;
+  function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+  resize();window.addEventListener('resize',resize);
+  let p=[];
+  for(let i=0;i<80;i++)p.push({x:Math.random(),y:Math.random(),vx:Math.random()*0.002-0.001,vy:Math.random()*0.002-0.001});
+  function draw(){ctx.clearRect(0,0,W,H);
+    for(let i=0;i<p.length;i++){
+      p[i].x=(p[i].x+p[i].vx);p[i].y=(p[i].y+p[i].vy);
+      if(p[i].x<0||p[i].x>1)p[i].vx*=-1;if(p[i].y<0||p[i].y>1)p[i].vy*=-1;
+      const x=p[i].x*W,y=p[i].y*H;
+      ctx.beginPath();ctx.arc(x,y,2,0,Math.PI*2);ctx.fillStyle='rgba(245,158,11,0.2)';ctx.fill();
+      for(let j=i+1;j<p.length;j++){
+        const xj=p[j].x*W,yj=p[j].y*H;
+        const d=Math.hypot(x-xj,y-yj);
+        if(d<100){
+          ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(xj,yj);
+          ctx.strokeStyle=`rgba(20,184,166,${0.15*(1-d/100)})`;ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* The Pitch Canvas */
+(function(){
+  const canvas=document.getElementById('pitchCanvas');
+  let striker={x:150,y:100};
+  let isDragging=false;
+  
+  function draw(){
+    const {ctx,w,h}=setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+    const mid={x:w/2,y:h-40};
+    const goal={x:w/2,y:40};
+    
+    // Draw pitch
+    ctx.fillStyle='#0f5132';ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(w/2,h/2,50,0,Math.PI*2);ctx.stroke(); // center circle
+    ctx.beginPath();ctx.moveTo(0,h/2);ctx.lineTo(w,h/2);ctx.stroke(); // half
+    ctx.strokeRect(w/2-80,-20,160,80); // penalty box
+    
+    // Goal line intent (midfielder to goal)
+    ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(mid.x,mid.y);ctx.lineTo(goal.x,goal.y);
+    ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.stroke();ctx.setLineDash([]);
+    
+    // Striker Vector
+    const mag = Math.hypot(striker.x-mid.x, striker.y-mid.y);
+    const intentDx = goal.x-mid.x, intentDy = goal.y-mid.y;
+    const intentMag = Math.hypot(intentDx,intentDy);
+    
+    const intentNorm = {x:intentDx/intentMag, y:intentDy/intentMag};
+    const stDx = striker.x-mid.x, stDy = striker.y-mid.y;
+    
+    // Dot Product Calculation
+    // We treat mid->striker as Vector A, mid->goal as intent axis.
+    const dot = (stDx * intentNorm.x) + (stDy * intentNorm.y); 
+    const scoreRank = Math.max(0, dot/10); // simplistic scale
+
+    // Draw Vector
+    ctx.save();ctx.shadowColor='#f59e0b';ctx.shadowBlur=8;ctx.strokeStyle='#f59e0b';ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(mid.x,mid.y);ctx.lineTo(striker.x,striker.y);ctx.stroke();ctx.restore();
+    ctx.beginPath();ctx.arc(striker.x,striker.y,8,0,Math.PI*2);ctx.fillStyle='#f59e0b';ctx.fill();
+
+    // Midfielder
+    ctx.beginPath();ctx.arc(mid.x,mid.y,6,0,Math.PI*2);ctx.fillStyle='#fafafa';ctx.fill();
+    ctx.font='11px Space Grotesk';ctx.fillStyle='#fafafa';ctx.fillText('You', mid.x+12,mid.y+3);
+
+    // Goal
+    ctx.fillStyle='rgba(255,255,255,0.8)';ctx.fillRect(goal.x-40,goal.y-10,80,6);
+    
+    // Score Dashboard
+    ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(10,h-70,180,60);
+    ctx.font='12px DM Sans';ctx.fillStyle='#a1a1aa';ctx.fillText('Directional Alignment:', 20,h-50);
+    ctx.fillText('Pass Quality Score:', 20,h-25);
+    
+    const cos = mag>0 ? dot/mag : 0;
+    ctx.fillStyle=cos>0.5?'#10b981':cos>-0.1?'#f59e0b':'#f43f5e';
+    ctx.font='700 14px Space Grotesk';ctx.fillText(cos.toFixed(2), 140,h-50);
+    
+    ctx.fillStyle=scoreRank>12?'#10b981':scoreRank>5?'#f59e0b':'#f43f5e';
+    ctx.font='700 16px Space Grotesk';ctx.fillText(scoreRank.toFixed(1), 140,h-24);
+
+    // Projection shadow
+    if (dot>0) {
+      const px = mid.x + intentNorm.x * dot;
+      const py = mid.y + intentNorm.y * dot;
+      ctx.setLineDash([3,3]);ctx.strokeStyle='#14b8a6';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(striker.x,striker.y);ctx.lineTo(px,py);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(mid.x,mid.y);ctx.lineTo(px,py);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.fillStyle='#14b8a6';ctx.fill();
+    }
+  }
+  
+  canvas.addEventListener('mousedown',(e)=>{
+    const r=canvas.getBoundingClientRect();
+    const mx=e.clientX-r.left, my=e.clientY-r.top;
+    if(Math.hypot(mx-striker.x,my-striker.y)<20) isDragging=true;
+  });
+  window.addEventListener('mousemove',(e)=>{
+    if(!isDragging)return;
+    const r=canvas.getBoundingClientRect();
+    striker.x=e.clientX-r.left; striker.y=e.clientY-r.top;
+    draw();
+  });
+  window.addEventListener('mouseup',()=>{isDragging=false;});
+  
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Math Canvas (Static A and B) */
+(function(){
+  const canvas=document.getElementById('mathCanvas');
+  function draw(){
+    const {ctx,w,h}=setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+    const cx=w*0.3,cy=h*0.7,scale=Math.min(w,h)/8;
+    
+    // grid
+    for(let i=0;i<6;i++){
+      ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(cx+i*scale,0);ctx.lineTo(cx+i*scale,h);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(0,cy-i*scale);ctx.lineTo(w,cy-i*scale);ctx.stroke();
+    }
+    
+    // axes
+    ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(w,cy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx,0);ctx.stroke();
+    
+    function drawV(x,y,c,l){
+      const tx=cx+x*scale,ty=cy-y*scale;
+      ctx.save();ctx.shadowColor=c;ctx.shadowBlur=8;ctx.strokeStyle=c;ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(tx,ty);ctx.stroke();ctx.restore();
+      ctx.beginPath();ctx.arc(tx,ty,5,0,Math.PI*2);ctx.fillStyle=c;ctx.fill();
+      ctx.font='700 12px Space Grotesk';ctx.fillText(l,tx+10,ty-10);
+      
+      // Projections
+      ctx.setLineDash([4,4]);ctx.strokeStyle=`rgba(${c==='#f59e0b'?'245,158,11':'20,184,166'},0.3)`;
+      ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx,cy);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(cx,ty);ctx.stroke();ctx.setLineDash([]);
+    }
+    
+    drawV(2,4,'#f59e0b','A(2,4)');
+    drawV(3,1,'#14b8a6','B(3,1)');
+    
+    ctx.fillStyle='#a1a1aa';ctx.font='11px DM Sans';
+    ctx.fillText('Empathy Axis (x)', cx+100,cy+15);
+    ctx.fillText('Logic Axis (y)', cx-70,cy-100);
+  }
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Scenarios & Extremes */
+(function(){
+  const canvas=document.getElementById('scenarioCanvas');
+  const descEl = document.getElementById('scenarioDesc');
+  const scenarios = {
+    aligned: {
+      a:{x:4,y:3}, b:{x:5,y:2},
+      title: "Highly Aligned Reinforcement",
+      text: "<p style='color:var(--text-muted);font-size:.9rem;line-height:1.6;margin-bottom:.5rem;'><strong>Calculation:</strong> (4×5) + (3×2) = 20 + 6 = <strong style='color:var(--emerald);'>26</strong></p>A high positive number. The vectors share the same geometric quadrant space. Both actively possess positive magnitudes, mathematically multiplying to aggressively reinforce the score. Attention strongly binds these concepts."
+    },
+    orthogonal: {
+      a:{x:5,y:0}, b:{x:0,y:4},
+      title: "Pristine Orthogonality",
+      text: "<p style='color:var(--text-muted);font-size:.9rem;line-height:1.6;margin-bottom:.5rem;'><strong>Calculation:</strong> (10×0) + (0×10) = <strong style='color:var(--amber);'>0</strong></p>The score is exactly zero. One is horizontal, one is vertical. They sit perfectly at 90 degrees. Despite having large magnitudes, the algorithm annihilates their relevance calculation because they share ZERO common dimensions."
+    },
+    hostile: {
+      a:{x:4,y:0}, b:{x:-4,y:0},
+      title: "Hostile Oppositional Alignment",
+      text: "<p style='color:var(--text-muted);font-size:.9rem;line-height:1.6;margin-bottom:.5rem;'><strong>Calculation:</strong> (5×-5) + (0×0) = <strong style='color:var(--rose);'>-25</strong></p>A massive negative number. They point along the exact same semantic highway but drive in explicitly opposite directions. One builds; one destroys. Signals the concepts are actively hostile."
+    },
+    inflation: {
+      a:{x:2,y:2}, b:{x:6,y:6},
+      title: "Magnitude Inflation Threat",
+      text: "<p style='color:var(--text-muted);font-size:.9rem;line-height:1.6;margin-bottom:.5rem;'><strong>Set A (Small):</strong> (1×1)+(1×1) = 2<br><strong>Set B (Large):</strong> (10×1)+(10×1) = <strong style='color:var(--emerald);'>20</strong></p>Both sets point in the exact same diagonal direction (Cosine Similarity = 1.0). But the larger vectors produce a vastly higher Dot Product. It explicitly respects the 'loudness' of the data."
+    }
+  };
+  
+  let cur='aligned';
+
+  function draw(){
+    const {ctx,w,h}=setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);
+    const s=scenarios[cur];
+    
+    descEl.innerHTML = `<h3 style='color:var(--amber);margin-bottom:.75rem;font-size:1.3rem;'>${s.title}</h3>${s.text}`;
+
+    const cx=w/2,cy=h/2,scale=Math.min(w,h)/12;
+    
+    ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(w,cy);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,0);ctx.lineTo(cx,h);ctx.stroke();
+
+    function drawV(x,y,c){
+      const tx=cx+x*scale,ty=cy-y*scale;
+      const mag=Math.hypot(tx-cx,ty-cy), ang=Math.atan2(ty-cy,tx-cx);
+      ctx.save();ctx.shadowColor=c;ctx.shadowBlur=8;ctx.strokeStyle=c;ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(tx,ty);ctx.stroke();ctx.restore();
+      ctx.beginPath();ctx.moveTo(tx,ty);
+      ctx.lineTo(tx-10*Math.cos(ang-0.35),ty-10*Math.sin(ang-0.35));
+      ctx.lineTo(tx-10*Math.cos(ang+0.35),ty-10*Math.sin(ang+0.35));
+      ctx.fillStyle=c;ctx.fill();
+    }
+    
+    drawV(s.a.x, s.a.y, '#f59e0b');
+    drawV(s.b.x, s.b.y, '#14b8a6');
+    
+    if(cur==='inflation'){
+       ctx.setLineDash([4,4]);
+       drawV(1,1,'rgba(245,158,11,0.5)'); // Tiny reference
+       ctx.setLineDash([]);
+    }
+  }
+  
+  document.querySelectorAll('#scenarioToggles .btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('#scenarioToggles .btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      cur=btn.dataset.scenario;
+      draw();
+    });
+  });
+  
+  draw();window.addEventListener('resize',draw);
+})();
+
+/* Quiz */
+(function(){
+  const questions=[
+    {q:"If a Transformer evaluates two tokens and discovers their Dot Product is exactly -5000, what behavioral relationship exists?",
+     opts:["They mean the exact same thing but in lowercase formats","They exist in completely unrelated dimensions","They point on the identical semantic axis, but in perfectly hostile oppositional directions","They cancel out and create zero value in the network"],
+     correct:2,explanation:"A massive negative score (-5000) implies high magnitude on a shared axis, but strictly opposing signs. They are hostile inversions of one another (e.g., intense love vs. intense hate on the sentiment axis)."},
+    {q:"You are building a RAG platform and explicitly need to ignore the 'loudness' of a stored database document, fetching solely on conceptual direction. Which metric do you use?",
+     opts:["The Dot Product","The Euclidean Distance","Cosine Similarity","Self-Attention Score"],
+     correct:2,explanation:"Cosine Similarity forces all vectors onto the Unit Circle prior to evaluation, effectively stripping away all volume/magnitude. Dot Product heavily scales by that loudness."},
+    {q:"If a safety constraint vector points completely orthogonally (90 degrees away) from a user's aggressive prompt embedding, how much mathematical interference occurs during computing?",
+     opts:["Zero interference — the Dot Product calculation collapses their intersection to 0.","Massive interference — orthongonality creates negative dot products","Partial interference relative to the size of the constraint","Infinite interference"],
+     correct:0,explanation:"Orthogonal implies they share absolutely zero underlying dimensions. Evaluating them physically mathematically multiplies coordinates universally against zeros. The score natively zeroes out. They are blind to each other."}
+  ];
+  const container=document.getElementById('quizContainer');
+  questions.forEach((q,qi)=>{
+    const card=document.createElement('div');card.className='card';card.style.padding='1.25rem';
+    let optsHTML='';
+    q.opts.forEach((o,oi)=>{optsHTML+=`<button class="quiz-option" data-q="${qi}" data-o="${oi}">${o}</button>`;});
+    card.innerHTML=`<p style="font-size:.82rem;font-weight:600;color:var(--text-dim);margin-bottom:.75rem;">Question ${qi+1}</p>
+      <p style="font-size:.92rem;line-height:1.6;margin-bottom:1rem;">${q.q}</p>
+      <div id="qO${qi}">${optsHTML}</div>
+      <div class="quiz-explanation" id="qE${qi}" style="margin-top:.75rem;"><div class="insight">${q.explanation}</div></div>`;
+    container.appendChild(card);
+  });
+  container.addEventListener('click',(e)=>{
+    const btn=e.target.closest('.quiz-option');if(!btn)return;
+    const qi=+btn.dataset.q,oi=+btn.dataset.o;
+    const opts=document.querySelectorAll(`#qO${qi} .quiz-option`);
+    if(opts[0].classList.contains('disabled'))return;
+    opts.forEach((o,i)=>{o.classList.add('disabled');
+      if(i===questions[qi].correct)o.classList.add('correct');
+      else if(i===oi&&oi!==questions[qi].correct)o.classList.add('wrong');});
+    document.getElementById(`qE${qi}`).classList.add('show');
+  });
+})();
+</script>
+</body>
+</html>

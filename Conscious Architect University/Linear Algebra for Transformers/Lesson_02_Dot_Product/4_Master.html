@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 02 - Master Layer</title>
+  <style>
+    :root {
+      --bg: #09090b;
+      --panel: #111114;
+      --line: rgba(255,255,255,0.08);
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --accent: #f97316;
+      --good: #22c55e;
+      --bad: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #0b0b0e 0%, #09090b 100%);
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+    }
+
+    .hud {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 20;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(9, 9, 11, 0.92);
+      font: 700 0.86rem/1 Arial, Helvetica, sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #f8fafc;
+    }
+
+    .shell {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 34px 18px 90px;
+    }
+
+    .hero,
+    .card,
+    .result {
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+      padding: 24px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 12px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 14px;
+      line-height: 1.08;
+      font-weight: 500;
+    }
+
+    h1 { font-size: clamp(2.2rem, 4vw, 3.8rem); }
+    h2 { font-size: clamp(1.4rem, 2.7vw, 2rem); }
+    h3 { font-size: 1.08rem; }
+    p { margin: 0 0 14px; }
+
+    .divider {
+      height: 1px;
+      margin: 22px 0;
+      background: linear-gradient(90deg, transparent, rgba(249,115,22,0.3), transparent);
+    }
+
+    .mono {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.95rem;
+    }
+
+    .meta {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 18px;
+    }
+
+    .meta div {
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .meta span {
+      display: block;
+      color: var(--muted);
+      font: 700 0.74rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .card { margin-top: 18px; }
+
+    .qnum {
+      color: #fdba74;
+      font: 700 0.78rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .points {
+      color: var(--muted);
+      font: 700 0.8rem/1.2 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .choices {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .choice {
+      width: 100%;
+      text-align: left;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      transition: border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .choice.selected {
+      border-color: rgba(249,115,22,0.7);
+      background: rgba(249,115,22,0.08);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      font: 400 1rem/1.45 Arial, Helvetica, sans-serif;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 170px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(249,115,22,0.55);
+      box-shadow: 0 0 0 4px rgba(249,115,22,0.12);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      border: 0;
+      cursor: pointer;
+      padding: 14px 18px;
+      border-radius: 999px;
+      font: 700 0.94rem/1 Arial, Helvetica, sans-serif;
+      transition: transform 0.18s ease, opacity 0.18s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .result {
+      margin-top: 22px;
+      display: none;
+    }
+
+    .result.show { display: block; }
+
+    .score {
+      font: 700 1.2rem/1.3 Arial, Helvetica, sans-serif;
+      margin-bottom: 14px;
+    }
+
+    .pass { color: var(--good); }
+    .fail { color: var(--bad); }
+
+    .breakdown {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .breakdown div {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .footnote {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.96rem;
+    }
+
+    .hidden { display: none; }
+
+    @media (max-width: 720px) {
+      .hud {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        justify-content: space-between;
+      }
+      .meta { grid-template-columns: 1fr; }
+      .actions { flex-direction: column; }
+      .btn { width: 100%; }
+      .shell { padding: 74px 14px 60px; }
+      .hero, .card, .result { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="hud">
+    <span>Master Exam</span>
+    <span id="timer">10:00</span>
+  </div>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">Lesson 02 - Master / Integration Layer</p>
+      <h1>Attention is alignment scaled by conviction.</h1>
+      <div class="divider"></div>
+      <p>This is the terminal assessment for Dot Product. No diagrams. No vector drawings. No attention heatmaps. You either understand why transformers preserve magnitude in attention, or you do not.</p>
+      <div class="meta">
+        <div><span>Questions</span>12 total</div>
+        <div><span>Time</span>10 minutes</div>
+        <div><span>Passing Score</span>160 / 200</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="startExam()">Start exam</button>
+      </div>
+    </section>
+
+    <form id="examForm" class="hidden" onsubmit="return false;">
+      <section class="card">
+        <div class="qnum">Question 1</div>
+        <div class="points">10 points</div>
+        <h2>Core meaning</h2>
+        <p>What does the raw dot product preserve that cosine similarity intentionally removes?</p>
+        <div class="choices" data-question="q1">
+          <button type="button" class="choice" onclick="pickChoice('q1','A',this)">Magnitude / intensity information</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','B',this)">All directional alignment</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','C',this)">The ability to detect orthogonality</button>
+          <button type="button" class="choice" onclick="pickChoice('q1','D',this)">All scalar comparison</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 2</div>
+        <div class="points">10 points</div>
+        <h2>Formal structure</h2>
+        <p>Complete the interpretation: <span class="mono">A · B = ||A|| ||B|| cos(theta)</span> means the output combines angular alignment with what second factor?</p>
+        <input id="q2" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 3</div>
+        <div class="points">10 points</div>
+        <h2>Orthogonality test</h2>
+        <p>For non-zero vectors, what does a dot product of zero indicate?</p>
+        <div class="choices" data-question="q3">
+          <button type="button" class="choice" onclick="pickChoice('q3','A',this)">Perfect semantic identity</button>
+          <button type="button" class="choice" onclick="pickChoice('q3','B',this)">Orthogonality / structural independence</button>
+          <button type="button" class="choice" onclick="pickChoice('q3','C',this)">Maximum negative alignment</button>
+          <button type="button" class="choice" onclick="pickChoice('q3','D',this)">Guaranteed attention saturation</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 4</div>
+        <div class="points">10 points</div>
+        <h2>Self-dot identity</h2>
+        <p>What does <span class="mono">A · A</span> equal?</p>
+        <input id="q4" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 5</div>
+        <div class="points">10 points</div>
+        <h2>High-dimensional behavior</h2>
+        <p>Why is a large positive dot product in 768-dimensional space highly informative?</p>
+        <div class="choices" data-question="q5">
+          <button type="button" class="choice" onclick="pickChoice('q5','A',this)">Because random vectors there are usually already highly aligned</button>
+          <button type="button" class="choice" onclick="pickChoice('q5','B',this)">Because random vectors are usually near orthogonal, so strong positive overlap is unlikely by chance</button>
+          <button type="button" class="choice" onclick="pickChoice('q5','C',this)">Because dot products ignore most dimensions</button>
+          <button type="button" class="choice" onclick="pickChoice('q5','D',this)">Because softmax makes every positive number equally important</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 6</div>
+        <div class="points">10 points</div>
+        <h2>Scaling law</h2>
+        <p>Why does the transformer divide attention scores by <span class="mono">sqrt(d_k)</span>?</p>
+        <input id="q6" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 7</div>
+        <div class="points">10 points</div>
+        <h2>Logic trap</h2>
+        <p>If <span class="mono">A = (100, 0, 0, 0)</span>, <span class="mono">B = (0, 0, 0, 1)</span>, and <span class="mono">C = (0.01, 0, 0, 0)</span>, which key receives more attention from A?</p>
+        <div class="choices" data-question="q7">
+          <button type="button" class="choice" onclick="pickChoice('q7','A',this)">B, because it has larger meaningful content overall</button>
+          <button type="button" class="choice" onclick="pickChoice('q7','B',this)">C, because even a tiny match on the active dimension beats a large value on irrelevant axes</button>
+          <button type="button" class="choice" onclick="pickChoice('q7','C',this)">They tie</button>
+          <button type="button" class="choice" onclick="pickChoice('q7','D',this)">Neither receives any attention</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 8</div>
+        <div class="points">10 points</div>
+        <h2>Asymmetry puzzle</h2>
+        <p>If dot product is commutative, why can token A attend to token B differently than B attends to A?</p>
+        <input id="q8" type="text" placeholder="Short answer">
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 9</div>
+        <div class="points">15 points</div>
+        <h2>Worked attention computation</h2>
+        <p>In the lesson's example, why does <span class="mono">terrified</span> attend more strongly to <span class="mono">speaking</span> than to <span class="mono">I</span>?</p>
+        <textarea id="q9" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 10</div>
+        <div class="points">15 points</div>
+        <h2>Paper application</h2>
+        <p>Pick one CCP paper from the lesson and explain how it intervenes on or interprets dot-product behavior: attention head taxonomy, AUSteer, or EAST.</p>
+        <textarea id="q10" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 11</div>
+        <div class="points">15 points</div>
+        <h2>Cross-domain translation</h2>
+        <p>Explain one non-AI analogy from the lesson and show how the dot product governs it.</p>
+        <textarea id="q11" placeholder="Answer in 2-4 sentences."></textarea>
+      </section>
+
+      <section class="card">
+        <div class="qnum">Question 12</div>
+        <div class="points">35 points</div>
+        <h2>Feynman Compression</h2>
+        <p>Explain how dot product becomes attention inside a transformer, and why preserving magnitude matters. Minimum length: 220 characters.</p>
+        <p class="footnote">Full credit requires all three structural elements: per-dimension multiplication-and-sum, alignment plus magnitude/intensity, and query-key attention scoring with scaling or distribution consequences.</p>
+        <textarea id="q12" placeholder="Write the mechanism, not a slogan."></textarea>
+      </section>
+
+      <div class="actions">
+        <button class="btn btn-primary" type="button" onclick="submitExam(false)">Submit exam</button>
+        <button class="btn btn-secondary" type="button" onclick="scrollToTop()">Back to top</button>
+      </div>
+    </form>
+
+    <section id="result" class="result">
+      <div class="eyebrow">Result</div>
+      <div id="scoreLine" class="score"></div>
+      <p id="resultSummary"></p>
+      <div id="breakdown" class="breakdown"></div>
+      <p id="timeoutNote" class="footnote"></p>
+    </section>
+  </main>
+
+  <script>
+    const answers = {};
+    let examStarted = false;
+    let examSubmitted = false;
+    let secondsRemaining = 600;
+    let timerHandle = null;
+
+    function pickChoice(question, value, element) {
+      if (examSubmitted) return;
+      answers[question] = value;
+      document.querySelectorAll('[data-question="' + question + '"] .choice').forEach((btn) => btn.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function startExam() {
+      if (examStarted) return;
+      examStarted = true;
+      document.getElementById('examForm').classList.remove('hidden');
+      window.scrollTo({ top: document.getElementById('examForm').offsetTop - 20, behavior: 'smooth' });
+      timerHandle = setInterval(tick, 1000);
+    }
+
+    function tick() {
+      if (examSubmitted) return;
+      secondsRemaining -= 1;
+      if (secondsRemaining <= 0) {
+        secondsRemaining = 0;
+        updateTimer();
+        submitExam(true);
+        return;
+      }
+      updateTimer();
+    }
+
+    function updateTimer() {
+      const mins = String(Math.floor(secondsRemaining / 60)).padStart(2, '0');
+      const secs = String(secondsRemaining % 60).padStart(2, '0');
+      document.getElementById('timer').textContent = mins + ':' + secs;
+    }
+
+    function textValue(id) {
+      return (document.getElementById(id)?.value || '').trim().toLowerCase();
+    }
+
+    function containsAny(value, options) {
+      return options.some((option) => value.includes(option));
+    }
+
+    function gradeRichText(value, keywordGroups) {
+      if (!value) return 0;
+      let hits = 0;
+      keywordGroups.forEach((group) => {
+        if (containsAny(value, group)) hits += 1;
+      });
+      return hits;
+    }
+
+    function submitExam(fromTimeout) {
+      if (examSubmitted) return;
+      examSubmitted = true;
+      clearInterval(timerHandle);
+
+      document.querySelectorAll('input, textarea, button.choice').forEach((el) => el.disabled = true);
+
+      let total = 0;
+      const breakdown = [];
+
+      const q1 = answers.q1 === 'A' ? 10 : 0;
+      total += q1;
+      breakdown.push(['Q1', q1, 'Dot product preserves intensity / magnitude']);
+
+      const q2hits = gradeRichText(textValue('q2'), [['magnitude', 'length', 'norm'], ['both vectors', 'both lengths', 'intensity']]);
+      const q2 = q2hits >= 2 ? 10 : q2hits * 5;
+      total += q2;
+      breakdown.push(['Q2', q2, 'Alignment is scaled by vector magnitude']);
+
+      const q3 = answers.q3 === 'B' ? 10 : 0;
+      total += q3;
+      breakdown.push(['Q3', q3, 'Zero means orthogonality']);
+
+      const q4hits = gradeRichText(textValue('q4'), [['norm squared', 'squared magnitude', '||a||^2'], ['energy', 'self-energy']]);
+      const q4 = q4hits >= 1 ? 10 : 0;
+      total += q4;
+      breakdown.push(['Q4', q4, 'Self-dot identity']);
+
+      const q5 = answers.q5 === 'B' ? 10 : 0;
+      total += q5;
+      breakdown.push(['Q5', q5, 'High-dimensional positive overlap is unlikely by chance']);
+
+      const q6hits = gradeRichText(textValue('q6'), [['softmax', 'saturat', 'one-hot'], ['scale', 'sqrt(dk)', 'large values'], ['stability', 'prevent collapse']]);
+      const q6 = Math.min(10, q6hits * 4);
+      total += q6;
+      breakdown.push(['Q6', q6, 'Scaling prevents attention saturation']);
+
+      const q7 = answers.q7 === 'B' ? 10 : 0;
+      total += q7;
+      breakdown.push(['Q7', q7, 'Tiny relevant overlap beats large irrelevant axes']);
+
+      const q8hits = gradeRichText(textValue('q8'), [['query', 'key', 'q', 'k'], ['different projection', 'wq', 'wk'], ['not the same dot product', 'asymmetric']]);
+      const q8 = Math.min(10, q8hits * 4);
+      total += q8;
+      breakdown.push(['Q8', q8, 'Attention asymmetry comes from Q/K projections']);
+
+      const q9hits = gradeRichText(textValue('q9'), [['0.79', 'higher score', 'stronger'], ['vulnerability', '0.63'], ['speaking', 'more than i', '0.44']]);
+      const q9 = Math.min(15, q9hits * 5);
+      total += q9;
+      breakdown.push(['Q9', q9, 'Dominant vulnerability-axis contribution']);
+
+      const q10hits = gradeRichText(textValue('q10'), [['austeer', 'east', 'attention heads survey', 'paper'], ['dot product', 'attention score', 'qk'], ['intervene', 'reshape', 'identify', 'steer', 'entropy']]);
+      const q10 = Math.min(15, q10hits * 5);
+      total += q10;
+      breakdown.push(['Q10', q10, 'Paper-level transformer application']);
+
+      const q11hits = gradeRichText(textValue('q11'), [['football', 'audio', 'culinary', 'personality', 'rpg', 'retrieval'], ['alignment', 'overlap', 'collision', 'compatibility', 'vulnerability'], ['dot product', 'scalar score', 'ranking']]);
+      const q11 = Math.min(15, q11hits * 5);
+      total += q11;
+      breakdown.push(['Q11', q11, 'Cross-domain dot-product translation']);
+
+      const q12Value = textValue('q12');
+      let q12 = 0;
+      let missing = [];
+      if (q12Value.length < 220) {
+        missing = ['minimum length not met'];
+      } else {
+        const hasMechanism = containsAny(q12Value, ['multiply', 'sum', 'corresponding dimensions', 'per-dimension']);
+        const hasMagnitude = containsAny(q12Value, ['magnitude', 'intensity', 'confidence', 'length']);
+        const hasAttention = containsAny(q12Value, ['query', 'key', 'attention', 'softmax', 'sqrt(dk)', 'scaling']);
+        const count = [hasMechanism, hasMagnitude, hasAttention].filter(Boolean).length;
+        if (count === 3) q12 = 35;
+        if (count === 2) q12 = 22;
+        if (count < 2) q12 = 0;
+        if (!hasMechanism) missing.push('per-dimension multiplication-and-sum');
+        if (!hasMagnitude) missing.push('alignment plus magnitude/intensity');
+        if (!hasAttention) missing.push('query-key attention scoring with scaling consequences');
+      }
+      total += q12;
+      breakdown.push(['Q12', q12, missing.length ? 'Missing: ' + missing.join(', ') : 'All three structural elements present']);
+
+      const pass = total >= 160;
+      const scoreLine = document.getElementById('scoreLine');
+      scoreLine.textContent = total + ' / 200';
+      scoreLine.className = 'score ' + (pass ? 'pass' : 'fail');
+
+      document.getElementById('resultSummary').textContent =
+        pass
+          ? 'Passing threshold reached. The lesson held as a full mechanism: dot product as alignment-plus-intensity, attention scoring, and transformer control through score distributions and projections.'
+          : 'Passing threshold not reached. The missing pieces are structural: the scalar mechanism, the role of magnitude, or the Q/K attention mapping is still unstable under pressure.';
+
+      const breakdownNode = document.getElementById('breakdown');
+      breakdownNode.innerHTML = '';
+      breakdown.forEach(([label, score, note]) => {
+        const row = document.createElement('div');
+        row.innerHTML = '<strong>' + label + ': ' + score + ' points</strong><br>' + note;
+        breakdownNode.appendChild(row);
+      });
+
+      document.getElementById('timeoutNote').textContent = fromTimeout
+        ? 'Exam auto-submitted at time expiration.'
+        : 'Exam submitted before time expiration.';
+
+      document.getElementById('result').classList.add('show');
+      document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    updateTimer();
+  </script>
+</body>
+</html>

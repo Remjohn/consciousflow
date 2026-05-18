@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decorators & Validators — Orchestration</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050505;--surface:#111;--surface2:#1a1a1a;--surface3:#252525;
+  --text:#FAFAFA;--muted:#888;--border:#333;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;--blue:#457B9D;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.7;overflow-x:hidden;}
+.container{max-width:850px;margin:0 auto;padding:4rem 2rem 8rem;}
+
+h1{font-weight:700;font-size:2.4rem;line-height:1.1;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-weight:700;font-size:1.5rem;margin:3rem 0 1rem;letter-spacing:-0.01em;color:#fff;}
+p{margin-bottom:1.3rem;color:var(--muted);font-size:1rem;}
+strong{color:#fff;}
+.lesson-tag{font-family:var(--mono);font-size:0.72rem;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.12em;display:block;}
+
+.q-code{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:1.2rem;font-family:var(--mono);font-size:0.85rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6;overflow-x:auto;}
+.hl{color:var(--accent);}
+.keyword{color:var(--blue);}
+.string{color:var(--green);}
+
+/* TABS */
+.tab-container{margin:2.5rem 0;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.tab-header{display:flex;border-bottom:1px solid var(--border);overflow-x:auto;background:var(--bg);}
+.tab-btn{flex:1;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);padding:1rem 0.5rem;font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;cursor:pointer;white-space:nowrap;transition:all 0.2s;}
+.tab-btn:hover{color:var(--text);background:rgba(255,255,255,0.02);}
+.tab-btn.active{color:var(--accent);border-bottom:2px solid var(--accent);background:var(--surface2);}
+.tab-body{display:none;padding:2rem;}
+.tab-body.active{display:block;}
+
+.subsystem-title{font-size:1.15rem;font-weight:600;margin-bottom:0.75rem;color:#fff;}
+.subsystem-concept{font-family:var(--mono);font-size:0.8rem;color:var(--accent);margin-bottom:1.5rem;}
+.subsystem-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start;}
+
+/* CONTENT DIVIDERS */
+.sdiv{border-top:1px solid var(--border);margin:3.5rem 0 3rem;padding-top:0;}
+
+/* INTERACTION BOX */
+.ibox{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2.25rem;margin:2rem 0;}
+.ibox-hdr{font-family:var(--mono);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.4rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border);}
+.ibox-hdr.gate{color:var(--accent);}
+.q-text{font-size:1.08rem;font-weight:500;margin-bottom:1.75rem;color:#fff;line-height:1.65;}
+
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.65rem 1.3rem;font-family:var(--sans);font-weight:600;font-size:0.92rem;border-radius:4px;cursor:pointer;transition:all 0.18s;}
+.btn:hover:not(:disabled){transform:translateY(-2px);background:#fff;}
+.btn:disabled{opacity:0.45;cursor:not-allowed;transform:none !important;}
+
+/* INPUT */
+.inp-wrap{display:flex;gap:0.9rem;margin-bottom:0;}
+.inp{background:var(--bg);border:2px solid var(--border);color:#fff;font-family:var(--mono);font-size:1rem;padding:0.65rem 0.9rem;flex:1;border-radius:4px;transition:border-color 0.2s;text-align:center;}
+.inp:focus{outline:none;border-color:var(--accent);}
+.inp:disabled{opacity:0.45;}
+
+/* FEEDBACK */
+.fb{display:none;margin-top:1.6rem;padding:1.3rem 1.5rem;border-radius:5px;font-size:0.93rem;line-height:1.65;}
+.fb.show{display:block;animation:fi 0.35s ease;}
+.fb.err{background:rgba(231,111,81,0.08);border-left:3px solid var(--red);color:#ffb9a6;}
+.fb.ok{background:rgba(42,157,143,0.08);border-left:3px solid var(--green);color:#a5ebe1;}
+.fbt{font-family:var(--mono);font-size:0.67rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.5rem;font-weight:700;}
+@keyframes fi{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+
+@media(max-width:768px){.subsystem-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <span class="lesson-tag">Lesson 05 · Layer 3 — Orchestration Network</span>
+  <h1>The Factory Floor Tour</h1>
+  <p>You’ve seen the mechanism in isolation. Now, zoom out. The Conscious Coaching Platform requires you to manage six radically different operational contexts. The fundamental mechanism of the decorator is identical in all six, but its <em>meaning</em> changes across boundaries.</p>
+
+  <!-- 6 CONTEXT TABS -->
+  <div class="tab-container">
+    <div class="tab-header">
+      <button class="tab-btn active" onclick="openTab(event, 'tab-chassis')">1. Chassis</button>
+      <button class="tab-btn" onclick="openTab(event, 'tab-qa')">2. QA Dept</button>
+      <button class="tab-btn" onclick="openTab(event, 'tab-machinist')">3. Machinist</button>
+      <button class="tab-btn" onclick="openTab(event, 'tab-robot')">4. Robot Arm</button>
+      <button class="tab-btn" onclick="openTab(event, 'tab-memory')">5. Memory</button>
+      <button class="tab-btn" onclick="openTab(event, 'tab-compiler')">6. Compiler</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div id="tab-chassis" class="tab-body active">
+      <div class="subsystem-grid">
+        <div>
+          <div class="subsystem-title">The Chassis (FastAPI)</div>
+          <div class="subsystem-concept">Concept: The Doorman / Routing Engine</div>
+          <p style="font-size:0.9rem;">The Chassis is exposed to the open internet. It receives millions of arbitrary data packets. In this domain, decorators serve as the HTTP routers and security checkpoints.</p>
+          <ul style="font-size:0.85rem;color:var(--muted);padding-left:1.2rem;">
+            <li><code>@app.post</code> — Tells the structural framework where a request should go.</li>
+            <li><code>@require_admin</code> — Instructs the framework to bounce unauthorized traffic.</li>
+          </ul>
+        </div>
+        <div class="q-code" style="margin:0;">
+<span class="hl">@app.post</span>("/v1/trigger")
+<span class="hl">@verify_api_key</span>
+<span class="keyword">async def</span> trigger_coach_cycle(data: dict):
+    <span class="muted"># No HTTP or Auth logic here.</span>
+    <span class="keyword">return</span> launch_cycle(data)
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div id="tab-qa" class="tab-body">
+      <div class="subsystem-grid">
+        <div>
+          <div class="subsystem-title">The QA Department (Pydantic)</div>
+          <div class="subsystem-concept">Concept: Data Physics / Containment</div>
+          <p style="font-size:0.9rem;">The QA Department intercepts hallucinated garbage from LLMs. Here, decorators do not route traffic; they impose rigid physics onto strings and integers.</p>
+          <ul style="font-size:0.85rem;color:var(--muted);padding-left:1.2rem;">
+            <li><code>@field_validator</code> — Imposes a boundary constraint on a specific field before the system accepts the object into reality.</li>
+          </ul>
+        </div>
+        <div class="q-code" style="margin:0;">
+<span class="keyword">class</span> ModelOutput(BaseModel):
+    confidence: float
+    
+    <span class="hl">@field_validator</span>('confidence')
+    <span class="keyword">def</span> limit(cls, v):
+        <span class="keyword">if</span> v > 1.0: <span class="keyword">raise</span> ValueError()
+        <span class="keyword">return</span> v
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div id="tab-machinist" class="tab-body">
+      <div class="subsystem-grid">
+        <div>
+          <div class="subsystem-title">The Machinist (DSPy)</div>
+          <div class="subsystem-concept">Concept: Signature Wrapping / Prompt Translation</div>
+          <p style="font-size:0.9rem;">The Machinist deals with prompt compilation. Decorators in DSPy transparently convert normal Python functions into structured LLM logic calls, bridging Python execution with neural rendering.</p>
+          <ul style="font-size:0.85rem;color:var(--muted);padding-left:1.2rem;">
+            <li><code>@dspy.typed_predictor</code> — Wraps raw signature strings to enforce structural outputs globally across a module.</li>
+          </ul>
+        </div>
+        <div class="q-code" style="margin:0;">
+<span class="hl">@dspy.typed_predictor</span>
+<span class="keyword">class</span> GenerateHumor(dspy.Signature):
+    context: str = dspy.InputField()
+    joke: str = dspy.OutputField()
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div id="tab-robot" class="tab-body">
+      <div class="subsystem-grid">
+        <div>
+          <div class="subsystem-title">The Robot Arm (Pi OS Harness)</div>
+          <div class="subsystem-concept">Concept: Process Isolation & Resource Limits</div>
+          <p style="font-size:0.9rem;">The Robot Arm executes wild agentic shell commands on the physical machine. Decorators here enforce terrifyingly strict hardware thresholds to prevent an agent from wiping the disk.</p>
+          <ul style="font-size:0.85rem;color:var(--muted);padding-left:1.2rem;">
+            <li><code>@timeout(10)</code> — Aborts the function by force if it runs too long.</li>
+            <li><code>@jail_environment</code> — Changes the execution container before the shell command fires.</li>
+          </ul>
+        </div>
+        <div class="q-code" style="margin:0;">
+<span class="hl">@timeout</span>(10)
+<span class="hl">@jail_environment</span>
+<span class="keyword">def</span> run_agent_cmd(cmd: str):
+    <span class="keyword">return</span> subprocess.check_output(cmd)
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div id="tab-memory" class="tab-body">
+      <div class="subsystem-grid">
+        <div>
+          <div class="subsystem-title">The Memory Engine (Neo4j)</div>
+          <div class="subsystem-concept">Concept: Fault Tolerance / Temporal Wrapping</div>
+          <p style="font-size:0.9rem;">Neo4j graphs occasionally deadlock during parallel writing. In Memory, decorators handle the dimension of time, automating retry logic without polluting the write script.</p>
+          <ul style="font-size:0.85rem;color:var(--muted);padding-left:1.2rem;">
+            <li><code>@retry(attempts=3)</code> — If the function throws a TransientError, the decorator pauses execution and loops the function again silently.</li>
+          </ul>
+        </div>
+        <div class="q-code" style="margin:0;">
+<span class="hl">@retry</span>(Neo4jTransientError, attempts=3)
+<span class="keyword">def</span> merge_relationship(a_id, b_id):
+    driver.execute_write(tx_merge)
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6 -->
+    <div id="tab-compiler" class="tab-body">
+      <div class="subsystem-grid">
+        <div>
+          <div class="subsystem-title">The Skill Compiler (JIT)</div>
+          <div class="subsystem-concept">Concept: Compute State Caching / Memoization</div>
+          <p style="font-size:0.9rem;">Compiling complex skills takes heavy compute. We only want to compile it once per variant. A cache decorator intercepts the request, checks its internal ledger, and skips the function entirely if it has seen the inputs before.</p>
+          <ul style="font-size:0.85rem;color:var(--muted);padding-left:1.2rem;">
+            <li><code>@lru_cache</code> — A caching boundary in standard Python. Avoids re-computation.</li>
+          </ul>
+        </div>
+        <div class="q-code" style="margin:0;">
+<span class="keyword">from</span> functools <span class="keyword">import</span> lru_cache
+
+<span class="hl">@lru_cache</span>(maxsize=128)
+<span class="keyword">def</span> compile_ast_to_graph(ast_string):
+    <span class="muted"># Expensive operation</span>
+    <span class="keyword">return</span> build_graph(ast_string)
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- End Tabs -->
+
+  <div class="sdiv"></div>
+
+  <h2>Defect Scenarios — Logical Puzzles</h2>
+  <p>As an Architect, you will rarely write decorators from scratch. Instead, you will be hunting systemic failures caused by subtle misunderstandings of how decorators operate. Solve the following defect reports.</p>
+
+  <!-- PUZZLE 1: THE HOLLOW GUARDIAN -->
+  <div class="ibox">
+    <div class="ibox-hdr gate">Puzzle 1: The Hollow Guardian</div>
+    <div class="q-text">
+      The QA department is trying to guarantee that <code>trigger_count</code> generated by the LLM is always less than 5. A junior engineer writes this:
+    </div>
+    <div class="q-code">
+<span class="keyword">class</span> Config(BaseModel):
+    trigger_count: int
+
+    <span class="hl">@field_validator</span>('trigger_count')
+    <span class="keyword">def</span> check_trigger(cls, v):
+        <span class="keyword">if</span> v > 5:
+            print("Warning: Trigger count is too high!")
+        <span class="keyword">return</span> v
+    </div>
+    <div class="q-text" style="font-size:0.95rem;">
+      When the LLM outputs <code>{"trigger_count": 999}</code>, what actually happens to the system? Type the EXACT ONE WORD action the validator performs on the erroneous integer: <strong>REJECTS</strong>, <strong>FIXES</strong>, or <strong>ACCEPTS</strong>.
+    </div>
+    <div class="inp-wrap">
+      <input type="text" id="p1-inp" class="inp" placeholder="Type one word..." autocomplete="off">
+      <button class="btn" id="p1-btn" onclick="checkPuzzle1()">Lock</button>
+    </div>
+    <div class="fb" id="fb-p1"></div>
+  </div>
+
+  <!-- PUZZLE 2: THE BLOCKED BYPASS -->
+  <div class="ibox">
+    <div class="ibox-hdr gate">Puzzle 2: The Blocked Bypass</div>
+    <div class="q-text">
+      The Memory Engine has a strict deadlock retry decorator layered over the cache decorator. 
+    </div>
+    <div class="q-code">
+<span class="hl">@retry(attempts=3)</span>
+<span class="hl">@lru_cache()</span>
+<span class="keyword">def</span> get_heavy_query(id): ...
+    </div>
+    <div class="q-text" style="font-size:0.95rem;">
+      Decorators wrap bottom-up. Because <code>@retry</code> is stacked ON TOP of <code>@lru_cache</code>, if the cache has a hit (it remembers the data), does the retry decorator ever get executed? Type exactly <strong>YES</strong> or <strong>NO</strong>.
+    </div>
+    <div class="inp-wrap">
+      <input type="text" id="p2-inp" class="inp" placeholder="YES or NO" autocomplete="off">
+      <button class="btn" id="p2-btn" onclick="checkPuzzle2()">Lock</button>
+    </div>
+    <div class="fb" id="fb-p2"></div>
+  </div>
+
+</div>
+
+<script>
+// --- TABS ---
+function openTab(evt, tabName) {
+  var i, tabcontent, tablinks;
+  tabcontent = document.getElementsByClassName("tab-body");
+  for (i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+    tabcontent[i].classList.remove('active');
+  }
+  tablinks = document.getElementsByClassName("tab-btn");
+  for (i = 0; i < tablinks.length; i++) {
+    tablinks[i].className = tablinks[i].className.replace(" active", "");
+  }
+  document.getElementById(tabName).style.display = "block";
+  document.getElementById(tabName).classList.add('active');
+  evt.currentTarget.className += " active";
+}
+
+// --- UTILITY ---
+function showFB(id, type, html) {
+  const fb = document.getElementById(id);
+  fb.className = `fb ${type} show`;
+  fb.innerHTML = html;
+}
+function fbt(t) { return `<div class="fbt">${t}</div>`; }
+
+// --- PUZZLE 1 ---
+function checkPuzzle1() {
+  const val = document.getElementById('p1-inp').value.trim().toLowerCase();
+  if (!val) return;
+  document.getElementById('p1-inp').disabled = true;
+  document.getElementById('p1-btn').disabled = true;
+
+  if (val === 'accepts') {
+    showFB('fb-p1', 'ok', fbt('Correct Detection') + `It ACCEPTS it. The validator prints a warning, but returns <code>v</code> anyway. Because it did not <code>raise ValueError</code>, Pydantic assumes validation passed. The lethal integer 999 successfully instantiates and flows into the execution pipeline. The guardian is hollow.`);
+  } else {
+    showFB('fb-p1', 'err', fbt('Analysis Error') + `You typed "${val}". Consider the code constraint: It prints a warning to the terminal, and then simply executes <code>return v</code>. Nothing prevents Pydantic from saving the value. The system ACCEPTS it. Try again...`);
+    setTimeout(() => {
+      document.getElementById('p1-inp').disabled = false;
+      document.getElementById('p1-inp').value = '';
+      document.getElementById('p1-btn').disabled = false;
+      document.getElementById('fb-p1').className = 'fb';
+    }, 4500);
+  }
+}
+
+// --- PUZZLE 2 ---
+function checkPuzzle2() {
+  const val = document.getElementById('p2-inp').value.trim().toLowerCase();
+  if (!val) return;
+  document.getElementById('p2-inp').disabled = true;
+  document.getElementById('p2-btn').disabled = true;
+
+  if (val === 'no' || val === 'no.') {
+    showFB('fb-p2', 'ok', fbt('Correct Stack Analysis') + `Right. Order matters. <code>@retry</code> wraps <code>@lru_cache</code>. When the function is called, the request hits the outer shell (<code>@retry</code>), which passes it to the next shell (<code>@lru_cache</code>). If it's a cache hit, <code>@lru_cache</code> intercepts the call and immediately returns the stored value, <em>without ever invoking the actual function</em>. Because no error was raised by the function, <code>@retry</code>'s error-catching mechanism never has to do anything. It just passes the success back up.`);
+  } else {
+    showFB('fb-p2', 'err', fbt('Analysis Error') + `You answered "${val}". When the request hits the cache layer and gets a hit, the function instantly yields the value. Since a cached hit does not throw a TransientError, the <code>@retry</code> block at the top executes its pass-through logic and does absolutely nothing. No retry logic ever fires. It is a "no". Retrying...`);
+    setTimeout(() => {
+      document.getElementById('p2-inp').disabled = false;
+      document.getElementById('p2-inp').value = '';
+      document.getElementById('p2-btn').disabled = false;
+      document.getElementById('fb-p2').className = 'fb';
+    }, 5500);
+  }
+}
+</script>
+</body>
+</html>

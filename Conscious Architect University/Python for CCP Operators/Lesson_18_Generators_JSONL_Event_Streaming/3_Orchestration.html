@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 18 — Orchestration Layer: Generators & JSONL</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#09090b;--card:#111316;--ele:#181b1f;--brd:#27272a;--brd2:#3f3f46;
+      --fg:#fafafa;--muted:#a1a1aa;--dim:#52525b;
+      --amber:#f59e0b;--amb-g:rgba(245,158,11,.1);--teal:#14b8a6;--teal-g:rgba(20,184,166,.1);
+      --rose:#f43f5e;--rose-g:rgba(244,63,94,.1);--em:#10b981;--em-g:rgba(16,185,129,.1);
+      --vio:#8b5cf6;--vio-g:rgba(139,92,246,.1);}
+    *{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--fg);font-family:'DM Sans',sans-serif;overflow-x:hidden}
+    h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif}
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);
+      background:rgba(9,9,11,.82);border-bottom:1px solid var(--brd)}
+    .nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1.25rem;height:50px}
+    .nav-brand{font-family:'Space Grotesk';font-weight:700;font-size:.82rem;color:var(--amber)}
+    .nav-links{display:flex;gap:1.25rem}
+    .nav-link{color:var(--dim);transition:color .25s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;position:relative}
+    .nav-link:hover,.nav-link.act{color:var(--amber)}
+    .nav-link.act::after{content:'';position:absolute;bottom:-14px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px}
+    .sec{min-height:90vh;padding:5rem 1.5rem 4rem;position:relative}
+    .sec-inner{max-width:1180px;margin:0 auto}
+    .card{background:var(--card);border:1px solid var(--brd);border-radius:12px;overflow:hidden;transition:border-color .3s}
+    .card:hover{border-color:var(--brd2)}
+    .sub-label{font-size:.78rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem}
+    .flex-lay{display:flex;gap:1.5rem}
+    .col-read{flex:1.25;min-width:320px} .col-vis{flex:1;min-width:280px}
+    /* Code */
+    .cb{background:rgba(0,0,0,.6);border:1px solid var(--brd);border-radius:8px;
+      font-family:'JetBrains Mono',monospace;font-size:.8rem;line-height:1.8;
+      padding:14px 18px;white-space:pre;overflow-x:auto;color:#c2d4e0;margin:10px 0}
+    .kw{color:#60a5fa}.fn{color:#fbbf24}.st{color:#6ee7b7}.cm{color:#374151;font-style:italic}
+    .tp{color:#c084fc}.nu{color:#fb923c}.kv{color:#38bdf8}
+    /* Insight */
+    .insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amb-g);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.65;color:var(--muted);margin:10px 0}
+    .insight strong{color:var(--amber)}
+    .insight.teal{border-color:var(--teal);background:var(--teal-g)}.insight.teal strong{color:var(--teal)}
+    .insight.rose{border-color:var(--rose);background:var(--rose-g)}.insight.rose strong{color:var(--rose)}
+    .insight.em{border-color:var(--em);background:var(--em-g)}.insight.em strong{color:var(--em)}
+    .insight.vio{border-color:var(--vio);background:var(--vio-g)}.insight.vio strong{color:var(--vio)}
+    /* Tabs */
+    .tab-bar{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem}
+    .tab{padding:.55rem 1rem;border-radius:8px;border:1px solid var(--brd);background:var(--ele);
+      color:var(--dim);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.82rem;transition:all .2s}
+    .tab:hover{color:var(--fg);border-color:var(--brd2)}
+    .tab.act{background:var(--amb-g);color:var(--amber);border-color:var(--amber)}
+    .tab-content{display:none}.tab-content.act{display:block;animation:fadeIn .3s ease}
+    /* Questions */
+    .q-grid{display:grid;gap:1rem;margin-top:1.25rem}
+    .q-card{background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:1.25rem;transition:border-color .25s}
+    .q-card.open{border-color:var(--brd2)}
+    .q-head{display:flex;justify-content:space-between;align-items:start;cursor:pointer;gap:1rem}
+    .q-head h4{font-size:.95rem;line-height:1.5;color:var(--fg);font-weight:500}
+    .q-icon{color:var(--dim);font-size:1.2rem;flex-shrink:0;transition:transform .25s}
+    .q-card.open .q-icon{transform:rotate(45deg)}
+    .q-body{max-height:0;overflow:hidden;transition:max-height .35s ease;color:var(--muted);font-size:.9rem;line-height:1.65}
+    .q-card.open .q-body{max-height:600px;padding-top:1rem}
+    /* Options for scenario questions */
+    .so-grid{display:flex;flex-direction:column;gap:.6rem;margin-top:.75rem}
+    .so{background:var(--ele);border:1px solid var(--brd);border-radius:6px;padding:.75rem 1rem;
+      cursor:pointer;color:var(--fg);font-size:.88rem;text-align:left;transition:all .2s}
+    .so:hover:not(:disabled){border-color:var(--amber);background:var(--amb-g)}
+    .so:disabled{cursor:default}
+    .so.right{border-color:var(--em)!important;background:var(--em-g)!important;color:var(--em)!important}
+    .so.wrong{border-color:var(--rose)!important;background:var(--rose-g)!important;color:var(--rose)!important}
+    .so-fb{font-size:.85rem;color:var(--muted);margin-top:.75rem;padding:.75rem;border-radius:6px;display:none}
+    .so-fb.show{display:block;animation:fadeIn .3s} .so-fb.ok{background:var(--em-g);color:var(--em)} .so-fb.err{background:var(--rose-g);color:var(--rose)}
+    /* Gauntlet */
+    .gauntlet-wrap{max-width:820px;margin:0 auto}
+    .gcq-card{background:var(--card);border:1px solid var(--brd);border-radius:8px;padding:1.25rem 1.5rem;margin-bottom:1rem}
+    .gcq-text{font-size:.95rem;line-height:1.65;margin-bottom:1rem}
+    .gcq-opts{display:flex;flex-direction:column;gap:.5rem}
+    .gcq-opt{background:var(--ele);border:1px solid var(--brd);border-radius:6px;padding:.7rem 1rem;
+      cursor:pointer;color:var(--fg);font-size:.88rem;text-align:left;transition:all .2s}
+    .gcq-opt:hover:not(:disabled){border-color:var(--brd2)}
+    .gcq-opt:disabled{cursor:default}
+    .gcq-opt.gc-r{border-color:var(--em)!important;background:var(--em-g)!important;color:var(--em)!important}
+    .gcq-opt.gc-w{border-color:var(--rose)!important;background:var(--rose-g)!important;color:var(--rose)!important}
+    .gcq-fb{font-size:.83rem;color:var(--muted);margin-top:.75rem;display:none}
+    .gcq-fb.show{display:block}
+    /* Builder */
+    .builder-field{width:100%;padding:.65rem .9rem;background:var(--bg);border:1px solid var(--brd);border-radius:6px;color:var(--fg);font-family:'DM Sans',sans-serif;font-size:.9rem;resize:vertical;margin-top:.4rem}
+    .builder-field:focus{outline:none;border-color:var(--amber)}
+    .btn-am{display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;background:var(--amber);color:#000;transition:all .2s}
+    .btn-am:hover{transform:translateY(-1px);opacity:.9}
+    .btn-out{background:transparent;border:1px solid var(--brd2);color:var(--fg)}
+    .btn-out:hover{border-color:var(--amber);color:var(--amber)}
+    /* Score */
+    .score-box{text-align:center;padding:2rem 0}
+    .score-num{font-family:'JetBrains Mono',monospace;font-size:3rem;font-weight:700;color:var(--amber)}
+    .score-lbl{font-size:.82rem;color:var(--dim);letter-spacing:.06em;margin-top:4px}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+    @media(max-width:768px){.flex-lay{flex-direction:column}.sec{padding:5rem 1rem 3rem}.nav-links{gap:.75rem}}
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <span class="nav-brand">L18 · ORCHESTRATION</span>
+    <div class="nav-links">
+      <a class="nav-link act" href="#tour" data-s="tour">6 Subsystems</a>
+      <a class="nav-link" href="#compare" data-s="compare">Cross-Context</a>
+      <a class="nav-link" href="#scenarios" data-s="scenarios">Scenarios</a>
+      <a class="nav-link" href="#builder" data-s="builder">Builder</a>
+      <a class="nav-link" href="#gauntlet" data-s="gauntlet">Gauntlet</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header style="min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:5rem 1.5rem 4rem">
+  <div style="max-width:680px">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem">LESSON 18 — LAYER 3 — ORCHESTRATION</p>
+    <h1 style="font-size:clamp(2.4rem,6vw,4rem);font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:1.5rem">
+      Generators &amp; JSONL<br><span style="color:var(--muted);font-weight:300">Across the Entire Factory Floor</span>
+    </h1>
+    <p style="font-size:1.05rem;color:var(--muted);line-height:1.7;max-width:500px;margin:0 auto 2rem">
+      The same structural principle — <strong style="color:var(--fg)">yield one atomic event, delimit with \n</strong> — operates in six radically different architectural contexts. See all six. Own the universal principle.
+    </p>
+    <a href="#tour" class="btn-am" style="margin:0 auto">Begin Factory Floor Tour ↓</a>
+  </div>
+</header>
+
+<!-- ════ SECTION 1: 6-SUBSYSTEM TOUR ════ -->
+<section id="tour" class="sec">
+  <div class="sec-inner">
+    <p class="sub-label" style="color:var(--teal)">01 — Universal Mapping</p>
+    <h2 style="font-size:1.75rem;font-weight:700;margin-bottom:1.5rem">The 6-Subsystem Tour</h2>
+    <div class="tab-bar">
+      <button class="tab act" data-t="chassis">🏗️ Chassis</button>
+      <button class="tab" data-t="qa">📋 QA Dept</button>
+      <button class="tab" data-t="machinist">⚙️ Machinist</button>
+      <button class="tab" data-t="robotarm">🤖 Robot Arm</button>
+      <button class="tab" data-t="memory">🧠 Memory Engine</button>
+      <button class="tab" data-t="skill">🎯 Skill Compiler</button>
+    </div>
+    <div class="flex-lay">
+      <div class="col-read">
+
+        <!-- CHASSIS -->
+        <div id="tab-chassis" class="tab-content act">
+          <h3 style="font-size:1.2rem;margin-bottom:1rem;color:var(--amber)">🏗️ The Chassis — FastAPI Route</h3>
+          <p style="color:var(--muted);font-size:.9rem;line-height:1.7;margin-bottom:.75rem">Unique Insight: The Chassis does not generate or validate data — it <strong style="color:var(--fg)">routes</strong> it. The generator here is an async adapter translating between the internal Pi Harness stream and the external HTTP network protocol.</p>
+          <div class="cb"><span class="kw">async def</span> <span class="fn">event_generator</span>():
+    <span class="kw">async for</span> raw_line <span class="kw">in</span> harness.run_session(session_id):
+        <span class="kw">yield</span> raw_line.encode(<span class="st">"utf-8"</span>)  <span class="cm"># bytes for network</span>
+<span class="kw">return</span> StreamingResponse(
+    <span class="fn">event_generator</span>(),
+    media_type=<span class="st">"application/x-ndjson"</span>
+)</div>
+          <div class="insight"><strong>Architectural Role:</strong> Transport bridge — converts Python generator protocol to HTTP stream bytes. Without this, the Pi Harness stream never leaves the server process.</div>
+          <div class="insight rose" style="margin-top:8px"><strong>If removed:</strong> The endpoint returns synchronously — client waits for the entire session to complete before receiving a single byte. 45-second UI freeze.</div>
+        </div>
+
+        <!-- QA DEPT -->
+        <div id="tab-qa" class="tab-content">
+          <h3 style="font-size:1.2rem;margin-bottom:1rem;color:var(--amber)">📋 QA Department — Pydantic Intercept</h3>
+          <p style="color:var(--muted);font-size:.9rem;line-height:1.7;margin-bottom:.75rem">Unique Insight: Here the generator is a <strong style="color:var(--fg)">filter</strong>. It consumes a raw stream and only emits lines that pass schema validation. It is a transparent proxy — valid events flow through unchanged; invalid events are blocked or converted to error lines.</p>
+          <div class="cb"><span class="kw">def</span> <span class="fn">validated_stream</span>(raw: Generator) -> Generator:
+    <span class="kw">for</span> line <span class="kw">in</span> raw:
+        <span class="kw">try</span>:
+            TelemetryEvent.model_validate_json(line)
+            <span class="kw">yield</span> line  <span class="cm"># pass-through if valid</span>
+        <span class="kw">except</span> ValidationError <span class="kw">as</span> e:
+            <span class="kw">yield</span> json.dumps({<span class="st">"type"</span>: <span class="st">"error"</span>, <span class="st">"msg"</span>: <span class="fn">str</span>(e)}) + <span class="st">"\n"</span></div>
+          <div class="insight teal"><strong>Architectural Role:</strong> Schema enforcement gateway. Every event is inspected before being forwarded. Hallucinated event types never reach the client UI.</div>
+          <div class="insight rose" style="margin-top:8px"><strong>If removed:</strong> Schema-drift propagates silently. The React frontend receives unrecognised event_types and renders blank components — invisible failures during live client sessions.</div>
+        </div>
+
+        <!-- MACHINIST -->
+        <div id="tab-machinist" class="tab-content">
+          <h3 style="font-size:1.2rem;margin-bottom:1rem;color:var(--amber)">⚙️ The Machinist — DSPy Pipeline</h3>
+          <p style="color:var(--muted);font-size:.9rem;line-height:1.7;margin-bottom:.75rem">Unique Insight: Here the generator enforces <strong style="color:var(--fg)">cognitive window management</strong>. DSPy can only optimise effectively on atomic inputs. Streaming forces each session through individually, preventing context window overflow and maintaining compilation fidelity.</p>
+          <div class="cb"><span class="kw">def</span> <span class="fn">dspy_synthesis_stream</span>(cursor) -> Generator:
+    synthesizer = dspy.Predict(SessionSynthesisSignature)
+    <span class="kw">for</span> transcript <span class="kw">in</span> cursor:         <span class="cm"># one session at a time</span>
+        result = synthesizer(
+            session_transcript=transcript
+        )
+        <span class="kw">yield</span> result.psychological_vector + <span class="st">"\n"</span></div>
+          <div class="insight em"><strong>Architectural Role:</strong> Cognitive isolation boundary. Forces the LLM to reason about one context unit at a time. Yields the distilled insight before loading the next session.</div>
+          <div class="insight rose" style="margin-top:8px"><strong>If removed:</strong> 50 transcripts loaded as one massive prompt → exceeds token limit → DSPy raises ContextWindowError → entire synthesis fails with zero output.</div>
+        </div>
+
+        <!-- ROBOT ARM -->
+        <div id="tab-robotarm" class="tab-content">
+          <h3 style="font-size:1.2rem;margin-bottom:1rem;color:var(--amber)">🤖 The Robot Arm — Pi Harness</h3>
+          <p style="color:var(--muted);font-size:.9rem;line-height:1.7;margin-bottom:.75rem">Unique Insight: Here the generator connects <strong style="color:var(--fg)">operating system stdout</strong> to the sovereign telemetry pipeline. Each line the LLM subprocess prints to terminal becomes a structured, validated JSONL event visible to the Foreman in real-time.</p>
+          <div class="cb"><span class="kw">def</span> <span class="fn">pi_shell_stream</span>(cmd_seq: <span class="tp">list</span>[<span class="tp">str</span>]):
+    proc = subprocess.Popen(cmd_seq, stdout=PIPE, text=<span class="kv">True</span>)
+    <span class="kw">for</span> line <span class="kw">in</span> <span class="fn">iter</span>(proc.stdout.readline, <span class="st">""</span>):
+        event = {<span class="st">"bash_out"</span>: line.strip(), <span class="st">"pid"</span>: proc.pid}
+        <span class="kw">yield</span> json.dumps(event) + <span class="st">"\n"</span>
+    proc.wait()</div>
+          <div class="insight vio"><strong>Architectural Role:</strong> Operating system telemetry bridge. Translates raw shell output into structured, labelled JSONL events with PID tracking for process accountability.</div>
+          <div class="insight rose" style="margin-top:8px"><strong>If removed:</strong> subprocess runs in silence. Long-running bash commands become unmonitorable. The Foreman kills the process on timeout — destroying multi-minute synthesis operations.</div>
+        </div>
+
+        <!-- MEMORY ENGINE -->
+        <div id="tab-memory" class="tab-content">
+          <h3 style="font-size:1.2rem;margin-bottom:1rem;color:var(--amber)">🧠 The Memory Engine — Neo4j Graph</h3>
+          <p style="color:var(--muted);font-size:.9rem;line-height:1.7;margin-bottom:.75rem">Unique Insight: Here the generator manages <strong style="color:var(--fg)">database cursor exhaustion</strong>. A Neo4j query cursor yields rows on demand — the generator maps each row to a JSONL line without ever loading the full result set into Python memory.</p>
+          <div class="cb"><span class="kw">def</span> <span class="fn">graph_context_stream</span>(driver, client_id: <span class="tp">str</span>):
+    <span class="kw">with</span> driver.session() <span class="kw">as</span> db:
+        result = db.run(
+            <span class="st">"MATCH (c:Client {id:$id})-[:SESSION]->(s) RETURN s"</span>,
+            id=client_id  <span class="cm"># parameterised — no injection</span>
+        )
+        <span class="kw">for</span> record <span class="kw">in</span> result:
+            <span class="kw">yield</span> json.dumps(record.data()) + <span class="st">"\n"</span></div>
+          <div class="insight teal"><strong>Architectural Role:</strong> Database-to-stream adapter. The cursor is itself lazy — it fetches rows from Neo4j on demand, which the generator immediately yields downstream, maintaining end-to-end laziness.</div>
+          <div class="insight rose" style="margin-top:8px"><strong>If removed (list comprehension):</strong> All graph nodes loaded into Python RAM simultaneously. At 1,000 sessions of 8KB each = 8MB per client. At 200 concurrent users = 1.6GB RAM spike → OOM container kill.</div>
+        </div>
+
+        <!-- SKILL COMPILER -->
+        <div id="tab-skill" class="tab-content">
+          <h3 style="font-size:1.2rem;margin-bottom:1rem;color:var(--amber)">🎯 The Skill Compiler — JIT Voice DNA</h3>
+          <p style="color:var(--muted);font-size:.9rem;line-height:1.7;margin-bottom:.75rem">Unique Insight: Here the generator enables <strong style="color:var(--fg)">progressive persona assembly</strong>. Voice DNA traits are compiled and injected one fragment at a time, allowing the agent persona to shift mid-session based on incoming telemetry — without stopping the session to reload the full profile.</p>
+          <div class="cb"><span class="kw">def</span> <span class="fn">voice_dna_compiler</span>(trait_queue: <span class="tp">list</span>[<span class="tp">str</span>]):
+    <span class="kw">for</span> trait <span class="kw">in</span> trait_queue:
+        fragment = (
+            <span class="st">f"When coaching, you embody the trait: {trait}. "</span>
+            <span class="st">"Apply it at every response boundary."</span>
+        )
+        <span class="kw">yield</span> json.dumps({<span class="st">"dna_fragment"</span>: fragment}) + <span class="st">"\n"</span></div>
+          <div class="insight vio"><strong>Architectural Role:</strong> Modular persona injection pipeline. Each trait fragment is compiled individually, allowing real-time persona layering without halting execution to reconstruct the full Voice DNA string.</div>
+          <div class="insight rose" style="margin-top:8px"><strong>If removed:</strong> Full persona must be compiled before the session begins. Dynamic mid-session trait adaptation becomes impossible. Persona is static for the entire session duration.</div>
+        </div>
+
+      </div>
+      <div class="col-vis">
+        <div style="background:var(--card);border:1px solid var(--brd);border-radius:12px;padding:1.25rem;position:sticky;top:5rem">
+          <p style="font-size:.78rem;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem">Universal Principle</p>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:.78rem;line-height:2;color:var(--muted)">
+            <div style="margin-bottom:.5rem"><span style="color:var(--amber)">yield</span> <span style="color:var(--dim)">one atomic event</span></div>
+            <div style="margin-bottom:.5rem"><span style="color:var(--amber)">+ "\n"</span> <span style="color:var(--dim)">seal the boundary</span></div>
+            <div style="margin-bottom:.5rem"><span style="color:var(--amber)">repeat</span> <span style="color:var(--dim)">per event</span></div>
+            <div style="height:1px;background:var(--brd);margin:.75rem 0"></div>
+            <div style="color:var(--fg)">= live observability</div>
+            <div style="color:var(--fg)">+ parse-safe stream</div>
+            <div style="color:var(--fg)">+ O(1) memory</div>
+          </div>
+          <div style="height:1px;background:var(--brd);margin:1rem 0"></div>
+          <p style="font-size:.82rem;color:var(--muted);line-height:1.65">The <strong style="color:var(--fg)">context changes</strong> across all 6 subsystems. The <strong style="color:var(--fg)">structural pattern</strong> never does.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ SECTION 2: CROSS-CONTEXT COMPARISON ════ -->
+<section id="compare" class="sec" style="background:rgba(255,255,255,.01)">
+  <div class="sec-inner">
+    <p class="sub-label" style="color:var(--vio)">02 — Fidelity Spectrum</p>
+    <h2 style="font-size:1.75rem;font-weight:700;margin-bottom:1.5rem">Cross-Context Comparison</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-bottom:1.5rem">
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--em)">
+        <h4 style="color:var(--em);margin-bottom:.5rem">🏗️ Chassis vs 📋 QA Dept</h4>
+        <p style="font-size:.88rem;color:var(--muted);line-height:1.6"><strong style="color:var(--fg)">Same pattern, different purpose.</strong> Chassis uses the generator as a byte-level transport bridge (encoding strings to bytes). QA uses it as a filtering proxy (validating and potentially blocking events). Both consume one stream and yield to the next layer — but one transforms format, the other enforces contracts.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--amber)">
+        <h4 style="color:var(--amber);margin-bottom:.5rem">⚙️ Machinist vs 🧠 Memory Engine</h4>
+        <p style="font-size:.88rem;color:var(--muted);line-height:1.6"><strong style="color:var(--fg)">Same memory goal, different source.</strong> Both achieve O(1) memory footprint — but Machinist controls LLM cognitive load (one prompt context at a time), while Memory Engine controls Python RAM (one cursor row at a time). Machinist manages AI bandwidth; Memory Engine manages hardware capacity.</p>
+      </div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--rose)">
+        <h4 style="color:var(--rose);margin-bottom:.5rem">🤖 Robot Arm vs 🎯 Skill Compiler</h4>
+        <p style="font-size:.88rem;color:var(--muted);line-height:1.6"><strong style="color:var(--fg)">Same emission cadence, different source.</strong> Robot Arm streams from an external OS subprocess (output determined by the shell). Skill Compiler streams from an internal data queue (output determined by the persona design). One reads — one generates. Both yield structured JSONL at atomic granularity.</p>
+      </div>
+    </div>
+    <div class="insight" style="max-width:820px">
+      <strong>The Universal Principle:</strong> Across all 6 contexts, <code style="font-family:'JetBrains Mono',monospace;font-size:.83rem">yield</code> + <code style="font-family:'JetBrains Mono',monospace;font-size:.83rem">\n</code> achieves one of three goals: <strong>(1) live observability</strong> for the Foreman, <strong>(2) memory efficiency</strong> on constrained infrastructure, or <strong>(3) cognitive isolation</strong> for AI pipeline integrity. Often all three simultaneously.
+    </div>
+  </div>
+</section>
+
+<!-- ════ SECTION 3: SCENARIO REASONING ════ -->
+<section id="scenarios" class="sec">
+  <div class="sec-inner">
+    <p class="sub-label" style="color:var(--em)">03 — Structural Stress Tests</p>
+    <h2 style="font-size:1.75rem;font-weight:700;margin-bottom:.75rem">Scenario Reasoning</h2>
+    <div class="q-grid" style="max-width:820px">
+
+      <div class="q-card" id="qc1">
+        <div class="q-head" onclick="toggleQ('qc1')">
+          <h4>Scenario A: The QA Department removes its stream wrapper. What is the first observable consequence for a paying client?</h4>
+          <span class="q-icon">+</span>
+        </div>
+        <div class="q-body">
+          <div class="so-grid" id="sc-a-opts">
+            <button class="so" onclick="scCheck('a',this,'b')">The Pi Harness crashes immediately — it requires downstream validation to function.</button>
+            <button class="so" onclick="scCheck('a',this,'c')">An LLM produces an unrecognised event_type. It reaches the React UI. The component renderer fails. The client sees a blank activity panel with no error message.</button>
+            <button class="so" onclick="scCheck('a',this,'w')">All events are refused at the network layer by FastAPI.</button>
+          </div>
+          <div class="so-fb" id="scfb-a"></div>
+        </div>
+      </div>
+
+      <div class="q-card" id="qc2">
+        <div class="q-head" onclick="toggleQ('qc2')">
+          <h4>Scenario B: The Memory Engine generator is replaced with <code style="font-family:'JetBrains Mono',monospace">results = list(db.run(query))</code>. What fails first during a peak load event?</h4>
+          <span class="q-icon">+</span>
+        </div>
+        <div class="q-body">
+          <div class="so-grid" id="sc-b-opts">
+            <button class="so" onclick="scCheck('b',this,'w')">Neo4j refuses the query because list() is not a valid cursor consumer.</button>
+            <button class="so" onclick="scCheck('b',this,'b')">The Docker container hits its memory limit. The micro-service is OOM-killed. All 200 concurrent user sessions are terminated without error messages.</button>
+            <button class="so" onclick="scCheck('b',this,'w')">The JSONL stream loses its newline delimiters.</button>
+          </div>
+          <div class="so-fb" id="scfb-b"></div>
+        </div>
+      </div>
+
+      <div class="q-card" id="qc3">
+        <div class="q-head" onclick="toggleQ('qc3')">
+          <h4>Scenario C: The Skill Compiler emits Voice DNA fragments without the <code style="font-family:'JetBrains Mono',monospace">+ "\n"</code> terminator. The Chassis delivers them via StreamingResponse. What does the receiving client see?</h4>
+          <span class="q-icon">+</span>
+        </div>
+        <div class="q-body">
+          <div class="so-grid" id="sc-c-opts">
+            <button class="so" onclick="scCheck('c',this,'c')">All DNA fragments arrive fused as one continuous unparseable string. The frontend's JSON.parse() throws SyntaxError. The persona compilation pipeline is silent — the agent runs with no Voice DNA injected.</button>
+            <button class="so" onclick="scCheck('c',this,'w')">Only the last fragment is delivered — earlier ones are lost.</button>
+            <button class="so" onclick="scCheck('c',this,'w')">The Python generator raises a ValueError before any data is sent.</button>
+          </div>
+          <div class="so-fb" id="scfb-c"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ════ SECTION 4: BUILD-YOUR-OWN ════ -->
+<section id="builder" class="sec" style="background:rgba(255,255,255,.01)">
+  <div class="sec-inner" style="max-width:860px">
+    <p class="sub-label" style="color:var(--amber)">04 — Kinesthetic Transfer</p>
+    <h2 style="font-size:1.75rem;font-weight:700;margin-bottom:.75rem">Build-Your-Own Case Study</h2>
+    <p style="color:var(--muted);line-height:1.7;margin-bottom:1.5rem">The <strong style="color:var(--fg)">Vector Telemetry Logging Service</strong> tracks token consumption per session in Redis for billing enforcement. Define how the generator + JSONL pattern applies to this subsystem — a CCP context not covered in the 6-domain tour.</p>
+    <div style="background:var(--ele);border:1px dashed var(--amber);border-radius:12px;padding:1.75rem">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1rem">
+        <div>
+          <label style="display:block;font-size:.78rem;color:var(--dim);margin-bottom:.3rem">Architectural necessity — why does yield apply here?</label>
+          <textarea class="builder-field" placeholder="e.g. Token events arrive continuously during LLM generation. A list would block billing writes until the session ends..." rows="3"></textarea>
+        </div>
+        <div>
+          <label style="display:block;font-size:.78rem;color:var(--dim);margin-bottom:.3rem">What breaks without streaming?</label>
+          <textarea class="builder-field" placeholder="e.g. Synchronous write would pause the LLM generation loop for every Redis write, causing 200ms latency spikes per token..." rows="3"></textarea>
+        </div>
+      </div>
+      <div>
+        <label style="display:block;font-size:.78rem;color:var(--dim);margin-bottom:.3rem">Sketch the generator function signature and yield pattern</label>
+        <textarea class="builder-field" placeholder="def token_logging_stream(session_id: str) -> Generator[str, None, None]:&#10;    for token_event in live_token_queue(session_id):&#10;        yield json.dumps({...}) + '\n'" rows="5" style="font-family:'JetBrains Mono',monospace;font-size:.8rem"></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:1rem">
+        <button class="btn-am">💾 Save Framework</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ SECTION 5: GAUNTLET ════ -->
+<section id="gauntlet" class="sec">
+  <div class="sec-inner gauntlet-wrap">
+    <p class="sub-label" style="color:var(--amber)">05 — Orchestration Gauntlet</p>
+    <h2 style="font-size:1.75rem;font-weight:700;margin-bottom:1.5rem">7 Multi-Context Questions</h2>
+    <div id="gc-wrap"></div>
+    <div class="score-box" id="gc-score" style="display:none">
+      <div class="score-num" id="gc-sn">—</div>
+      <div class="score-lbl">out of 7 correct</div>
+      <p style="color:var(--muted);max-width:520px;margin:1rem auto 0;line-height:1.65" id="gc-msg"></p>
+    </div>
+  </div>
+</section>
+
+<script>
+// ── TAB SYSTEM ──
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('act'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('act'));
+    t.classList.add('act');
+    document.getElementById('tab-' + t.dataset.t).classList.add('act');
+  });
+});
+
+// ── NAV ACTIVE ──
+window.addEventListener('scroll', () => {
+  const sections = ['tour','compare','scenarios','builder','gauntlet'];
+  const y = window.scrollY + 80;
+  let active = sections[0];
+  sections.forEach(id => { const el = document.getElementById(id); if (el && el.offsetTop <= y) active = id; });
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('act', l.dataset.s === active));
+});
+
+// ── SCENARIO Q TOGGLE ──
+function toggleQ(id) {
+  const c = document.getElementById(id);
+  const isOpen = c.classList.contains('open');
+  document.querySelectorAll('.q-card').forEach(q => q.classList.remove('open'));
+  if (!isOpen) c.classList.add('open');
+}
+
+// ── SCENARIO CHECK ──
+function scCheck(sc, btn, cls) {
+  const correct = cls === 'b' || cls === 'c';
+  const opts = document.querySelectorAll('#sc-' + sc + '-opts .so');
+  opts.forEach(b => b.disabled = true);
+  btn.classList.add(correct ? 'right' : 'wrong');
+  const fb = document.getElementById('scfb-' + sc);
+  fb.className = 'so-fb show ' + (correct ? 'ok' : 'err');
+  const msgs = {
+    a: { ok: '✓ Correct. Without the QA validation gate, unrecognised telemetry event types pass directly to the React frontend. The renderer finds no registered component for the unknown type and silently renders nothing. The client\'s activity panel appears frozen — no error, no fallback, just silence.', err: '✗ The Pi Harness is independent of its downstream consumers. QA failure affects the client UI, not the harness itself. FastAPI also does not refuse events at the routing layer — it only refuses on HTTP-level protocol violations.' },
+    b: { ok: '✓ Correct. With list comprehension, the entire result set is materialised in Python RAM before the first JSONL line is yielded. At peak load (200 concurrent users, 1,000 sessions × 8KB each), Python memory usage spikes to over 1.6GB. The container OOM-killer terminates the process, ending all sessions simultaneously.', err: '✗ Neo4j accepts list() consumption — it is a valid Python operation on the cursor. Newline delimiters are still added in the for-loop\'s yield statement — the JSONL format is not affected. The failure is purely a RAM exhaustion under concurrency.' },
+    c: { ok: '✓ Correct. Without the \\n boundary, all DNA fragments arrive as a single merged byte stream to the client\'s stream reader. When JSON.parse() is called on any chunk boundary, the parser receives a partial or fused payload and throws SyntaxError. The persona pipeline receives zero parsed fragments — the agent runs without any Voice DNA injection for the entire session.', err: '✗ Python generators do not validate JSONL formatting at the yield call site — they emit whatever string is provided. No Python error is raised. FastAPI transmits the bytes faithfully. The failure occurs at the client-side parser when it encounters the merged unparseable string.' }
+  };
+  fb.textContent = msgs[sc][correct ? 'ok' : 'err'];
+}
+
+// ── GAUNTLET ──
+const GQs = [
+  { q: 'You are reviewing a CCP subsystem you have never studied: the "Audit Logger" which writes coaching session events to an append-only file. An engineer proposes <code>def audit_log(): return [json.dumps(e) for e in events_buffer]</code>. What is the architectural violation?', opts: ['No violation — list is faster than generator for file I/O', 'The return+list pattern accumulates all events in RAM before writing a single byte, blocking the session thread and growing memory linearly with session length', 'The function signature needs a type hint', 'json.dumps cannot be used inside a list comprehension'], ans: 1 },
+  { q: 'Which CCP subsystem uses the generator most critically for cognitive window management (not memory or transport)?', opts: ['The Chassis — it routes bytes across the network', 'The Memory Engine — it reads graph nodes from cursor', 'The Machinist (DSPy) — it must process one transcript at a time to prevent LLM context overflow', 'The Robot Arm — it reads shell stdout line by line'], ans: 2 },
+  { q: 'A generator is created: <code>g = pi_shell_stream(["python", "agent.py"])</code>. The agent.py script takes 30 seconds to complete. At what exact moment does the script begin executing?', opts: ['Immediately when g is assigned — calling the function starts execution', 'When the first item is pulled from g via a for-loop or next() call', 'When a StreamingResponse wraps the generator', 'When the generator object is garbage collected'], ans: 1 },
+  { q: 'The Robot Arm stream and the Skill Compiler stream both yield JSONL. What is the fundamental difference in their event sources?', opts: ['Robot Arm yields bytes; Skill Compiler yields strings', 'Robot Arm reads from OS subprocess stdout (external); Skill Compiler generates from an internal data queue (internal)', 'Robot Arm is async; Skill Compiler is synchronous', 'They are identical — both read from the Pi Harness buffer'], ans: 1 },
+  { q: 'An Architect patches the QA Department\'s validated_stream to use <code>return list([...])</code> instead of <code>yield</code>. The function still validates every line. What breaks architecturally?', opts: ['Validation breaks — list() bypasses Pydantic', 'The streaming architecture breaks — list() collapses the lazy pipeline into an eager evaluation, sending all events only after full validation completes, reintroducing the synchronous delay', 'Nothing — the output is identical for valid streams', 'FastAPI receives a list and converts it to a stream automatically'], ans: 1 },
+  { q: 'Why does the Memory Engine\'s generator use parameterised queries (<code>id=$id</code>) rather than f-strings? Which concept outside generators does this enforce?', opts: ['Performance — parameterised queries are 10x faster than f-strings', 'Security — f-strings embed user input directly into the Cypher query (injection attack). Parameterised queries pass user_id as a separate typed parameter, preventing arbitrary Cypher execution', 'Compatibility — Neo4j driver does not support f-strings in queries', 'Readability — parameterised queries are easier to read'], ans: 1 },
+  { q: 'Across all 6 CCP subsystems, the generator pattern achieves at most 3 distinct architectural goals. Which combination is correct?', opts: ['Speed, reliability, and backwards compatibility', 'Live observability for the Foreman, O(1) memory efficiency, and cognitive isolation for AI pipeline integrity', 'Type safety, network compression, and authentication', 'Schema validation, database indexing, and HTTP routing'], ans: 1 }
+];
+
+let gcDone = 0, gcScore = 0;
+
+function buildGauntlet() {
+  document.getElementById('gc-wrap').innerHTML = GQs.map((q, i) => `
+    <div class="gcq-card" id="gcc-${i}">
+      <p class="gcq-text">${q.q}</p>
+      <div class="gcq-opts">${q.opts.map((o, j) => `<button class="gcq-opt" onclick="gcAns(${i},${j})">${o}</button>`).join('')}</div>
+      <div class="gcq-fb" id="gcfb-${i}"></div>
+    </div>`).join('');
+}
+
+function gcAns(qi, sel) {
+  const card = document.getElementById('gcc-' + qi);
+  card.querySelectorAll('.gcq-opt').forEach(b => b.disabled = true);
+  const ok = sel === GQs[qi].ans;
+  card.querySelectorAll('.gcq-opt')[sel].classList.add(ok ? 'gc-r' : 'gc-w');
+  if (!ok) card.querySelectorAll('.gcq-opt')[GQs[qi].ans].classList.add('gc-r');
+  const fb = document.getElementById('gcfb-' + qi);
+  fb.className = 'gcq-fb show';
+  fb.style.color = ok ? 'var(--em)' : 'var(--rose)';
+  fb.textContent = ok ? '✓ Correct.' : '✗ Incorrect — the highlighted option shows the correct architectural reasoning.';
+  if (ok) gcScore++;
+  gcDone++;
+  if (gcDone === 7) showScore();
+}
+
+function showScore() {
+  const sb = document.getElementById('gc-score');
+  sb.style.display = 'block';
+  document.getElementById('gc-sn').textContent = gcScore + '/7';
+  document.getElementById('gc-sn').style.color = gcScore >= 5 ? 'var(--em)' : 'var(--rose)';
+  document.getElementById('gc-msg').textContent = gcScore >= 5
+    ? 'Multi-context recognition confirmed. You can identify the generator streaming pattern operating across radically different CCP subsystems and articulate the unique architectural role it plays in each. Layer 4 begins: timed capstone assessment.'
+    : 'Below threshold. The universal principle — yield one atomic event + newline, enabling observability, memory efficiency, or cognitive isolation — was not yet applied consistently across all 6 contexts. Review the subsystem tour before proceeding.';
+}
+
+buildGauntlet();
+</script>
+</body>
+</html>

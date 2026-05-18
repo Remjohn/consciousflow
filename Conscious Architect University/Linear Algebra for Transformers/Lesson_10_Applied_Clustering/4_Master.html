@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Applied Clustering — Master Integration</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050505;--surface:#111;--surface2:#1a1a1a;--surface3:#252525;
+  --text:#FAFAFA;--muted:#888;--border:#333;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;--blue:#264653;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6;overflow-x:hidden;}
+.container{max-width:800px;margin:0 auto;padding:2rem 2rem 8rem;}
+
+/* HUD */
+.exam-hud{
+  position:sticky;top:0;
+  background:rgba(5,5,5,0.97);
+  padding:0.9rem 0;
+  border-bottom:1px solid var(--border);
+  z-index:100;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:3rem;
+  backdrop-filter:blur(4px);
+}
+.timer{font-family:var(--mono);font-size:2rem;color:var(--text);font-weight:600;transition:color 0.5s;}
+.timer.warning{color:var(--accent);}
+.timer.critical{color:var(--red);}
+.score-tally{font-family:var(--mono);font-size:1.1rem;color:var(--muted);}
+.score-tally span{color:var(--text);font-weight:600;}
+.progress-bar-wrap{position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--border);}
+.progress-bar{height:100%;background:var(--red);width:100%;transition:width 1s linear;transform-origin:left;}
+
+/* Intro */
+h1{font-weight:700;font-size:2rem;line-height:1.15;margin-bottom:1rem;color:var(--red);}
+.intro-body{color:var(--muted);font-size:1.05rem;margin-bottom:2rem;line-height:1.7;}
+.intro-body strong{color:#fff;}
+
+/* Questions */
+.q-block{
+  background:var(--surface);
+  padding:1.8rem 2rem;
+  border-radius:6px;
+  margin-bottom:1.5rem;
+  border:1px solid var(--border);
+  transition:opacity 0.3s,border-color 0.3s;
+}
+.q-block.answered{border-color:var(--border);opacity:0.5;pointer-events:none;}
+.q-block.answered-correct{border-left:3px solid var(--green);}
+.q-block.answered-wrong{border-left:3px solid var(--red);}
+.q-meta{font-family:var(--mono);font-size:0.68rem;color:var(--red);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.8rem;}
+.q-text{font-size:1.1rem;margin-bottom:1.5rem;font-weight:500;color:#fff;line-height:1.65;}
+
+.btn{background:var(--red);color:#000;border:none;padding:0.65rem 1.3rem;font-family:var(--sans);font-weight:700;font-size:0.9rem;border-radius:4px;cursor:pointer;transition:all 0.2s;text-transform:uppercase;letter-spacing:0.08em;}
+.btn:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.1);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-outline{background:transparent;border:1px solid var(--muted);color:var(--text);font-weight:500;letter-spacing:0.02em;text-transform:none;}
+.btn-outline:hover:not(:disabled){background:var(--surface3);border-color:#fff;}
+
+.input-text{background:var(--bg);border:2px solid var(--border);color:#fff;font-family:var(--mono);font-size:0.95rem;padding:0.55rem 0.9rem;width:100%;border-radius:4px;margin-bottom:0.8rem;}
+.input-text:focus{outline:none;border-color:var(--accent);}
+
+/* Bool buttons */
+.bool-row{display:flex;gap:1rem;}
+
+/* Feynman terminal */
+#feynman-terminal{
+  background:#030303;
+  border:1px solid var(--border);
+  padding:2rem;
+  margin-top:3rem;
+  display:none;
+  border-radius:4px;
+}
+#feynman-terminal.visible{display:block;}
+.feynman-prompt{
+  font-family:var(--mono);font-size:0.82rem;color:var(--muted);
+  line-height:1.7;margin-bottom:1.5rem;
+  padding:1rem;background:var(--surface2);border-radius:4px;
+  border-left:3px solid var(--accent);
+}
+.feynman-prompt strong{color:#fff;}
+.feynman-input{
+  width:100%;height:160px;
+  background:#111;color:var(--accent);
+  font-family:var(--sans);font-size:1rem;line-height:1.65;
+  padding:1rem;border:1px solid var(--border);
+  border-radius:4px;resize:vertical;margin-bottom:1rem;
+}
+.feynman-input:focus{outline:none;border-color:var(--accent);}
+.feynman-meta{font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:1rem;}
+
+.f-feedback{margin-top:1.5rem;padding:1.5rem;border-radius:4px;font-size:0.95rem;line-height:1.65;display:none;background:var(--surface2);border:1px solid var(--border);}
+.f-feedback.visible{display:block;}
+
+/* Fatal overlay */
+.fatal-overlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(231,111,81,0.97);
+  color:#000;z-index:9999;
+  flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:2rem;
+  display:none;
+}
+.fatal-overlay.active{display:flex;}
+.fatal-overlay h2{font-size:3.5rem;margin-bottom:1rem;font-weight:900;letter-spacing:-0.02em;}
+.fatal-overlay p{font-size:1.3rem;max-width:560px;margin:0 auto;font-weight:500;}
+
+/* Final verdict */
+.verdict{
+  margin-top:2rem;
+  padding:1.5rem;
+  border-radius:4px;
+  font-family:var(--mono);
+  font-size:1.3rem;
+  font-weight:700;
+  line-height:1.5;
+}
+.verdict.pass{color:var(--green);background:rgba(42,157,143,0.08);border:1px solid rgba(42,157,143,0.3);}
+.verdict.fail{color:var(--red);background:rgba(231,111,81,0.08);border:1px solid rgba(231,111,81,0.3);}
+.verdict .sub{font-size:0.85rem;font-weight:400;color:var(--muted);margin-top:0.4rem;}
+</style>
+</head>
+<body>
+
+<!-- Fatal overlay — time expired -->
+<div class="fatal-overlay" id="fatal">
+  <h2>TIME EXPIRED</h2>
+  <p>The terminal constraint was not met. Your score has been recorded. Return to Layer 2 and re-engage the mechanistic foundation before attempting this assessment again.</p>
+</div>
+
+<div class="container" id="main-content">
+
+  <!-- HUD — always visible after start -->
+  <div class="exam-hud" id="exam-hud" style="display:none;">
+    <div class="timer" id="countdown">10:00</div>
+    <div class="score-tally">SCORE: <span id="score-display">0</span> / 200</div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+  </div>
+
+  <!-- Intro screen -->
+  <div id="intro-screen">
+    <div style="font-family:var(--mono);font-size:0.72rem;color:var(--red);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.12em;">Lesson 10 · Layer 4 — Master Integration</div>
+    <h1>Terminal Assessment</h1>
+    <p class="intro-body">
+      No visual scaffolding. No reference material. No structural hints.<br><br>
+      You have <strong>10 minutes</strong> to demonstrate mastery of the Sovereign Pipeline Architecture. Twelve questions test conceptual fidelity, mathematical precision, and cross-domain transfer. The final question — the Feynman Compression — demands structural articulation of the pipeline's isomorphism with the Transformer architecture.<br><br>
+      <strong>Passing threshold: 160 / 200.</strong> Scores below 160 indicate incomplete internalization. Return to Layer 2 (mechanistic derivation) or Layer 3 (analogy transfer) before reattempting.
+    </p>
+    <button class="btn" onclick="startExam()">Commence Assessment</button>
+  </div>
+
+  <!-- Questions container -->
+  <div id="exam-questions" style="display:none;"></div>
+
+  <!-- Feynman terminal — unlocks after all 12 answered -->
+  <div id="feynman-terminal">
+    <div style="font-family:var(--mono);font-size:0.72rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:1rem;">Final Question — Feynman Compression [50 pts]</div>
+    <h2 style="color:var(--accent);margin-bottom:1rem;font-size:1.3rem;">Structural Isomorphism: Pipeline ↔ Transformer</h2>
+    <div class="feynman-prompt">
+      <strong>Prompt:</strong> The applied clustering pipeline (Feature Extraction → Z-Score Normalization → K-Means Assignment) is structurally isomorphic to the internal architecture of the Transformer. Identify the three specific Transformer components that correspond to these three pipeline phases and explain the mathematical reason each isomorphism holds. Do not describe what the pipeline does — explain <em>why</em> the structural correspondence is exact.
+    </div>
+    <div class="feynman-meta">Minimum 60 words required. Graded on structural fidelity to the mechanism, not verbatim terminology.</div>
+    <textarea class="feynman-input" id="feynman-input" placeholder="Write your compression here..."></textarea>
+    <button class="btn" style="background:var(--accent);color:#000;" onclick="submitFeynman()">Submit Compression</button>
+    <div class="f-feedback" id="f-feedback"></div>
+  </div>
+
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────── */
+/* STATE                                                   */
+/* ─────────────────────────────────────────────────────── */
+let timerSeconds = 600;
+let timerInterval = null;
+let score = 0;
+let answeredCount = 0;
+let examLocked = false;
+
+/* ─────────────────────────────────────────────────────── */
+/* QUESTION DATA                                           */
+/* ─────────────────────────────────────────────────────── */
+// All content sourced directly from 4_Master.md
+// ans for bool: 0 = options[0] (True), 1 = options[1] (False)
+const Q = [
+  {
+    // From MD §2 Phase 1: "Information on discarded axes is permanently, irrecoverably destroyed."
+    // Misconception: normalization failure, not feature selection, breaks the algorithm
+    pts: 10,
+    type: 'bool',
+    q: 'True or False: Removing the Z-Score normalization phase causes K-Means to fail to converge mathematically — the algorithm cannot complete its assignment-recomputation cycle without normalized inputs.',
+    options: ['True','False'],
+    ans: 1, // False — K-Means always converges regardless. Normalization affects meaning, not convergence.
+    exp: 'False. K-Means is guaranteed to converge on any numeric input — normalized or not. Its objective function (within-cluster sum of squares) decreases monotonically at each iteration and is bounded below by zero, so convergence is a mathematical certainty. What normalization determines is whether those converged clusters encode behavioral intelligence or just sort by the widest numerical range.'
+  },
+  {
+    // From MD §2: composite function P = A∘K∘R∘N∘F. R = PCA
+    pts: 15,
+    type: 'text',
+    q: 'In the formal composite function 𝒫 = 𝒜 ∘ 𝒦 ∘ ℛ ∘ 𝒩 ∘ ℱ, the phase ℛ performs a rigid orthogonal rotation followed by dimensional truncation. What specific algorithm does ℛ represent?',
+    match: 'pca|principal component',
+    exp: 'PCA (Principal Component Analysis). ℛ: ℝ^d_sel → ℝ^M. It eigendecomposes the population covariance matrix, extracts the top-M eigenvectors (directions of maximum variance) as the projection matrix W, and projects every normalized data point into the compressed subspace. The rotation is orthogonal (preserving lengths and inner products), and the truncation discards the M+1 through d_sel eigenvectors permanently.'
+  },
+  {
+    // From MD §3: "The information encoded on those discarded axes ceases to exist"
+    // Misconception: downstream operations can recover lost information
+    pts: 15,
+    type: 'text',
+    q: 'Feature selection projects from a 90-dimensional raw observation space down to a 6-dimensional behavioral subspace by permanently discarding 84 orthogonal axes. The discriminative information encoded on those 84 discarded axes is ____.',
+    match: 'destroyed|lost|erased|gone|irrecoverable|permanently',
+    exp: 'Destroyed (or irrecoverably lost). Feature selection is a one-way door. Once an axis is discarded, no downstream operation — not normalization, not PCA, not K-Means — can recover the signal that existed on it. If the axis that separates "about to break through" clients from "about to disengage" clients is among the 84 dropped, that discriminative power is permanently absent from the pipeline\'s mathematical universe.'
+  },
+  {
+    // From MD §2 Phase 2: "strictly monotonically increasing... preserves the rank ordering"
+    // Misconception: normalization reorders clients
+    pts: 10,
+    type: 'bool',
+    q: 'True or False: Z-Score normalization z = (x − μ) / σ preserves the rank ordering of every client on every feature — if Client A had higher Change Talk Ratio than Client B before normalization, that relationship holds identically after normalization.',
+    options: ['True','False'],
+    ans: 0, // True
+    exp: 'True. Z-Score is an affine transformation f(x) = (x − μ)/σ. Since σ > 0, this function is strictly monotonically increasing: for any two values x₁ < x₂, it follows that (x₁ − μ)/σ < (x₂ − μ)/σ. Monotonicity guarantees that rank orderings are never inverted. What changes is the scale — not the ordering.'
+  },
+  {
+    // From MD §2 Phase 5: "fires a drift alert... rolling average of Silhouette"
+    pts: 15,
+    type: 'text',
+    q: 'The Guardian Agent runs a weekly cron job monitoring architectural stability of the cluster space. It fires a drift alarm when the rolling 4-week average of which specific metric drops by more than 15%, or when that metric\'s absolute value falls below 0.40?',
+    match: 'silhouette',
+    exp: 'The Silhouette score. The Guardian monitors two conditions simultaneously: an absolute floor (Silhouette < 0.40 means the clustering structure has degraded below minimum acceptable quality) and a relative drop threshold (a 15%+ decline from the 4-week rolling average signals accelerating drift). The asymmetric cost justifying these conservative thresholds: a false positive costs 30 minutes of engineering time; a false negative allows corrupted archetype labels to propagate through hundreds of coaching decisions for weeks.'
+  },
+  {
+    // From MD §1: "Four numbers. Four numbers that replace two thousand three hundred tokens"
+    pts: 10,
+    type: 'text',
+    q: 'The applied clustering pipeline compresses 2,300 tokens of raw client context into exactly how many deterministic numerical coordinate values that the JIT Skill Compiler loads from Neo4j?',
+    match: '^4$|^four$',
+    matchMode: 'exact',
+    exp: '4. The four values are: CLUSTER_ID, CENTROID_DISTANCE, TRAJECTORY_LABEL, and MOOD_STATE. These four geometric coordinates replace 2,300 tokens of raw context, reducing token cost per inference by approximately 98%, dropping archetype assignment hallucination rate from ~12% to ~0%, and reducing lookup latency from ~5 seconds (full LLM context processing) to under 1 millisecond (Neo4j coordinate lookup).'
+  },
+  {
+    // From MD §2 Phase 2: Min-Max description and when to use it vs Z-Score
+    // Misconception: Min-Max and Z-Score are interchangeable
+    pts: 15,
+    type: 'text',
+    q: 'Which normalization technique compresses all values — including extreme outliers — to fit strictly within the closed [0, 1] interval by applying the transformation x\' = (x − min) / (max − min)?',
+    match: 'min.max|min max|minmax',
+    exp: 'Min-Max normalization. It maps every value to [0, 1] by subtracting the feature minimum and dividing by the range. Unlike Z-Score, it compresses outliers toward the boundaries of the interval rather than amplifying their geometric distance from the mean. Min-Max is appropriate when features have hard conceptual ceilings and extreme values represent measurement artifacts or ceiling effects — not behavioral signal. In the CCP, Min-Max is applied to bounded indices; Z-Score is applied to unbounded behavioral features where outliers (hyper-engaged clients) are the signal.'
+  },
+  {
+    // From MD §7: "PCA always improves clustering" — False. PCA can merge well-separated clusters.
+    pts: 10,
+    type: 'bool',
+    q: 'True or False: PCA is guaranteed to improve clustering quality because it removes noise dimensions and concentrates the distance computation on the axes of maximum population variance.',
+    options: ['True','False'],
+    ans: 1, // False
+    exp: 'False. PCA preserves maximum total population variance — not maximum cluster separability. A feature axis that carries high discriminative power between archetypes but low total population variance will be discarded by PCA, potentially merging clusters that were cleanly separated in the original space. The CCP mandates comparing Silhouette scores before and after PCA. If Silhouette drops, PCA has erased discriminative structure and either M must be increased or the feature must be manually injected as a supplementary dimension.'
+  },
+  {
+    // From MD §4 / §1: User_ID trap — "clustering by identity, not behavior"
+    pts: 15,
+    type: 'text',
+    q: 'Inside the JIT Skill Compiler architecture, a developer adds Telegram User_ID as a feature. K-Means produces perfectly separated clusters with Silhouette = 0.99 — but the archetypes encode zero behavioral information. The pipeline is sorting clients by User ____.',
+    match: 'id|identity|identifier',
+    exp: 'User ID (identity). User_ID is a unique demographic identifier — it encodes identity, not behavioral variation. K-Means achieves trivially perfect separation because no two clients share the same identifier. The Silhouette score of 0.99 reflects geometric perfection, not semantic validity. Every pipeline must validate that selected features encode behavioral variation across the population, not uniqueness of individual records.'
+  },
+  {
+    // From MD §3: Voronoi boundary — "A client hovering near a boundary has a Silhouette score approaching zero"
+    // Misconception: equidistant = stable
+    pts: 10,
+    type: 'bool',
+    q: 'True or False: A client whose behavioral vector is equidistant from two cluster centroids — sitting exactly on the Voronoi boundary between them — represents a stable, confidently classified archetype assignment.',
+    options: ['True','False'],
+    ans: 1, // False
+    exp: 'False. A client on the Voronoi boundary has a Silhouette score approaching zero — the minimum possible, indicating the assignment is maximally ambiguous. This client is equally close to two archetypes and is therefore vulnerable to label flipping with any minor fluctuation in their behavioral features. A stable, confident assignment requires the behavioral vector to sit deep inside the Voronoi cell, far from all boundaries — not on one.'
+  },
+  {
+    // From MD §3: Z-Score is an affine transformation that "translates the population origin to the mean and independently rescales each axis to unit standard deviation"
+    pts: 15,
+    type: 'text',
+    q: 'Which normalization transformation translates the population origin to the feature-wise mean and independently rescales every orthogonal axis to exactly unit standard deviation — giving the output the property E[z] = 0 and Var(z) = 1 for every dimension?',
+    match: 'z.score|z score|zscore|standard score|standardization',
+    exp: 'Z-Score normalization (also called standardization). For each feature j: z_j = (x_j − μ_j) / σ_j. The output vector has mean zero and standard deviation one on every dimension. Geometrically, this affine transformation sphericizes the data — converting an elongated, irregularly shaped data cloud into a roughly spherical one. This sphericization restores the isotropic distance assumption that K-Means implicitly requires: without it, Voronoi cells are stretched along the high-variance dimension and compressed along all others.'
+  },
+  {
+    // From MD §8: "K-Means Hard Assignment = One-Hot Attention Limit" / Softmax
+    // "This is the hard, zero-temperature limit of the attention distribution"
+    pts: 10,
+    type: 'text',
+    q: 'K-Means assigns each data point to exactly one centroid with weight 1 and all other centroids receive weight 0. This hard, deterministic assignment is the zero-temperature limit of the Transformer\'s ____ distribution, which assigns each token to all others with continuous, normalized weights.',
+    match: 'softmax|attention|softmax attention',
+    exp: 'Softmax (attention). In the Transformer, self-attention computes a Softmax-normalized distribution over all tokens — soft clustering where every token "belongs" to every other token proportionally. As the temperature of the Softmax approaches zero, the distribution collapses to a one-hot vector — exactly one token receives weight 1, all others receive weight 0. K-Means hard assignment is this zero-temperature limit: deterministic, binary, and complete.'
+  }
+];
+
+/* ─────────────────────────────────────────────────────── */
+/* TIMER                                                   */
+/* ─────────────────────────────────────────────────────── */
+function startExam() {
+  document.getElementById('intro-screen').style.display = 'none';
+  document.getElementById('exam-hud').style.display = 'flex';
+  renderQuestions();
+  document.getElementById('exam-questions').style.display = 'block';
+
+  timerInterval = setInterval(() => {
+    if (examLocked) return;
+    timerSeconds--;
+    updateTimerDisplay();
+    updateProgressBar();
+    if (timerSeconds <= 0) {
+      clearInterval(timerInterval);
+      examLocked = true;
+      // Auto-submit Feynman if open, else show fatal
+      const feynmanVisible = document.getElementById('feynman-terminal').classList.contains('visible');
+      if (feynmanVisible) {
+        submitFeynman(true); // forced
+      } else {
+        document.getElementById('fatal').classList.add('active');
+      }
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timerSeconds / 60);
+  const s = timerSeconds % 60;
+  const el = document.getElementById('countdown');
+  el.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+  el.classList.remove('warning','critical');
+  if (timerSeconds <= 60) el.classList.add('critical');
+  else if (timerSeconds <= 180) el.classList.add('warning');
+}
+
+function updateProgressBar() {
+  const pct = (timerSeconds / 600) * 100;
+  document.getElementById('progress-bar').style.width = pct + '%';
+}
+
+/* ─────────────────────────────────────────────────────── */
+/* RENDER QUESTIONS                                        */
+/* ─────────────────────────────────────────────────────── */
+function renderQuestions() {
+  const container = document.getElementById('exam-questions');
+  let html = '';
+  Q.forEach((item, idx) => {
+    html += `<div class="q-block" id="qb-${idx}">
+      <div class="q-meta">Question ${idx + 1} of 12 &nbsp;·&nbsp; ${item.pts} pts</div>
+      <div class="q-text">${item.q}</div>`;
+
+    if (item.type === 'text') {
+      html += `<input type="text" id="qi-${idx}" class="input-text" placeholder="Type your answer...">
+               <button class="btn btn-outline" onclick="submitText(${idx},this)">Lock Answer</button>`;
+    } else {
+      html += `<div class="bool-row">
+        <button class="btn btn-outline" onclick="submitBool(${idx},0,this)">${item.options[0]}</button>
+        <button class="btn btn-outline" onclick="submitBool(${idx},1,this)">${item.options[1]}</button>
+      </div>`;
+    }
+    html += `</div>`;
+  });
+  container.innerHTML = html;
+}
+
+/* ─────────────────────────────────────────────────────── */
+/* ANSWER HANDLERS                                        */
+/* ─────────────────────────────────────────────────────── */
+function submitText(idx, btn) {
+  if (examLocked) return;
+  const input = document.getElementById(`qi-${idx}`);
+  const val = input.value.toLowerCase().trim();
+  if (!val) return;
+  input.disabled = true;
+  btn.disabled = true;
+
+  const item = Q[idx];
+  let correct = false;
+
+  if (item.matchMode === 'exact') {
+    correct = item.match.split('|').some(m => {
+      const r = new RegExp(m);
+      return r.test(val);
+    });
+  } else {
+    const patterns = item.match.split('|');
+    correct = patterns.some(p => val.includes(p.replace(/\./g,'').replace(/\s+/g,' ').trim()) || new RegExp(p).test(val));
+  }
+
+  const block = document.getElementById(`qb-${idx}`);
+  block.classList.add('answered', correct ? 'answered-correct' : 'answered-wrong');
+
+  if (correct) {
+    score += item.pts;
+    document.getElementById('score-display').textContent = score;
+  }
+
+  answeredCount++;
+  checkAllAnswered();
+}
+
+function submitBool(idx, sel, btn) {
+  if (examLocked) return;
+  const block = document.getElementById(`qb-${idx}`);
+  block.querySelectorAll('button').forEach(b => b.disabled = true);
+
+  const item = Q[idx];
+  const correct = sel === item.ans;
+  block.classList.add('answered', correct ? 'answered-correct' : 'answered-wrong');
+
+  if (correct) {
+    score += item.pts;
+    document.getElementById('score-display').textContent = score;
+  }
+
+  answeredCount++;
+  checkAllAnswered();
+}
+
+function checkAllAnswered() {
+  if (answeredCount === 12) {
+    const terminal = document.getElementById('feynman-terminal');
+    terminal.classList.add('visible');
+    setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }, 400);
+  }
+}
+
+/* ─────────────────────────────────────────────────────── */
+/* FEYNMAN GRADING                                         */
+/* ─────────────────────────────────────────────────────── */
+// Three structural keywords from MD §8:
+// 1. Embedding layer isomorphism with Feature Extraction
+// 2. LayerNorm isomorphism with Z-Score Normalization
+// 3. Softmax / Attention isomorphism with K-Means Hard Assignment
+
+function submitFeynman(forced) {
+  if (examLocked && !forced) return;
+  examLocked = true;
+  clearInterval(timerInterval);
+
+  const val = document.getElementById('feynman-input').value.toLowerCase().trim();
+  document.getElementById('feynman-input').disabled = true;
+  document.querySelector('#feynman-terminal .btn').disabled = true;
+
+  const fb = document.getElementById('f-feedback');
+  fb.classList.add('visible');
+
+  // Minimum length check
+  const wordCount = val.split(/\s+/).filter(Boolean).length;
+  if (wordCount < 10) {
+    fb.innerHTML = `
+      <div style="font-family:var(--mono);font-size:0.72rem;color:var(--red);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem;">Compression Rejected — Insufficient Depth</div>
+      <p style="color:var(--muted);">Response does not meet the minimum structural requirement. Zero points awarded for the Feynman Compression.</p>`;
+    finalizeExam(0);
+    return;
+  }
+
+  // Check for the three structural isomorphisms per MD §8
+  const k1_embedding = ['embedding'].some(k => val.includes(k));
+  const k2_layernorm = ['layernorm','layer-norm','layer norm','ln('].some(k => val.includes(k));
+  const k3_attention = ['softmax','attention'].some(k => val.includes(k));
+
+  const found = [k1_embedding, k2_layernorm, k3_attention];
+  const count = found.filter(Boolean).length;
+
+  const missing = [];
+  if (!k1_embedding) missing.push('Embedding layer ↔ Feature Extraction: both convert unstructured symbolic input into a continuous vector representation that distance-based computation can operate on.');
+  if (!k2_layernorm) missing.push('LayerNorm ↔ Z-Score: LN(x) = (x − μ)/σ ⊙ γ + β is Z-Score normalization augmented with learned scale (γ) and shift (β) parameters. Both equalize feature contributions before the similarity computation.');
+  if (!k3_attention) missing.push('Softmax/Attention ↔ K-Means Hard Assignment: K-Means assigns each point to exactly one centroid (one-hot, weight=1). Self-attention assigns each token to all others with continuous Softmax weights. K-Means is the zero-temperature limit of attention.');
+
+  let fPoints = 0;
+  if (count === 3) fPoints = 50;
+  else if (count === 2) fPoints = 30;
+  else fPoints = 0;
+
+  score += fPoints;
+  document.getElementById('score-display').textContent = score;
+
+  let html = `
+    <div style="font-family:var(--mono);font-size:0.72rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:1rem;">Compression Analysis</div>
+    <p style="margin-bottom:0.8rem;color:var(--muted);">Structural elements identified: <strong style="color:#fff;">${count} / 3</strong> &nbsp;·&nbsp; Points awarded: <strong style="color:#fff;">${fPoints} / 50</strong></p>`;
+
+  if (missing.length > 0) {
+    html += `<div style="margin-top:1rem;padding:1rem;background:rgba(231,111,81,0.07);border-left:3px solid var(--red);border-radius:2px;">
+      <div style="font-family:var(--mono);font-size:0.7rem;color:var(--red);text-transform:uppercase;margin-bottom:0.8rem;">Missing Structural Elements</div>`;
+    missing.forEach(m => {
+      html += `<p style="color:var(--muted);font-size:0.9rem;margin-bottom:0.6rem;">— ${m}</p>`;
+    });
+    html += `</div>`;
+  } else {
+    html += `<p style="color:var(--green);">All three structural isomorphisms correctly identified. Full credit awarded.</p>`;
+  }
+
+  fb.innerHTML = html;
+  setTimeout(() => finalizeExam(fPoints), 1500);
+}
+
+/* ─────────────────────────────────────────────────────── */
+/* FINAL VERDICT                                           */
+/* ─────────────────────────────────────────────────────── */
+function finalizeExam(fPoints) {
+  const fb = document.getElementById('f-feedback');
+  const verdict = document.createElement('div');
+  verdict.className = `verdict ${score >= 160 ? 'pass' : 'fail'}`;
+
+  if (score >= 160) {
+    verdict.innerHTML = `SYSTEM PASSED
+      <div class="sub">Final Score: ${score} / 200 &nbsp;·&nbsp; Threshold: 160 &nbsp;·&nbsp; Margin: +${score - 160}<br>
+      Mastery of the Sovereign Pipeline Architecture confirmed. The algorithm finds the center. You engineered the space.</div>`;
+  } else {
+    const gap = 160 - score;
+    verdict.innerHTML = `SYSTEM FAILURE
+      <div class="sub">Final Score: ${score} / 200 &nbsp;·&nbsp; Threshold: 160 &nbsp;·&nbsp; Deficit: −${gap}<br>
+      Return to ${score < 120 ? 'Layer 2 (Mechanistic)' : 'Layer 3 (Analogy)'} and re-engage the structural foundations before reattempting.</div>`;
+  }
+
+  fb.appendChild(verdict);
+}
+</script>
+</body>
+</html>

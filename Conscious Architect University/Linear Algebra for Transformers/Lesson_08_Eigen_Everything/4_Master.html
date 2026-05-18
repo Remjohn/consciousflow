@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eigen-Everything — Master Integration</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050505;--surface:#111;--surface2:#1a1a1a;--surface3:#252525;
+  --text:#FAFAFA;--muted:#888;--border:#333;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;--blue:#264653;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6;overflow-x:hidden;}
+.container{max-width:820px;margin:0 auto;padding:2rem 2rem 8rem;}
+
+/* ── STICKY HEADER ── */
+.exam-header{
+  position:sticky;top:0;
+  background:rgba(5,5,5,0.96);
+  border-bottom:1px solid var(--border);
+  z-index:100;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:1rem 0;margin-bottom:3rem;
+  backdrop-filter:blur(8px);
+}
+.timer{font-family:var(--mono);font-size:2rem;color:var(--text);font-weight:600;letter-spacing:0.05em;transition:color 0.4s;}
+.timer.warning{color:var(--accent);}
+.timer.critical{color:var(--red);}
+.score-display{font-family:var(--mono);font-size:1.1rem;color:var(--muted);}
+.score-display span{color:var(--text);}
+
+/* ── INTRO ── */
+h1{font-weight:700;font-size:2.2rem;line-height:1.1;margin-bottom:1.2rem;color:var(--red);letter-spacing:-0.02em;}
+.intro-body{color:var(--muted);font-size:1.05rem;margin-bottom:1rem;line-height:1.7;}
+.intro-body strong{color:#fff;}
+.threshold-bar{background:var(--surface);border:1px solid var(--border);padding:1.2rem 1.5rem;border-radius:6px;margin:1.5rem 0 2rem;font-family:var(--mono);font-size:0.9rem;color:var(--muted);}
+.threshold-bar span{color:var(--accent);}
+
+.btn{background:var(--red);color:#000;border:none;padding:0.8rem 1.8rem;font-family:var(--sans);font-weight:700;font-size:1rem;border-radius:4px;cursor:pointer;transition:all 0.2s;text-transform:uppercase;letter-spacing:1px;}
+.btn:hover:not(:disabled){transform:translateY(-2px);background:#fff;}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-outline{background:transparent;border:1px solid var(--muted);color:var(--text);font-weight:500;text-transform:none;letter-spacing:0;}
+.btn-outline:hover:not(:disabled){background:var(--surface3);border-color:#fff;}
+.btn-accent{background:var(--accent);color:#000;}
+.btn-accent:hover:not(:disabled){background:#fff;}
+
+/* ── QUESTION BLOCKS ── */
+.q-block{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:2rem;
+  margin-bottom:1.8rem;
+  transition:opacity 0.3s,border-color 0.3s;
+}
+.q-block.answered{border-color:var(--border);opacity:0.45;pointer-events:none;}
+.q-block.correct{border-color:var(--green)!important;opacity:0.6;}
+.q-block.wrong{border-color:var(--red)!important;opacity:0.6;}
+
+.q-meta{
+  display:flex;justify-content:space-between;align-items:center;
+  font-family:var(--mono);font-size:0.72rem;color:var(--red);
+  text-transform:uppercase;letter-spacing:0.1em;
+  margin-bottom:1rem;
+}
+.q-pts{color:var(--muted);}
+.q-text{font-size:1.1rem;font-weight:500;color:#fff;margin-bottom:1.5rem;line-height:1.65;}
+.q-text em{font-style:normal;color:var(--accent);}
+
+/* text inputs */
+.input-row{display:flex;gap:0.8rem;align-items:center;}
+.input-text{
+  background:var(--bg);border:2px solid var(--border);color:#fff;
+  font-family:var(--mono);font-size:1rem;padding:0.6rem 1rem;
+  border-radius:4px;flex:1;transition:border-color 0.2s;
+}
+.input-text:focus{outline:none;border-color:var(--accent);}
+
+/* bool buttons */
+.bool-row{display:flex;gap:1rem;flex-wrap:wrap;}
+
+/* feedback */
+.feedback{
+  display:none;margin-top:1.5rem;padding:1.2rem 1.4rem;
+  border-radius:4px;font-size:0.95rem;line-height:1.65;
+}
+.feedback.visible{display:block;animation:fadein 0.35s;}
+.feedback.correct-fb{background:rgba(42,157,143,0.1);border-left:3px solid var(--green);color:#a7ece2;}
+.feedback.wrong-fb{background:rgba(231,111,81,0.1);border-left:3px solid var(--red);color:#ffb3a1;}
+.feedback .fb-label{font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.4rem;font-weight:600;}
+@keyframes fadein{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── FEYNMAN TERMINAL ── */
+#feynman-terminal{display:none;margin-top:4rem;border-top:2px solid var(--border);padding-top:3rem;}
+#feynman-terminal.visible{display:block;}
+.terminal-header{font-family:var(--mono);font-size:0.75rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;}
+.feynman-prompt{
+  background:var(--surface2);border:1px solid var(--border);
+  padding:1.5rem;border-radius:6px;margin-bottom:1.5rem;
+  font-size:1rem;color:var(--muted);line-height:1.7;
+}
+.feynman-prompt strong{color:#fff;}
+.feynman-input{
+  width:100%;height:160px;
+  background:var(--surface);color:var(--accent);
+  font-family:var(--sans);font-size:1rem;line-height:1.7;
+  padding:1.2rem;border:1px solid var(--border);border-radius:4px;
+  resize:vertical;transition:border-color 0.2s;
+}
+.feynman-input:focus{outline:none;border-color:var(--accent);}
+.keyword-hint{font-family:var(--mono);font-size:0.78rem;color:var(--muted);margin-bottom:1.2rem;}
+.keyword-hint span{color:var(--surface3);background:var(--surface3);border-radius:2px;}/* hidden until needed */
+
+/* ── RESULTS PANEL ── */
+#results-panel{display:none;}
+#results-panel.visible{display:block;animation:fadein 0.5s;}
+.results-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:2.5rem;text-align:center;margin-top:2rem;
+}
+.results-score{font-family:var(--mono);font-size:4rem;font-weight:600;margin-bottom:0.5rem;}
+.results-score.pass{color:var(--green);}
+.results-score.fail{color:var(--red);}
+.results-verdict{font-size:1.4rem;font-weight:700;margin-bottom:1rem;}
+.results-sub{color:var(--muted);font-size:0.95rem;line-height:1.7;max-width:560px;margin:0 auto;}
+
+/* ── FATAL OVERLAY ── */
+.fatal-overlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(231,111,81,0.96);
+  color:#000;z-index:9999;
+  display:none;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;
+}
+.fatal-overlay h2{font-size:3.5rem;font-weight:900;margin-bottom:1rem;}
+.fatal-overlay p{font-size:1.3rem;max-width:560px;}
+
+/* ── SCORE PROGRESS ── */
+.progress-strip{
+  height:3px;background:var(--surface3);
+  margin-bottom:2rem;border-radius:2px;overflow:hidden;
+}
+.progress-fill{height:100%;background:var(--accent);width:0%;transition:width 0.4s;}
+</style>
+</head>
+<body>
+
+<!-- FATAL OVERLAY -->
+<div class="fatal-overlay" id="fatal">
+  <h2>EXAM TERMINATED</h2>
+  <p>Time expired. Return to Layer 2 and rebuild mechanistic integrity before attempting recertification.</p>
+</div>
+
+<div class="container" id="main-content">
+
+  <!-- STICKY HEADER -->
+  <div class="exam-header">
+    <div class="timer" id="countdown">10:00</div>
+    <div class="score-display">SCORE: <span id="score-live">0</span> / 200</div>
+  </div>
+
+  <!-- INTRO SCREEN -->
+  <div id="intro-screen">
+    <div style="font-family:var(--mono);font-size:0.72rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.2rem;">Lesson 08 · Layer 4 · Capstone Certification</div>
+    <h1>Capstone Operation:<br>Eigen-Everything</h1>
+    <p class="intro-body">
+      This is the Layer 4 10-minute timed certification. Questions integrate <strong>HeadKV</strong> (#46), <strong>Decoupled Chain-of-Thought</strong> (#17), and <strong>Rogue Scalpel</strong> (#37) through the lens of pure eigenstructure. No geometric scaffolding. No reference material. No second attempts on any gate once submitted.
+    </p>
+    <p class="intro-body">
+      The exam ends in a <strong>Feynman Synthesis</strong> that requires you to compress all three papers into a single unified principle using your own language. Partial credit is awarded for structural keywords.
+    </p>
+    <div class="threshold-bar">
+      Passing threshold: <span>160 / 200 pts</span> &nbsp;·&nbsp; Time limit: <span>10:00</span> &nbsp;·&nbsp; Questions: <span>12 + 1 synthesis</span>
+    </div>
+    <button class="btn" onclick="startExam()">Initiate Exam</button>
+  </div>
+
+  <!-- QUESTIONS -->
+  <div id="exam-questions" style="display:none;"></div>
+
+  <!-- FEYNMAN TERMINAL -->
+  <div id="feynman-terminal">
+    <div class="terminal-header">// Feynman Protocol — Integration Synthesis [50 pts]</div>
+    <div class="feynman-prompt">
+      <strong>Synthesis Prompt:</strong> HeadKV uses the eigenspectrum to classify attention heads. Rogue Scalpel finds that adversarial attacks are most effective along the dominant right singular vector of the Value projection. DCoT separates reasoning and generation into orthogonal eigenspaces. In one paragraph, explain the single mathematical property that makes all three of these insights work — using your own words, no bullet points, no lists.
+    </div>
+    <p class="keyword-hint">Grading detects structural keywords automatically. Write to demonstrate understanding, not to game detection.</p>
+    <textarea class="feynman-input" id="fInput" placeholder="Begin synthesis…"></textarea>
+    <br><br>
+    <button class="btn btn-accent" onclick="submitFeynman()">Compile Synthesis</button>
+    <div class="feedback" id="f-fb" style="margin-top:1.5rem;"></div>
+  </div>
+
+  <!-- RESULTS PANEL -->
+  <div id="results-panel">
+    <div class="results-card">
+      <div class="results-score" id="final-score-display">—</div>
+      <div class="results-verdict" id="final-verdict">—</div>
+      <p class="results-sub" id="final-sub">—</p>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+let timerSecs = 600;
+let timerInterval = null;
+let score = 0;
+let answered = 0;
+const TOTAL_QUESTIONS = 12;
+const MAX_SCORE = 200; // 150 from Q + 50 from Feynman
+const PASS_THRESHOLD = 160;
+
+/* ═══════════════════════════════════════════════
+   QUESTION DATA
+   All questions drawn directly from 4_Master.md:
+   HeadKV, DCoT, Rogue Scalpel, Hessian, LoRA
+═══════════════════════════════════════════════ */
+const Q = [
+  {
+    id: 0,
+    section: "HeadKV — Head Classification",
+    pts: 10,
+    text: "An attention head's eigenspectrum across 4 dimensions is <em>[0.95, 0.03, 0.01, 0.01]</em>. According to HeadKV's classification system, what function type is this head — and should its KV cache be protected at full precision or compressed?",
+    type: "bool",
+    options: ["Focused Retriever — protect at full precision", "Broad Integrator — safe to compress"],
+    ans: 0,
+    correctMsg: "Correct. One dominant eigenvalue (0.95) with near-zero secondary values = a focused retriever. It deterministically routes information from one specific token. HeadKV flags it as irreplaceable — losing its KV cache destroys a specific information pathway. Full precision protection is mandatory.",
+    wrongMsg: "Incorrect. A flat eigenspectrum (e.g. [0.28, 0.26, 0.24, 0.22]) would indicate a broad integrator safe to compress. A single dominant eigenvalue at 0.95 with all others near zero is the signature of a focused retriever — the laser pointer, not the floodlight. Retrievers carry unique, irreplaceable information."
+  },
+  {
+    id: 1,
+    section: "HeadKV — Spectral Entropy",
+    pts: 10,
+    text: "Two attention heads both have λ₁ = 0.95. Head A has λ₂ = 0.03 (spectral entropy ≈ 0.12). Head B has λ₂ = 0.93 (spectral entropy ≈ 0.97). Which head carries more unique, irreplaceable information — and which is safer to compress?",
+    type: "bool",
+    options: ["Head A is unique; Head B is safe to compress", "Head B is unique; Head A is safe to compress"],
+    ans: 0,
+    correctMsg: "Correct. Head A's low spectral entropy (0.12) means it is highly concentrated — a single dominant mode captures almost everything. That concentration makes it a retriever: irreplaceable, high uniqueness. Head B's near-uniform eigenspectrum means it integrates broadly across many dimensions — highly redundant and safe to compress without losing specific information pathways.",
+    wrongMsg: "Incorrect. Spectral entropy measures concentration. Low entropy (0.12) = concentrated = unique = retriever = protect. High entropy (0.97) = spread = redundant = integrator = compress. Head A is the unique one."
+  },
+  {
+    id: 2,
+    section: "HeadKV — LoRA Rank Selection",
+    pts: 15,
+    text: "You run SVD on a weight update ΔW and get singular values: <em>[10, 0.5, 0.1, 0.05, 0.02]</em>. The first value dwarfs all others. What LoRA rank does the eigenspectrum recommend — and what behavioral property does this suggest about the adaptation?",
+    type: "bool",
+    options: ["r = 1 or r = 2 — the adaptation captures a single behavioral axis", "r = 8 or higher — the adaptation captures many independent behavioral dimensions"],
+    ans: 0,
+    correctMsg: "Correct. When only one singular value is significant, the effective rank is ≈1. A LoRA rank of r = 1 (or r = 2 for safety) captures the adaptation without waste. This spectral shape means the fine-tuning is pulling the model along a single behavioral axis — e.g., conviction level, or a highly correlated cluster of traits. A coach with a uniform, highly correlated voice requires low rank.",
+    wrongMsg: "Incorrect. High rank (r = 8+) is needed when the eigenspectrum is flat — many singular values carry similar weight. Here the cliff is steep after the first value. r = 1 or r = 2 captures the signal without wasting capacity on noise dimensions."
+  },
+  {
+    id: 3,
+    section: "Hessian Diagnostics — Learning Rate",
+    pts: 10,
+    text: "During LoRA Voice DNA training, the Hessian's maximum eigenvalue (λ_max) reaches 8.0. What is the maximum safe learning rate before divergence — and what is the formula that derives it?",
+    type: "bool",
+    options: ["η_max = 2 / λ_max = 0.25", "η_max = λ_max / 2 = 4.0"],
+    ans: 0,
+    correctMsg: "Correct. The formula is η_max = 2 / λ_max. With λ_max = 8.0: η_max = 2/8 = 0.25. This is the ceiling on learning rate before the gradient step overshoots the curvature and the loss diverges. The CCP Guardian Agent monitors λ_max in real time and automatically reduces the learning rate when this ceiling is approached.",
+    wrongMsg: "Incorrect. The formula is η_max = 2 / λ_max, not λ_max / 2. Dividing by a large λ_max gives a small, conservative learning rate — that's correct. The curvature is sharp; the step must be small. η_max = 2/8 = 0.25."
+  },
+  {
+    id: 4,
+    section: "Hessian Diagnostics — Saddle Points",
+    pts: 10,
+    text: "True or False: If the Hessian matrix at the current training point has even one negative eigenvalue, the model is at a local minimum and training should converge.",
+    type: "bool",
+    options: ["True — negative eigenvalues are normal at a local minimum", "False — a negative eigenvalue means the current point is a saddle point, not a minimum"],
+    ans: 1,
+    correctMsg: "Correct. A local minimum requires ALL eigenvalues to be positive (or zero) — it is the mathematical definition of a minimum. A negative eigenvalue means there exists a direction in parameter space where the loss decreases. That is a saddle point. The model is not converging — it should escape. Treating a saddle point as a minimum is one of the most dangerous training errors.",
+    wrongMsg: "Incorrect. A local minimum requires ALL Hessian eigenvalues to be non-negative. Any negative eigenvalue identifies a direction where the loss still decreases — the definition of a saddle point, not a minimum. Training should escape, not converge, from a saddle."
+  },
+  {
+    id: 5,
+    section: "Hessian Diagnostics — Condition Number",
+    pts: 10,
+    text: "The Hessian at the current training point has λ_max = 50 and λ_min = 1. What is the condition number κ — and what does a high κ indicate about which optimizer to use?",
+    type: "bool",
+    options: ["κ = 50 — high condition number means Adam is needed (not SGD)", "κ = 0.02 — low condition number means SGD suffices"],
+    ans: 0,
+    correctMsg: "Correct. κ = λ_max / λ_min = 50/1 = 50. A high condition number means the loss landscape is highly ill-conditioned: some directions are extremely steep while others are nearly flat. SGD takes the same step in all directions and oscillates in the steep directions while crawling through flat ones. Adam's per-parameter adaptive scaling corrects for this — it is the optimizer designed for high-κ landscapes.",
+    wrongMsg: "Incorrect. κ = λ_max / λ_min = 50. The condition number is always ≥ 1 (not a fraction). High κ indicates steep curvature in some directions and flat curvature in others — the precise scenario where SGD fails and Adam shines."
+  },
+  {
+    id: 6,
+    section: "DCoT — Eigenspace Separation",
+    pts: 15,
+    text: "In Decoupled Chain-of-Thought (DCoT), the reasoning attention and the generation attention operate in separate eigenspaces. What geometric property of those eigenspaces prevents the two processes from interfering with each other?",
+    type: "bool",
+    options: ["The eigenspaces are orthogonal — reasoning eigenvectors and generation eigenvectors have zero dot product", "The reasoning eigenspace has larger eigenvalues — it dominates and overrides generation"],
+    ans: 0,
+    correctMsg: "Correct. Orthogonality is the key. Orthogonal subspaces are independent by definition: a vector in one subspace has zero projection onto the other. The reasoning eigenvectors (pointing toward inference steps) and the generation eigenvectors (pointing toward contextually relevant tokens) cannot pull on each other because they exist in independent dimensions. Each function gets its own natural basis, fully isolated from the other.",
+    wrongMsg: "Incorrect. DCoT's power comes from orthogonality, not eigenvalue magnitude. If reasoning merely had larger eigenvalues, it would dominate generation — the problem would get worse, not better. Orthogonality means the two subspaces don't interact at all: a vector in one has zero projection onto the other. Separation, not dominance."
+  },
+  {
+    id: 7,
+    section: "DCoT — CCP Application",
+    pts: 10,
+    text: "In the CCP's Socratic questioning engine, which computational process operates in DCoT's reasoning eigenspace — and which operates in the main generation eigenspace?",
+    type: "bool",
+    options: ["Logical architecture of the question in reasoning eigenspace; Voice DNA style and tone in generation eigenspace", "Voice DNA style in reasoning eigenspace; logical architecture in generation eigenspace"],
+    ans: 0,
+    correctMsg: "Correct. The reasoning eigenspace handles the logical chain: 'Client said X → X reveals belief Y → Y conflicts with goal Z → ask about the gap.' The generation eigenspace handles stylistic delivery: word choice, Voice DNA cadence, tone calibration. Because these eigenspaces are orthogonal, logical precision and Voice DNA fidelity are simultaneously and independently optimized — they cannot degrade each other.",
+    wrongMsg: "Incorrect. The reasoning eigenspace is aligned with inference steps — logical structure. The generation eigenspace is aligned with token relevance — stylistic delivery. Logical precision lives in reasoning eigenspace; Voice DNA lives in generation eigenspace."
+  },
+  {
+    id: 8,
+    section: "Rogue Scalpel — Optimal Attack Direction",
+    pts: 15,
+    text: "An adversarial attacker has perturbation budget ||δ|| ≤ 0.01. The target head's Value projection W_V has singular values [5.0, 2.0, 0.5]. The attacker wants to maximize behavioral change. In which direction should they perturb — and what is the maximum possible output perturbation magnitude?",
+    type: "bool",
+    options: ["Perturb along v₁ (right singular vector of σ₁ = 5.0); max output perturbation = 5.0 × 0.01 = 0.05", "Perturb along v₃ (right singular vector of σ₃ = 0.5); max output perturbation = 0.5 × 0.01 = 0.005"],
+    ans: 0,
+    correctMsg: "Correct. The dominant right singular vector v₁ is the direction of maximum sensitivity. Perturbing along v₁ produces output change σ₁ × ||δ|| = 5.0 × 0.01 = 0.05. Any other direction produces strictly less output change. The dominant singular vector IS the optimal attack direction — it is the model's pressure point. Rogue Scalpel's key result is that eigenvector-aligned perturbations are maximally efficient at flipping model behavior.",
+    wrongMsg: "Incorrect. The right singular vector v₁ of the largest singular value σ₁ = 5.0 is the direction of maximum amplification. Perturbing there produces the most output change for the given budget. Perturbing along v₃ (the smallest singular value) produces the least output change — exactly the wrong choice for an attacker."
+  },
+  {
+    id: 9,
+    section: "Rogue Scalpel — Guardian Agent",
+    pts: 15,
+    text: "The CCP Guardian Agent monitors incoming prompts by computing their projection onto precomputed vulnerability eigenvectors. A naturally-written prompt has small, predictable projections onto these directions. What statistical property distinguishes an adversarially-crafted prompt from a natural one — and why does this detection method work?",
+    type: "bool",
+    options: ["Adversarial prompts have anomalously large projections onto vulnerability eigenvectors — because the attacker deliberately aligned the perturbation with the dominant singular vector", "Adversarial prompts have smaller projections — they minimize their signature to avoid detection"],
+    ans: 0,
+    correctMsg: "Correct. Naturally-written prompts have projections onto vulnerability directions that follow a predictable distribution. An adversarially-crafted prompt has anomalously large projections — because the attacker deliberately aligned the perturbation with the vulnerability eigenvector (the dominant singular vector) to maximize attack efficiency. That alignment is exactly what the Guardian Agent detects: the projection is statistically anomalous. The attacker's strength becomes their signature.",
+    wrongMsg: "Incorrect. To maximize attack efficiency, the attacker MUST align their perturbation with the dominant vulnerability eigenvector. That alignment produces anomalously large projections onto those directions — which is precisely what makes adversarial prompts detectable. The attack strategy (align with dominant eigenvector) and the detection strategy (monitor projections onto dominant eigenvectors) target exactly the same mathematical structure."
+  },
+  {
+    id: 10,
+    section: "Diagonalization — Change of Basis",
+    pts: 10,
+    text: "In the diagonalization A = PDP⁻¹, the matrix D contains the eigenvalues on its diagonal and is otherwise zero. What does this structure tell you about how A acts in the eigenvector basis — and why does this make eigendecomposition so powerful?",
+    type: "bool",
+    options: ["In the eigenvector basis, A acts as pure independent scaling along each natural direction — no rotation, no mixing between dimensions", "In the eigenvector basis, A still mixes dimensions but the mixing is easier to compute"],
+    ans: 0,
+    correctMsg: "Correct. D is a diagonal matrix: its off-diagonal entries are all zero. In the eigenvector basis, the transformation A reduces to independent scaling by λᵢ along each eigenvector direction. No dimension mixes with any other. This is the deep power of eigendecomposition: every matrix — no matter how much it rotates, shears, and mixes in the standard basis — becomes a set of independent, decoupled scaling operations in the right basis. Complexity dissolves.",
+    wrongMsg: "Incorrect. A diagonal matrix has zero off-diagonal entries: there is NO mixing between dimensions. In the eigenvector basis, A is purely scaling — λ₁ along v₁, λ₂ along v₂, etc. This is the entire point of diagonalization: to find the basis where the transformation stops mixing and starts acting simply."
+  },
+  {
+    id: 11,
+    section: "Eigenvalues — Stability Under Repeated Application",
+    pts: 10,
+    text: "A Transformer head processes syntactic position information. After analyzing its weight matrix, you find the dominant eigenvalue is λ₁ = 0.5. If the output of this head is fed back through the same transformation 10 times (as in a recurrent process), what happens to the dominant eigenvector component of the signal?",
+    type: "bool",
+    options: ["It decays toward zero — λ = 0.5 causes exponential decay; after 10 steps the component is (0.5)¹⁰ ≈ 0.001 of its original magnitude", "It explodes to infinity — any repeated application amplifies the signal"],
+    ans: 0,
+    correctMsg: "Correct. Eigenvalues < 1 cause exponential decay under repeated application. After n steps, the component along this eigenvector is λ₁ⁿ × (original). With λ₁ = 0.5: (0.5)¹⁰ = 1/1024 ≈ 0.001. The signal has essentially vanished. This is the mathematical reason why vanilla RNNs struggle with long-range dependencies: eigenvalues < 1 cause information about early inputs to decay exponentially. Eigenvalues > 1 cause explosion. Only λ = 1 preserves the signal over long sequences.",
+    wrongMsg: "Incorrect. Only eigenvalues > 1 cause growth under repeated application. λ = 0.5 < 1, so each application multiplies the component by 0.5: after 10 steps, 0.5¹⁰ ≈ 0.001 of the original magnitude remains. The signal decays to near-zero — the dominant mode is essentially eliminated."
+  }
+];
+
+/* ═══════════════════════════════════════════════
+   TIMER
+═══════════════════════════════════════════════ */
+function startTimer() {
+  const clock = document.getElementById('countdown');
+  timerInterval = setInterval(() => {
+    timerSecs--;
+    const m = Math.floor(timerSecs / 60);
+    const s = timerSecs % 60;
+    clock.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+    clock.className = 'timer';
+    if (timerSecs <= 180) clock.classList.add('warning');
+    if (timerSecs <= 60)  clock.classList.add('critical');
+    if (timerSecs <= 0) {
+      clearInterval(timerInterval);
+      document.getElementById('fatal').style.display = 'flex';
+    }
+  }, 1000);
+}
+
+/* ═══════════════════════════════════════════════
+   BUILD QUESTIONS
+═══════════════════════════════════════════════ */
+function startExam() {
+  document.getElementById('intro-screen').style.display = 'none';
+  const container = document.getElementById('exam-questions');
+  container.style.display = 'block';
+
+  let html = '<div class="progress-strip"><div class="progress-fill" id="prog"></div></div>';
+  Q.forEach((q, i) => {
+    html += `
+    <div class="q-block" id="qb-${i}">
+      <div class="q-meta">
+        <span>Constraint ${String(i+1).padStart(2,'0')} — ${q.section}</span>
+        <span class="q-pts">[${q.pts} pts]</span>
+      </div>
+      <div class="q-text">${q.text}</div>
+      <div class="bool-row" id="br-${i}">
+        <button class="btn btn-outline" onclick="checkBool(${i}, 0)">${q.options[0]}</button>
+        <button class="btn btn-outline" onclick="checkBool(${i}, 1)">${q.options[1]}</button>
+      </div>
+      <div class="feedback" id="fb-${i}"></div>
+    </div>`;
+  });
+  container.innerHTML = html;
+  startTimer();
+}
+
+/* ═══════════════════════════════════════════════
+   ANSWER HANDLER
+═══════════════════════════════════════════════ */
+function checkBool(idx, sel) {
+  const block = document.getElementById(`qb-${idx}`);
+  block.querySelectorAll('button').forEach(b => b.disabled = true);
+
+  const correct = sel === Q[idx].ans;
+  if (correct) {
+    score += Q[idx].pts;
+    block.classList.add('answered', 'correct');
+  } else {
+    block.classList.add('answered', 'wrong');
+  }
+
+  document.getElementById('score-live').textContent = score;
+
+  const fb = document.getElementById(`fb-${idx}`);
+  fb.className = `feedback ${correct ? 'correct-fb' : 'wrong-fb'} visible`;
+  fb.innerHTML = `<div class="fb-label">${correct ? '✓ Correct' : '✗ Incorrect'}</div>${correct ? Q[idx].correctMsg : Q[idx].wrongMsg}`;
+
+  answered++;
+  updateProgress();
+  if (answered === TOTAL_QUESTIONS) onAllAnswered();
+}
+
+function updateProgress() {
+  const pct = (answered / TOTAL_QUESTIONS) * 100;
+  const el = document.getElementById('prog');
+  if (el) el.style.width = pct + '%';
+}
+
+/* ═══════════════════════════════════════════════
+   UNLOCK FEYNMAN
+═══════════════════════════════════════════════ */
+function onAllAnswered() {
+  const ft = document.getElementById('feynman-terminal');
+  ft.classList.add('visible');
+  setTimeout(() => {
+    ft.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 600);
+}
+
+/* ═══════════════════════════════════════════════
+   FEYNMAN GRADER
+   Keywords drawn from 4_Master.md core concepts:
+   orthogonal/orthogonality, eigenvalue/eigenvalues,
+   dominant/amplification, singular/SVD,
+   basis/subspace, sensitivity/sensitivity direction
+═══════════════════════════════════════════════ */
+function submitFeynman() {
+  const val = document.getElementById('fInput').value.toLowerCase().trim();
+  if (!val || val.length < 80) {
+    alert('Please write a substantive paragraph before submitting.');
+    return;
+  }
+  const fb = document.getElementById('f-fb');
+  let pts = 0;
+
+  // Orthogonality / independence cluster (most important: DCoT)
+  if (/orthogon|independent subspace|separate subspace|no interference/.test(val)) pts += 12;
+  // Dominant eigenvalue / amplification cluster (HeadKV + Rogue Scalpel)
+  if (/dominant eigen|largest eigen|maximum amplif|maximum sensitiv/.test(val)) pts += 12;
+  // Singular vector / SVD cluster (Rogue Scalpel)
+  if (/singular vector|singular value|right singular|svd/.test(val)) pts += 8;
+  // Eigenspectrum / fingerprint (HeadKV)
+  if (/eigenspect|spectral|fingerprint|concentration/.test(val)) pts += 8;
+  // Basis / natural directions (unifying idea)
+  if (/natural direction|eigen.*basis|basis.*eigen|natural basis/.test(val)) pts += 10;
+
+  score += pts;
+  document.getElementById('score-live').textContent = score;
+
+  clearInterval(timerInterval);
+  document.getElementById('countdown').textContent = '—:——';
+
+  fb.className = 'feedback visible ' + (score >= PASS_THRESHOLD ? 'correct-fb' : 'wrong-fb');
+  fb.innerHTML = `
+    <div class="fb-label">Feynman Synthesis — +${pts} pts</div>
+    ${pts >= 30
+      ? 'Strong structural alignment detected. Your synthesis correctly anchored all three papers to the same mathematical core.'
+      : pts >= 15
+      ? 'Partial structural alignment. Some key concepts are present but the unifying principle — that every paper exploits eigenvector structure to expose or exploit a direction of maximum effect — was not fully articulated.'
+      : 'Insufficient structural depth. The three papers are unified by a single principle: in every case, the dominant eigenvector (or singular vector) of a weight matrix identifies the direction of maximum sensitivity, importance, or independence. HeadKV reads that direction to classify heads. Rogue Scalpel attacks along it. DCoT separates eigenspaces so no single dominant direction can interfere with both functions.'
+    }`;
+
+  showResults();
+}
+
+/* ═══════════════════════════════════════════════
+   RESULTS
+═══════════════════════════════════════════════ */
+function showResults() {
+  const panel = document.getElementById('results-panel');
+  panel.classList.add('visible');
+  const passed = score >= PASS_THRESHOLD;
+
+  document.getElementById('final-score-display').textContent = `${score} / ${MAX_SCORE}`;
+  document.getElementById('final-score-display').className = `results-score ${passed ? 'pass' : 'fail'}`;
+  document.getElementById('final-verdict').textContent = passed ? '[OPERATION: SUCCESS]' : '[OPERATION: FAILED]';
+  document.getElementById('final-sub').textContent = passed
+    ? `Score ${score}/200 — you have demonstrated rigorous integration of eigenstructure across HeadKV, DCoT, and Rogue Scalpel. Phase 4 begins: Clustering, PCA, and the covariance eigendecomposition. The principal components you will compute in Lesson 9 ARE the eigenvectors of the data's covariance matrix. Without Lesson 8, PCA is a black box. You now have the x-ray.`
+    : `Score ${score}/200 — below the 160-point threshold. Structural integration is incomplete. Return to the Mechanistic layer (Layer 2) to rebuild the derivation pipeline, then re-attempt certification.`;
+
+  setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 400);
+}
+</script>
+</body>
+</html>

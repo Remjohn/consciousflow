@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrix Multiplication — Analogy Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{--bg:#09090b;--bg-card:#131316;--bg-elevated:#1a1a1f;--border:#27272a;--border-light:#3f3f46;--text:#fafafa;--text-muted:#a1a1aa;--text-dim:#52525b;--amber:#f59e0b;--amber-glow:rgba(245,158,11,0.12);--teal:#14b8a6;--teal-glow:rgba(20,184,166,0.12);--rose:#f43f5e;--rose-glow:rgba(244,63,94,0.12);--emerald:#10b981;--emerald-glow:rgba(16,185,129,0.12);--violet:#8b5cf6;--violet-glow:rgba(139,92,246,0.12);}
+*{margin:0;padding:0;box-sizing:border-box;}html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif;}
+code,.mono{font-family:'JetBrains Mono',monospace;font-size:.85em;}
+.nav-bar{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(16px);background:rgba(9,9,11,0.8);border-bottom:1px solid var(--border);}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 1rem;height:48px;}
+.nav-links{display:flex;gap:1.25rem;}
+.nav-link{position:relative;color:var(--text-dim);transition:color .3s;font-size:.82rem;font-weight:500;text-decoration:none;cursor:pointer;}
+.nav-link:hover,.nav-link.active{color:var(--amber);}
+.nav-link.active::after{content:'';position:absolute;bottom:-13px;left:0;right:0;height:2px;background:var(--amber);border-radius:1px;}
+.section{min-height:100vh;padding:5rem 1.5rem 4rem;position:relative;overflow:hidden;}
+.section-inner{max-width:1200px;margin:0 auto;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .3s;}
+.card:hover{border-color:var(--border-light);}
+.canvas-wrap{position:relative;background:#0d0d10;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.canvas-wrap canvas{display:block;width:100%;height:100%;}
+.flex-layout{display:flex;gap:1.5rem;}
+.reading-col{flex:1.2;min-width:320px;}
+.visual-col{flex:1;min-width:280px;}
+.insight{border-left:3px solid var(--amber);padding:.8rem 1rem;background:var(--amber-glow);border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.6;color:var(--text-muted);}
+.insight strong{color:var(--amber);}
+.tab-btn{padding:.6rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-dim);cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:.85rem;transition:all .2s;}
+.tab-btn:hover{color:var(--text);border-color:var(--border-light);}
+.tab-btn.active{background:var(--amber-glow);color:var(--amber);border-color:var(--amber);}
+.domain-content{display:none;}.domain-content.active{display:block;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+.puzzle-card{border:1px solid var(--border);background:var(--bg-card);border-radius:8px;margin-bottom:.75rem;overflow:hidden;}
+.puzzle-header{padding:1rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:600;background:var(--bg-elevated);}
+.puzzle-header:hover{background:rgba(255,255,255,0.05);}
+.puzzle-body{padding:0 1rem;max-height:0;overflow:hidden;transition:all .3s;color:var(--text-muted);font-size:.9rem;line-height:1.6;}
+.puzzle-card.open .puzzle-body{padding:1rem;max-height:500px;}
+.puzzle-card.open .puzzle-icon{transform:rotate(180deg);}
+.puzzle-icon{transition:transform .3s;}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:all .2s;}
+.scroll-hint{animation:bounce 2s ease infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+@media(max-width:768px){.section{padding:5rem 1rem 3rem;}.flex-layout{flex-direction:column-reverse!important;}.canvas-wrap{min-height:300px!important;}.nav-links{display:none;}}
+</style>
+</head>
+<body>
+<nav class="nav-bar"><div class="nav-inner">
+  <span style="font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:var(--amber);">MATRIX MULT</span>
+  <div class="nav-links">
+    <a href="#domains" class="nav-link active" data-section="domains">6 Domains</a>
+    <a href="#crossdomain" class="nav-link" data-section="crossdomain">Cross-Domain</a>
+    <a href="#puzzles" class="nav-link" data-section="puzzles">Logic Puzzles</a>
+    <a href="#builder" class="nav-link" data-section="builder">Builder</a>
+  </div>
+</div></nav>
+
+<header class="section" style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+  <canvas id="heroCanvas" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="position:relative;z-index:1;text-align:center;max-width:720px;padding:0 1rem;">
+    <p style="font-size:.85rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:1rem;">LESSON 05 — ANALOGY LAYER</p>
+    <h1 style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:1.5rem;">
+      Matrix Multiplication<br><span style="color:var(--text-muted);font-weight:300;">Playbooks Made Computable</span>
+    </h1>
+    <p style="font-size:1.1rem;color:var(--text-muted);max-width:520px;margin:0 auto 2.5rem;line-height:1.7;">
+      Tactical playbooks, class specializations, EQ chains, nutritional matrices, environmental modulation, and weight matrices — all executed through the same row·column arithmetic.
+    </p>
+    <div class="scroll-hint" style="color:var(--text-dim);"><i class="fas fa-chevron-down"></i></div>
+  </div>
+</header>
+
+<section id="domains" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--teal);margin-bottom:.5rem;">01 — UNIVERSAL MAPPING</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">The 6-Domain System</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.5rem;">
+      <button class="tab-btn active" data-target="sports"><i class="fas fa-futbol"></i> Playbook</button>
+      <button class="tab-btn" data-target="gaming"><i class="fas fa-gamepad"></i> Stats</button>
+      <button class="tab-btn" data-target="music"><i class="fas fa-sliders-h"></i> EQ Chain</button>
+      <button class="tab-btn" data-target="cooking"><i class="fas fa-utensils"></i> Nutrition</button>
+      <button class="tab-btn" data-target="psych"><i class="fas fa-users"></i> Environment</button>
+      <button class="tab-btn" data-target="ai"><i class="fas fa-brain"></i> Weights</button>
+    </div>
+    <div class="flex-layout">
+      <div class="reading-col">
+        <div id="sports" class="domain-content active">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Tactical Playbook as Matrix</h3>
+          <p style="color:var(--text-muted);line-height:1.7;margin-bottom:.75rem;font-size:.9rem;">Each row = one output behavioral stat recipe. Barella's raw stats (8,7,6,7) on [Spd, Pass, Tack, Vis]:</p>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:.75rem;font-family:'JetBrains Mono';font-size:.78rem;margin-bottom:.75rem;line-height:1.8;">
+            Sprint = <span style="color:var(--amber);">1.5</span>(8)+0(7)+0(6)+<span style="color:var(--teal);">0.2</span>(7) = <span style="color:var(--emerald);">13.4</span><br>
+            Defense = <span style="color:var(--amber);">0.3</span>(8)+0(7)+<span style="color:var(--teal);">1.2</span>(6)+0(7) = <span style="color:var(--emerald);">9.6</span><br>
+            Creative = 0(8)+<span style="color:var(--amber);">0.8</span>(7)+0(6)+<span style="color:var(--teal);">1.0</span>(7) = <span style="color:var(--emerald);">12.6</span>
+          </div>
+          <p style="color:var(--text-muted);font-size:.88rem;line-height:1.6;margin-bottom:.75rem;">3×4 matrix → 4D input → 3D output. The playbook <strong style="color:var(--text);">compresses</strong> raw attributes into behavioral dimensions. LoRA mid-season: adjust 2 tactical principles (rank-2 update) instead of rewriting all 12 entries.</p>
+          <div class="insight"><strong>Break:</strong> Real tactics involve morale, fatigue, opponent adaptation — non-linear dynamics a static matrix cannot capture.</div>
+        </div>
+        <div id="gaming" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Dual-Class Composition</h3>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:.75rem;font-family:'JetBrains Mono';font-size:.78rem;margin-bottom:.75rem;line-height:1.8;">
+            M_Warrior = diag(2.0, 1.5, 0.3)<br>
+            M_Mage &nbsp;&nbsp;= diag(0.3, 1.0, 2.0)<br>
+            <span style="color:var(--violet);">Battlemage = M_Mage × M_Warrior</span><br>
+            = diag(<span style="color:var(--rose);">0.6</span>, <span style="color:var(--teal);">1.5</span>, <span style="color:var(--rose);">0.6</span>)
+          </div>
+          <p style="color:var(--text-muted);font-size:.88rem;line-height:1.6;margin-bottom:.75rem;">Warrior boost cancelled by Mage suppression on STR. Mage boost cancelled by Warrior suppression on INT. The Battlemage is a <strong style="color:var(--text);">Dexterity-focused hybrid</strong> — neither strong nor intelligent.</p>
+          <div class="insight"><strong>Non-commutativity:</strong> For non-diagonal class matrices with cross-stat effects, Warrior→Mage ≠ Mage→Warrior.</div>
+        </div>
+        <div id="music" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">EQ Chain as Matrix Composition</h3>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:.75rem;font-family:'JetBrains Mono';font-size:.78rem;margin-bottom:.75rem;line-height:1.8;">
+            Warm EQ = diag(<span style="color:var(--amber);">1.5</span>, <span style="color:var(--teal);">1.2</span>, 0.8, <span style="color:var(--rose);">0.5</span>)<br>
+            Vocal (3,5,7,4) → (<span style="color:var(--emerald);">4.5, 6.0, 5.6, 2.0</span>)<br>
+            Bass boosted, treble cut → warmer sound
+          </div>
+          <p style="color:var(--text-muted);font-size:.88rem;line-height:1.6;margin-bottom:.75rem;">If one diagonal entry is zero (Sub cut completely), that band enters the <strong style="color:var(--rose);">null space</strong>. No downstream EQ can recover it.</p>
+          <div class="insight"><strong>Break:</strong> Only EQ is linear. Compression, reverb, distortion generate new content the matrix model cannot represent.</div>
+        </div>
+        <div id="cooking" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Nutritional Matrix</h3>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:.75rem;font-family:'JetBrains Mono';font-size:.78rem;margin-bottom:.75rem;line-height:1.8;">
+            2 eggs, 3 bread, 1 butter → v=(2,3,1)<br>
+            Cal = <span style="color:var(--amber);">70</span>(2)+<span style="color:var(--teal);">80</span>(3)+100(1) = <span style="color:var(--emerald);">480</span><br>
+            Pro = 6(2)+3(3)+0.1(1) = <span style="color:var(--emerald);">21.1g</span><br>
+            Fat = 5(2)+1(3)+11(1) = <span style="color:var(--emerald);">24g</span>
+          </div>
+          <p style="color:var(--text-muted);font-size:.88rem;line-height:1.6;margin-bottom:.75rem;"><strong style="color:var(--violet);">LoRA:</strong> Swap regular bread for protein bread + reduce butter = rank-2 update to the nutritional matrix. Most entries unchanged.</p>
+          <div class="insight"><strong>Break:</strong> Maillard reactions create caloric compounds not present in raw ingredients. Chemistry is non-linear.</div>
+        </div>
+        <div id="psych" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Environmental Transformation</h3>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:.75rem;font-family:'JetBrains Mono';font-size:.78rem;margin-bottom:.75rem;line-height:1.8;">
+            M_work · (C=6, E=8, N=7) =<br>
+            C_out = 1.5(6)+<span style="color:var(--teal);">0.2</span>(8) = <span style="color:var(--emerald);">10.6</span> ← cross-term!<br>
+            E_out = <span style="color:var(--teal);">0.1</span>(6)+0.8(8) = 7.0<br>
+            N_out = 0.4(7) = <span style="color:var(--rose);">2.8</span> ← suppressed
+          </div>
+          <p style="color:var(--text-muted);font-size:.88rem;line-height:1.6;margin-bottom:.75rem;">Off-diagonal entries model <strong style="color:var(--text);">cross-trait interactions</strong>: social accountability (E) drives diligence (C). Party→Work composition produces different behavior than Work→Party.</p>
+          <div class="insight"><strong>Break:</strong> Extreme stress triggers qualitative shifts (fight-or-flight) that cannot be modeled as linear scaling.</div>
+        </div>
+        <div id="ai" class="domain-content">
+          <h3 style="font-size:1.3rem;margin-bottom:1rem;color:var(--amber);">Weight Matrices as Learned Transformations</h3>
+          <p style="color:var(--text-muted);font-size:.88rem;line-height:1.6;margin-bottom:.75rem;">3.5B parameters across hundreds of matrices. "Overwhelmed" passes through W_Q → W_K → W_V → W₁ → W₂. Each multiplication reshapes the 768D embedding into specialized representations.</p>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:.75rem;font-size:.82rem;margin-bottom:.75rem;line-height:1.8;color:var(--text-muted);">
+            <strong style="color:var(--amber);">LoRA</strong> on W_Q,K,V,O → Voice DNA (rank 16)<br>
+            <strong style="color:var(--teal);">SparseGrad</strong> on W₁,W₂ → JSON/Markdown (~1%)<br>
+            <strong style="color:var(--violet);">Neo4j</strong> for knowledge → 0 weight params
+          </div>
+          <div class="insight"><strong>Break:</strong> GELU and Softmax between multiplications prevent the stack from collapsing into one matrix.</div>
+        </div>
+      </div>
+      <div class="visual-col">
+        <div class="canvas-wrap" style="min-height:420px;">
+          <canvas id="domainCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="crossdomain" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--violet);margin-bottom:.5rem;">02 — FIDELITY SPECTRUM</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Cross-Domain Comparison</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin-bottom:1.5rem;">
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--emerald);"><h4 style="color:var(--emerald);margin-bottom:.5rem;">🤖 AI & 🎵 Audio</h4><p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;"><strong style="color:var(--text);">Exact.</strong> GPU executes matrix multiplication literally. EQ is rigorous linear spectral operation.</p></div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--amber);"><h4 style="color:var(--amber);margin-bottom:.5rem;">⚽ Sports & 🍳 Cooking</h4><p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;"><strong style="color:var(--text);">Proportional.</strong> Double eggs → double protein. But Maillard reactions and player morale are non-linear.</p></div>
+      <div class="card" style="padding:1.25rem;border-left:3px solid var(--rose);"><h4 style="color:var(--rose);margin-bottom:.5rem;">🧠 Psychology & 🎮 Gaming</h4><p style="font-size:.85rem;color:var(--text-muted);line-height:1.5;"><strong style="color:var(--text);">First-order.</strong> Cross-trait modulation captured, but feedback loops, caps, and threshold effects break linearity.</p></div>
+    </div>
+    <div class="insight">
+      <strong>Analogy Failures:</strong> (1) "Multiplication = scaling" — matrix mult is transformation execution, not making bigger. (2) "More params = more capability" — LoRA proves 4% suffices for style. (3) "Order doesn't matter" — AB ≠ BA almost always.
+    </div>
+  </div>
+</section>
+
+<section id="puzzles" class="section">
+  <div class="section-inner" style="max-width:800px;">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--emerald);margin-bottom:.5rem;">03 — REASONING TRAPS</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:1.5rem;">Logic Puzzles</h2>
+    <div class="puzzle-card"><div class="puzzle-header"><span>1. The Shape Trap</span><i class="fas fa-chevron-down puzzle-icon"></i></div><div class="puzzle-body"><p style="margin-bottom:.75rem;"><strong>Setup:</strong> A ∈ ℝ³ˣ⁴, B ∈ ℝ⁴ˣ². Is AB defined? Is BA defined?</p><div class="insight" style="border-color:var(--emerald);background:var(--emerald-glow);"><strong style="color:var(--emerald);">AB: (3×4)×(4×2) → 3×2. ✓</strong> Inner dims match. BA: (4×2)×(3×4). Inner dims 2≠3. ❌ Undefined. Non-commutativity is sometimes forced by shape incompatibility.</div></div></div>
+    <div class="puzzle-card"><div class="puzzle-header"><span>2. The Rank Paradox</span><i class="fas fa-chevron-down puzzle-icon"></i></div><div class="puzzle-body"><p style="margin-bottom:.75rem;"><strong>Setup:</strong> rank(A) = 3, rank(B) = 50. Maximum rank of AB?</p><div class="insight" style="border-color:var(--rose);background:var(--rose-glow);"><strong style="color:var(--rose);">rank(AB) ≤ min(3, 50) = 3.</strong> The rank-3 factor bottlenecks everything. No matter how expressive B is, composition through a rank-3 bottleneck = 3 directions max. This IS LoRA's constraint.</div></div></div>
+    <div class="puzzle-card"><div class="puzzle-header"><span>3. The Identity Composition</span><i class="fas fa-chevron-down puzzle-icon"></i></div><div class="puzzle-body"><p style="margin-bottom:.75rem;"><strong>Setup:</strong> M × I = ?</p><div class="insight" style="border-color:var(--violet);background:var(--violet-glow);"><strong style="color:var(--violet);">MI = M.</strong> The identity is "do nothing." The residual connection adds I·x alongside T(x), providing a bypass that preserves the original signal.</div></div></div>
+    <div class="puzzle-card"><div class="puzzle-header"><span>4. The Null Space Cascade</span><i class="fas fa-chevron-down puzzle-icon"></i></div><div class="puzzle-body"><p style="margin-bottom:.75rem;"><strong>Setup:</strong> A has 200D null space. B has 100D null space. Min null space of AB?</p><div class="insight"><strong>At least 200.</strong> B's null space (100D) feeds zero into A. Plus everything B maps INTO A's null space (200D) is also annihilated. Information destruction cascades — each transformation can only maintain or increase total destruction.</div></div></div>
+  </div>
+</section>
+
+<section id="builder" class="section">
+  <div class="section-inner">
+    <p style="font-size:.82rem;font-weight:500;letter-spacing:.1em;color:var(--amber);margin-bottom:.5rem;">04 — KINESTHETIC TASK</p>
+    <h2 style="font-size:1.8rem;font-weight:700;margin-bottom:.75rem;">Build-Your-Own Matrix</h2>
+    <div style="background:var(--bg-elevated);border:1px dashed var(--amber);border-radius:12px;padding:2rem;">
+      <p style="color:var(--text-muted);font-size:.95rem;line-height:1.7;margin-bottom:1.5rem;">Choose a domain with measurable inputs and proportional outputs. Build a 3×3 matrix, apply it, compose with a second, and identify a LoRA update.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;">
+        <div><label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Domain</label><input type="text" placeholder="e.g. Marketing Budget → KPIs" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';"></div>
+        <div><label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Matrix Row 1 (recipe)</label><input type="text" placeholder="e.g. 0.3·SEO + 0.5·Ads + 0.2·Content" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';"></div>
+        <div><label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">Input Vector</label><input type="text" placeholder="e.g. ($5000, $3000, $2000)" style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';"></div>
+      </div>
+      <div style="margin-top:1rem;"><label style="display:block;font-size:.8rem;color:var(--text-dim);margin-bottom:.3rem;">LoRA Update — What 1-2 aspects would you modify?</label><textarea rows="2" placeholder="Describe the low-rank factorization..." style="width:100%;padding:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'DM Sans';resize:vertical;"></textarea></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:1rem;"><button class="btn" style="background:var(--amber);color:#000;"><i class="fas fa-save"></i> Save Framework</button></div>
+    </div>
+  </div>
+</section>
+
+<footer style="text-align:center;padding:2.5rem 1rem;color:var(--text-dim);font-size:.8rem;border-top:1px solid var(--border);margin-top:2rem;">
+  <p style="max-width:600px;margin:0 auto 1rem;line-height:1.5;"><strong>Compression:</strong> A matrix is a frozen transformation. Multiplying is executing it. Chaining is composing them. Rank is the ceiling on what it can express.</p>
+  Interactive Visual Learning — Lesson 05: Matrix Multiplication Analogy Layer
+</footer>
+
+<script>
+const DPR=window.devicePixelRatio||1;
+
+(function(){const c=document.getElementById('heroCanvas');let W,H,ctx;
+function resize(){const p=c.parentElement;W=p.offsetWidth;H=p.offsetHeight;c.width=W*DPR;c.height=H*DPR;c.style.width=W+'px';c.style.height=H+'px';ctx=c.getContext('2d');ctx.scale(DPR,DPR);}
+resize();window.addEventListener('resize',resize);let t=0;
+function draw(){ctx.clearRect(0,0,W,H);for(let r=0;r<4;r++)for(let c2=0;c2<5;c2++){const x=W*0.15+c2*(W*0.15),y=H*0.25+r*(H*0.13);const v=Math.sin(t*0.012+r*0.6+c2*0.4)*0.5+0.5;ctx.fillStyle=`rgba(245,158,11,${v*0.05})`;ctx.fillRect(x,y,W*0.1,H*0.08);ctx.strokeStyle=`rgba(245,158,11,${v*0.06})`;ctx.lineWidth=1;ctx.strokeRect(x,y,W*0.1,H*0.08);}t++;requestAnimationFrame(draw);}draw();})();
+
+/* Domain Canvas: Matrix × Vector visualization */
+(function(){
+  const canvas=document.getElementById('domainCanvas');
+  let domain='sports';
+  const cfgs={
+    sports:{m:[[1.5,0,0,0.2],[0.3,0,1.2,0],[0,0.8,0,1.0]],v:[8,7,6,7],inLabels:['Spd','Pass','Tack','Vis'],outLabels:['Sprint','Defense','Creative']},
+    gaming:{m:[[2,0,0],[0,1.5,0],[0,0,0.3]],v:[5,5,5],inLabels:['STR','DEX','INT'],outLabels:['STR\'','DEX\'','INT\'']},
+    music:{m:[[1.5,0,0,0],[0,1.2,0,0],[0,0,0.8,0],[0,0,0,0.5]],v:[3,5,7,4],inLabels:['Sub','LowM','HiM','Treb'],outLabels:['Sub\'','LowM\'','HiM\'','Treb\'']},
+    cooking:{m:[[70,80,100],[6,3,0.1],[5,1,11]],v:[2,3,1],inLabels:['Eggs','Bread','Butter'],outLabels:['Cal','Pro(g)','Fat(g)']},
+    psych:{m:[[1.5,0.2,0],[0.1,0.8,0],[0,0,0.4]],v:[6,8,7],inLabels:['C','E','N'],outLabels:['C_out','E_out','N_out']},
+    ai:{m:[[0.8,0.1,0.05,0.05],[0.1,0.7,0.1,0.1],[0.05,0.1,0.8,0.05],[0.05,0.1,0.05,0.8]],v:[5,3,7,4],inLabels:['Syn','Sem','Clin','Fmt'],outLabels:['Q₁','Q₂','Q₃','Q₄']}
+  };
+
+  function draw(){
+    const p=canvas.parentElement,r=p.getBoundingClientRect();
+    canvas.width=r.width*DPR;canvas.height=r.height*DPR;canvas.style.width=r.width+'px';canvas.style.height=r.height+'px';
+    const ctx=canvas.getContext('2d');ctx.scale(DPR,DPR);
+    const w=r.width,h=r.height;ctx.clearRect(0,0,w,h);
+    const cfg=cfgs[domain];const rows=cfg.m.length,cols=cfg.m[0].length;
+    const result=cfg.m.map(row=>row.reduce((s,c,i)=>s+c*cfg.v[i],0));
+
+    const cellW=42,cellH=28,gap=2;
+    const totalMW=cols*(cellW+gap),totalVW=(cellW+gap),totalRW=(cellW+gap);
+    const totalW=totalMW+30+totalVW+30+totalRW;
+    const sx=(w-totalW)/2,sy=40;
+
+    // Title
+    ctx.font='700 12px Space Grotesk';ctx.fillStyle='#fafafa';ctx.textAlign='center';
+    ctx.fillText('Matrix × Vector = Result',w/2,25);
+
+    // Matrix
+    cfg.m.forEach((row,ri)=>{
+      row.forEach((v,ci)=>{
+        const x=sx+ci*(cellW+gap),y=sy+ri*(cellH+gap);
+        const intensity=Math.min(Math.abs(v)/2,1);
+        ctx.fillStyle=`rgba(245,158,11,${intensity*0.2})`;ctx.fillRect(x,y,cellW,cellH);
+        ctx.strokeStyle='#f59e0b33';ctx.lineWidth=1;ctx.strokeRect(x,y,cellW,cellH);
+        ctx.font='600 9px JetBrains Mono';ctx.fillStyle=v===0?'#3f3f46':'#f59e0b';ctx.textAlign='center';
+        ctx.fillText(v%1===0?v.toString():v.toFixed(1),x+cellW/2,y+cellH/2+3);
+      });
+    });
+    // Col labels
+    cfg.inLabels.forEach((l,i)=>{ctx.font='9px DM Sans';ctx.fillStyle='#52525b';ctx.textAlign='center';ctx.fillText(l,sx+i*(cellW+gap)+cellW/2,sy-6);});
+
+    const vx=sx+totalMW+30;
+    // × sign
+    ctx.font='700 16px Space Grotesk';ctx.fillStyle='#52525b';ctx.textAlign='center';
+    ctx.fillText('×',sx+totalMW+14,sy+rows*(cellH+gap)/2);
+
+    // Vector
+    cfg.v.forEach((v,i)=>{
+      const x=vx,y=sy+i*(cellH+gap);
+      ctx.fillStyle='rgba(20,184,166,0.15)';ctx.fillRect(x,y,cellW,cellH);
+      ctx.strokeStyle='#14b8a644';ctx.strokeRect(x,y,cellW,cellH);
+      ctx.font='600 9px JetBrains Mono';ctx.fillStyle='#14b8a6';ctx.textAlign='center';
+      ctx.fillText(v.toString(),x+cellW/2,y+cellH/2+3);
+    });
+
+    // = sign
+    const rx=vx+totalVW+15;
+    ctx.font='700 16px Space Grotesk';ctx.fillStyle='#52525b';ctx.textAlign='center';
+    ctx.fillText('=',vx+totalVW+8,sy+rows*(cellH+gap)/2);
+
+    // Result
+    result.forEach((v,i)=>{
+      const x=rx,y=sy+i*(cellH+gap);
+      ctx.fillStyle='rgba(16,185,129,0.15)';ctx.fillRect(x,y,cellW,cellH);
+      ctx.strokeStyle='#10b98144';ctx.strokeRect(x,y,cellW,cellH);
+      ctx.font='600 9px JetBrains Mono';ctx.fillStyle='#10b981';ctx.textAlign='center';
+      ctx.fillText(v%1===0?v.toString():v.toFixed(1),x+cellW/2,y+cellH/2+3);
+    });
+    // Result labels
+    cfg.outLabels.forEach((l,i)=>{ctx.font='9px DM Sans';ctx.fillStyle='#52525b';ctx.textAlign='left';ctx.fillText(l,rx+cellW+6,sy+i*(cellH+gap)+cellH/2+3);});
+
+    // Shape annotation
+    const shapeY=sy+Math.max(rows,cols)*(cellH+gap)+20;
+    ctx.font='600 10px JetBrains Mono';ctx.fillStyle='#f59e0b';ctx.textAlign='center';
+    ctx.fillText(`(${rows}×${cols})`,sx+totalMW/2,shapeY);
+    ctx.fillStyle='#14b8a6';ctx.fillText(`(${cols}×1)`,vx+cellW/2,shapeY);
+    ctx.fillStyle='#10b981';ctx.fillText(`(${rows}×1)`,rx+cellW/2,shapeY);
+    ctx.fillStyle='#52525b';
+    ctx.fillText('→',sx+totalMW/2+50,shapeY);
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      domain=btn.dataset.target;
+      document.querySelectorAll('.domain-content').forEach(c=>c.classList.remove('active'));
+      document.getElementById(domain).classList.add('active');
+      draw();
+    });
+  });
+  draw();window.addEventListener('resize',draw);
+})();
+
+document.querySelectorAll('.puzzle-header').forEach(hdr=>{hdr.addEventListener('click',()=>{const c=hdr.parentElement;const o=c.classList.contains('open');document.querySelectorAll('.puzzle-card').forEach(p=>p.classList.remove('open'));if(!o)c.classList.add('open');});});
+
+(function(){const links=document.querySelectorAll('.nav-link');const ids=['domains','crossdomain','puzzles','builder'];window.addEventListener('scroll',()=>{const y=window.scrollY+100;let active=ids[0];ids.forEach(id=>{const el=document.getElementById(id);if(el&&el.offsetTop<=y)active=id;});links.forEach(l=>l.classList.toggle('active',l.dataset.section===active));});})();
+</script>
+</body>
+</html>

@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 12 - Exposure Layer</title>
+  <style>
+    :root {
+      --bg: #09090b;
+      --panel: #111114;
+      --panel-2: #16161a;
+      --line: rgba(255, 255, 255, 0.08);
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --accent: #f97316;
+      --accent-soft: rgba(249, 115, 22, 0.12);
+      --good: #22c55e;
+      --bad: #ef4444;
+      --warn: #f59e0b;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top, rgba(249, 115, 22, 0.08), transparent 28%),
+        linear-gradient(180deg, #0b0b0e 0%, #09090b 100%);
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.6;
+    }
+
+    .progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.05);
+      z-index: 50;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #ea580c, #fb923c);
+      transition: width 0.35s ease;
+    }
+
+    .shell {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font: 600 0.75rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 14px;
+    }
+
+    h1, h2, h3 {
+      margin: 0 0 14px;
+      line-height: 1.1;
+      font-weight: 500;
+    }
+
+    h1 { font-size: clamp(2.4rem, 5vw, 4.4rem); }
+    h2 { font-size: clamp(1.7rem, 3vw, 2.4rem); }
+    h3 { font-size: 1.2rem; }
+
+    p { margin: 0 0 16px; }
+
+    .lede {
+      font-size: 1.15rem;
+      color: #e4e4e7;
+      max-width: 46rem;
+    }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.32), transparent);
+      margin: 28px 0;
+    }
+
+    .card,
+    .feedback,
+    .choice,
+    input[type="number"],
+    input[type="text"],
+    textarea {
+      border-radius: 16px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border: 1px solid var(--line);
+      padding: 24px;
+      margin-top: 22px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+    }
+
+    .scenario-count {
+      color: #71717a;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font: 600 0.76rem/1.2 Arial, Helvetica, sans-serif;
+      margin-bottom: 10px;
+    }
+
+    .prompt {
+      color: #d4d4d8;
+      font-size: 1.02rem;
+    }
+
+    .mono {
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 0.96rem;
+      color: #e4e4e7;
+    }
+
+    .data-block {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      padding: 16px 18px;
+      margin: 16px 0;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      font: 600 0.96rem/1 Arial, Helvetica, sans-serif;
+      transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn {
+      padding: 14px 18px;
+      border-radius: 999px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid rgba(249, 115, 22, 0.28);
+    }
+
+    .input-wrap {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--text);
+      padding: 14px 16px;
+      font: 400 1rem/1.4 Arial, Helvetica, sans-serif;
+      outline: none;
+    }
+
+    textarea { min-height: 120px; resize: vertical; }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(249, 115, 22, 0.55);
+      box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.12);
+    }
+
+    .choices {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .choice {
+      width: 100%;
+      text-align: left;
+      padding: 16px 18px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #e4e4e7;
+    }
+
+    .choice.selected {
+      border-color: rgba(249, 115, 22, 0.8);
+      background: rgba(249, 115, 22, 0.08);
+    }
+
+    .feedback {
+      display: none;
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .feedback.show { display: block; }
+    .feedback.good { border-color: rgba(34, 197, 94, 0.35); }
+    .feedback.bad { border-color: rgba(239, 68, 68, 0.35); }
+    .feedback h3 { margin-bottom: 8px; }
+    .feedback p:last-child { margin-bottom: 0; }
+
+    .locked {
+      margin-top: 12px;
+      color: #fb923c;
+      font: 600 0.82rem/1.2 Arial, Helvetica, sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .hidden { display: none; }
+
+    .stage {
+      display: none;
+      animation: fadeUp 0.45s ease;
+    }
+
+    .stage.active { display: block; }
+
+    .quick-grid {
+      display: grid;
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .q-card {
+      border: 1px solid var(--line);
+      padding: 18px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .q-card label {
+      display: block;
+      font: 600 0.83rem/1.2 Arial, Helvetica, sans-serif;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: #a1a1aa;
+      margin-bottom: 10px;
+    }
+
+    .score {
+      font: 600 1rem/1.4 Arial, Helvetica, sans-serif;
+      color: #e4e4e7;
+      margin-top: 18px;
+    }
+
+    .final-box {
+      background: linear-gradient(180deg, rgba(249,115,22,0.08), rgba(255,255,255,0.02));
+      border: 1px solid rgba(249,115,22,0.25);
+      padding: 22px;
+      border-radius: 18px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(249, 115, 22, 0.1);
+      color: #fdba74;
+      font: 600 0.8rem/1 Arial, Helvetica, sans-serif;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 640px) {
+      .shell { padding: 28px 14px 60px; }
+      .card { padding: 18px; }
+      .btn { width: 100%; justify-content: center; }
+      .actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="progress" aria-hidden="true">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <main class="shell">
+    <section id="stage-intro" class="stage active">
+      <p class="eyebrow">Lesson 12 - Exposure Layer</p>
+      <h1>The team is losing. You walk into the dressing room.</h1>
+      <div class="divider"></div>
+      <p class="lede">You are about to make five tactical judgments about optimization and policy learning. At least one of your instincts should fail in your own hands. That failure is the point.</p>
+      <div class="card">
+        <p>At halftime your team is down 2-0. Five attacking strategies were tried. Two generated goals. One generated nothing. One looked tidy but did almost nothing useful. One produced chances without converting.</p>
+        <p>The natural mistake is to overreact: pick the single best performer and force it forever. Modern reinforcement learning fails the exact same way when updates are not bounded.</p>
+        <div class="data-block mono">
+          <p>Strategy 1: 3 chances, 0 goals</p>
+          <p>Strategy 2: 0 chances, 0 goals</p>
+          <p>Strategy 3: 5 chances, 1 goal</p>
+          <p>Strategy 4: 1 chance, 0 goals</p>
+          <p>Strategy 5: 4 chances, 1 goal</p>
+        </div>
+        <p class="prompt">No diagrams. No scaffolds. Just predictions, locked commitments, and the consequences of those commitments.</p>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="goToStage(1)">Begin the exposure gauntlet</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-1" class="stage">
+      <div class="card">
+        <p class="scenario-count">Scenario 1 of 5</p>
+        <h2>The Best Play Trap</h2>
+        <p>You must choose the halftime instruction. What is the strongest move?</p>
+        <div class="choices" data-group="s1">
+          <button class="choice" data-value="A">Use only Strategy 3 for the rest of the match. It was best, so maximum exploitation is optimal.</button>
+          <button class="choice" data-value="B">Increase Strategy 3 and Strategy 5, reduce Strategy 2 and Strategy 4, and keep Strategy 1 alive as a smaller option.</button>
+          <button class="choice" data-value="C">Ignore the first half. Randomize all five strategies equally because variety matters more than evidence.</button>
+          <button class="choice" data-value="D">Switch completely to Strategy 1 because chance creation matters more than goals.</button>
+        </div>
+        <div class="locked hidden" id="s1-lock">Prediction locked.</div>
+        <div class="actions">
+          <button class="btn btn-primary" id="s1-submit" onclick="submitChoice('s1', 'B', s1Feedback)">Lock prediction</button>
+        </div>
+        <div class="feedback" id="s1-feedback"></div>
+        <div class="actions hidden" id="s1-next">
+          <button class="btn btn-secondary" onclick="goToStage(2)">Next scenario</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-2" class="stage">
+      <div class="card">
+        <p class="scenario-count">Scenario 2 of 5</p>
+        <h2>Minus or Plus?</h2>
+        <p>The objective is no longer a loss. It is a reward <span class="mono">J(theta)</span> that should go up. Which parameter update matches that goal?</p>
+        <div class="choices" data-group="s2">
+          <button class="choice" data-value="A"><span class="mono">theta_new = theta_old - eta grad J(theta)</span></button>
+          <button class="choice" data-value="B"><span class="mono">theta_new = theta_old + eta grad J(theta)</span></button>
+          <button class="choice" data-value="C"><span class="mono">theta_new = theta_old / grad J(theta)</span></button>
+          <button class="choice" data-value="D"><span class="mono">theta_new = theta_old + J(theta)</span></button>
+        </div>
+        <div class="locked hidden" id="s2-lock">Prediction locked.</div>
+        <div class="actions">
+          <button class="btn btn-primary" id="s2-submit" onclick="submitChoice('s2', 'B', s2Feedback)">Lock prediction</button>
+        </div>
+        <div class="feedback" id="s2-feedback"></div>
+        <div class="actions hidden" id="s2-next">
+          <button class="btn btn-secondary" onclick="goToStage(3)">Next scenario</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-3" class="stage">
+      <div class="card">
+        <p class="scenario-count">Scenario 3 of 5</p>
+        <h2>The Imitation Ceiling</h2>
+        <p>An SFT model trains on coaching scripts where 70% are mediocre and 30% are exceptional. Which prediction is most defensible?</p>
+        <div class="choices" data-group="s3">
+          <button class="choice" data-value="A">SFT will naturally discover the exceptional scripts and mostly generate those.</button>
+          <button class="choice" data-value="B">SFT will reproduce the average distribution, so mediocrity remains common unless another signal pushes the model upward.</button>
+          <button class="choice" data-value="C">SFT ignores low-quality examples because the gradient cancels them out.</button>
+          <button class="choice" data-value="D">SFT and RL are the same once the dataset is large enough.</button>
+        </div>
+        <div class="locked hidden" id="s3-lock">Prediction locked.</div>
+        <div class="actions">
+          <button class="btn btn-primary" id="s3-submit" onclick="submitChoice('s3', 'B', s3Feedback)">Lock prediction</button>
+        </div>
+        <div class="feedback" id="s3-feedback"></div>
+        <div class="actions hidden" id="s3-next">
+          <button class="btn btn-secondary" onclick="goToStage(4)">Next scenario</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-4" class="stage">
+      <div class="card">
+        <p class="scenario-count">Scenario 4 of 5</p>
+        <h2>The Group Score Trap</h2>
+        <p>Four responses receive scores <span class="mono">[7, 3, 9, 5]</span>. Which response should get the strongest positive push after advantage normalization?</p>
+        <div class="choices" data-group="s4">
+          <button class="choice" data-value="A">The one with score 7, because it is above the median.</button>
+          <button class="choice" data-value="B">The one with score 3, because low scores produce the largest gradient corrections.</button>
+          <button class="choice" data-value="C">The one with score 9, because it is furthest above the group average.</button>
+          <button class="choice" data-value="D">All four equally, because raw scores are already sufficient.</button>
+        </div>
+        <div class="locked hidden" id="s4-lock">Prediction locked.</div>
+        <div class="actions">
+          <button class="btn btn-primary" id="s4-submit" onclick="submitChoice('s4', 'C', s4Feedback)">Lock prediction</button>
+        </div>
+        <div class="feedback" id="s4-feedback"></div>
+        <div class="actions hidden" id="s4-next">
+          <button class="btn btn-secondary" onclick="goToStage(5)">Next scenario</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-5" class="stage">
+      <div class="card">
+        <p class="scenario-count">Scenario 5 of 5</p>
+        <h2>The Unclipped Lunge</h2>
+        <p>A response has advantage <span class="mono">+5.0</span>. Its importance ratio is already <span class="mono">3.0</span>. If you let the raw signal through, the update term becomes huge. What is clipping trying to prevent?</p>
+        <div class="choices" data-group="s5">
+          <button class="choice" data-value="A">The model from ever preferring a good response.</button>
+          <button class="choice" data-value="B">The policy from making one oversized jump that destabilizes training by overcommitting to a behavior too quickly.</button>
+          <button class="choice" data-value="C">The reward model from assigning numerical scores.</button>
+          <button class="choice" data-value="D">The gradient from containing positive values.</button>
+        </div>
+        <div class="locked hidden" id="s5-lock">Prediction locked.</div>
+        <div class="actions">
+          <button class="btn btn-primary" id="s5-submit" onclick="submitChoice('s5', 'B', s5Feedback)">Lock prediction</button>
+        </div>
+        <div class="feedback" id="s5-feedback"></div>
+        <div class="actions hidden" id="s5-next">
+          <button class="btn btn-secondary" onclick="goToStage(6)">Continue to mastery gate</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-6" class="stage">
+      <div class="card">
+        <p class="eyebrow" style="margin-bottom: 10px;">Mastery Gate</p>
+        <h2>Commit the pipeline in one sentence</h2>
+        <p>Before this layer unlocks its rapid-fire drill, compress the core mechanism. Name the six-step sequence in order, using plain language.</p>
+        <textarea id="masteryText" placeholder="Example format: generate..., score..., normalize..., measure..., clip..., update..."></textarea>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="submitMastery()">Lock response</button>
+        </div>
+        <div class="feedback" id="mastery-feedback"></div>
+        <div class="actions hidden" id="mastery-next">
+          <button class="btn btn-secondary" onclick="goToStage(7)">Enter the 7-question gauntlet</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="stage-7" class="stage">
+      <div class="card">
+        <p class="eyebrow" style="margin-bottom: 10px;">Exposure Gauntlet</p>
+        <h2>Seven fast checks. No hints.</h2>
+        <p>Each answer should be short. The gauntlet only unlocks completion if you demonstrate the structure, not just the vibe.</p>
+
+        <div class="quick-grid">
+          <div class="q-card">
+            <label for="g1">1. What does RL do that SFT does not?</label>
+            <input id="g1" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g2">2. Why compare scores to the group average instead of trusting raw scores?</label>
+            <input id="g2" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g3">3. What does an importance ratio of 1.5 mean?</label>
+            <input id="g3" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g4">4. Why is clipping conservative?</label>
+            <input id="g4" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g5">5. If group size is 2, what simpler method does GRPO collapse toward?</label>
+            <input id="g5" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g6">6. What warning does reward hacking give the architect?</label>
+            <input id="g6" type="text" placeholder="Short answer">
+          </div>
+          <div class="q-card">
+            <label for="g7">7. RL changes more than outputs. What internal thing can emerge?</label>
+            <input id="g7" type="text" placeholder="Short answer">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" onclick="gradeGauntlet()">Submit gauntlet</button>
+        </div>
+
+        <div class="feedback" id="gauntlet-feedback"></div>
+        <div class="final-box hidden" id="final-box">
+          <div class="pill">Layer 1 complete</div>
+          <p id="final-text"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const totalStages = 8;
+    let currentStage = 0;
+    const selections = {};
+
+    document.querySelectorAll('.choices').forEach((group) => {
+      group.addEventListener('click', (event) => {
+        const choice = event.target.closest('.choice');
+        if (!choice) return;
+        if (group.dataset.locked === 'true') return;
+        group.querySelectorAll('.choice').forEach((item) => item.classList.remove('selected'));
+        choice.classList.add('selected');
+        selections[group.dataset.group] = choice.dataset.value;
+      });
+    });
+
+    function setProgress(index) {
+      const pct = Math.max(0, Math.min(100, (index / (totalStages - 1)) * 100));
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    function goToStage(index) {
+      currentStage = index;
+      document.querySelectorAll('.stage').forEach((stage) => stage.classList.remove('active'));
+      document.getElementById(index === 0 ? 'stage-intro' : 'stage-' + index).classList.add('active');
+      setProgress(index);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showFeedback(id, type, title, body) {
+      const box = document.getElementById(id);
+      box.className = 'feedback show ' + type;
+      box.innerHTML = '<h3>' + title + '</h3><p>' + body + '</p>';
+    }
+
+    const s1Feedback = {
+      good: {
+        title: 'Correct: RL shifts, it does not lunge.',
+        body: 'The winning intuition is bounded adaptation. GRPO makes stronger behaviors more likely and weaker behaviors less likely, but clipping prevents a total tactical collapse into one response pattern.'
+      },
+      bad: {
+        title: 'Misconception exposed: best-so-far does not mean only-from-now-on.',
+        body: 'The failure is overexploitation. If you force only the top response, the policy can destabilize and lose flexibility. Clipping exists because the right move is a gradual bounded shift, not absolute commitment.'
+      }
+    };
+
+    const s2Feedback = {
+      good: {
+        title: 'Correct: reward is climbed, not descended.',
+        body: 'When the objective is reward, the update uses a plus sign. Gradient ascent means moving parameters in the direction that increases the objective.'
+      },
+      bad: {
+        title: 'Misconception exposed: carrying loss intuition into reward optimization.',
+        body: 'Gradient descent is for minimizing loss. Reinforcement learning often reframes the objective as reward, so the conceptual move is different: do more of what works, not merely less of what fails.'
+      }
+    };
+
+    const s3Feedback = {
+      good: {
+        title: 'Correct: imitation preserves the distribution it sees.',
+        body: 'SFT learns to imitate the training set as it is, including its mediocrity. RL changes the distribution by making stronger outputs relatively more likely.'
+      },
+      bad: {
+        title: 'Misconception exposed: assuming the model will magically prefer the best examples.',
+        body: 'Without a reward or preference signal, SFT has no reason to bias toward excellence. It averages across the distribution presented to it.'
+      }
+    };
+
+    const s4Feedback = {
+      good: {
+        title: 'Correct: advantage is relative, not raw.',
+        body: 'The score of 9 sits furthest above the group mean, so it gets the strongest positive advantage. GRPO cares about how a response performs relative to its cohort, not just about the absolute number.'
+      },
+      bad: {
+        title: 'Misconception exposed: raw score without context.',
+        body: 'Advantage estimation asks a different question: compared with the other samples generated for this prompt, which behavior overperformed and which underperformed? The strongest positive push goes to the best relative outlier.'
+      }
+    };
+
+    const s5Feedback = {
+      good: {
+        title: 'Correct: clipping is a stability mechanism.',
+        body: 'A giant positive signal can cause the policy to overcorrect in one step. Clipping keeps each update within a safe band so learning remains directional without becoming chaotic.'
+      },
+      bad: {
+        title: 'Misconception exposed: clipping is not anti-learning.',
+        body: 'Clipping does not stop the model from preferring strong outputs. It stops the model from making one oversized jump that would distort the policy too quickly.'
+      }
+    };
+
+    function submitChoice(groupId, correctAnswer, feedbackPack) {
+      const selected = selections[groupId];
+      if (!selected) {
+        showFeedback(groupId + '-feedback', 'bad', 'Prediction required', 'Choose an answer before you lock it. The reveal only happens after commitment.');
+        return;
+      }
+
+      const group = document.querySelector('[data-group="' + groupId + '"]');
+      group.dataset.locked = 'true';
+      document.getElementById(groupId + '-submit').disabled = true;
+      document.getElementById(groupId + '-lock').classList.remove('hidden');
+
+      const isCorrect = selected === correctAnswer;
+      const payload = isCorrect ? feedbackPack.good : feedbackPack.bad;
+      showFeedback(groupId + '-feedback', isCorrect ? 'good' : 'bad', payload.title, payload.body);
+      document.getElementById(groupId + '-next').classList.remove('hidden');
+    }
+
+    function submitMastery() {
+      const textArea = document.getElementById('masteryText');
+      const value = textArea.value.trim().toLowerCase();
+      const required = ['generate', 'score', 'normalize', 'ratio', 'clip'];
+      const updateWords = value.includes('gradient ascent') || value.includes('update') || value.includes('step');
+      const hits = required.filter((word) => value.includes(word)).length + (updateWords ? 1 : 0);
+
+      textArea.disabled = true;
+      if (hits >= 5) {
+        showFeedback(
+          'mastery-feedback',
+          'good',
+          'Gate passed',
+          'You captured the load-bearing structure: generate, score, normalize into advantages, measure policy shift with a ratio, clip the ratio, and update toward reward.'
+        );
+        document.getElementById('mastery-next').classList.remove('hidden');
+      } else {
+        showFeedback(
+          'mastery-feedback',
+          'bad',
+          'Gate failed',
+          'The sequence is still missing structural pieces. The six-step chain must visibly include generation, scoring, relative comparison, ratio measurement, clipping, and the final ascent update.'
+        );
+        textArea.disabled = false;
+      }
+    }
+
+    function containsAny(value, options) {
+      return options.some((option) => value.includes(option));
+    }
+
+    function gradeGauntlet() {
+      const answers = {
+        g1: ['more likely', 'less likely', 'shift', 'distribution', 'good outputs'],
+        g2: ['relative', 'group', 'context', 'average', 'mean'],
+        g3: ['50%', 'more likely', 'higher probability', 'shifted toward'],
+        g4: ['less optimistic', 'bounded', 'prevent', 'instability', 'safe'],
+        g5: ['dpo', 'direct preference optimization'],
+        g6: ['bad reward', 'proxy', 'optimize nonsense', 'garbage', 'faithfully'],
+        g7: ['attention head', 'specialized head', 'circuit', 'specialized attention']
+      };
+
+      let score = 0;
+
+      Object.entries(answers).forEach(([id, keywords]) => {
+        const value = document.getElementById(id).value.trim().toLowerCase();
+        if (value && containsAny(value, keywords)) score += 1;
+      });
+
+      const box = document.getElementById('gauntlet-feedback');
+      const finalBox = document.getElementById('final-box');
+      const finalText = document.getElementById('final-text');
+
+      if (score >= 5) {
+        showFeedback(
+          'gauntlet-feedback',
+          'good',
+          'Gauntlet cleared: ' + score + '/7',
+          'You held onto the structure under pressure. That is enough for Layer 1: the policy shifts relative to evidence, clips its aggression, and learns what to favor.'
+        );
+        finalBox.classList.remove('hidden');
+        finalText.textContent = 'Reinforcement learning is now visible as a judgment pattern, not yet as full mathematics: generate a group, score it, compare each output to the group, constrain the shift, then move the policy toward better behavior without collapsing into a single tactic.';
+      } else {
+        showFeedback(
+          'gauntlet-feedback',
+          'bad',
+          'Gauntlet failed: ' + score + '/7',
+          'Layer 1 is still doing its job. Revisit the misconceptions: SFT imitates averages, GRPO compares outputs relative to one another, clipping protects stability, and the reward function can shape internal circuits.'
+        );
+        finalBox.classList.add('hidden');
+      }
+    }
+
+    setProgress(0);
+  </script>
+</body>
+</html>

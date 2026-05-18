@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Stateless Execution Loop — Capability Layer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0A;--surface:#151515;--surface2:#1e1e1e;--surface3:#2A2A2A;
+  --text:#FAFAFA;--muted:#A0A0A0;--border:#2e2e2e;
+  --accent:#E8C46A;--red:#E76F51;--green:#2A9D8F;
+  --mono:'IBM Plex Mono',monospace;--sans:'Inter',sans-serif;--serif:'Playfair Display',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.65;overflow-x:hidden;}
+.container{max-width:780px;margin:0 auto;padding:4rem 2rem 10rem;}
+
+h1{font-family:var(--serif);font-size:clamp(2.5rem,6vw,3.8rem);line-height:1.0;margin-bottom:1.5rem;letter-spacing:-0.02em;}
+h2{font-family:var(--serif);font-size:1.9rem;margin-bottom:1rem;color:var(--accent);}
+p{margin-bottom:1.4rem;color:var(--muted);font-size:1rem;line-height:1.7;}
+strong{color:var(--text);}
+.lesson-tag{font-family:var(--mono);font-size:0.7rem;color:var(--accent);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.15em;}
+
+/* FAILURE ANCHOR */
+.failure-anchor{background:rgba(231,111,81,0.06);border:1px solid rgba(231,111,81,0.25);border-left:3px solid var(--red);border-radius:0 6px 6px 0;padding:1.5rem 1.75rem;margin-bottom:2.5rem;}
+.fa-label{font-family:var(--mono);font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--red);margin-bottom:0.6rem;}
+.fa-text{color:#ffb3a1;font-size:0.92rem;line-height:1.65;}
+
+/* CODE DISPLAY */
+.code-block{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:1.25rem;font-family:var(--mono);font-size:0.85rem;color:#ccc;line-height:1.6;margin:1.5rem 0;overflow-x:auto;}
+.keyword{color:#c678dd;} .string{color:#98c379;} .comment{color:#5c6370;font-style:italic;} .function{color:#61afef;}
+
+/* INTERACTION BOX */
+.interaction-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2.25rem;margin:2rem 0;}
+.interaction-header{font-family:var(--mono);font-size:0.7rem;color:var(--accent);text-transform:uppercase;margin-bottom:1.25rem;letter-spacing:0.12em;padding-bottom:0.6rem;border-bottom:1px solid var(--border);}
+.question-text{font-size:1.05rem;font-weight:500;margin-bottom:1.75rem;color:#fff;line-height:1.6;}
+
+.input-group{display:flex;gap:1rem;align-items:center;margin-bottom:0.5rem;flex-wrap:wrap;}
+.input-text{background:var(--bg);border:2px solid var(--border);color:#fff;font-family:var(--mono);font-size:0.95rem;padding:0.7rem 1rem;flex:1;min-width:200px;border-radius:4px;transition:border-color 0.2s;}
+.input-text:focus{outline:none;border-color:var(--accent);}
+.input-text:disabled{opacity:0.45;cursor:not-allowed;}
+
+.btn{background:var(--text);color:var(--bg);border:none;padding:0.7rem 1.4rem;font-family:var(--sans);font-weight:600;font-size:0.95rem;border-radius:4px;cursor:pointer;transition:all 0.18s;}
+.btn:hover:not(:disabled){background:#fff;transform:translateY(-1px);}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);padding:0.65rem 1.25rem;}
+.btn-outline:hover:not(:disabled){border-color:var(--text);background:var(--surface2);}
+
+.choices{display:flex;flex-direction:column;gap:0.85rem;margin-bottom:0.5rem;}
+.choice-btn{text-align:left;padding:1rem 1.2rem;background:var(--bg);border:1px solid var(--border);color:var(--muted);border-radius:6px;cursor:pointer;transition:all 0.18s;font-size:0.92rem;font-weight:400;font-family:var(--sans);line-height:1.5;}
+.choice-btn:hover{border-color:var(--text);color:var(--text);}
+.choice-btn.selected-wrong{border-color:var(--red);color:var(--red);background:rgba(231,111,81,0.05);}
+.choice-btn.selected-right{border-color:var(--green);color:var(--green);background:rgba(42,157,143,0.05);}
+
+/* FEEDBACK */
+.feedback{display:none;margin-top:1.5rem;padding:1.25rem 1.5rem;border-radius:4px;font-size:0.9rem;line-height:1.65;}
+.feedback.visible{display:block;animation:fadein 0.35s;}
+.feedback.error{background:rgba(231,111,81,0.08);border-left:3px solid var(--red);color:#ffb3a1;}
+.feedback.success{background:rgba(42,157,143,0.08);border-left:3px solid var(--green);color:#a7ece2;}
+.feedback-title{font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;margin-bottom:0.5rem;font-weight:600;letter-spacing:0.1em;}
+@keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+
+/* PREDICTION LOCK DISPLAY */
+.lock-display{display:none;margin-top:1rem;padding:0.9rem 1.1rem;background:var(--surface2);border-radius:4px;font-family:var(--mono);font-size:0.82rem;color:var(--muted);}
+.lock-display.visible{display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;}
+.lock-item{display:flex;flex-direction:column;gap:0.15rem;}
+.lock-label{font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;}
+.lock-val{font-size:1.1rem;font-weight:500;}
+.lock-val.actual{color:var(--green);}
+.lock-val.wrong{color:var(--red);}
+
+/* GATED CONTENT */
+.gated-content{opacity:0;pointer-events:none;transform:translateY(16px);transition:all 0.45s ease;display:none;}
+.gated-content.unlocked{opacity:1;pointer-events:auto;transform:translateY(0);display:block;}
+
+/* GAUNTLET */
+.gauntlet-wrap{margin-top:4rem;border-top:2px solid var(--border);padding-top:3rem;}
+.gauntlet-intro{font-size:0.88rem;color:var(--muted);margin-bottom:2rem;padding:1rem 1.25rem;background:var(--surface2);border-radius:4px;border-left:2px solid var(--border);}
+.q-block{background:var(--surface2);padding:1.4rem 1.5rem;border-radius:6px;margin-bottom:1.25rem;border:1px solid var(--border);}
+.q-num{font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-transform:uppercase;margin-bottom:0.4rem;letter-spacing:0.1em;}
+.q-text{font-size:1rem;margin-bottom:1.25rem;font-weight:500;color:#fff;line-height:1.55;}
+.q-misconception{font-family:var(--mono);font-size:0.65rem;color:rgba(232,196,106,0.45);margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.08em;}
+
+/* SECTION DIVIDER */
+.divider{border:none;border-top:1px solid var(--border);margin:3rem 0;}
+
+/* FACTORY METAPHOR */
+.factory-metaphor{background:rgba(232,196,106,0.05);border:1px solid rgba(232,196,106,0.2);border-left:3px solid var(--accent);padding:1.5rem;margin:2rem 0;border-radius:0 6px 6px 0;}
+.fm-title{font-family:var(--mono);font-size:0.65rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.75rem;}
+
+.mc-tag{display:inline-block;font-family:var(--mono);font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;background:rgba(231,111,81,0.15);color:var(--red);padding:0.15rem 0.45rem;border-radius:2px;margin-bottom:0.4rem;}
+
+@media(max-width:600px){
+  .lock-display.visible{flex-direction:column;align-items:flex-start;gap:1rem;}
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="lesson-tag">Lesson 19 · Layer 1 — Capability</div>
+  <h1>The Stateless Execution Loop</h1>
+
+  <!-- THE CCP FAILURE SCENARIO -->
+  <div class="failure-anchor">
+    <div class="fa-label">Real Failure Case — The Runaway Context Cascade</div>
+    <div class="fa-text">
+       You are observing a live coaching session. A client requested a deep-dive analysis on their triggers. The agent begins its execution. It assesses the text, calls an internal tool to retrieve the Neo4j graph history, and gets the data. Then, it calls the exact same tool again. And again. And again.<br><br>
+       Because the execution loop lacks a firm `MAX_TURNS` cutoff constraint, the context window begins to bloat. Within 45 seconds, the context window exceeds the model's physical token limit. The subsystem crashes. The client receives a dead session timeout. The platform burns valuable inference compute cycling endlessly into a void.
+    </div>
+  </div>
+
+  <p>The stateless execution loop isn't simply a <code>while</code> statement in Python—it is the <strong>bounding dimension of agent autonomy</strong>. It is the primitive capability that allows the platform to safely grant an LLM "hands" to interact with tools, while maintaining an impenetrable perimeter of control over its operational runtime.</p>
+  <p>This capability ensures that agent execution is infinitely stoppable, fully inspectable, and entirely reproducible.</p>
+
+  <div class="divider"></div>
+  <h2>The Minimal Architecture</h2>
+  <p>Below are specific representations of the operational code that governs the execution loop. These blocks map immediately to the <code>pi-mono</code> agentic harness used throughout the CCP to drive autonomous loop behaviors. Predict how the state unfolds.</p>
+
+  <!-- P-GATE 1 -->
+  <div class="interaction-box" id="gate1">
+    <div class="interaction-header">Prediction Gate 01 — Structural Boundaries</div>
+    <div class="code-block">
+<span class="keyword">history</span>: list[dict] = [{"role": <span class="string">"system"</span>, "content": <span class="string">"You are a CCP Coach."</span>}]
+<span class="keyword">user_input</span>: str = <span class="string">"Analyze my triggers."</span>
+history.append({"role": <span class="string">"user"</span>, "content": user_input})
+<span class="keyword">turn_count</span>: int = 0
+    </div>
+    <div class="question-text">
+      What is the exact <code>len(history)</code> at this very moment, and architecturally, what does this array represent?
+    </div>
+    <div class="input-group">
+      <input type="text" id="pred1" class="input-text" placeholder="Type length and significance...">
+      <button class="btn" id="btn1" onclick="submitGate1()">Lock Prediction</button>
+    </div>
+    <div class="feedback" id="fb1"></div>
+  </div>
+
+  <div class="gated-content" id="layer2-unlocked">
+    
+    <!-- P-GATE 2 -->
+    <div class="interaction-box" id="gate2">
+      <div class="interaction-header">Prediction Gate 02 — Stateless Appending</div>
+      <div class="code-block">
+<span class="keyword">tool_result</span>: str = execute_bash(<span class="string">"cat session_S-001.json"</span>)
+history.append({"role": <span class="string">"tool"</span>, "content": tool_result})
+<span class="keyword">llm_response</span>: str = <span class="keyword">await</span> call_llm(history)
+history.append({"role": <span class="string">"assistant"</span>, "content": llm_response})
+      </div>
+      <div class="question-text">
+        Why is it absolutely critical that <code>tool_result</code> is appended to the history array <strong>BEFORE</strong>  <code>llm_response</code> is appended (or generated), rather than just returning the output directly?
+      </div>
+      <div class="choices">
+        <button class="choice-btn" onclick="checkGate2(this, false)">A. It prevents Python from throwing an asynchronous blocking error.</button>
+        <button class="choice-btn" onclick="checkGate2(this, false)">B. The database writes tools and assistant responses in separate batches.</button>
+        <button class="choice-btn" onclick="checkGate2(this, true)">C. The LLM is strictly stateless; if the result isn't explicitly in the history array, the LLM will never "observe" the outcome of its own action.</button>
+      </div>
+      <div class="feedback" id="fb2"></div>
+    </div>
+
+  </div>
+
+  <div class="gated-content" id="layer3-unlocked">
+    
+    <!-- P-GATE 3 -->
+    <div class="interaction-box" id="gate3">
+      <div class="interaction-header">Prediction Gate 03 — The Loop Break Cap</div>
+      <div class="code-block">
+<span class="keyword">MAX_TURNS</span>: int = 15
+
+<span class="keyword">while</span> turn_count < MAX_TURNS:
+    <span class="keyword">if</span> <span class="string">"&lt;action&gt;"</span> <span class="keyword">not in</span> llm_response:
+        <span class="keyword">break</span>
+    turn_count += 1
+      </div>
+      <div class="question-text">
+        If <code>llm_response</code> continuously includes <code>&lt;action&gt;</code> over and over up until <code>turn_count</code> equals 15, what will the loop do on the 16th check?
+      </div>
+      <div class="input-group" style="flex-wrap:nowrap;">
+        <input type="text" id="pred3" class="input-text" placeholder="Predict exact loop behavior...">
+        <button class="btn" id="btn3" onclick="submitGate3()">Lock</button>
+      </div>
+      <div class="feedback" id="fb3"></div>
+    </div>
+
+  </div>
+
+  <div class="gated-content" id="metaphor-unlocked">
+    <div class="factory-metaphor">
+      <div class="fm-title">Factory Floor Mapping</div>
+      <p style="margin-bottom:0;">The agentic LLM is merely a worker at a workstation. The stateless execution loop represents the <strong>Conveyor Belt and the Clock</strong>. The Conveyor Belt (the <code>history</code> array) moves the strict context into the workstation, and takes the actions away. The Clock (<code>MAX_TURNS</code>) determines exactly how many cycles the worker gets to finish the job before the Foreman steps in and forcibly halts the line.</p>
+    </div>
+
+    <!-- GAUNTLET -->
+    <div class="gauntlet-wrap">
+      <h2>Capability Gauntlet</h2>
+      <div class="gauntlet-intro">
+        7 rapid-fire questions testing your architectural intuition under pressure. Predict the failure mode immediately.
+      </div>
+      <div id="q-container"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+function submitGate1() {
+  const val = document.getElementById('pred1').value;
+  if (!val.trim()) return;
+  document.getElementById('pred1').disabled = true;
+  document.getElementById('btn1').disabled = true;
+  
+  const fb = document.getElementById('fb1');
+  fb.classList.add('visible', 'success');
+  fb.innerHTML = `
+    <div class="feedback-title">Correct Reveal</div>
+    The array length is <strong>2</strong>. Architecturally, it represents the absolute entirety of the agent's current universe. At this moment, the agent knows its operational identity (System Prompt) and the initial task parameters (User Input). Nothing more, nothing less.
+  `;
+  document.getElementById('layer2-unlocked').classList.add('unlocked');
+}
+
+function checkGate2(btn, isCorrect) {
+  const choices = btn.parentElement.querySelectorAll('.choice-btn');
+  choices.forEach(c => c.style.pointerEvents = 'none');
+  
+  const fb = document.getElementById('fb2');
+  fb.classList.add('visible');
+  
+  if (isCorrect) {
+    btn.classList.add('selected-right');
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">Correct — Sovereign Architecture</div>The LLM holds no memory of its own. It holds no hidden weights or cached state. Every single piece of context that influences the agent's next move exists exactly and entirely within the <code>history</code> array. If the tool response is not appended to the array before generation, the agent is flying blind.`;
+    document.getElementById('layer3-unlocked').classList.add('unlocked');
+  } else {
+    btn.classList.add('selected-wrong');
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="feedback-title">Misconception Trapped</div>You treated the LLM as an application with state rather than a stateless string transformation math equation. Resetting.`;
+    setTimeout(() => {
+      choices.forEach(c => {
+        c.style.pointerEvents = 'auto';
+        c.classList.remove('selected-wrong');
+      });
+      fb.classList.remove('visible', 'error');
+      fb.innerHTML = '';
+    }, 2500);
+  }
+}
+
+function submitGate3() {
+  const val = document.getElementById('pred3').value;
+  if (!val.trim()) return;
+  document.getElementById('pred3').disabled = true;
+  document.getElementById('btn3').disabled = true;
+  
+  const fb = document.getElementById('fb3');
+  fb.classList.add('visible', 'success');
+  fb.innerHTML = `
+    <div class="feedback-title">Correct Reveal</div>
+    The loop will terminate without hitting the explicit <code>break</code> condition inside the block. The <code>turn_count < MAX_TURNS</code> condition becomes <strong>False</strong>. The agent is forcibly disconnected from the environment, protecting the architecture from a runaway inference consumption cascade caused by an infinite loop.
+  `;
+  document.getElementById('metaphor-unlocked').classList.add('unlocked');
+  renderGauntlet();
+}
+
+const G_DATA = [
+  {
+    num: "01",
+    target: "Array Length vs Cycle Count",
+    q: "<code>while len(history) < MAX_TURNS:</code><br><br>What is fatally wrong with using the history length as the bounding condition?",
+    match: ["message", "cycle", "turn", "grow"],
+    exp: "<code>len(history)</code> measures the number of messages (which grows by at least 2 per tool execution), not the number of agentic 'turns' or cycles. The loop will terminate prematurely, roughly after 1 or 1.5 actual agent turns."
+  },
+  {
+    num: "02",
+    target: "Break vs Continue Logic",
+    q: "<code>if 'FINAL_ANSWER' in llm_output: continue</code><br><br>If FINAL_ANSWER appears, what does this loop do next?",
+    match: ["jump", "top", "skip", "infinite"],
+    exp: "It immediately jumps to the top of the <code>while</code> loop, skipping the iteration increment, creating an infinite validation loop. When terminating an agentic sequence, you must <code>break</code> to shatter the loop."
+  },
+  {
+    num: "03",
+    target: "Subprocess Amensia",
+    q: "<code>history.append(tool_call)</code><br><code>res = subprocess.run(...)</code><br><i># Loop continues</i><br><br>What critical information will the LLM lack in the next cycle?",
+    match: ["stdout", "result", "output"],
+    exp: "The LLM will lack the contents of the subprocess result. It issued the command, but the architecture failed to append the dictionary mapping the 'tool' role back into the history. The agent flies blind."
+  },
+  {
+    num: "04",
+    target: "Unbounded Infinity",
+    q: "<code>while True: ...</code><br><br>Why is <code>while True</code> architecturally disallowed in the CCP?",
+    match: ["bound", "cap", "limit", "runaway"],
+    exp: "It completely lacks a bounding cap, making execution an unbounded runtime operation killed only by physical compute limits rather than architectural foresight. All loops must be definitively fenced."
+  },
+  {
+    num: "05",
+    target: "Memory Obliteration",
+    q: "<code>history.clear(); history = [sys_prompt]</code><br><br>If an agent fails at turn 9, what happens to the agent's context of the failure when this runs?",
+    match: ["wipe", "amnesia", "delete", "forget"],
+    exp: "It is completely wiped from existence. Because the structure is strictly stateless, clearing the array resets the agent to amnesiac factory conditions with zero knowledge of its prior failure."
+  },
+  {
+    num: "06",
+    target: "Frozen State Space",
+    q: "<code>out1 = call_llm(hist)</code> <br><i># history array NOT updated</i><br><code>out2 = call_llm(hist)</code><br><br>Will out1 and out2 be practically identical?",
+    boolQ: true,
+    ans: true,
+    exp: "Yes. Without advancing the state by mutating the history array, the agent has no new context. Evaluating the exact same array structure twice will produce the identical prediction."
+  },
+  {
+    num: "07",
+    target: "Context CompactionPrimitive",
+    q: "<code>history = [hist[0], hist[1]] + hist[-5:]</code><br><br>What capability primitive does this specific block grant the Sovereign Architect regarding token limits?",
+    match: ["compact", "truncate", "shorten", "preserve"],
+    exp: "The capability of Context Compaction. It preserves absolute structural definitions (system prompt) and the most recent actions, truncating the bloated middle to maintain operational bandwidth without crashing the token limits."
+  }
+];
+
+function renderGauntlet() {
+  const container = document.getElementById('q-container');
+  let html = '';
+  G_DATA.forEach((item, idx) => {
+    html += `
+    <div class="q-block" id="gq-${idx}">
+      <div class="q-num">Drill 0${idx+1} / 7</div>
+      <div class="q-misconception">Targets: ${item.target}</div>
+      <div class="q-text">${item.q}</div>
+    `;
+    if (item.boolQ) {
+      html += `
+        <div style="display:flex;gap:0.85rem;">
+          <button class="btn btn-outline" onclick="answerG(${idx}, true, this)">Yes</button>
+          <button class="btn btn-outline" onclick="answerG(${idx}, false, this)">No</button>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="input-group" style="margin-bottom:0;flex-wrap:nowrap;">
+          <input type="text" id="gInput-${idx}" class="input-text" placeholder="Identify consequence...">
+          <button class="btn" onclick="answerGText(${idx}, this)">Lock</button>
+        </div>
+      `;
+    }
+    html += `<div class="feedback" id="gfb-${idx}"></div></div>`;
+  });
+  container.innerHTML = html;
+}
+
+function answerG(idx, val, btn) {
+  const block = document.getElementById(`gq-${idx}`);
+  block.querySelectorAll('button').forEach(b => b.style.pointerEvents = 'none');
+  const fb = document.getElementById(`gfb-${idx}`);
+  fb.classList.add('visible');
+
+  if (val === G_DATA[idx].ans) {
+    btn.style.background = 'rgba(42,157,143,0.2)';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">Correct</div>${G_DATA[idx].exp}`;
+  } else {
+    btn.style.background = 'rgba(231,111,81,0.12)';
+    btn.style.borderColor = 'var(--red)';
+    btn.style.color = 'var(--red)';
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="mc-tag">Defect Identified</div><br>${G_DATA[idx].exp}`;
+  }
+}
+
+function answerGText(idx, btn) {
+  const input = document.getElementById(`gInput-${idx}`);
+  const val = input.value.toLowerCase().trim();
+  if (!val) return;
+  input.disabled = true;
+  btn.disabled = true;
+  
+  const fb = document.getElementById(`gfb-${idx}`);
+  fb.classList.add('visible');
+
+  let correct = G_DATA[idx].match.some(m => val.includes(m.toLowerCase()));
+
+  if (correct) {
+    fb.classList.add('success');
+    fb.innerHTML = `<div class="feedback-title">Correct Isolation</div>${G_DATA[idx].exp}`;
+  } else {
+    fb.classList.add('error');
+    fb.innerHTML = `<div class="mc-tag">Defect Isolation Failed</div><br>${G_DATA[idx].exp}`;
+  }
+}
+</script>
+</body>
+</html>
