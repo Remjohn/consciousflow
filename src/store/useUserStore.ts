@@ -149,38 +149,32 @@ export const useUserStore = create<UserState>()(
             const mins = now.getMinutes();
             const totalMins = hours * 60 + mins;
 
-            // 00:00 - 06:30 (0 - 390) -> CORE SLEEP
-            if (totalMins < 390) return { mode: 'CORE_SLEEP', label: 'CORE SLEEP', color: 'text-indigo-400' };
+            // 00:00 - 05:30 (0 - 330) -> CORE SLEEP
+            if (totalMins < 330) return { mode: 'CORE_SLEEP', label: 'CORE SLEEP', color: 'text-indigo-400' };
 
-            // 06:30 - 07:00 (390 - 420) -> PROTOCOL START
-            if (totalMins < 420) return { mode: 'PROTOCOL_START', label: 'IGNITION PROTOCOL', color: 'text-blood' };
+            // 05:30 - 06:00 (330 - 360) -> PROTOCOL START (Ignition starting by 6am max)
+            if (totalMins < 360) return { mode: 'PROTOCOL_START', label: 'IGNITION PROTOCOL', color: 'text-blood' };
 
-            // 07:00 - 10:20 (420 - 620) -> ALPHA WORK 1
-            if (totalMins < 620) return { mode: 'ALPHA_WORK', label: 'ALPHA PRIORITY', color: 'text-gold' };
+            // 06:00 - 08:00 (360 - 480) -> DEEP WORK SESSION 1
+            if (totalMins < 480) return { mode: 'ALPHA_WORK', label: 'DEEP WORK 1', color: 'text-gold' };
 
-            // 10:20 - 10:40 (620 - 640) -> RECOVERY
-            if (totalMins < 640) return { mode: 'RECOVERY', label: 'TACTICAL RESET', color: 'text-emerald-400' };
+            // 08:00 - 10:00 (480 - 600) -> DEEP WORK SESSION 2
+            if (totalMins < 600) return { mode: 'ALPHA_WORK', label: 'DEEP WORK 2', color: 'text-gold' };
 
-            // 10:40 - 14:00 (640 - 840) -> ALPHA WORK 2
-            if (totalMins < 840) return { mode: 'ALPHA_WORK', label: 'ALPHA PRIORITY', color: 'text-gold' };
+            // 10:00 - 12:00 (600 - 720) -> DEEP WORK SESSION 3
+            if (totalMins < 720) return { mode: 'BRAVO_WORK', label: 'DEEP WORK 3', color: 'text-concrete' };
 
-            // 14:00 - 15:00 (840 - 900) -> NOURISH RESET
+            // 12:00 - 14:00 (720 - 840) -> DEEP WORK SESSION 4
+            if (totalMins < 840) return { mode: 'BRAVO_WORK', label: 'DEEP WORK 4', color: 'text-concrete' };
+
+            // 14:00 - 15:00 (840 - 900) -> NOURISH & RESET
             if (totalMins < 900) return { mode: 'NOURISH_RESET', label: 'NOURISH & RESET', color: 'text-orange-400' };
 
-            // 15:00 - 17:30 (900 - 1050) -> BRAVO WORK 1
-            if (totalMins < 1050) return { mode: 'BRAVO_WORK', label: 'BRAVO PRIORITY', color: 'text-concrete' };
+            // 15:00 - 23:00 (900 - 1380) -> SUPPORT / MGA OPS (Management block at night)
+            if (totalMins < 1380) return { mode: 'FREE_BLOCK', label: 'SUPPORT / MGA OPS', color: 'text-blue-400' };
 
-            // 17:30 - 17:50 (1050 - 1070) -> RECOVERY
-            if (totalMins < 1070) return { mode: 'RECOVERY', label: 'TACTICAL RESET', color: 'text-emerald-400' };
-
-            // 17:50 - 19:30 (1070 - 1170) -> BRAVO WORK 2
-            if (totalMins < 1170) return { mode: 'BRAVO_WORK', label: 'BRAVO PRIORITY', color: 'text-concrete' };
-
-            // 19:30 - 23:30 (1170 - 1410) -> FREE BLOCK
-            if (totalMins < 1410) return { mode: 'FREE_BLOCK', label: 'SUPPORT / MGA OPS', color: 'text-blue-400' };
-
-            // 23:30+ -> SHUTDOWN
-            return { mode: 'SHUTDOWN', label: 'SHUTDOWN SEOUENCE', color: 'text-indigo-400' };
+            // 23:00+ -> SHUTDOWN
+            return { mode: 'SHUTDOWN', label: 'SHUTDOWN SEQUENCE', color: 'text-indigo-400' };
         },
 
         getRigourState: () => {
@@ -189,17 +183,26 @@ export const useUserStore = create<UserState>()(
             const mins = now.getMinutes();
             const totalMins = hours * 60 + mins;
             const { today } = get();
-            const actual = today.production.videos; // Tracking against 12 daily packages
+            const actual = today.production.pomodoros; // Track actual Deep Work sessions (target: 4)
 
             let expected = 0;
-            if (totalMins > 420 && totalMins <= 620) expected = Math.floor((totalMins - 420) / (200 / 3)); // Alpha 1: 3 pkgs
-            else if (totalMins > 620 && totalMins <= 640) expected = 3;
-            else if (totalMins > 640 && totalMins <= 840) expected = 3 + Math.floor((totalMins - 640) / (200 / 4)); // Alpha 2: +4 pkgs (7)
-            else if (totalMins > 840 && totalMins <= 900) expected = 7;
-            else if (totalMins > 900 && totalMins <= 1050) expected = 7 + Math.floor((totalMins - 900) / (150 / 3)); // Bravo 1: +3 pkgs (10)
-            else if (totalMins > 1050 && totalMins <= 1070) expected = 10;
-            else if (totalMins > 1070 && totalMins <= 1170) expected = 10 + Math.floor((totalMins - 1070) / (100 / 2)); // Bravo 2: +2 pkgs (12)
-            else if (totalMins > 1170) expected = 12;
+            
+            if (totalMins < 480) {
+                // Before 8:00 AM (still in or before Session 1)
+                expected = 0;
+            } else if (totalMins < 600) {
+                // 08:00 - 10:00 (Session 1 must be completed, currently in Session 2)
+                expected = 1;
+            } else if (totalMins < 720) {
+                // 10:00 - 12:00 (Sessions 1 & 2 must be completed, currently in Session 3)
+                expected = 2;
+            } else if (totalMins < 840) {
+                // 12:00 - 14:00 (Sessions 1, 2, & 3 must be completed, currently in Session 4)
+                expected = 3;
+            } else {
+                // After 14:00 (All 4 Deep Work Sessions must be completed; expected freezes at 4)
+                expected = 4;
+            }
 
             const diff = actual - expected;
             let status: 'AHEAD' | 'ON_TRACK' | 'LAGGING' = 'ON_TRACK';

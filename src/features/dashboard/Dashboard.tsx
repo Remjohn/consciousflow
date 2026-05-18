@@ -298,7 +298,7 @@ const CoverImageGallery = () => {
     return (
         <div className="w-full aspect-[4/1] max-w-[1200px] mx-auto border-2 border-steel/20 relative overflow-hidden bg-void flex items-center justify-center">
             <img 
-                src={`/covers/${currentImage}`} 
+                src={`/covers/${encodeURIComponent(currentImage)}`} 
                 alt="Cover" 
                 className="w-full h-full object-cover object-center animate-in fade-in duration-1000"
             />

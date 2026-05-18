@@ -153,7 +153,13 @@ app.get('/api/covers', async (c) => {
         const COVERS_DIR = path.join(process.cwd(), 'public', 'covers');
         
         if (!fs.existsSync(COVERS_DIR)) {
-            return c.json({ images: [] });
+            // Fallback list for production/Netlify environment where local public folder is not package-accessible
+            return c.json({ 
+                images: [
+                    'BG Alchemic Planner maydo.png',
+                    'Kimy.png'
+                ] 
+            });
         }
         
         const files = fs.readdirSync(COVERS_DIR);
@@ -1327,8 +1333,8 @@ const ensureUser = async () => {
     return (await db.select().from(users).where(eq(users.id, 1)))[0];
 };
 
-// GET: Dashboard Today - Returns all data needed for dashboard
-app.get('/api/dashboard/today', async (c) => {
+// GET: Dashboard Today - Returns all data needed for dashboard (Old Version - Deactivated)
+app.get('/api/dashboard/today-old', async (c) => {
     try {
         const user = await ensureUser();
         const todayStr = getTodayString();
@@ -1427,8 +1433,8 @@ app.get('/api/dashboard/today', async (c) => {
     }
 });
 
-// POST: Dashboard Update - Instant save of metric changes
-app.post('/api/dashboard/update', async (c) => {
+// POST: Dashboard Update - Instant save of metric changes (Old Version - Deactivated)
+app.post('/api/dashboard/update-old', async (c) => {
     try {
         const body = await c.req.json();
         const { field, value, date } = body;
@@ -2731,6 +2737,7 @@ app.get('/api/fitness/context', async (c) => {
 // GET: Fetch today's complete dashboard data from database
 app.get('/api/dashboard/today', async (c) => {
     try {
+        await ensureUser();
         const todayStr = new Date().toISOString().split('T')[0];
 
         // Get or create today's log
