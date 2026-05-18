@@ -2845,6 +2845,11 @@ app.get('/api/dashboard/today', async (c) => {
                         managementSessions: l.managementSessions || 0,
                         points: parseFloat(l.points?.toString() || '0')
                     },
+                    finance: {
+                        revenue: (l.videosProduced || 0) * 25,
+                        activeClients: 0,
+                        total2026: (l.videosProduced || 0) * 25
+                    },
                     fitness: { 
                         pushups: l.pushups || 0, 
                         abs: l.abs || 0, 
@@ -2854,6 +2859,16 @@ app.get('/api/dashboard/today', async (c) => {
                         kegels: l.kegelsMinutes || 0,
                         singing: l.singing || 0,
                         dancing: l.dancing || 0
+                    },
+                    lifestyle: {
+                        sleep: parseFloat(l.sleepHours?.toString() || '0'),
+                        meditation: l.meditation || false,
+                        noSocial: l.noSocialMedia || false,
+                        noYouTube: l.noYouTube || false,
+                        phoneHours: 0,
+                        phonePickups: 0,
+                        coldShower: false,
+                        kegels: false
                     }
                 },
                 isWin: l.isWin || false

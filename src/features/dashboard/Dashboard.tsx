@@ -193,7 +193,7 @@ export const Dashboard = () => {
                                 <span className="text-[8px] font-mono text-concrete/50 uppercase tracking-widest">7-Day Points Momentum</span>
                             </div>
                             <div className="h-28 w-full font-mono">
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                     <LineChart data={pointsChartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                                         <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#737373', fontFamily: 'monospace' }} />
                                         <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#737373', fontFamily: 'monospace' }} />
