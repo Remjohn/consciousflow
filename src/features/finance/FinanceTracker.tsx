@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { DollarSign, Plus, PiggyBank, ArrowUp, ArrowDown, Wallet, TrendingUp, ChevronRight } from 'lucide-react';
+import { DollarSign, Plus, PiggyBank, TrendingUp, ChevronRight } from 'lucide-react';
 import { API_URL } from '../../lib/api';
 import { Investments } from '../investments/Investments';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -16,13 +16,13 @@ interface FinanceSummary {
 interface HistoryMonth { month: string; earned: number; spent: number; saved: number; }
 
 const BUCKET_META: Record<string, { icon: string; label: string; color: string }> = {
-    WIFE:      { icon: '❤️',  label: 'Wife',          color: 'from-rose-500/20 to-rose-600/5 border-rose-500/30' },
-    DAUGHTER:  { icon: '👧',  label: 'Daughter',      color: 'from-purple-500/20 to-purple-600/5 border-purple-500/30' },
-    ME:        { icon: '🧍‍♂️', label: 'Me',           color: 'from-blue-500/20 to-blue-600/5 border-blue-500/30' },
-    RENT:      { icon: '🏠',  label: 'Rent',          color: 'from-amber-500/20 to-amber-600/5 border-amber-500/30' },
-    CAR:       { icon: '🏎️',  label: 'Car / Emergency', color: 'from-orange-500/20 to-orange-600/5 border-orange-500/30' },
-    WEDDING:   { icon: '💍',  label: 'Wedding',       color: 'from-pink-500/20 to-pink-600/5 border-pink-500/30' },
-    GROCERIES: { icon: '🛒',  label: 'Groceries',     color: 'from-teal-500/20 to-teal-600/5 border-teal-500/30' },
+    WIFE: { icon: '❤️', label: 'Wife', color: 'from-rose-500/20 to-rose-600/5 border-rose-500/30' },
+    DAUGHTER: { icon: '👧', label: 'Daughter', color: 'from-purple-500/20 to-purple-600/5 border-purple-500/30' },
+    ME: { icon: '🧍‍♂️', label: 'Me', color: 'from-blue-500/20 to-blue-600/5 border-blue-500/30' },
+    RENT: { icon: '🏠', label: 'Rent', color: 'from-amber-500/20 to-amber-600/5 border-amber-500/30' },
+    CAR: { icon: '🏎️', label: 'Car / Emergency', color: 'from-orange-500/20 to-orange-600/5 border-orange-500/30' },
+    WEDDING: { icon: '💍', label: 'Wedding', color: 'from-pink-500/20 to-pink-600/5 border-pink-500/30' },
+    GROCERIES: { icon: '🛒', label: 'Groceries', color: 'from-teal-500/20 to-teal-600/5 border-teal-500/30' },
 };
 
 const SOURCES = ['PACKAGE', 'FREELANCE', 'BONUS', 'GIFT', 'OTHER'];
@@ -275,7 +275,7 @@ export const FinanceTracker = () => {
                 {tab === 'HISTORY' && (
                     <div className="px-4 py-4 space-y-3">
                         <div className="text-[9px] font-mono text-concrete/30 uppercase tracking-widest mb-2">Earnings vs Spending</div>
-                        
+
                         {history.length > 0 ? (
                             <>
                                 {/* THE GRAPH */}
@@ -284,17 +284,17 @@ export const FinanceTracker = () => {
                                         <AreaChart data={[...history].reverse()} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
                                             <defs>
                                                 <linearGradient id="colorEarned" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                                                 </linearGradient>
                                                 <linearGradient id="colorSpent" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
-                                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                                                 </linearGradient>
                                             </defs>
                                             <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#737373', fontFamily: 'monospace' }} />
                                             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#737373', fontFamily: 'monospace' }} tickFormatter={(v) => `$${v}`} />
-                                            <Tooltip 
+                                            <Tooltip
                                                 contentStyle={{ backgroundColor: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '2px' }}
                                                 itemStyle={{ fontFamily: 'monospace', fontSize: '12px' }}
                                                 labelStyle={{ fontFamily: 'monospace', fontSize: '10px', color: '#737373', marginBottom: '4px' }}
@@ -307,39 +307,39 @@ export const FinanceTracker = () => {
 
                                 <div className="text-[9px] font-mono text-concrete/30 uppercase tracking-widest mb-2 mt-4">Monthly Ledger</div>
                                 {history.map((m, i) => {
-                            const spentRatio = Math.min(100, (m.spent / Math.max(m.earned, 1)) * 100);
-                            const savedRatio = Math.min(100, (m.saved / Math.max(m.earned, 1)) * 100);
-                            return (
-                                <div key={i} className="bg-steel/5 border border-steel/15 p-4 space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <div className="font-mono font-bold text-sm text-concrete uppercase tracking-wide">{m.month}</div>
-                                        <div className="text-[9px] font-mono text-emerald-400/70">+${m.saved} saved</div>
-                                    </div>
+                                    const spentRatio = Math.min(100, (m.spent / Math.max(m.earned, 1)) * 100);
+                                    const savedRatio = Math.min(100, (m.saved / Math.max(m.earned, 1)) * 100);
+                                    return (
+                                        <div key={i} className="bg-steel/5 border border-steel/15 p-4 space-y-3">
+                                            <div className="flex justify-between items-center">
+                                                <div className="font-mono font-bold text-sm text-concrete uppercase tracking-wide">{m.month}</div>
+                                                <div className="text-[9px] font-mono text-emerald-400/70">+${m.saved} saved</div>
+                                            </div>
 
-                                    <div className="grid grid-cols-3 gap-2 text-center">
-                                        <div>
-                                            <div className="text-[7px] font-mono text-concrete/30 uppercase mb-0.5">Earned</div>
-                                            <div className="text-sm font-bold text-concrete">${m.earned}</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-[7px] font-mono text-blood/50 uppercase mb-0.5">Spent</div>
-                                            <div className="text-sm font-bold text-blood">${m.spent}</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-[7px] font-mono text-emerald-400/50 uppercase mb-0.5">Saved</div>
-                                            <div className="text-sm font-bold text-emerald-400">${m.saved}</div>
-                                        </div>
-                                    </div>
+                                            <div className="grid grid-cols-3 gap-2 text-center">
+                                                <div>
+                                                    <div className="text-[7px] font-mono text-concrete/30 uppercase mb-0.5">Earned</div>
+                                                    <div className="text-sm font-bold text-concrete">${m.earned}</div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-[7px] font-mono text-blood/50 uppercase mb-0.5">Spent</div>
+                                                    <div className="text-sm font-bold text-blood">${m.spent}</div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-[7px] font-mono text-emerald-400/50 uppercase mb-0.5">Saved</div>
+                                                    <div className="text-sm font-bold text-emerald-400">${m.saved}</div>
+                                                </div>
+                                            </div>
 
-                                    {/* Stacked bar */}
-                                    <div className="w-full h-1.5 bg-black/30 rounded-full overflow-hidden flex">
-                                        <div className="h-full bg-blood/70 transition-all" style={{ width: `${spentRatio}%` }} />
-                                        <div className="h-full bg-emerald-500/60 transition-all" style={{ width: `${savedRatio}%` }} />
-                                    </div>
-                                </div>
-                            );
-                        })}
-                        </>
+                                            {/* Stacked bar */}
+                                            <div className="w-full h-1.5 bg-black/30 rounded-full overflow-hidden flex">
+                                                <div className="h-full bg-blood/70 transition-all" style={{ width: `${spentRatio}%` }} />
+                                                <div className="h-full bg-emerald-500/60 transition-all" style={{ width: `${savedRatio}%` }} />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </>
                         ) : (
                             <div className="text-center py-12 text-concrete/20 font-mono text-sm">
                                 No history yet. Start logging earnings.

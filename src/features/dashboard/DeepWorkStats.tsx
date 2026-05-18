@@ -114,7 +114,7 @@ export const DeepWorkStats = () => {
             // Process momentum data (aggregate score per day)
             if (range.sessions) {
                 const dateMap: Record<string, number> = {};
-                
+
                 // Initialize map with 0 for all 14 days to ensure continuous line
                 for (let i = 0; i <= 14; i++) {
                     const d = new Date(past14Days);
@@ -239,19 +239,19 @@ export const DeepWorkStats = () => {
                             <LineChart data={momentumData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
                                 <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#737373', fontFamily: 'monospace' }} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#737373', fontFamily: 'monospace' }} />
-                                <Tooltip 
+                                <Tooltip
                                     contentStyle={{ backgroundColor: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '2px' }}
                                     itemStyle={{ fontFamily: 'monospace', fontSize: '12px' }}
                                     labelStyle={{ fontFamily: 'monospace', fontSize: '10px', color: '#737373', marginBottom: '4px' }}
-                                    formatter={(value: number) => [value > 0 ? `+${value}` : value, 'Score']}
+                                    formatter={(value: any) => [value && value > 0 ? `+${value}` : (value ?? 0), 'Score']}
                                 />
-                                <Line 
-                                    type="monotone" 
-                                    dataKey="score" 
-                                    stroke="#eab308" 
-                                    strokeWidth={2} 
-                                    dot={{ fill: '#0a0a0a', stroke: '#eab308', strokeWidth: 2, r: 3 }} 
-                                    activeDot={{ r: 5, fill: '#eab308' }} 
+                                <Line
+                                    type="monotone"
+                                    dataKey="score"
+                                    stroke="#eab308"
+                                    strokeWidth={2}
+                                    dot={{ fill: '#0a0a0a', stroke: '#eab308', strokeWidth: 2, r: 3 }}
+                                    activeDot={{ r: 5, fill: '#eab308' }}
                                 />
                             </LineChart>
                         </ResponsiveContainer>
