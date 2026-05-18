@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useUserStore } from '../../store/useUserStore';
-import { Monitor, Zap, Moon, Smartphone, AlertTriangle, TrendingUp, TrendingDown, Minus, Edit2 } from 'lucide-react';
+import { Monitor, Zap, Moon, Smartphone, AlertTriangle, TrendingUp, TrendingDown, Minus, Edit2, Crown } from 'lucide-react';
 import { ProtocolTimer } from './ProtocolTimer';
 import { ScrollingQuotes } from '../../components/ScrollingQuotes';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { usePunishment } from '../../hooks/usePunishment';
 import { API_URL } from '../../lib/api';
 import { KegelsProtocol } from '../kegels/KegelsProtocol';
@@ -13,7 +14,7 @@ export const Dashboard = () => {
     const {
         today,
         currentDate,
-
+        history,
         goalStatus,
         getStats,
         incrementMetric,
@@ -28,6 +29,20 @@ export const Dashboard = () => {
     const { isPunished } = usePunishment();
     const [scope, setScope] = useState<TimeScope>('day');
     const [editMode, setEditMode] = useState(false);
+
+    // Calculate points momentum chart data dynamically from history + today
+    const pointsChartData = (() => {
+        const last6 = (history || []).slice(-6);
+        const data = last6.map(h => ({
+            date: new Date(h.date).toLocaleDateString('en-US', { weekday: 'short' }),
+            points: h.metrics.production?.points || 0
+        }));
+        data.push({
+            date: 'Today',
+            points: today.production.points || 0
+        });
+        return data;
+    })();
 
     useEffect(() => {
         fetchFromBackend();
@@ -122,6 +137,86 @@ export const Dashboard = () => {
 
                 {/* RIGOUR STATE */}
                 <RigourTracker getRigourState={getRigourState} />
+
+                {/* POINTS TREASURY ENGINE */}
+                <div className="bg-void border border-steel/30 relative overflow-hidden group">
+                    {/* Glowing Accent line */}
+                    <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-600"></div>
+                    
+                    <div className="bg-steel/10 px-3 py-2 flex justify-between items-center border-b border-steel/20">
+                        <span className="text-[10px] font-mono font-bold text-gold tracking-widest flex items-center gap-2">
+                            <Crown size={12} className="text-gold" /> POINTS TREASURY
+                        </span>
+                        <div className="text-[10px] text-concrete/30 font-mono">{scope.toUpperCase()}</div>
+                    </div>
+
+                    <div className="p-4 flex flex-col gap-4">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <p className="text-[9px] uppercase tracking-wider text-concrete/50 mb-0.5">Points Earned</p>
+                                <div className="flex items-baseline gap-1.5">
+                                    <span className="text-3xl font-black font-mono text-gold tabular-nums leading-none">
+                                        {(getStats(scope, 'production', 'points') || 0).toFixed(1)}
+                                    </span>
+                                    {scope === 'day' && (
+                                        <span className="text-xs font-mono text-concrete/40">/ 200 max</span>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            {scope === 'day' && (
+                                <div className="text-right">
+                                    <span className="text-[9px] uppercase tracking-wider text-concrete/50 block mb-0.5">Performance Tier</span>
+                                    <span className={`px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded ${
+                                        (today.production.points || 0) >= 38 ? 'bg-gold/20 text-gold border border-gold/30' :
+                                        (today.production.points || 0) >= 35 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                                        (today.production.points || 0) >= 28 ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                                        (today.production.points || 0) >= 20 ? 'bg-steel/20 text-concrete border border-steel/30' :
+                                        (today.production.points || 0) >= 12 ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
+                                        'bg-blood/20 text-blood border border-blood/30'
+                                    }`}>
+                                        {(today.production.points || 0) >= 38 ? 'LEGENDARY 🏆' :
+                                         (today.production.points || 0) >= 35 ? 'ELITE ⭐' :
+                                         (today.production.points || 0) >= 28 ? 'STRONG 💪' :
+                                         (today.production.points || 0) >= 20 ? 'DECENT ✓' :
+                                         (today.production.points || 0) >= 12 ? 'WEAK ⚠' :
+                                         'FAILED 💀'}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Weekly Momentum Chart */}
+                        <div className="pt-2 border-t border-steel/10">
+                            <div className="flex items-center gap-1.5 mb-2">
+                                <TrendingUp size={11} className="text-gold" />
+                                <span className="text-[8px] font-mono text-concrete/50 uppercase tracking-widest">7-Day Points Momentum</span>
+                            </div>
+                            <div className="h-28 w-full font-mono">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={pointsChartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#737373', fontFamily: 'monospace' }} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#737373', fontFamily: 'monospace' }} />
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '2px' }}
+                                            itemStyle={{ fontFamily: 'monospace', fontSize: '11px', color: '#fff' }}
+                                            labelStyle={{ fontFamily: 'monospace', fontSize: '9px', color: '#737373', marginBottom: '2px' }}
+                                            formatter={(value: any) => [parseFloat(value || 0).toFixed(1) + ' pts', 'Points']}
+                                        />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="points"
+                                            stroke="#eab308"
+                                            strokeWidth={2}
+                                            dot={{ fill: '#0a0a0a', stroke: '#eab308', strokeWidth: 1.5, r: 2.5 }}
+                                            activeDot={{ r: 4, fill: '#eab308' }}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 {/* PRODUCTION HUB */}
                 <div className="bg-void border border-steel/30 relative group">

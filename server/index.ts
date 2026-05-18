@@ -2755,10 +2755,16 @@ app.get('/api/dashboard/today', async (c) => {
                 date: todayStr,
                 videosProduced: 0,
                 pomodoros: 0,
+                managementSessions: 0,
+                points: '0',
                 pushups: 0,
                 abs: 0,
                 biceps: 0,
                 burpees: 0,
+                boxing: 0,
+                kegelsMinutes: 0,
+                singing: 0,
+                dancing: 0,
                 sleepHours: '0',
                 meditation: false,
                 noSocialMedia: false,
@@ -2800,6 +2806,7 @@ app.get('/api/dashboard/today', async (c) => {
                 videos: log.videosProduced || 0,
                 pomodoros: log.pomodoros || 0,
                 managementSessions: log.managementSessions || 0,
+                points: parseFloat(log.points?.toString() || '0'),
                 proofPhotoUrl: log.proofPhotoUrl || ''
             },
             finance: {
@@ -2811,7 +2818,11 @@ app.get('/api/dashboard/today', async (c) => {
                 pushups: log.pushups || 0,
                 abs: log.abs || 0,
                 biceps: log.biceps || 0,
-                burpees: log.burpees || 0
+                burpees: log.burpees || 0,
+                boxing: log.boxing || 0,
+                kegels: log.kegelsMinutes || 0,
+                singing: log.singing || 0,
+                dancing: log.dancing || 0
             },
             lifestyle: {
                 sleep: parseFloat(log.sleepHours?.toString() || '0'),
@@ -2828,8 +2839,22 @@ app.get('/api/dashboard/today', async (c) => {
             history: monthLogs.map(l => ({
                 date: l.date,
                 metrics: {
-                    production: { videos: l.videosProduced || 0, pomodoros: l.pomodoros || 0, managementSessions: l.managementSessions || 0 },
-                    fitness: { pushups: l.pushups || 0, abs: l.abs || 0, biceps: l.biceps || 0, burpees: l.burpees || 0 }
+                    production: { 
+                        videos: l.videosProduced || 0, 
+                        pomodoros: l.pomodoros || 0, 
+                        managementSessions: l.managementSessions || 0,
+                        points: parseFloat(l.points?.toString() || '0')
+                    },
+                    fitness: { 
+                        pushups: l.pushups || 0, 
+                        abs: l.abs || 0, 
+                        biceps: l.biceps || 0, 
+                        burpees: l.burpees || 0,
+                        boxing: l.boxing || 0,
+                        kegels: l.kegelsMinutes || 0,
+                        singing: l.singing || 0,
+                        dancing: l.dancing || 0
+                    }
                 },
                 isWin: l.isWin || false
             })),
@@ -2869,11 +2894,16 @@ app.post('/api/dashboard/sync', async (c) => {
                     videosProduced: metrics.production?.videos ?? existing[0].videosProduced,
                     pomodoros: metrics.production?.pomodoros ?? existing[0].pomodoros,
                     managementSessions: metrics.production?.managementSessions ?? existing[0].managementSessions,
+                    points: metrics.production?.points?.toString() ?? existing[0].points,
                     proofPhotoUrl: metrics.production?.proofPhotoUrl ?? existing[0].proofPhotoUrl,
                     pushups: metrics.fitness?.pushups ?? existing[0].pushups,
                     abs: metrics.fitness?.abs ?? existing[0].abs,
                     biceps: metrics.fitness?.biceps ?? existing[0].biceps,
                     burpees: metrics.fitness?.burpees ?? existing[0].burpees,
+                    boxing: metrics.fitness?.boxing ?? existing[0].boxing,
+                    kegelsMinutes: metrics.fitness?.kegels ?? existing[0].kegelsMinutes,
+                    singing: metrics.fitness?.singing ?? existing[0].singing,
+                    dancing: metrics.fitness?.dancing ?? existing[0].dancing,
                     sleepHours: metrics.lifestyle?.sleep?.toString() ?? existing[0].sleepHours,
                     meditation: metrics.lifestyle?.meditation ?? existing[0].meditation,
                     noSocialMedia: metrics.lifestyle?.noSocial ?? existing[0].noSocialMedia,
@@ -2888,11 +2918,16 @@ app.post('/api/dashboard/sync', async (c) => {
                 videosProduced: metrics.production?.videos || 0,
                 pomodoros: metrics.production?.pomodoros || 0,
                 managementSessions: metrics.production?.managementSessions || 0,
+                points: metrics.production?.points?.toString() || '0',
                 proofPhotoUrl: metrics.production?.proofPhotoUrl || null,
                 pushups: metrics.fitness?.pushups || 0,
                 abs: metrics.fitness?.abs || 0,
                 biceps: metrics.fitness?.biceps || 0,
                 burpees: metrics.fitness?.burpees || 0,
+                boxing: metrics.fitness?.boxing || 0,
+                kegelsMinutes: metrics.fitness?.kegels || 0,
+                singing: metrics.fitness?.singing || 0,
+                dancing: metrics.fitness?.dancing || 0,
                 sleepHours: metrics.lifestyle?.sleep?.toString() || '0',
                 meditation: metrics.lifestyle?.meditation || false,
                 noSocialMedia: metrics.lifestyle?.noSocial || false,
@@ -2925,11 +2960,16 @@ app.post('/api/dashboard/update', async (c) => {
             'pomodoros': 'pomodoros',
             'managementSessions': 'managementSessions',
             'management_sessions': 'managementSessions',
+            'points': 'points',
             'proofPhotoUrl': 'proofPhotoUrl',
             'pushups': 'pushups',
             'abs': 'abs',
             'biceps': 'biceps',
             'burpees': 'burpees',
+            'boxing': 'boxing',
+            'kegels': 'kegelsMinutes',
+            'singing': 'singing',
+            'dancing': 'dancing',
             'sleep': 'sleepHours',
             'meditation': 'meditation',
             'noSocial': 'noSocialMedia',
@@ -3065,8 +3105,42 @@ app.post('/api/mission/log', async (c) => {
 // DEEP WORK ACCOUNTABILITY SYSTEM API
 // ============================================
 
+// Helper function to normalize old session scores [1, 0, -2] to new [2, 1, 0] scale
+function normalizeSessionScores(s: any) {
+    if (!s) return s;
+    const oldPillars = [s.scoreSpeed, s.scoreFocus, s.scoreFlow, s.scorePriority, s.scoreContext];
+    const isLegacy = oldPillars.some(v => v === -2) || 
+                     (oldPillars.every(v => v === 1 || v === 0 || v === null) && (s.totalScore || 0) <= 5 && (s.totalScore || 0) > 0);
+    
+    if (isLegacy) {
+        const normalize = (val: number | null | undefined) => {
+            if (val === 1) return 2;
+            if (val === 0) return 1;
+            if (val === -2) return 0;
+            return val || 0;
+        };
+        const nSpeed = normalize(s.scoreSpeed);
+        const nFocus = normalize(s.scoreFocus);
+        const nFlow = normalize(s.scoreFlow);
+        const nPriority = normalize(s.scorePriority);
+        const nContext = normalize(s.scoreContext);
+        const nTotal = nSpeed + nFocus + nFlow + nPriority + nContext;
+        return {
+            ...s,
+            scoreSpeed: nSpeed,
+            scoreFocus: nFocus,
+            scoreFlow: nFlow,
+            scorePriority: nPriority,
+            scoreContext: nContext,
+            totalScore: nTotal
+        };
+    }
+    return s;
+}
+
 // Helper function to calculate stats from sessions
-function calculateDeepWorkStats(sessions: any[], period: string) {
+function calculateDeepWorkStats(rawSessions: any[], period: string) {
+    const sessions = rawSessions.map(normalizeSessionScores);
     if (sessions.length === 0) {
         return {
             period,
@@ -3085,12 +3159,21 @@ function calculateDeepWorkStats(sessions: any[], period: string) {
     const avgScore = totalScore / sessions.length;
 
     let performanceTier: 'LEGENDARY' | 'ELITE' | 'STRONG' | 'DECENT' | 'WEAK' | 'FAILED' | 'NONE' = 'DECENT';
-    if (totalScore >= 110) performanceTier = 'LEGENDARY';
-    else if (totalScore >= 100) performanceTier = 'ELITE';
-    else if (totalScore >= 80) performanceTier = 'STRONG';
-    else if (totalScore >= 60) performanceTier = 'DECENT';
-    else if (totalScore >= 40) performanceTier = 'WEAK';
-    else performanceTier = 'FAILED';
+    if (period === 'today' || period === 'yesterday') {
+        if (totalScore >= 38) performanceTier = 'LEGENDARY';
+        else if (totalScore >= 35) performanceTier = 'ELITE';
+        else if (totalScore >= 28) performanceTier = 'STRONG';
+        else if (totalScore >= 20) performanceTier = 'DECENT';
+        else if (totalScore >= 12) performanceTier = 'WEAK';
+        else performanceTier = 'FAILED';
+    } else {
+        if (totalScore >= 110) performanceTier = 'LEGENDARY';
+        else if (totalScore >= 100) performanceTier = 'ELITE';
+        else if (totalScore >= 80) performanceTier = 'STRONG';
+        else if (totalScore >= 60) performanceTier = 'DECENT';
+        else if (totalScore >= 40) performanceTier = 'WEAK';
+        else performanceTier = 'FAILED';
+    }
 
     return {
         period,
@@ -3098,8 +3181,8 @@ function calculateDeepWorkStats(sessions: any[], period: string) {
         totalMinutes: sessions.reduce((sum, s) => sum + (s.durationMinutes || 25), 0),
         totalScore,
         averageSessionScore: Math.round(avgScore * 10) / 10,
-        perfectSessions: sessions.filter(s => s.totalScore === 5).length,
-        failedSessions: sessions.filter(s => (s.totalScore || 0) < 0).length,
+        perfectSessions: sessions.filter(s => s.totalScore === 10).length,
+        failedSessions: sessions.filter(s => (s.totalScore || 0) < 3).length,
         pillarAverages: {
             speed: Math.round(sessions.reduce((sum, s) => sum + (s.scoreSpeed || 0), 0) / sessions.length * 10) / 10,
             focus: Math.round(sessions.reduce((sum, s) => sum + (s.scoreFocus || 0), 0) / sessions.length * 10) / 10,
@@ -3188,11 +3271,11 @@ app.post('/api/deepwork/session/:id/complete', async (c) => {
         } = body;
 
         // Validate scores
-        const validScores = [1, 0, -2];
+        const validScores = [2, 1, 0];
         if (!validScores.includes(scoreSpeed) || !validScores.includes(scoreFocus) ||
             !validScores.includes(scoreFlow) || !validScores.includes(scorePriority) ||
             !validScores.includes(scoreContext)) {
-            return c.json({ error: 'Invalid score values. Must be 1, 0, or -2' }, 400);
+            return c.json({ error: 'Invalid score values. Must be 2, 1, or 0' }, 400);
         }
 
         const totalScore = scoreSpeed + scoreFocus + scoreFlow + scorePriority + scoreContext;
@@ -3219,7 +3302,7 @@ app.post('/api/deepwork/session/:id/complete', async (c) => {
         return c.json({
             session: updated[0],
             totalScore,
-            message: totalScore >= 3 ? '🏆 EXCELLENT SESSION!' : totalScore >= 0 ? '✓ Good work' : '⚠ Room for improvement'
+            message: totalScore >= 8 ? '🏆 EXCELLENT SESSION!' : totalScore >= 5 ? '✓ Good work' : '⚠ Room for improvement'
         });
     } catch (error) {
         console.error('Deep work complete error:', error);
@@ -3386,9 +3469,11 @@ app.get('/api/deepwork/stats/range', async (c) => {
 app.get('/api/deepwork/stats/records', async (c) => {
     try {
         // Get all completed sessions
-        const allSessions = await db.select()
+        const rawSessions = await db.select()
             .from(deepWorkSessions)
             .where(eq(deepWorkSessions.status, 'COMPLETED'));
+
+        const allSessions = rawSessions.map(normalizeSessionScores);
 
         // Group by date to find best day
         const byDate: Record<string, number> = {};
@@ -3402,7 +3487,7 @@ app.get('/api/deepwork/stats/records', async (c) => {
             , { date: '', score: -999 });
 
         // Count perfect sessions
-        const perfectCount = allSessions.filter(s => s.totalScore === 5).length;
+        const perfectCount = allSessions.filter(s => s.totalScore === 10).length;
 
         // Find longest positive streak (consecutive positive score days)
         const sortedDates = [...new Set(allSessions.map(s => s.date))].sort();

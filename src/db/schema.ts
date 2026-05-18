@@ -45,6 +45,7 @@ export const dailyLogs = pgTable('daily_logs', {
     pomodoros: integer('pomodoros').default(0), // Deep Work Sessions
     managementSessions: integer('management_sessions').default(0), // Management Sessions
     proofPhotoUrl: text('proof_photo_url'),
+    points: decimal('points').default('0'), // Daily Points
 
     // Finance / Earnings
     dailyEarnings: decimal('daily_earnings').default('0'),
@@ -57,6 +58,10 @@ export const dailyLogs = pgTable('daily_logs', {
     biceps: integer('biceps').default(0),
     burpees: integer('burpees').default(0),
     fitnessComplete: boolean('fitness_complete').default(false),
+    boxing: integer('boxing').default(0),
+    kegelsMinutes: integer('kegels_minutes').default(0),
+    singing: integer('singing').default(0),
+    dancing: integer('dancing').default(0),
 
     // Lifestyle (Core)
     sleepHours: decimal('sleep_hours').default('0'),
