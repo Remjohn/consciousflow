@@ -2258,7 +2258,7 @@ app.post('/api/finance/earnings', async (c) => {
             await db.update(dailyLogs)
                 .set({
                     dailyEarnings: String(currentEarnings + earningsAmount),
-                    earningsSource: source || existing[0].earningsSource || 'PACKAGE',
+                    earningsSource: source || existing[0].earningsSource || 'CCP_ACTIVATION',
                     earningsNotes: notes ? `${existing[0].earningsNotes || ''} | ${notes}`.trim().replace(/^\| /, '') : existing[0].earningsNotes
                 })
                 .where(eq(dailyLogs.id, existing[0].id));
@@ -2269,7 +2269,7 @@ app.post('/api/finance/earnings', async (c) => {
                 userId: 1,
                 date: earningsDate,
                 dailyEarnings: String(earningsAmount),
-                earningsSource: source || 'PACKAGE',
+                earningsSource: source || 'CCP_ACTIVATION',
                 earningsNotes: notes || null
             });
             return c.json({ status: 'CREATED', total: earningsAmount });

@@ -25,7 +25,29 @@ const BUCKET_META: Record<string, { icon: string; label: string; color: string }
     GROCERIES: { icon: '🛒', label: 'Groceries', color: 'from-teal-500/20 to-teal-600/5 border-teal-500/30' },
 };
 
-const SOURCES = ['PACKAGE', 'FREELANCE', 'BONUS', 'GIFT', 'OTHER'];
+const SOURCES = [
+    'CCP_ACTIVATION',
+    'CCP_TIER1_SUB',
+    'CCP_TIER2_SUB',
+    'CCP_UPSELL',
+    'CCP_METERING_TRIAL',
+    'CCP_METERING_PAID',
+    'FREELANCE',
+    'BONUS',
+    'OTHER'
+];
+
+const SOURCE_LABELS: Record<string, string> = {
+    CCP_ACTIVATION: 'CCP $29.99 First Proof Unlock',
+    CCP_TIER1_SUB: 'CCP $39.99/mo Speaking & Learning',
+    CCP_TIER2_SUB: 'CCP $99.99/mo Coach OS',
+    CCP_UPSELL: 'CCP $9.99 à la carte Upsell',
+    CCP_METERING_TRIAL: 'CCP $1.90 Trial & Setup Metering',
+    CCP_METERING_PAID: 'CCP $3.90 Paid User Metering',
+    FREELANCE: 'Freelance Work',
+    BONUS: 'Performance Bonus',
+    OTHER: 'Other Revenue'
+};
 
 export const FinanceTracker = () => {
     const [tab, setTab] = useState<'OVERVIEW' | 'EXPENSES' | 'HISTORY'>('OVERVIEW');
@@ -34,8 +56,19 @@ export const FinanceTracker = () => {
     const [showEarnings, setShowEarnings] = useState(false);
 
     const [earningsDate, setEarningsDate] = useState(new Date().toISOString().split('T')[0]);
-    const [earningsAmount, setEarningsAmount] = useState('');
-    const [earningsSource, setEarningsSource] = useState('PACKAGE');
+    const [earningsAmount, setEarningsAmount] = useState('29.99');
+    const [earningsSource, setEarningsSource] = useState('CCP_ACTIVATION');
+
+    const handleSourceChange = (val: string) => {
+        setEarningsSource(val);
+        if (val === 'CCP_ACTIVATION') setEarningsAmount('29.99');
+        else if (val === 'CCP_TIER1_SUB') setEarningsAmount('39.99');
+        else if (val === 'CCP_TIER2_SUB') setEarningsAmount('99.99');
+        else if (val === 'CCP_UPSELL') setEarningsAmount('9.99');
+        else if (val === 'CCP_METERING_TRIAL') setEarningsAmount('1.90');
+        else if (val === 'CCP_METERING_PAID') setEarningsAmount('3.90');
+        else setEarningsAmount('');
+    };
     const [earningsNotes, setEarningsNotes] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
@@ -164,9 +197,9 @@ export const FinanceTracker = () => {
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                        <select value={earningsSource} onChange={e => setEarningsSource(e.target.value)}
+                        <select value={earningsSource} onChange={e => handleSourceChange(e.target.value)}
                             className="bg-steel/10 border border-steel/20 px-3 py-2.5 text-sm font-mono text-concrete focus:border-gold/50 outline-none">
-                            {SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
+                            {SOURCES.map(s => <option key={s} value={s}>{SOURCE_LABELS[s] || s}</option>)}
                         </select>
                         <input type="text" placeholder="Note (optional)" value={earningsNotes}
                             onChange={e => setEarningsNotes(e.target.value)}

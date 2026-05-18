@@ -5,7 +5,7 @@ import { DeepWorkStats } from '../dashboard/DeepWorkStats';
 import { FitnessProtocol } from '../fitness/FitnessProtocol';
 
 export const StatsDashboard = () => {
-    const { today, setMetric, getStats } = useUserStore();
+    const { today, setMetric, getStats, incrementMetric } = useUserStore();
     const [timeScope, setTimeScope] = useState<'day' | 'week' | 'month'>('day');
 
     const drillTarget = timeScope === 'day' ? 15 : timeScope === 'week' ? 105 : 450;
@@ -100,7 +100,12 @@ export const StatsDashboard = () => {
                             icon={<Dumbbell size={14} />} 
                             value={getStats(timeScope, 'fitness', 'boxing') || 0}
                             target={drillTarget}
-                            onUpdate={(val) => setMetric('fitness', 'boxing', val)}
+                            onUpdate={(val) => {
+                                const current = getStats(timeScope, 'fitness', 'boxing') || 0;
+                                setMetric('fitness', 'boxing', val);
+                                if (current < drillTarget && val >= drillTarget) incrementMetric('production', 'points', 3);
+                                else if (current >= drillTarget && val < drillTarget) incrementMetric('production', 'points', -3);
+                            }}
                             editable={isEditable}
                         />
                         <DrillTracker 
@@ -108,7 +113,12 @@ export const StatsDashboard = () => {
                             icon={<Activity size={14} />} 
                             value={getStats(timeScope, 'fitness', 'kegels') || 0}
                             target={drillTarget}
-                            onUpdate={(val) => setMetric('fitness', 'kegels', val)}
+                            onUpdate={(val) => {
+                                const current = getStats(timeScope, 'fitness', 'kegels') || 0;
+                                setMetric('fitness', 'kegels', val);
+                                if (current < drillTarget && val >= drillTarget) incrementMetric('production', 'points', 3);
+                                else if (current >= drillTarget && val < drillTarget) incrementMetric('production', 'points', -3);
+                            }}
                             editable={isEditable}
                         />
                         <DrillTracker 
@@ -116,7 +126,12 @@ export const StatsDashboard = () => {
                             icon={<Mic size={14} />} 
                             value={getStats(timeScope, 'fitness', 'singing') || 0}
                             target={drillTarget}
-                            onUpdate={(val) => setMetric('fitness', 'singing', val)}
+                            onUpdate={(val) => {
+                                const current = getStats(timeScope, 'fitness', 'singing') || 0;
+                                setMetric('fitness', 'singing', val);
+                                if (current < drillTarget && val >= drillTarget) incrementMetric('production', 'points', 3);
+                                else if (current >= drillTarget && val < drillTarget) incrementMetric('production', 'points', -3);
+                            }}
                             editable={isEditable}
                         />
                         <DrillTracker 
@@ -124,7 +139,12 @@ export const StatsDashboard = () => {
                             icon={<Music size={14} />} 
                             value={getStats(timeScope, 'fitness', 'dancing') || 0}
                             target={drillTarget}
-                            onUpdate={(val) => setMetric('fitness', 'dancing', val)}
+                            onUpdate={(val) => {
+                                const current = getStats(timeScope, 'fitness', 'dancing') || 0;
+                                setMetric('fitness', 'dancing', val);
+                                if (current < drillTarget && val >= drillTarget) incrementMetric('production', 'points', 3);
+                                else if (current >= drillTarget && val < drillTarget) incrementMetric('production', 'points', -3);
+                            }}
                             editable={isEditable}
                         />
                     </div>
