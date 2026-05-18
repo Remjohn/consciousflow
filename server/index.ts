@@ -2799,6 +2799,7 @@ app.get('/api/dashboard/today', async (c) => {
             production: {
                 videos: log.videosProduced || 0,
                 pomodoros: log.pomodoros || 0,
+                managementSessions: log.managementSessions || 0,
                 proofPhotoUrl: log.proofPhotoUrl || ''
             },
             finance: {
@@ -2827,7 +2828,7 @@ app.get('/api/dashboard/today', async (c) => {
             history: monthLogs.map(l => ({
                 date: l.date,
                 metrics: {
-                    production: { videos: l.videosProduced || 0, pomodoros: l.pomodoros || 0 },
+                    production: { videos: l.videosProduced || 0, pomodoros: l.pomodoros || 0, managementSessions: l.managementSessions || 0 },
                     fitness: { pushups: l.pushups || 0, abs: l.abs || 0, biceps: l.biceps || 0, burpees: l.burpees || 0 }
                 },
                 isWin: l.isWin || false
@@ -2867,6 +2868,7 @@ app.post('/api/dashboard/sync', async (c) => {
                 .set({
                     videosProduced: metrics.production?.videos ?? existing[0].videosProduced,
                     pomodoros: metrics.production?.pomodoros ?? existing[0].pomodoros,
+                    managementSessions: metrics.production?.managementSessions ?? existing[0].managementSessions,
                     proofPhotoUrl: metrics.production?.proofPhotoUrl ?? existing[0].proofPhotoUrl,
                     pushups: metrics.fitness?.pushups ?? existing[0].pushups,
                     abs: metrics.fitness?.abs ?? existing[0].abs,
@@ -2885,6 +2887,7 @@ app.post('/api/dashboard/sync', async (c) => {
                 date: dateStr,
                 videosProduced: metrics.production?.videos || 0,
                 pomodoros: metrics.production?.pomodoros || 0,
+                managementSessions: metrics.production?.managementSessions || 0,
                 proofPhotoUrl: metrics.production?.proofPhotoUrl || null,
                 pushups: metrics.fitness?.pushups || 0,
                 abs: metrics.fitness?.abs || 0,
@@ -2920,6 +2923,8 @@ app.post('/api/dashboard/update', async (c) => {
         const fieldMap: Record<string, string> = {
             'videos': 'videosProduced',
             'pomodoros': 'pomodoros',
+            'managementSessions': 'managementSessions',
+            'management_sessions': 'managementSessions',
             'proofPhotoUrl': 'proofPhotoUrl',
             'pushups': 'pushups',
             'abs': 'abs',
