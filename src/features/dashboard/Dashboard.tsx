@@ -168,18 +168,18 @@ export const Dashboard = () => {
                                 <div className="text-right">
                                     <span className="text-[9px] uppercase tracking-wider text-concrete/50 block mb-0.5">Performance Tier</span>
                                     <span className={`px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded ${
-                                        (today.production.points || 0) >= 38 ? 'bg-gold/20 text-gold border border-gold/30' :
-                                        (today.production.points || 0) >= 35 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
-                                        (today.production.points || 0) >= 28 ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                                        (today.production.points || 0) >= 20 ? 'bg-steel/20 text-concrete border border-steel/30' :
-                                        (today.production.points || 0) >= 12 ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
+                                        (today.production.points || 0) >= 180 ? 'bg-gold/20 text-gold border border-gold/30' :
+                                        (today.production.points || 0) >= 140 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                                        (today.production.points || 0) >= 100 ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                                        (today.production.points || 0) >= 60 ? 'bg-steel/20 text-concrete border border-steel/30' :
+                                        (today.production.points || 0) >= 30 ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
                                         'bg-blood/20 text-blood border border-blood/30'
                                     }`}>
-                                        {(today.production.points || 0) >= 38 ? 'LEGENDARY 🏆' :
-                                         (today.production.points || 0) >= 35 ? 'ELITE ⭐' :
-                                         (today.production.points || 0) >= 28 ? 'STRONG 💪' :
-                                         (today.production.points || 0) >= 20 ? 'DECENT ✓' :
-                                         (today.production.points || 0) >= 12 ? 'WEAK ⚠' :
+                                        {(today.production.points || 0) >= 180 ? 'LEGENDARY 🏆' :
+                                         (today.production.points || 0) >= 140 ? 'ELITE ⭐' :
+                                         (today.production.points || 0) >= 100 ? 'STRONG 💪' :
+                                         (today.production.points || 0) >= 60 ? 'DECENT ✓' :
+                                         (today.production.points || 0) >= 30 ? 'WEAK ⚠' :
                                          'FAILED 💀'}
                                     </span>
                                 </div>
