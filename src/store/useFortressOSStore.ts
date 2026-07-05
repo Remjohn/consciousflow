@@ -193,6 +193,29 @@ const persist = (state: Pick<FortressOSState, 'date' | 'studio' | 'passions' | '
   );
 };
 
+// Backend sync helper - fire-and-forget
+const syncCmfField = (field: string, value: number | string) => {
+  const API_URL = import.meta.env.VITE_API_URL !== undefined && import.meta.env.VITE_API_URL !== ''
+    ? import.meta.env.VITE_API_URL
+    : (import.meta.env.DEV ? 'http://localhost:3000' : '');
+  fetch(`${API_URL}/api/cmf/update`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ field, value }),
+  }).catch(console.error);
+};
+
+const syncDailyField = (field: string, value: number | boolean) => {
+  const API_URL = import.meta.env.VITE_API_URL !== undefined && import.meta.env.VITE_API_URL !== ''
+    ? import.meta.env.VITE_API_URL
+    : (import.meta.env.DEV ? 'http://localhost:3000' : '');
+  fetch(`${API_URL}/api/dashboard/update`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ field, value }),
+  }).catch(console.error);
+};
+
 export const useFortressOSStore = create<FortressOSState>()((set, get) => ({
   ...loadState(),
 
@@ -207,6 +230,7 @@ export const useFortressOSStore = create<FortressOSState>()((set, get) => ({
       studio: {
         ...DEFAULT_STUDIO,
         activeMonthlyPackages: current.studio.activeMonthlyPackages,
+        sampleVideoTrials: current.studio.sampleVideoTrials,
         sampleVideosTarget: current.studio.sampleVideosTarget,
         interviewTarget: current.studio.interviewTarget,
         managementTarget: current.studio.managementTarget,
@@ -225,6 +249,20 @@ export const useFortressOSStore = create<FortressOSState>()((set, get) => ({
     set((state) => {
       const next = { ...state, studio: { ...state.studio, [field]: value } };
       persist(next);
+      // Sync persistent fields to backend
+      const persistentFields = ['sampleVideoTrials', 'activeMonthlyPackages', 'blockedClients'];
+      if (persistentFields.includes(field)) {
+        syncCmfField(field, value as number);
+      }
+      // Sync daily fields to backend
+      const dailyFields: Record<string, string> = {
+        sampleVideosDelivered: 'sample_videos_delivered',
+        interviewSessions: 'interview_sessions',
+        managementSessions: 'management_sessions',
+      };
+      if (dailyFields[field]) {
+        syncDailyField(dailyFields[field], value as number);
+      }
       return next;
     });
   },
@@ -232,8 +270,23 @@ export const useFortressOSStore = create<FortressOSState>()((set, get) => ({
   incrementStudio: (field, amount = 1) => {
     set((state) => {
       const current = Number(state.studio[field] ?? 0);
-      const next = { ...state, studio: { ...state.studio, [field]: Math.max(0, current + amount) } } as FortressOSState;
+      const newValue = Math.max(0, current + amount);
+      const next = { ...state, studio: { ...state.studio, [field]: newValue } } as FortressOSState;
       persist(next);
+      // Sync persistent fields to backend
+      const persistentFields = ['sampleVideoTrials', 'activeMonthlyPackages', 'blockedClients'];
+      if (persistentFields.includes(field)) {
+        syncCmfField(field, newValue);
+      }
+      // Sync daily fields to backend
+      const dailyFields: Record<string, string> = {
+        sampleVideosDelivered: 'sample_videos_delivered',
+        interviewSessions: 'interview_sessions',
+        managementSessions: 'management_sessions',
+      };
+      if (dailyFields[field]) {
+        syncDailyField(dailyFields[field], newValue);
+      }
       return next;
     });
   },
@@ -242,6 +295,19 @@ export const useFortressOSStore = create<FortressOSState>()((set, get) => ({
     set((state) => {
       const next = { ...state, passions: { ...state.passions, diet: { ...state.passions.diet, ...patch } } };
       persist(next);
+      // Sync diet fields to backend
+      const dietFieldMap: Record<string, string> = {
+        calories: 'dietCalories',
+        protein: 'dietProtein',
+        carbs: 'dietCarbs',
+        fat: 'dietFat',
+        mealsComplete: 'dietMealsComplete',
+      };
+      for (const [key, val] of Object.entries(patch)) {
+        if (dietFieldMap[key] && val !== undefined) {
+          syncDailyField(dietFieldMap[key], val as number);
+        }
+      }
       return next;
     });
   },
@@ -250,6 +316,18 @@ export const useFortressOSStore = create<FortressOSState>()((set, get) => ({
     set((state) => {
       const next = { ...state, passions: { ...state.passions, investments: { ...state.passions.investments, ...patch } } };
       persist(next);
+      // Sync investment fields to backend (persistent, user-level)
+      const investFieldMap: Record<string, string> = {
+        portfolioValue: 'portfolioValue',
+        portfolioHealth: 'portfolioHealth',
+        monthlyContribution: 'monthlyContribution',
+        monthlyGoal: 'monthlyInvestmentGoal',
+      };
+      for (const [key, val] of Object.entries(patch)) {
+        if (investFieldMap[key] && val !== undefined) {
+          syncCmfField(investFieldMap[key], val as number);
+        }
+      }
       return next;
     });
   },
@@ -270,14 +348,26 @@ export const useFortressOSStore = create<FortressOSState>()((set, get) => ({
 
   toggleLifestyleHabit: (habit) => {
     set((state) => {
+      const newValue = !state.passions.lifestyle[habit];
       const next = {
         ...state,
         passions: {
           ...state.passions,
-          lifestyle: { ...state.passions.lifestyle, [habit]: !state.passions.lifestyle[habit] },
+          lifestyle: { ...state.passions.lifestyle, [habit]: newValue },
         },
       };
       persist(next);
+      // Sync lifestyle habits to backend
+      const habitFieldMap: Record<string, string> = {
+        water: 'water',
+        read: 'reading',
+        meditate: 'meditation',
+        journal: 'journaling',
+        coldShower: 'coldShower',
+      };
+      if (habitFieldMap[habit]) {
+        syncDailyField(habitFieldMap[habit], newValue);
+      }
       return next;
     });
   },
@@ -296,3 +386,47 @@ export const useFortressOSStore = create<FortressOSState>()((set, get) => ({
     set(next);
   },
 }));
+
+// Hydrate from backend on first load
+if (typeof window !== 'undefined') {
+  const API_URL = import.meta.env.VITE_API_URL !== undefined && import.meta.env.VITE_API_URL !== ''
+    ? import.meta.env.VITE_API_URL
+    : (import.meta.env.DEV ? 'http://localhost:3000' : '');
+
+  fetch(`${API_URL}/api/cmf/status`)
+    .then(res => res.ok ? res.json() : null)
+    .then(data => {
+      if (!data) return;
+      const store = useFortressOSStore.getState();
+      const updates: Partial<StudioMetrics> = {};
+      if (data.sampleVideoTrials > 0) updates.sampleVideoTrials = data.sampleVideoTrials;
+      if (data.activeMonthlyPackages > 0) updates.activeMonthlyPackages = data.activeMonthlyPackages;
+      if (data.blockedClients > 0) updates.blockedClients = data.blockedClients;
+
+      if (Object.keys(updates).length > 0) {
+        useFortressOSStore.setState({
+          studio: { ...store.studio, ...updates },
+        });
+        persist(useFortressOSStore.getState());
+      }
+
+      // Hydrate investments
+      if (data.portfolioValue > 0 || data.portfolioHealth > 0 || data.monthlyContribution > 0) {
+        useFortressOSStore.setState({
+          passions: {
+            ...useFortressOSStore.getState().passions,
+            investments: {
+              ...useFortressOSStore.getState().passions.investments,
+              portfolioValue: data.portfolioValue || 0,
+              portfolioHealth: data.portfolioHealth || 0,
+              monthlyContribution: data.monthlyContribution || 0,
+              monthlyGoal: data.monthlyGoal || 1000,
+            },
+          },
+        });
+        persist(useFortressOSStore.getState());
+      }
+    })
+    .catch(() => { /* Backend unavailable, use localStorage */ });
+}
+

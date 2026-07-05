@@ -17,9 +17,9 @@
   --color-warning: #FF9E3D;
   --color-purplepulse: #9E6CFF;
 
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
-  --font-display: 'Oswald', 'Inter', sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', sans-serif;
 
   --shadow-glow-gold: 0 0 32px rgba(244, 185, 48, 0.14);
   --shadow-card: 0 20px 60px rgba(0, 0, 0, 0.36);

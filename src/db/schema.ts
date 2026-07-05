@@ -10,6 +10,18 @@ export const users = pgTable('users', {
     videosTotal: integer('videos_total').default(0), // Lifetime videos
     location: text('location').default('Europe'), // 'Europe' | 'DRC'
     lastPunishmentDate: timestamp('last_punishment_date'),
+
+    // CMF Studio Persistent Metrics
+    sampleVideoTrials: integer('sample_video_trials').default(0),
+    activeMonthlyPackages: integer('active_monthly_packages').default(0),
+    blockedClients: integer('blocked_clients').default(0),
+
+    // Investment Tracking
+    portfolioValue: decimal('portfolio_value').default('0'),
+    portfolioHealth: integer('portfolio_health').default(0),
+    monthlyContribution: decimal('monthly_contribution').default('0'),
+    monthlyInvestmentGoal: decimal('monthly_investment_goal').default('1000'),
+
     createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -91,6 +103,20 @@ export const dailyLogs = pgTable('daily_logs', {
     journalEntry: text('journal_entry'),
     aiResponse: text('ai_response'),
     aiMood: text('ai_mood'), // DOMINATION, ACCEPTABLE, DISGRACE, REDEMPTION
+
+    // CMF Studio Metrics (daily counters)
+    sampleVideosDelivered: integer('sample_videos_delivered').default(0),
+    interviewSessions: integer('interview_sessions').default(0),
+
+    // Diet Tracking
+    dietCalories: integer('diet_calories').default(0),
+    dietProtein: integer('diet_protein').default(0),
+    dietCarbs: integer('diet_carbs').default(0),
+    dietFat: integer('diet_fat').default(0),
+    dietMealsComplete: integer('diet_meals_complete').default(0),
+
+    // Lifestyle additions
+    water: boolean('water').default(false),
 });
 
 // Goals Table (The Targets)

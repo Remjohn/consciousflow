@@ -2829,13 +2829,38 @@ app.get('/api/dashboard/today', async (c) => {
                 meditation: log.meditation || false,
                 noSocial: log.noSocialMedia || false,
                 noYouTube: log.noYouTube || false
+            },
+            studio: {
+                sampleVideosDelivered: log.sampleVideosDelivered || 0,
+                interviewSessions: log.interviewSessions || 0,
+            },
+            diet: {
+                calories: log.dietCalories || 0,
+                protein: log.dietProtein || 0,
+                carbs: log.dietCarbs || 0,
+                fat: log.dietFat || 0,
+                mealsComplete: log.dietMealsComplete || 0,
             }
         };
+
+        const userData = await db.select().from(users).where(eq(users.id, 1)).limit(1);
+        const user = userData[0];
 
         return c.json({
             success: true,
             date: todayStr,
             metrics,
+            cmfStudio: {
+                sampleVideoTrials: user?.sampleVideoTrials || 0,
+                activeMonthlyPackages: user?.activeMonthlyPackages || 0,
+                blockedClients: user?.blockedClients || 0,
+            },
+            investments: {
+                portfolioValue: parseFloat(user?.portfolioValue?.toString() || '0'),
+                portfolioHealth: user?.portfolioHealth || 0,
+                monthlyContribution: parseFloat(user?.monthlyContribution?.toString() || '0'),
+                monthlyGoal: parseFloat(user?.monthlyInvestmentGoal?.toString() || '1000'),
+            },
             history: monthLogs.map(l => ({
                 date: l.date,
                 metrics: {
@@ -2989,7 +3014,17 @@ app.post('/api/dashboard/update', async (c) => {
             'meditation': 'meditation',
             'noSocial': 'noSocialMedia',
             'noYouTube': 'noYouTube',
-            'activeClients': 'activeClients'
+            'activeClients': 'activeClients',
+            'sampleVideosDelivered': 'sampleVideosDelivered',
+            'sample_videos_delivered': 'sampleVideosDelivered',
+            'interviewSessions': 'interviewSessions',
+            'interview_sessions': 'interviewSessions',
+            'dietCalories': 'dietCalories',
+            'dietProtein': 'dietProtein',
+            'dietCarbs': 'dietCarbs',
+            'dietFat': 'dietFat',
+            'dietMealsComplete': 'dietMealsComplete',
+            'water': 'water'
         };
 
         const dbColumn = fieldMap[field] || field;
@@ -3017,6 +3052,57 @@ app.post('/api/dashboard/update', async (c) => {
         return c.json({ success: true, field, value });
     } catch (error) {
         console.error('Dashboard update error:', error);
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+// POST: Update persistent CMF Studio user-level metrics
+app.post('/api/cmf/update', async (c) => {
+    try {
+        const body = await c.req.json();
+        const { field, value } = body;
+        
+        const allowedFields: Record<string, string> = {
+            'sampleVideoTrials': 'sampleVideoTrials',
+            'activeMonthlyPackages': 'activeMonthlyPackages',
+            'blockedClients': 'blockedClients',
+            'portfolioValue': 'portfolioValue',
+            'portfolioHealth': 'portfolioHealth',
+            'monthlyContribution': 'monthlyContribution',
+            'monthlyInvestmentGoal': 'monthlyInvestmentGoal',
+        };
+        
+        const dbField = allowedFields[field];
+        if (!dbField) return c.json({ error: 'Invalid field' }, 400);
+        
+        await db.update(users)
+            .set({ [dbField]: value })
+            .where(eq(users.id, 1));
+        
+        return c.json({ success: true, field, value });
+    } catch (error) {
+        console.error('CMF update error:', error);
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+// GET: CMF Studio persistent status
+app.get('/api/cmf/status', async (c) => {
+    try {
+        const userData = await db.select().from(users).where(eq(users.id, 1)).limit(1);
+        const user = userData[0];
+        if (!user) return c.json({ error: 'User not found' }, 404);
+        
+        return c.json({
+            sampleVideoTrials: user.sampleVideoTrials || 0,
+            activeMonthlyPackages: user.activeMonthlyPackages || 0,
+            blockedClients: user.blockedClients || 0,
+            portfolioValue: parseFloat(user.portfolioValue?.toString() || '0'),
+            portfolioHealth: user.portfolioHealth || 0,
+            monthlyContribution: parseFloat(user.monthlyContribution?.toString() || '0'),
+            monthlyGoal: parseFloat(user.monthlyInvestmentGoal?.toString() || '1000'),
+        });
+    } catch (error) {
         return c.json({ error: String(error) }, 500);
     }
 });
