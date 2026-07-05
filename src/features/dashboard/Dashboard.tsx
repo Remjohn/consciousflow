@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -21,6 +21,8 @@ import { Card, MetricTile, MiniStat, ProgressBar, RadarMark, Ring, SectionHeader
 import { deriveSnapshot, money, percent, SAMPLE_TRIAL_PRICE, MONTHLY_PACKAGE_PRICE } from '../../lib/fortressMetrics';
 import { useFortressOSStore } from '../../store/useFortressOSStore';
 import { useUserStore } from '../../store/useUserStore';
+import { ScrollingQuotes } from '../../components/ScrollingQuotes';
+import { API_URL } from '../../lib/api';
 
 const todayLabel = new Date().toLocaleDateString('en-US', {
   weekday: 'long',
@@ -28,6 +30,39 @@ const todayLabel = new Date().toLocaleDateString('en-US', {
   day: 'numeric',
   year: 'numeric',
 });
+
+const CoverImageGallery = () => {
+  const [images, setImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/covers`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.images && data.images.length > 0) {
+          setImages(data.images);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  if (images.length === 0) return null;
+
+  const hour = new Date().getHours();
+  const currentImage = images[hour % images.length];
+
+  return (
+    <div className="relative mx-auto flex aspect-[4/1] w-full max-w-[1200px] items-center justify-center overflow-hidden border border-line bg-void/50 rounded-2xl">
+      <img
+        src={`/covers/${encodeURIComponent(currentImage)}`}
+        alt="Cover"
+        className="h-full w-full object-cover object-center animate-in fade-in duration-1000"
+      />
+      <div className="absolute bottom-2 right-2 rounded bg-void/80 px-2 py-1 font-mono text-[8px] tracking-[0.1em] text-concrete/50 border border-line/30">
+        GALLERY ({hour % images.length + 1}/{images.length})
+      </div>
+    </div>
+  );
+};
 
 export const Dashboard = () => {
   const navigate = useNavigate();
@@ -46,6 +81,10 @@ export const Dashboard = () => {
         </div>
         <SelectPill>Day View</SelectPill>
       </div>
+
+      <CoverImageGallery />
+      <ScrollingQuotes />
+
 
       <Card gold className="overflow-hidden p-5 md:p-7">
         <div className="flex items-center justify-between gap-6">

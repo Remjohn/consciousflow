@@ -59,24 +59,76 @@ export const OperatorReadiness = () => {
       <Card className="p-5">
         <SectionHeader icon={<HeartPulse className="h-5 w-5" />} title="Practice Stack" action={<SelectPill>All Drills</SelectPill>} />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <DrillCard icon={<KegelIcon />} title="Kegel" score={snapshot.kegelScore} detail={`${os.passions.kegel.completed} / ${os.passions.kegel.target} sets`} color="purple" onAdd={() => os.updatePractice('kegel', { completed: Math.min(os.passions.kegel.target, os.passions.kegel.completed + 1), minutes: os.passions.kegel.minutes + 3 })} />
-          <DrillCard icon={<Mic className="h-6 w-6" />} title="Singing Drills" score={snapshot.singingScore} detail={`${os.passions.singing.minutes} / ${os.passions.singing.targetMinutes} min`} color="cyan" onAdd={() => os.updatePractice('singing', { minutes: os.passions.singing.minutes + 5, completed: Math.min(os.passions.singing.target, os.passions.singing.completed + 1) })} />
-          <DrillCard icon={<BoxingIcon />} title="Boxing Drills" score={snapshot.boxingScore} detail={`${os.passions.boxing.minutes} / ${os.passions.boxing.targetMinutes} min`} color="red" onAdd={() => os.updatePractice('boxing', { minutes: os.passions.boxing.minutes + 5, completed: Math.min(os.passions.boxing.target, os.passions.boxing.completed + 1) })} />
-          <DrillCard icon={<DancingIcon />} title="Dancing Drills" score={snapshot.dancingScore} detail={`${os.passions.dancing.minutes} / ${os.passions.dancing.targetMinutes} min`} color="gold" onAdd={() => os.updatePractice('dancing', { minutes: os.passions.dancing.minutes + 5, completed: Math.min(os.passions.dancing.target, os.passions.dancing.completed + 1) })} />
+          <DrillCard
+            icon={<KegelIcon />}
+            title="Kegel"
+            score={snapshot.kegelScore}
+            detail={`${snapshot.kegelCompleted} / ${os.passions.kegel.target} sets`}
+            color="purple"
+            onAdd={() => {
+              os.updatePractice('kegel', { completed: os.passions.kegel.completed + 1, minutes: os.passions.kegel.minutes + 3 });
+              useUserStore.getState().incrementMetric('fitness', 'kegels', 3);
+            }}
+          />
+          <DrillCard
+            icon={<Mic className="h-6 w-6" />}
+            title="Singing Drills"
+            score={snapshot.singingScore}
+            detail={`${snapshot.singingMinutes} / ${os.passions.singing.targetMinutes} min`}
+            color="cyan"
+            onAdd={() => {
+              os.updatePractice('singing', { minutes: os.passions.singing.minutes + 5, completed: os.passions.singing.completed + 1 });
+              useUserStore.getState().incrementMetric('fitness', 'singing', 5);
+            }}
+          />
+          <DrillCard
+            icon={<BoxingIcon />}
+            title="Boxing Drills"
+            score={snapshot.boxingScore}
+            detail={`${snapshot.boxingMinutes} / ${os.passions.boxing.targetMinutes} min`}
+            color="red"
+            onAdd={() => {
+              os.updatePractice('boxing', { minutes: os.passions.boxing.minutes + 5, completed: os.passions.boxing.completed + 1 });
+              useUserStore.getState().incrementMetric('fitness', 'boxing', 5);
+            }}
+          />
+          <DrillCard
+            icon={<DancingIcon />}
+            title="Dancing Drills"
+            score={snapshot.dancingScore}
+            detail={`${snapshot.dancingMinutes} / ${os.passions.dancing.targetMinutes} min`}
+            color="gold"
+            onAdd={() => {
+              os.updatePractice('dancing', { minutes: os.passions.dancing.minutes + 5, completed: os.passions.dancing.completed + 1 });
+              useUserStore.getState().incrementMetric('fitness', 'dancing', 5);
+            }}
+          />
         </div>
       </Card>
 
       <Card className="p-5">
         <SectionHeader icon={<Leaf className="h-5 w-5" />} title="Lifestyle Habits" action={<SelectPill>Today</SelectPill>} />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-          {Object.entries(os.passions.lifestyle).map(([key, value]) => (
-            <button key={key} onClick={() => os.toggleLifestyleHabit(key as keyof typeof os.passions.lifestyle)} className={value ? 'rounded-xl border border-success/40 bg-success/10 p-4 text-center text-success' : 'rounded-xl border border-line bg-void/35 p-4 text-center text-muted hover:border-gold/30 hover:text-gold'}>
-              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full border border-current/30">
-                <Check className="h-5 w-5" />
-              </div>
-              <div className="text-xs font-mono uppercase tracking-[0.14em]">{labelize(key)}</div>
-            </button>
-          ))}
+          {Object.entries(os.passions.lifestyle).map(([key, value]) => {
+            const isActive = key === 'coldShower' ? snapshot.coldShowerActive : value;
+            return (
+              <button
+                key={key}
+                onClick={() => {
+                  os.toggleLifestyleHabit(key as keyof typeof os.passions.lifestyle);
+                  if (key === 'coldShower') {
+                    useUserStore.getState().setMetric('lifestyle', 'coldShower', !isActive);
+                  }
+                }}
+                className={isActive ? 'rounded-xl border border-success/40 bg-success/10 p-4 text-center text-success' : 'rounded-xl border border-line bg-void/35 p-4 text-center text-muted hover:border-gold/30 hover:text-gold'}
+              >
+                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full border border-current/30">
+                  <Check className="h-5 w-5" />
+                </div>
+                <div className="text-xs font-mono uppercase tracking-[0.14em]">{labelize(key)}</div>
+              </button>
+            );
+          })}
         </div>
       </Card>
 

@@ -86,7 +86,15 @@ export const StudioOperations = () => {
         <div className="grid gap-3 md:grid-cols-3">
           <ActionButton title="Log Interview" subtitle="Schedule & record" onClick={() => os.incrementStudio('interviewSessions', 1)} icon={<MessageSquareText className="h-6 w-6" />} />
           <ActionButton title="Open Client Queue" subtitle="View active packages" onClick={() => navigate('/revenue')} icon={<Users className="h-6 w-6" />} />
-          <ActionButton title="Mark Delivered" subtitle="Complete sample video" onClick={() => os.incrementStudio('sampleVideosDelivered', 1)} icon={<CheckCircle2 className="h-6 w-6" />} />
+          <ActionButton
+            title="Mark Delivered"
+            subtitle="Complete sample video"
+            onClick={() => {
+              os.incrementStudio('sampleVideosDelivered', 1);
+              useUserStore.getState().incrementMetric('production', 'videos', 1);
+            }}
+            icon={<CheckCircle2 className="h-6 w-6" />}
+          />
         </div>
       </Card>
     </div>

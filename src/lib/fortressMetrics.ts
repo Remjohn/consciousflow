@@ -27,16 +27,31 @@ export function deriveSnapshot(today: Metrics, os: Pick<FortressOSState, 'studio
   const trialRevenue = sampleVideoTrials * SAMPLE_TRIAL_PRICE;
   const totalTrackedRevenue = mrr + trialRevenue;
 
+  const coldShowerActive = os.passions.lifestyle.coldShower || today.lifestyle?.coldShower || false;
+
   const lifestyleHabits = os.passions.lifestyle;
-  const lifestyleCompleted = Object.values(lifestyleHabits).filter(Boolean).length;
+  const lifestyleCompleted =
+    (lifestyleHabits.water ? 1 : 0) +
+    (lifestyleHabits.read ? 1 : 0) +
+    (lifestyleHabits.meditate ? 1 : 0) +
+    (lifestyleHabits.journal ? 1 : 0) +
+    (coldShowerActive ? 1 : 0);
   const lifestyleTarget = Object.values(lifestyleHabits).length;
 
   const dietScore = percent(os.passions.diet.calories, os.passions.diet.targetCalories);
   const investmentsScore = clamp(os.passions.investments.portfolioHealth);
-  const kegelScore = percent(os.passions.kegel.completed, os.passions.kegel.target);
-  const singingScore = percent(os.passions.singing.minutes, os.passions.singing.targetMinutes);
-  const boxingScore = percent(os.passions.boxing.minutes, os.passions.boxing.targetMinutes);
-  const dancingScore = percent(os.passions.dancing.minutes, os.passions.dancing.targetMinutes);
+
+  const kegelMinutes = Math.max(os.passions.kegel.minutes, today.fitness?.kegels ?? 0);
+  const kegelScore = percent(kegelMinutes, os.passions.kegel.targetMinutes);
+
+  const singingMinutes = Math.max(os.passions.singing.minutes, today.fitness?.singing ?? 0);
+  const singingScore = percent(singingMinutes, os.passions.singing.targetMinutes);
+
+  const boxingMinutes = Math.max(os.passions.boxing.minutes, today.fitness?.boxing ?? 0);
+  const boxingScore = percent(boxingMinutes, os.passions.boxing.targetMinutes);
+
+  const dancingMinutes = Math.max(os.passions.dancing.minutes, today.fitness?.dancing ?? 0);
+  const dancingScore = percent(dancingMinutes, os.passions.dancing.targetMinutes);
 
   const fitnessMinutes = Math.min(60, (today.fitness?.pushups ?? 0) / 5 + (today.fitness?.abs ?? 0) / 5 + (today.fitness?.biceps ?? 0) / 3 + (today.fitness?.burpees ?? 0) / 3);
   const fitnessScore = Math.max(percent(fitnessMinutes, 60), Math.max(boxingScore, 0));
@@ -44,6 +59,11 @@ export function deriveSnapshot(today: Metrics, os: Pick<FortressOSState, 'studio
   const practiceScores = [dietScore, investmentsScore, kegelScore, singingScore, boxingScore, dancingScore];
   const corePassionScore = Math.round(practiceScores.reduce((sum, score) => sum + score, 0) / practiceScores.length);
   const operatorReadiness = Math.round((fitnessScore + percent(lifestyleCompleted, lifestyleTarget) + corePassionScore) / 3);
+
+  const kegelCompleted = Math.max(os.passions.kegel.completed, Math.floor(kegelMinutes / 3));
+  const singingCompleted = Math.max(os.passions.singing.completed, Math.floor(singingMinutes / 5));
+  const boxingCompleted = Math.max(os.passions.boxing.completed, Math.floor(boxingMinutes / 5));
+  const dancingCompleted = Math.max(os.passions.dancing.completed, Math.floor(dancingMinutes / 5));
 
   return {
     sampleVideosDelivered,
@@ -70,6 +90,15 @@ export function deriveSnapshot(today: Metrics, os: Pick<FortressOSState, 'studio
     fitnessScore,
     corePassionScore,
     operatorReadiness,
+    kegelMinutes,
+    singingMinutes,
+    boxingMinutes,
+    dancingMinutes,
+    coldShowerActive,
+    kegelCompleted,
+    singingCompleted,
+    boxingCompleted,
+    dancingCompleted,
   };
 }
 
