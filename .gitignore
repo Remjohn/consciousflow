@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Upgrade bundle files
+fortress_cmf_operator_update_bundle.zip
+fortress_cmf_operator_update_bundle/
+

@@ -1,10 +1,9 @@
-
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { Dashboard } from './features/dashboard/Dashboard';
-import { StatsDashboard } from './features/stats/StatsDashboard';
 import { FinanceTracker } from './features/finance/FinanceTracker';
-import { FitnessProgress } from './features/fitness/FitnessProgress';
+import { StudioOperations } from './features/studio/StudioOperations';
+import { OperatorReadiness } from './features/operator/OperatorReadiness';
 import { ChallengeDashboard } from './features/challenge/ChallengeDashboard';
 
 function App() {
@@ -14,11 +13,17 @@ function App() {
         <Route path="/" element={<AppShell />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="stats" element={<StatsDashboard />} />
+          <Route path="today" element={<Navigate to="/dashboard" replace />} />
+          <Route path="revenue" element={<FinanceTracker />} />
           <Route path="finance" element={<FinanceTracker />} />
-          <Route path="investments" element={<Navigate to="/finance" replace />} />
+          <Route path="investments" element={<Navigate to="/revenue" replace />} />
+          <Route path="studio" element={<StudioOperations />} />
+          <Route path="operator" element={<OperatorReadiness />} />
           <Route path="challenge" element={<ChallengeDashboard />} />
-          <Route path="fitness/progress" element={<FitnessProgress />} />
+          <Route path="challenges" element={<ChallengeDashboard />} />
+          <Route path="stats" element={<Navigate to="/studio" replace />} />
+          <Route path="fitness/progress" element={<Navigate to="/operator" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>
     </BrowserRouter>
@@ -26,4 +31,3 @@ function App() {
 }
 
 export default App;
-

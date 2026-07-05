@@ -1,573 +1,213 @@
-import { useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  AlertTriangle,
+  Apple,
+  CalendarDays,
+  Clapperboard,
+  Dumbbell,
+  Flame,
+  HeartPulse,
+  Leaf,
+  Mic,
+  MoveRight,
+  PackageCheck,
+  TrendingUp,
+  Trophy,
+  Users,
+  WalletCards,
+} from 'lucide-react';
+import { Card, MetricTile, MiniStat, ProgressBar, RadarMark, Ring, SectionHeader, SelectPill, StatusPill } from '../../components/fortress/ui';
+import { deriveSnapshot, money, percent, SAMPLE_TRIAL_PRICE, MONTHLY_PACKAGE_PRICE } from '../../lib/fortressMetrics';
+import { useFortressOSStore } from '../../store/useFortressOSStore';
 import { useUserStore } from '../../store/useUserStore';
-import { Monitor, Zap, Moon, Smartphone, AlertTriangle, TrendingUp, TrendingDown, Minus, Edit2, Crown } from 'lucide-react';
-import { ProtocolTimer } from './ProtocolTimer';
-import { ScrollingQuotes } from '../../components/ScrollingQuotes';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { usePunishment } from '../../hooks/usePunishment';
-import { API_URL } from '../../lib/api';
-import { KegelsProtocol } from '../kegels/KegelsProtocol';
 
-type TimeScope = 'day' | 'week' | 'month';
+const todayLabel = new Date().toLocaleDateString('en-US', {
+  weekday: 'long',
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+});
 
 export const Dashboard = () => {
-    const {
-        today,
-        currentDate,
-        history,
-        goalStatus,
-        getStats,
-        incrementMetric,
-        setMetric,
-        checkDailyReset,
-        getRigourState,
-        fetchFromBackend,
-        isLoading,
-        lastFetch
-    } = useUserStore();
+  const navigate = useNavigate();
+  const legacyToday = useUserStore((state) => state.today);
+  const os = useFortressOSStore();
+  const snapshot = deriveSnapshot(legacyToday, os);
 
-    const { isPunished } = usePunishment();
-    const [scope, setScope] = useState<TimeScope>('day');
-    const [editMode, setEditMode] = useState(false);
+  const studioPriority = `Close 1 trial, ship ${Math.max(1, os.studio.sampleVideosTarget - snapshot.sampleVideosDelivered)} sample videos, and complete your core drills.`;
 
-    // Calculate points momentum chart data dynamically from history + today
-    const pointsChartData = (() => {
-        const last6 = (history || []).slice(-6);
-        const data = last6.map(h => ({
-            date: new Date(h.date).toLocaleDateString('en-US', { weekday: 'short' }),
-            points: h.metrics.production?.points || 0
-        }));
-        data.push({
-            date: 'Today',
-            points: today.production.points || 0
-        });
-        return data;
-    })();
+  return (
+    <div className="fortress-screen space-y-4">
+      <div className="flex items-center justify-between px-1 pt-2">
+        <div className="flex items-center gap-3 text-sm font-semibold text-concrete">
+          <CalendarDays className="h-4 w-4 text-gold" />
+          {todayLabel}
+        </div>
+        <SelectPill>Day View</SelectPill>
+      </div>
 
-    useEffect(() => {
-        fetchFromBackend();
-    }, [fetchFromBackend]);
-
-    // Ensure daily reset
-    useEffect(() => {
-        checkDailyReset();
-    }, [checkDailyReset]);
-
-    const lifestyle = today.lifestyle || {
-        sleep: 0, noSocial: false, noYouTube: false,
-        phoneHours: 0, phonePickups: 0,
-        coldShower: false, kegels: false
-    };
-
-    // Kegels modal state
-    const [showKegelsModal, setShowKegelsModal] = useState(false);
-
-    // Goal Logic (360/84/12) based on 12 packages/day
-    const monthVideos = goalStatus?.monthVideos || 0;
-    const monthTarget = 360; // 12 packages * 30 days
-    const dayVideos = today.production.videos;
-    const dayTarget = 12;
-
-    // Weekly (Aggregated from history)
-    const weeklyVideos = getStats('week', 'production', 'videos');
-    const weeklyTarget = 84;
-
-    return (
-        <>
-        <div className="flex flex-col p-4 gap-4">
-
-                {/* COVER IMAGE GALLERY */}
-                <CoverImageGallery />
-
-                {/* PUNISHMENT BANNER */}
-                {isPunished && (
-                    <div className="bg-blood/20 border-2 border-blood text-blood p-4 flex items-center gap-3 animate-pulse">
-                        <AlertTriangle className="w-6 h-6" />
-                        <div>
-                            <div className="font-display font-black uppercase tracking-wider">PUNISHMENT PROTOCOL ACTIVE</div>
-                            <div className="text-[10px] font-mono opacity-70">TARGET MISSED — COLD SHOWER MANDATORY</div>
-                        </div>
-                    </div>
-                )}
-
-                {/* SCROLLING KIMYA QUOTES */}
-                <ScrollingQuotes />
-
-                {/* 0. PROTOCOL STATUS WIDGET (360/84/12) */}
-                <div className="grid grid-cols-3 gap-2">
-                    <StatusCard label="MONTHLY" value={monthVideos} target={monthTarget} />
-                    <StatusCard label="WEEKLY" value={weeklyVideos} target={weeklyTarget} />
-                    <StatusCard label="DAILY" value={dayVideos} target={dayTarget} urgent={dayVideos < dayTarget} />
-                </div>
-
-                {/* CHALLENGE MINI-WIDGET */}
-                <ChallengeWidget />
-
-                {/* DATE HEADER & EDIT TOGGLE */}
-                <div className="flex justify-between items-center px-1">
-                    <div className="flex flex-col">
-                        <span className="text-[10px] font-mono text-concrete/40 uppercase tracking-widest">Active Operative Date</span>
-                        <span className="text-xl font-display font-black text-concrete uppercase">
-                            {new Date(currentDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button onClick={() => setEditMode(!editMode)} className={`p-2 rounded border ${editMode ? 'bg-concrete text-void border-concrete' : 'text-concrete/30 border-steel/20'}`}>
-                            <Edit2 size={12} />
-                        </button>
-                        <ConnectionStatus isLoading={isLoading} lastFetch={lastFetch} onRefresh={fetchFromBackend} />
-                    </div>
-                </div>
-
-                {/* TIME SCOPE */}
-                <div className="grid grid-cols-3 gap-1 bg-steel/10 p-1 rounded-sm border border-steel/20">
-                    {(['day', 'week', 'month'] as TimeScope[]).map((s) => (
-                        <button key={s} onClick={() => setScope(s)} className={`text-[10px] font-mono uppercase tracking-widest py-2 transition-all ${scope === s ? 'bg-concrete text-void font-bold shadow-sm' : 'text-concrete/40 hover:text-concrete'}`}>
-                            {s}
-                        </button>
-                    ))}
-                </div>
-
-                {/* PROTOCOL TIMER */}
-                <ProtocolTimer />
-
-
-
-                {/* REMOVED DAILY EVIDENCE UPLOAD TO SUPPORT INVISIBLE APP DOCTRINE */}
-
-                {/* RIGOUR STATE */}
-                <RigourTracker getRigourState={getRigourState} />
-
-                {/* POINTS TREASURY ENGINE */}
-                <div className="bg-void border border-steel/30 relative overflow-hidden group">
-                    {/* Glowing Accent line */}
-                    <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-600"></div>
-                    
-                    <div className="bg-steel/10 px-3 py-2 flex justify-between items-center border-b border-steel/20">
-                        <span className="text-[10px] font-mono font-bold text-gold tracking-widest flex items-center gap-2">
-                            <Crown size={12} className="text-gold" /> POINTS TREASURY
-                        </span>
-                        <div className="text-[10px] text-concrete/30 font-mono">{scope.toUpperCase()}</div>
-                    </div>
-
-                    <div className="p-4 flex flex-col gap-4">
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <p className="text-[9px] uppercase tracking-wider text-concrete/50 mb-0.5">Points Earned</p>
-                                <div className="flex items-baseline gap-1.5">
-                                    <span className="text-3xl font-black font-mono text-gold tabular-nums leading-none">
-                                        {(getStats(scope, 'production', 'points') || 0).toFixed(1)}
-                                    </span>
-                                    {scope === 'day' && (
-                                        <span className="text-xs font-mono text-concrete/40">/ 200 max</span>
-                                    )}
-                                </div>
-                            </div>
-                            
-                            {scope === 'day' && (
-                                <div className="text-right">
-                                    <span className="text-[9px] uppercase tracking-wider text-concrete/50 block mb-0.5">Performance Tier</span>
-                                    <span className={`px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded ${
-                                        (today.production.points || 0) >= 180 ? 'bg-gold/20 text-gold border border-gold/30' :
-                                        (today.production.points || 0) >= 140 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
-                                        (today.production.points || 0) >= 100 ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                                        (today.production.points || 0) >= 60 ? 'bg-steel/20 text-concrete border border-steel/30' :
-                                        (today.production.points || 0) >= 30 ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
-                                        'bg-blood/20 text-blood border border-blood/30'
-                                    }`}>
-                                        {(today.production.points || 0) >= 180 ? 'LEGENDARY 🏆' :
-                                         (today.production.points || 0) >= 140 ? 'ELITE ⭐' :
-                                         (today.production.points || 0) >= 100 ? 'STRONG 💪' :
-                                         (today.production.points || 0) >= 60 ? 'DECENT ✓' :
-                                         (today.production.points || 0) >= 30 ? 'WEAK ⚠' :
-                                         'FAILED 💀'}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Weekly Momentum Chart */}
-                        <div className="pt-2 border-t border-steel/10">
-                            <div className="flex items-center gap-1.5 mb-2">
-                                <TrendingUp size={11} className="text-gold" />
-                                <span className="text-[8px] font-mono text-concrete/50 uppercase tracking-widest">7-Day Points Momentum</span>
-                            </div>
-                            <div className="h-28 w-full font-mono">
-                                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                                    <LineChart data={pointsChartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#737373', fontFamily: 'monospace' }} />
-                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#737373', fontFamily: 'monospace' }} />
-                                        <Tooltip
-                                            contentStyle={{ backgroundColor: '#0a0a0a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '2px' }}
-                                            itemStyle={{ fontFamily: 'monospace', fontSize: '11px', color: '#fff' }}
-                                            labelStyle={{ fontFamily: 'monospace', fontSize: '9px', color: '#737373', marginBottom: '2px' }}
-                                            formatter={(value: any) => [parseFloat(value || 0).toFixed(1) + ' pts', 'Points']}
-                                        />
-                                        <Line
-                                            type="monotone"
-                                            dataKey="points"
-                                            stroke="#eab308"
-                                            strokeWidth={2}
-                                            dot={{ fill: '#0a0a0a', stroke: '#eab308', strokeWidth: 1.5, r: 2.5 }}
-                                            activeDot={{ r: 4, fill: '#eab308' }}
-                                        />
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* PRODUCTION HUB */}
-                <div className="bg-void border border-steel/30 relative group">
-                    <div className="bg-steel/10 px-3 py-2 flex justify-between items-center border-b border-steel/20">
-                        <span className="text-[10px] font-mono font-bold text-concrete tracking-widest flex items-center gap-2">
-                            <Monitor size={12} /> PRODUCTION
-                        </span>
-                        <div className="text-[10px] text-concrete/30 font-mono">{scope.toUpperCase()}</div>
-                    </div>
-
-                    <div className="p-4 flex flex-col gap-6">
-                        <div className="grid grid-cols-3 gap-2">
-                            {/* Client Packages */}
-                            <div className="flex flex-col items-center">
-                                <div className="text-3xl font-black text-concrete tabular-nums leading-none">
-                                    {getStats(scope, 'production', 'videos')}
-                                </div>
-                                <span className="text-[8px] font-mono text-concrete/40 mt-1 uppercase text-center leading-tight">Client<br/>Packages</span>
-                                <span className="text-[7px] font-mono text-concrete/20 uppercase mt-1">Target 12</span>
-                            </div>
-
-                            {/* Deep Work Sessions */}
-                            <div className="flex flex-col items-center">
-                                <div className="text-3xl font-black text-gold tabular-nums leading-none">
-                                    {getStats(scope, 'production', 'pomodoros')}
-                                </div>
-                                <span className="text-[8px] font-mono text-concrete/40 mt-1 uppercase text-center leading-tight">Deep Work<br/>(90m)</span>
-                                <span className="text-[7px] font-mono text-concrete/20 uppercase mt-1">Target 4</span>
-                            </div>
-
-                            {/* Management Sessions */}
-                            <div className="flex flex-col items-center">
-                                <div className="text-3xl font-black text-blue-400 tabular-nums leading-none">
-                                    {getStats(scope, 'production', 'managementSessions')}
-                                </div>
-                                <span className="text-[8px] font-mono text-concrete/40 mt-1 uppercase text-center leading-tight">Management<br/>(60m)</span>
-                                <span className="text-[7px] font-mono text-concrete/20 uppercase mt-1">Target 4</span>
-                            </div>
-                        </div>
-
-                        {/* Action Layer */}
-                        {scope === 'day' && (
-                            <div className="flex flex-col gap-3">
-                                <button 
-                                    onClick={() => incrementMetric('production', 'videos')} 
-                                    className="w-full py-2 bg-blood text-white font-black uppercase tracking-widest hover:bg-red-600 transition-all clip-path-polygon text-[10px]"
-                                >
-                                    Log Client Package
-                                </button>
-
-                                {editMode && (
-                                    <div className="flex justify-around border-t border-steel/10 pt-3">
-                                        <div className="flex flex-col items-center gap-1">
-                                            <span className="text-[7px] font-mono text-gold/50 uppercase">DW Adjust</span>
-                                            <div className="flex gap-1">
-                                                <button onClick={() => setMetric('production', 'pomodoros', Math.max(0, today.production.pomodoros - 1))} className="text-[10px] bg-steel/20 hover:bg-blood/20 text-concrete px-2 py-0.5 font-bold">-</button>
-                                                <button onClick={() => incrementMetric('production', 'pomodoros')} className="text-[10px] bg-steel/20 hover:bg-gold/20 text-concrete px-2 py-0.5 font-bold">+</button>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col items-center gap-1">
-                                            <span className="text-[7px] font-mono text-blue-400/50 uppercase">MGT Adjust</span>
-                                            <div className="flex gap-1">
-                                                <button onClick={() => setMetric('production', 'managementSessions', Math.max(0, today.production.managementSessions - 1))} className="text-[10px] bg-steel/20 hover:bg-blood/20 text-concrete px-2 py-0.5 font-bold">-</button>
-                                                <button onClick={() => incrementMetric('production', 'managementSessions')} className="text-[10px] bg-steel/20 hover:bg-blue-400/20 text-concrete px-2 py-0.5 font-bold">+</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-
-
-                {/* LIFESTYLE */}
-                <div className="bg-void border border-emerald-500/20 relative">
-                    <div className="bg-emerald-500/5 px-3 py-2 flex justify-between items-center border-b border-emerald-500/10">
-                        <span className="text-[10px] font-mono font-bold text-emerald-500 tracking-widest flex items-center gap-2">
-                            <Zap size={12} /> LIFESTYLE PROTOCOLS
-                        </span>
-                    </div>
-                    <div className="p-4 space-y-4">
-
-                        {/* PHONE USAGE - PRIORITY #1 */}
-                        <div className="bg-blood/10 border border-blood/30 p-3 rounded">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-[10px] font-mono text-blood uppercase flex items-center gap-1">📱 Phone Hours</span>
-                                <span className="text-[9px] font-mono text-blood/50">TARGET: &lt;2h</span>
-                            </div>
-                            <div className="flex items-center justify-center gap-4">
-                                <button onClick={() => setMetric('lifestyle', 'phoneHours', Math.max(0, (lifestyle.phoneHours || 0) - 0.5))} className="w-8 h-8 bg-blood/20 hover:bg-blood/30 text-blood rounded font-bold">-</button>
-                                <div className="text-center">
-                                    <span className={`text-3xl font-display font-black tabular-nums ${(lifestyle.phoneHours || 0) <= 2 ? 'text-emerald-500' : 'text-blood'}`}>{lifestyle.phoneHours || 0}</span>
-                                    <span className="text-sm text-concrete/50 ml-1">hours</span>
-                                </div>
-                                <button onClick={() => setMetric('lifestyle', 'phoneHours', (lifestyle.phoneHours || 0) + 0.5)} className="w-8 h-8 bg-blood/20 hover:bg-blood/30 text-blood rounded font-bold">+</button>
-                            </div>
-                            {(lifestyle.phoneHours || 0) > 2 && (
-                                <div className="mt-2 text-center text-[9px] font-mono text-blood">⚠️ OVER TARGET - DIGITAL SIRENS WINNING</div>
-                            )}
-                        </div>
-
-                        {/* Core Protocols Grid */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="flex flex-col gap-3">
-                                <LifestyleToggle label="No Social Media" active={lifestyle.noSocial} onClick={() => setMetric('lifestyle', 'noSocial', !lifestyle.noSocial)} icon={<Smartphone size={10} />} />
-                                <LifestyleToggle label="No YouTube" active={lifestyle.noYouTube} onClick={() => setMetric('lifestyle', 'noYouTube', !lifestyle.noYouTube)} icon={<Monitor size={10} />} />
-                                <LifestyleToggle label="Cold Shower" active={lifestyle.coldShower} onClick={() => setMetric('lifestyle', 'coldShower', !lifestyle.coldShower)} icon={<Zap size={10} />} />
-                            </div>
-                            <div className="flex flex-col gap-3">
-                                {/* Kegels with START button */}
-                                <div className="flex items-center gap-2">
-                                    <LifestyleToggle label="Kegels" active={lifestyle.kegels} onClick={() => setMetric('lifestyle', 'kegels', !lifestyle.kegels)} icon={<Zap size={10} />} />
-                                    <button
-                                        onClick={() => setShowKegelsModal(true)}
-                                        className="text-[9px] bg-purple-500/30 hover:bg-purple-500/50 text-purple-300 px-2 py-0.5 rounded font-bold uppercase"
-                                    >
-                                        ▶ START
-                                    </button>
-                                </div>
-                                {/* Sleep */}
-                                <div className="flex flex-col">
-                                    <span className="text-[9px] font-mono text-emerald-500/50 uppercase mb-1 flex items-center gap-1"><Moon size={10} /> Sleep</span>
-                                    <div className="flex items-center gap-2">
-                                        <button onClick={() => setMetric('lifestyle', 'sleep', Math.max(0, lifestyle.sleep - 0.5))} className="p-1 bg-steel/10 hover:bg-emerald-500/20 text-emerald-500 rounded">-</button>
-                                        <span className="text-lg font-bold text-concrete tabular-nums">{lifestyle.sleep}h</span>
-                                        <button onClick={() => setMetric('lifestyle', 'sleep', lifestyle.sleep + 0.5)} className="p-1 bg-steel/10 hover:bg-emerald-500/20 text-emerald-500 rounded">+</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* End of main content */}
+      <Card gold className="overflow-hidden p-5 md:p-7">
+        <div className="flex items-center justify-between gap-6">
+          <div className="min-w-0 flex-1">
+            <div className="mb-4 flex items-center gap-3 text-gold">
+              <HeartPulse className="h-5 w-5" />
+              <span className="font-mono text-xs font-bold uppercase tracking-[0.24em]">Today’s Priority</span>
             </div>
+            <h2 className="max-w-2xl text-3xl font-black leading-tight tracking-[-0.05em] text-concrete md:text-5xl">
+              {studioPriority.split('1 trial')[0]}
+              <span className="text-gold">1 trial</span>
+              {studioPriority.split('1 trial')[1]}
+            </h2>
+            <p className="mt-4 text-base text-muted">Focus. Execute. Close. Then invest in your body, voice, rhythm, and future.</p>
+            <button onClick={() => navigate('/studio')} className="gold-button mt-6 flex w-full items-center justify-center gap-3">
+              Open Work Queue <MoveRight className="h-5 w-5" />
+            </button>
+          </div>
+          <RadarMark />
+        </div>
+      </Card>
 
-            {/* Kegels Protocol Modal */}
-            {showKegelsModal && (
-                <KegelsProtocol
-                    onClose={() => setShowKegelsModal(false)}
-                    onComplete={() => {
-                        setShowKegelsModal(false);
-                        setMetric('lifestyle', 'kegels', true);
-                    }}
-                />
-            )}
-        </>
-    );
+      <Card className="p-5">
+        <SectionHeader icon={<TrendingUp className="h-5 w-5" />} title="Revenue (MRR)" action={<SelectPill>This Month</SelectPill>} />
+        <div className="grid gap-5 md:grid-cols-[1.25fr_.75fr] md:items-start">
+          <div>
+            <div className="fortress-number text-5xl md:text-6xl">{money(snapshot.mrr)}</div>
+            <div className="mt-2 fortress-label">Monthly Recurring Revenue</div>
+          </div>
+          <div className="rounded-xl border border-success/20 bg-success/5 p-4 text-success">
+            <div className="text-2xl font-black">↑ {snapshot.activeMonthlyPackages > 0 ? 'Live' : 'Set packages'}</div>
+            <div className="mt-1 text-sm text-muted">{snapshot.activeMonthlyPackages} active packages × {money(MONTHLY_PACKAGE_PRICE)}</div>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <MetricTile icon={<WalletCards className="h-5 w-5" />} label="Trial Revenue" value={money(snapshot.trialRevenue)} detail={`${snapshot.sampleVideoTrials} trials`} />
+          <MetricTile icon={<Users className="h-5 w-5" />} label="Active Packages" value={snapshot.activeMonthlyPackages} detail={`${money(MONTHLY_PACKAGE_PRICE)} / month`} />
+          <MetricTile icon={<Clapperboard className="h-5 w-5" />} label={`Sample Trials (${money(SAMPLE_TRIAL_PRICE)})`} value={snapshot.sampleVideoTrials} detail="One-time front door" />
+          <MetricTile icon={<PackageCheck className="h-5 w-5" />} label={`Packages (${money(MONTHLY_PACKAGE_PRICE)})`} value={money(snapshot.mrr)} detail="Recurring base" />
+        </div>
+      </Card>
+
+      <Card className="p-5">
+        <SectionHeader icon={<Clapperboard className="h-5 w-5" />} title="Studio Ops" action={<SelectPill>Today</SelectPill>} />
+        <div className="flex overflow-x-auto pb-1">
+          <MiniStat
+            icon={<Clapperboard className="h-6 w-6" />}
+            value={<>{snapshot.sampleVideosDelivered}<span className="text-base text-muted"> / {snapshot.sampleVideosTarget}</span></>}
+            label="Sample Videos Delivered"
+            progress={{ value: snapshot.sampleVideosDelivered, max: snapshot.sampleVideosTarget }}
+          />
+          <MiniStat
+            icon={<Users className="h-6 w-6" />}
+            value={<>{snapshot.interviewSessions}<span className="text-base text-muted"> / {snapshot.interviewTarget}</span></>}
+            label="Interview Sessions"
+            progress={{ value: snapshot.interviewSessions, max: snapshot.interviewTarget }}
+          />
+          <MiniStat
+            icon={<UserGearIcon />}
+            value={<>{snapshot.managementSessions}<span className="text-base text-muted"> / {snapshot.managementTarget}</span></>}
+            label="Management Sessions"
+            progress={{ value: snapshot.managementSessions, max: snapshot.managementTarget }}
+          />
+          <MiniStat
+            icon={<AlertTriangle className="h-6 w-6" />}
+            value={snapshot.blockedClients}
+            label="Blocked Clients"
+            detail={snapshot.blockedClients > 0 ? 'Needs action' : 'Clear'}
+            danger={snapshot.blockedClients > 0}
+            progress={{ value: snapshot.blockedClients, max: Math.max(snapshot.blockedClients, 3) }}
+          />
+        </div>
+      </Card>
+
+      <Card className="p-5">
+        <SectionHeader icon={<HeartPulse className="h-5 w-5" />} title="Core Passions" action={<SelectPill>Today</SelectPill>} />
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
+          <PassionMini icon={<Apple className="h-6 w-6" />} label="Diet" status={`${snapshot.dietScore}%`} tone={snapshot.dietScore >= 80 ? 'green' : 'gold'} />
+          <PassionMini icon={<TrendingUp className="h-6 w-6" />} label="Investments" status={`${snapshot.investmentsScore}%`} tone={snapshot.investmentsScore >= 70 ? 'green' : 'gold'} />
+          <PassionMini icon={<Leaf className="h-6 w-6" />} label="Kegel" status={`${os.passions.kegel.completed} / ${os.passions.kegel.target}`} tone={snapshot.kegelScore >= 100 ? 'green' : 'gold'} />
+          <PassionMini icon={<Mic className="h-6 w-6" />} label="Singing Drills" status={`${os.passions.singing.minutes} / ${os.passions.singing.targetMinutes} min`} tone="gold" />
+          <PassionMini icon={<Dumbbell className="h-6 w-6" />} label="Boxing Drills" status={`${os.passions.boxing.completed} / ${os.passions.boxing.target} rounds`} tone="gold" />
+          <PassionMini icon={<DancingIcon />} label="Dancing Drills" status={`${os.passions.dancing.minutes} / ${os.passions.dancing.targetMinutes} min`} tone="gold" />
+        </div>
+      </Card>
+
+      <Card className="p-5">
+        <SectionHeader icon={<HeartPulse className="h-5 w-5" />} title="Operator Readiness" action={<SelectPill>Today</SelectPill>} />
+        <div className="grid gap-4 md:grid-cols-3">
+          <ReadinessTile icon={<Dumbbell className="h-6 w-6" />} label="Fitness" score={snapshot.fitnessScore} detail={`${Math.round(snapshot.fitnessMinutes)} / 60 min`} color="#72D94F" />
+          <ReadinessTile icon={<Leaf className="h-6 w-6" />} label="Lifestyle" score={percent(snapshot.lifestyleCompleted, snapshot.lifestyleTarget)} detail={`${snapshot.lifestyleCompleted} / ${snapshot.lifestyleTarget} habits`} color="#72D94F" />
+          <div className="rounded-xl border border-line bg-void/35 p-4">
+            <div className="mb-3 flex items-center gap-2 text-warning"><Flame className="h-6 w-6" /><span className="fortress-label text-warning">Challenge Streak</span></div>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="fortress-number text-5xl">{Math.max(os.challenges.business.completed, os.challenges.personal.completed)}</div>
+                <div className="text-sm text-muted">days / completions</div>
+              </div>
+              <Ring value={snapshot.operatorReadiness} size={88} color="#FF9E3D"><Flame className="h-7 w-7 text-warning" /></Ring>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <button onClick={() => navigate('/challenge')} className="group w-full rounded-2xl border border-line bg-panel/70 p-4 text-left transition hover:border-gold/30">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-gold/30 bg-gold/10 text-gold">
+              <Trophy className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="font-mono text-xs uppercase tracking-[0.2em] text-gold">Challenge: Nourish & Reset</div>
+              <div className="mt-1 text-sm text-muted">90-day deep work + core passions challenge</div>
+            </div>
+          </div>
+          <div className="w-32 shrink-0 text-right">
+            <div className="font-mono text-xs uppercase tracking-[0.16em] text-gold">Day 7 / 90</div>
+            <ProgressBar value={7} max={90} className="mt-2 h-1.5" />
+          </div>
+        </div>
+      </button>
+    </div>
+  );
 };
 
-// Cover Image Gallery Component
-const CoverImageGallery = () => {
-    const [images, setImages] = useState<string[]>([]);
-    
-    useEffect(() => {
-        fetch(`${API_URL}/api/covers`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.images && data.images.length > 0) {
-                    setImages(data.images);
-                }
-            })
-            .catch(console.error);
-    }, []);
-
-    if (images.length === 0) return null;
-
-    // Pick image based on current hour
-    const hour = new Date().getHours();
-    const currentImage = images[hour % images.length];
-
-    return (
-        <div className="w-full aspect-[4/1] max-w-[1200px] mx-auto border-2 border-steel/20 relative overflow-hidden bg-void flex items-center justify-center">
-            <img 
-                src={`/covers/${encodeURIComponent(currentImage)}`} 
-                alt="Cover" 
-                className="w-full h-full object-cover object-center animate-in fade-in duration-1000"
-            />
-            <div className="absolute bottom-2 right-2 bg-void/80 px-2 py-1 text-[8px] font-mono text-concrete/50 border border-steel/20">
-                GALLERY ({hour % images.length + 1}/{images.length})
-            </div>
-        </div>
-    );
-};
-
-const StatusCard = ({ label, value, target, urgent }: { label: string, value: number, target: number, urgent?: boolean }) => {
-    const progress = Math.min(100, (value / target) * 100);
-
-
-    return (
-        <div className="bg-void border border-steel/20 p-2 flex flex-col items-center">
-            <span className="text-[8px] font-mono text-concrete/40 uppercase mb-1">{label}</span>
-            <div className="flex items-end gap-1 mb-1">
-                <span className={`text-xl font-black leading-none ${progress >= 100 ? 'text-gold' : 'text-concrete'}`}>{value}</span>
-                <span className="text-[10px] text-concrete/30 leading-none">/{target}</span>
-            </div>
-            <div className="w-full h-1 bg-steel/10 rounded-full overflow-hidden">
-                <div className={`h-full ${progress >= 100 ? 'bg-gold' : urgent ? 'bg-blood' : 'bg-emerald-500'}`} style={{ width: `${progress}%` }}></div>
-            </div>
-        </div>
-    )
-}
-
-const LifestyleToggle = ({ label, active, onClick, icon }: { label: string, active: boolean, onClick: () => void, icon: any }) => (
-    <button onClick={onClick} className={`flex items-center justify-between p-2 rounded-sm border transition-all ${active ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-void border-steel/20 text-concrete/30 hover:bg-steel/5'}`}>
-        <div className="flex items-center gap-2">
-            {icon}
-            <span className="text-[9px] font-mono uppercase tracking-wider">{label}</span>
-        </div>
-        <div className={`w-2 h-2 rounded-full ${active ? 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]' : 'bg-steel/30'}`}></div>
-    </button>
+const PassionMini = ({ icon, label, status, tone }: { icon: ReactNode; label: string; status: string; tone: 'gold' | 'green' }) => (
+  <div className="rounded-xl border border-line bg-void/35 p-3 text-center">
+    <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full border border-gold/30 text-gold">{icon}</div>
+    <div className="truncate text-sm font-semibold text-concrete">{label}</div>
+    <div className="mt-2"><StatusPill tone={tone}>{status}</StatusPill></div>
+  </div>
 );
 
-const ConnectionStatus = ({ isLoading, lastFetch, onRefresh }: { isLoading: boolean; lastFetch: string | null; onRefresh: () => void }) => {
-    return (
-        <button
-            onClick={onRefresh}
-            disabled={isLoading}
-            className={`flex items-center gap-2 px-3 py-2 border rounded-sm transition-all text-[9px] font-mono uppercase tracking-widest ${isLoading
-                ? 'bg-gold/10 border-gold/30 text-gold'
-                : lastFetch
-                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500'
-                    : 'bg-blood/10 border-blood/30 text-blood'
-                }`}
-        >
-            {isLoading && <><div className="w-1.5 h-1.5 bg-gold rounded-full animate-ping"></div> SYNCING...</>}
-            {!isLoading && lastFetch && <><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div> LIVE</>}
-            {!isLoading && !lastFetch && <><div className="w-1.5 h-1.5 bg-blood rounded-full"></div> OFFLINE</>}
-        </button>
-    );
-};
+const ReadinessTile = ({ icon, label, score, detail, color }: { icon: ReactNode; label: string; score: number; detail: string; color: string }) => (
+  <div className="rounded-xl border border-line bg-void/35 p-4">
+    <div className="mb-2 flex items-center gap-2 text-gold">{icon}<span className="fortress-label">{label}</span></div>
+    <div className="flex items-center justify-between gap-3">
+      <div>
+        <div className="fortress-number text-5xl">{score}<span className="text-2xl">%</span></div>
+        <div className="text-sm text-muted">{detail}</div>
+      </div>
+      <Ring value={score} size={86} color={color}>{icon}</Ring>
+    </div>
+  </div>
+);
 
-const RigourTracker = ({ getRigourState }: { getRigourState: () => { status: 'AHEAD' | 'ON_TRACK' | 'LAGGING'; expected: number; actual: number; diff: number } }) => {
-    const rigour = getRigourState();
+const DancingIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="4" r="2" />
+    <path d="M12 6v5l4 3" />
+    <path d="M12 11l-4 3" />
+    <path d="M10 13l-2 6" />
+    <path d="M15 14l2 5" />
+  </svg>
+);
 
-    const statusConfig = {
-        AHEAD: { color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', icon: TrendingUp },
-        ON_TRACK: { color: 'text-concrete', bg: 'bg-steel/10', border: 'border-steel/30', icon: Minus },
-        LAGGING: { color: 'text-blood', bg: 'bg-blood/10', border: 'border-blood/30', icon: TrendingDown }
-    };
-
-    const config = statusConfig[rigour.status];
-    const Icon = config.icon;
-
-    return (
-        <div className={`border ${config.border} ${config.bg} p-3 flex items-center justify-between`}>
-            <div className="flex items-center gap-3">
-                <Icon className={`w-4 h-4 ${config.color}`} />
-                <div>
-                    <div className={`text-[10px] font-mono font-bold uppercase tracking-widest ${config.color}`}>
-                        {rigour.status.replace('_', ' ')}
-                    </div>
-                    <div className="text-[9px] font-mono text-concrete/40">
-                        SESSION PACING
-                    </div>
-                </div>
-            </div>
-            <div className="flex items-center gap-4 text-right">
-                <div>
-                    <div className="text-lg font-black text-concrete tabular-nums">{rigour.actual}</div>
-                    <div className="text-[8px] font-mono text-concrete/40 uppercase">Actual</div>
-                </div>
-                <div className="text-concrete/20">/</div>
-                <div>
-                    <div className="text-lg font-bold text-concrete/50 tabular-nums">{rigour.expected}</div>
-                    <div className="text-[8px] font-mono text-concrete/40 uppercase">Expected</div>
-                </div>
-                <div className={`text-sm font-black ${config.color} tabular-nums min-w-[40px] text-center`}>
-                    {rigour.diff >= 0 ? '+' : ''}{rigour.diff}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// Challenge Progress Mini-Widget
-const ChallengeWidget = () => {
-    const [challenge, setChallenge] = useState<{
-        dayNumber: number;
-        totalDays: number;
-        videosProduced: number;
-        videosTarget: number;
-        paceRequired: number;
-        name: string;
-        dailyPushups: number;
-        dailyAbs: number;
-    } | null>(null);
-
-    useEffect(() => {
-        fetch(`${API_URL}/api/challenge/active`)
-            .then(res => res.json())
-            .then(data => setChallenge(data.challenge))
-            .catch(() => setChallenge(null));
-    }, []);
-
-    if (!challenge) {
-        return (
-            <div className="border border-dashed border-steel/30 p-3 text-center">
-                <div className="text-[10px] font-mono text-concrete/40 uppercase">No Active Mission</div>
-                <a href="/challenge" className="text-[10px] font-mono text-blood hover:underline">Launch Challenge →</a>
-            </div>
-        );
-    }
-
-    const progress = Math.round((challenge.videosProduced / challenge.videosTarget) * 100);
-    // Dynamic pacing derived from 12-package SLA target instead of hardcoded 5
-    const isAhead = challenge.videosProduced >= (challenge.dayNumber * 12);
-
-    return (
-        <div className="border border-steel/30 bg-steel/5 p-3">
-            <div className="flex justify-between items-center mb-2">
-                <div className="text-[10px] font-mono text-concrete/50 uppercase tracking-widest">{challenge.name}</div>
-                <a href="/challenge" className="text-[9px] font-mono text-blood hover:underline transition-colors">Details →</a>
-            </div>
-            <div className="flex items-center gap-4">
-                <div className="flex-1">
-                    <div className="h-2 bg-void border border-steel/30 overflow-hidden">
-                        <div
-                            className={`h-full transition-all ${isAhead ? 'bg-emerald-500' : 'bg-blood'}`}
-                            style={{ width: `${Math.min(100, progress)}%` }}
-                        />
-                    </div>
-                </div>
-                <div className="text-right">
-                    <div className="font-display font-black text-lg text-concrete tabular-nums">
-                        {challenge.videosProduced}<span className="text-concrete/40 text-sm">/{challenge.videosTarget}</span>
-                    </div>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-steel/10">
-                <div>
-                    <span className="text-[8px] font-mono text-concrete/40 uppercase block mb-1">Target Pace</span>
-                    <span className={`${isAhead ? 'text-emerald-500' : 'text-blood'} font-bold text-xs`}>{challenge.paceRequired} pkgs/day</span>
-                </div>
-                <div>
-                    <span className="text-[8px] font-mono text-concrete/40 uppercase block mb-1">Pipeline Engine</span>
-                    <span className="text-emerald-500 font-bold text-xs flex items-center gap-1">
-                        <Zap size={10} /> Automated
-                    </span>
-                </div>
-            </div>
-
-            <div className="flex justify-between mt-2 text-[9px] font-mono text-concrete/40">
-                <span>Day {challenge.dayNumber} of {challenge.totalDays}</span>
-                <span className={isAhead ? 'text-emerald-500' : 'text-blood'}>
-                    {isAhead ? 'AHEAD OF SCHEDULE' : 'BEHIND SCHEDULE'}
-                </span>
-            </div>
-        </div>
-    );
-};
+const UserGearIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="9" cy="7" r="3" />
+    <path d="M3 20a6 6 0 0 1 12 0" />
+    <circle cx="17" cy="13" r="2" />
+    <path d="M17 9v1M17 16v1M13.5 11l.8.5M19.7 14.5l.8.5M13.5 15l.8-.5M19.7 11.5l.8-.5" />
+  </svg>
+);
