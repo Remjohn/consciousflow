@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Apple, CalendarDays, Check, Dumbbell, Flame, HeartPulse, Leaf, TrendingUp, Trophy, WalletCards } from 'lucide-react';
 import { Card, ProgressBar, Ring, SectionHeader, SelectPill } from '../../components/fortress/ui';
 import { deriveSnapshot, money, percent } from '../../lib/fortressMetrics';
@@ -17,6 +17,8 @@ export const OperatorReadiness = () => {
   const os = useFortressOSStore();
   const snapshot = deriveSnapshot(legacyToday, os);
   const lifestyleScore = percent(snapshot.lifestyleCompleted, snapshot.lifestyleTarget);
+  const [viewTab, setViewTab] = useState<string>('Day');
+  const [drillTab, setDrillTab] = useState<string>('All');
 
   return (
     <div className="fortress-screen space-y-4">
@@ -25,7 +27,7 @@ export const OperatorReadiness = () => {
           <CalendarDays className="h-4 w-4 text-gold" />
           {todayLabel}
         </div>
-        <SelectPill>Day View</SelectPill>
+        <SelectPill options={['Day', 'Week', 'Month']} value={viewTab} onChange={setViewTab} />
       </div>
 
       <Card gold className="p-5 md:p-7">
@@ -145,7 +147,7 @@ export const OperatorReadiness = () => {
       </Card>
 
       <Card className="p-5">
-        <SectionHeader icon={<HeartPulse className="h-5 w-5" />} title="Practice Stack" action={<SelectPill>All Drills</SelectPill>} />
+        <SectionHeader icon={<HeartPulse className="h-5 w-5" />} title="Practice Stack" action={<SelectPill options={['All', 'Strength', 'Cardio', 'Practice']} value={drillTab} onChange={setDrillTab} />} />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <DrillCard
             icon={<KegelIcon />}

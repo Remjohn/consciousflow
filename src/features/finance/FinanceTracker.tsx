@@ -16,6 +16,7 @@ const todayLabel = new Date().toLocaleDateString('en-US', {
 
 export const FinanceTracker = () => {
   const [tab, setTab] = useState<'REVENUE' | 'EXPENSES'>('REVENUE');
+  const [period, setPeriod] = useState<string>('This Month');
   const legacyToday = useUserStore((state) => state.today);
   const os = useFortressOSStore();
   const snapshot = deriveSnapshot(legacyToday, os);
@@ -56,7 +57,7 @@ export const FinanceTracker = () => {
       ) : (
         <>
           <Card gold className="p-5 md:p-6">
-            <SectionHeader icon={<CircleDollarSign className="h-5 w-5" />} title="Business Revenue" action={<SelectPill>This Month</SelectPill>} />
+            <SectionHeader icon={<CircleDollarSign className="h-5 w-5" />} title="Business Revenue" action={<SelectPill options={['This Month', 'Last 3M', 'Last 6M']} value={period} onChange={setPeriod} />} />
             <div className="grid gap-4 md:grid-cols-[1.3fr_.7fr_.7fr]">
               <div className="rounded-xl border border-line bg-void/35 p-5">
                 <div className="fortress-label">Monthly Recurring Revenue</div>
@@ -80,7 +81,7 @@ export const FinanceTracker = () => {
 
           <div className="grid gap-4 lg:grid-cols-[1.15fr_.85fr]">
             <Card className="p-5">
-              <SectionHeader icon={<TrendingUp className="h-5 w-5" />} title="MRR Over Time" action={<SelectPill>Last 6 Months</SelectPill>} />
+              <SectionHeader icon={<TrendingUp className="h-5 w-5" />} title="MRR Over Time" action={<SelectPill options={['This Month', 'Last 3M', 'Last 6M']} value={period} onChange={setPeriod} />} />
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={trend} margin={{ top: 12, right: 12, left: -12, bottom: 0 }}>
@@ -105,7 +106,7 @@ export const FinanceTracker = () => {
             </Card>
 
             <Card className="p-5">
-              <SectionHeader icon={<Target className="h-5 w-5" />} title="Revenue Funnel" action={<SelectPill>This Month</SelectPill>} />
+              <SectionHeader icon={<Target className="h-5 w-5" />} title="Revenue Funnel" action={<SelectPill options={['This Month', 'Last 3M', 'Last 6M']} value={period} onChange={setPeriod} />} />
               <div className="flex flex-col justify-center">
                 <FunnelRow label="Trials Started" value={257} pct="49.8%" />
                 <FunnelRow label="Trials Completed" value={128} pct="6.3%" />

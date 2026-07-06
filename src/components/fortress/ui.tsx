@@ -36,11 +36,43 @@ export const SectionHeader = ({
   </div>
 );
 
-export const SelectPill = ({ children }: { children: ReactNode }) => (
-  <button className="rounded-xl border border-line bg-void/50 px-3 py-2 text-xs font-medium text-concrete/80 transition hover:border-gold/30 hover:text-gold">
-    {children}
-  </button>
-);
+export const SelectPill = ({
+  children,
+  options,
+  value,
+  onChange,
+}: {
+  children?: ReactNode;
+  options?: string[];
+  value?: string;
+  onChange?: (v: string) => void;
+}) => {
+  if (!options || options.length === 0) {
+    return (
+      <button className="rounded-xl border border-line bg-void/50 px-3 py-2 text-xs font-medium text-concrete/80 transition hover:border-gold/30 hover:text-gold">
+        {children}
+      </button>
+    );
+  }
+  return (
+    <div className="flex gap-1 rounded-xl border border-line bg-void/50 p-1">
+      {options.map((opt) => (
+        <button
+          key={opt}
+          onClick={() => onChange?.(opt)}
+          className={cn(
+            'rounded-lg px-3 py-1.5 text-xs font-medium transition',
+            value === opt
+              ? 'bg-gold/20 text-gold border border-gold/40'
+              : 'text-muted hover:text-concrete',
+          )}
+        >
+          {opt}
+        </button>
+      ))}
+    </div>
+  );
+};
 
 export const ProgressBar = ({
   value,
