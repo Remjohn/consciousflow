@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Apple, CalendarDays, Check, Dumbbell, Flame, HeartPulse, Leaf, Mic, Plus, TrendingUp, Trophy, WalletCards } from 'lucide-react';
+import { Apple, CalendarDays, Check, Dumbbell, Flame, HeartPulse, Leaf, TrendingUp, Trophy, WalletCards } from 'lucide-react';
 import { Card, ProgressBar, Ring, SectionHeader, SelectPill } from '../../components/fortress/ui';
 import { deriveSnapshot, money, percent } from '../../lib/fortressMetrics';
 import { useFortressOSStore } from '../../store/useFortressOSStore';
@@ -57,78 +57,90 @@ export const OperatorReadiness = () => {
       </div>
 
       <Card className="p-5">
-        <SectionHeader icon={<HeartPulse className="h-5 w-5" />} title="Practice Stack" action={<SelectPill>All Drills</SelectPill>} />
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <DrillCard
-            icon={<KegelIcon />}
-            title="Kegel"
-            score={snapshot.kegelScore}
-            detail={`${snapshot.kegelCompleted} / ${os.passions.kegel.target} sets`}
-            color="purple"
-            onAdd={() => {
-              os.updatePractice('kegel', { completed: os.passions.kegel.completed + 1, minutes: os.passions.kegel.minutes + 3 });
-              useUserStore.getState().incrementMetric('fitness', 'kegels', 3);
-            }}
-          />
-          <DrillCard
-            icon={<Mic className="h-6 w-6" />}
-            title="Singing Drills"
-            score={snapshot.singingScore}
-            detail={`${snapshot.singingMinutes} / ${os.passions.singing.targetMinutes} min`}
-            color="cyan"
-            onAdd={() => {
-              os.updatePractice('singing', { minutes: os.passions.singing.minutes + 5, completed: os.passions.singing.completed + 1 });
-              useUserStore.getState().incrementMetric('fitness', 'singing', 5);
-            }}
-          />
-          <DrillCard
-            icon={<BoxingIcon />}
-            title="Boxing Drills"
-            score={snapshot.boxingScore}
-            detail={`${snapshot.boxingMinutes} / ${os.passions.boxing.targetMinutes} min`}
-            color="red"
-            onAdd={() => {
-              os.updatePractice('boxing', { minutes: os.passions.boxing.minutes + 5, completed: os.passions.boxing.completed + 1 });
-              useUserStore.getState().incrementMetric('fitness', 'boxing', 5);
-            }}
-          />
-          <DrillCard
-            icon={<DancingIcon />}
-            title="Dancing Drills"
-            score={snapshot.dancingScore}
-            detail={`${snapshot.dancingMinutes} / ${os.passions.dancing.targetMinutes} min`}
-            color="gold"
-            onAdd={() => {
-              os.updatePractice('dancing', { minutes: os.passions.dancing.minutes + 5, completed: os.passions.dancing.completed + 1 });
-              useUserStore.getState().incrementMetric('fitness', 'dancing', 5);
-            }}
-          />
-        </div>
-      </Card>
+        <SectionHeader icon={<Dumbbell className="h-5 w-5" />} title="Fitness & Workout Tracker" action={<SelectPill>Today</SelectPill>} />
+        
+        <div className="space-y-6">
+          {/* Strength Exercises */}
+          <div>
+            <h3 className="mb-3 font-mono text-xs font-bold uppercase tracking-[0.16em] text-gold">Strength Exercises</h3>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <WorkoutCard 
+                title="Push-ups" 
+                value={legacyToday.fitness?.pushups ?? 0} 
+                unit="reps" 
+                onAdd5={() => useUserStore.getState().incrementMetric('fitness', 'pushups', 5)}
+                onAdd10={() => useUserStore.getState().incrementMetric('fitness', 'pushups', 10)}
+              />
+              <WorkoutCard 
+                title="Pull-ups" 
+                value={legacyToday.fitness?.pullups ?? 0} 
+                unit="reps" 
+                onAdd5={() => useUserStore.getState().incrementMetric('fitness', 'pullups', 2)}
+                onAdd10={() => useUserStore.getState().incrementMetric('fitness', 'pullups', 5)}
+                add5Label="+2"
+                add10Label="+5"
+              />
+              <WorkoutCard 
+                title="Abs" 
+                value={legacyToday.fitness?.abs ?? 0} 
+                unit="reps" 
+                onAdd5={() => useUserStore.getState().incrementMetric('fitness', 'abs', 10)}
+                onAdd10={() => useUserStore.getState().incrementMetric('fitness', 'abs', 25)}
+                add5Label="+10"
+                add10Label="+25"
+              />
+              <WorkoutCard 
+                title="Jump Squats" 
+                value={legacyToday.fitness?.jumpSquats ?? 0} 
+                unit="reps" 
+                onAdd5={() => useUserStore.getState().incrementMetric('fitness', 'jumpSquats', 5)}
+                onAdd10={() => useUserStore.getState().incrementMetric('fitness', 'jumpSquats', 10)}
+              />
+            </div>
+          </div>
 
-      <Card className="p-5">
-        <SectionHeader icon={<Leaf className="h-5 w-5" />} title="Lifestyle Habits" action={<SelectPill>Today</SelectPill>} />
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-          {Object.entries(os.passions.lifestyle).map(([key, value]) => {
-            const isActive = key === 'coldShower' ? snapshot.coldShowerActive : value;
-            return (
-              <button
-                key={key}
-                onClick={() => {
-                  os.toggleLifestyleHabit(key as keyof typeof os.passions.lifestyle);
-                  if (key === 'coldShower') {
-                    useUserStore.getState().setMetric('lifestyle', 'coldShower', !isActive);
-                  }
-                }}
-                className={isActive ? 'rounded-xl border border-success/40 bg-success/10 p-4 text-center text-success' : 'rounded-xl border border-line bg-void/35 p-4 text-center text-muted hover:border-gold/30 hover:text-gold'}
-              >
-                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full border border-current/30">
-                  <Check className="h-5 w-5" />
-                </div>
-                <div className="text-xs font-mono uppercase tracking-[0.14em]">{labelize(key)}</div>
-              </button>
-            );
-          })}
+          {/* Cardio Exercises */}
+          <div>
+            <h3 className="mb-3 font-mono text-xs font-bold uppercase tracking-[0.16em] text-gold">Cardio Exercises</h3>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <WorkoutCard 
+                title="Swim Laps" 
+                value={legacyToday.fitness?.swimLaps ?? 0} 
+                unit="laps" 
+                onAdd5={() => useUserStore.getState().incrementMetric('fitness', 'swimLaps', 2)}
+                onAdd10={() => useUserStore.getState().incrementMetric('fitness', 'swimLaps', 5)}
+                add5Label="+2 laps"
+                add10Label="+5 laps"
+              />
+              <WorkoutCard 
+                title="Football" 
+                value={legacyToday.fitness?.footballMins ?? 0} 
+                unit="min" 
+                onAdd5={() => useUserStore.getState().incrementMetric('fitness', 'footballMins', 10)}
+                onAdd10={() => useUserStore.getState().incrementMetric('fitness', 'footballMins', 30)}
+                add5Label="+10 min"
+                add10Label="+30 min"
+              />
+              <WorkoutCard 
+                title="Jump Rope" 
+                value={legacyToday.fitness?.jumpRopeMins ?? 0} 
+                unit="min" 
+                onAdd5={() => useUserStore.getState().incrementMetric('fitness', 'jumpRopeMins', 5)}
+                onAdd10={() => useUserStore.getState().incrementMetric('fitness', 'jumpRopeMins', 10)}
+                add5Label="+5 min"
+                add10Label="+10 min"
+              />
+              <WorkoutCard 
+                title="Running Hard" 
+                value={legacyToday.fitness?.runningMins ?? 0} 
+                unit="min" 
+                onAdd5={() => useUserStore.getState().incrementMetric('fitness', 'runningMins', 5)}
+                onAdd10={() => useUserStore.getState().incrementMetric('fitness', 'runningMins', 15)}
+                add5Label="+5 min"
+                add10Label="+15 min"
+              />
+            </div>
+          </div>
         </div>
       </Card>
 
@@ -156,6 +168,49 @@ export const OperatorReadiness = () => {
   );
 };
 
+const WorkoutCard = ({
+  title,
+  value,
+  unit,
+  onAdd5,
+  onAdd10,
+  add5Label = "+5",
+  add10Label = "+10",
+}: {
+  title: string;
+  value: number;
+  unit: string;
+  onAdd5: () => void;
+  onAdd10: () => void;
+  add5Label?: string;
+  add10Label?: string;
+}) => {
+  return (
+    <div className="rounded-xl border border-line bg-void/35 p-4 flex flex-col justify-between">
+      <div>
+        <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">{title}</div>
+        <div className="mt-2 text-3xl font-black text-concrete">
+          {value} <span className="text-xs font-normal text-muted">{unit}</span>
+        </div>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button
+          onClick={onAdd5}
+          className="rounded-lg border border-line py-1 text-center font-mono text-[10px] text-muted hover:border-gold/40 hover:text-gold transition"
+        >
+          {add5Label}
+        </button>
+        <button
+          onClick={onAdd10}
+          className="rounded-lg border border-gold/30 py-1 text-center font-mono text-[10px] text-gold hover:bg-gold/10 transition"
+        >
+          {add10Label}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const PrimeCard = ({ icon, title, score, detail, color = '#F4B930' }: { icon: ReactNode; title: string; score: number; detail: string; color?: string }) => (
   <Card className="p-4">
     <div className="mb-3 flex items-center gap-2 text-gold">{icon}<span className="fortress-label text-concrete">{title}</span></div>
@@ -167,19 +222,6 @@ const PrimeCard = ({ icon, title, score, detail, color = '#F4B930' }: { icon: Re
       <Ring value={score} size={70} color={color}>{icon}</Ring>
     </div>
   </Card>
-);
-
-const DrillCard = ({ icon, title, score, detail, color, onAdd }: { icon: ReactNode; title: string; score: number; detail: string; color: 'gold' | 'green' | 'red' | 'purple' | 'cyan'; onAdd: () => void }) => (
-  <div className="rounded-xl border border-line bg-void/35 p-4">
-    <div className="mb-4 flex items-start justify-between">
-      <div className={color === 'purple' ? 'text-purplepulse' : color === 'cyan' ? 'text-hologram' : color === 'red' ? 'text-blood' : 'text-gold'}>{icon}</div>
-      <button onClick={onAdd} className="rounded-full border border-line p-1 text-muted hover:border-gold/40 hover:text-gold"><Plus className="h-4 w-4" /></button>
-    </div>
-    <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">{title}</div>
-    <div className="mt-2 fortress-number text-4xl">{score}<span className="text-xl">%</span></div>
-    <div className="mt-1 text-sm text-muted">{detail}</div>
-    <ProgressBar value={score} max={100} color={color} className="mt-4" />
-  </div>
 );
 
 const ChallengeRow = ({ icon, label, title, completed, target, daysLeft, tone, onAdd }: { icon: ReactNode; label: string; title: string; completed: number; target: number; daysLeft: number; tone: 'gold' | 'green'; onAdd: () => void }) => (
@@ -200,33 +242,4 @@ const ChallengeRow = ({ icon, label, title, completed, target, daysLeft, tone, o
       </button>
     </div>
   </div>
-);
-
-const labelize = (key: string) => key.replace(/([A-Z])/g, ' $1').replace(/^./, (char) => char.toUpperCase());
-
-const KegelIcon = () => (
-  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M8 4c-2 2-3 4-3 7 0 5 3 8 7 9 4-1 7-4 7-9 0-3-1-5-3-7" />
-    <path d="M9 6c1.5 1.2 4.5 1.2 6 0" />
-    <path d="M12 8v10" />
-  </svg>
-);
-
-const BoxingIcon = () => (
-  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M8 13h7a4 4 0 0 0 0-8h-2" />
-    <path d="M8 13V6a2 2 0 0 1 4 0v2" />
-    <path d="M8 13l-1 6h8l-1-6" />
-    <path d="M6 19h10" />
-  </svg>
-);
-
-const DancingIcon = () => (
-  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="4" r="2" />
-    <path d="M12 6v5l4 3" />
-    <path d="M12 11l-4 3" />
-    <path d="M10 13l-2 6" />
-    <path d="M15 14l2 5" />
-  </svg>
 );

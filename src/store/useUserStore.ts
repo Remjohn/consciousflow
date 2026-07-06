@@ -19,7 +19,13 @@ export interface Metrics {
     };
     fitness: {
         pushups: number;
+        pullups: number;
         abs: number;
+        jumpSquats: number;
+        swimLaps: number;
+        footballMins: number;
+        jumpRopeMins: number;
+        runningMins: number;
         biceps: number;
         burpees: number;
         boxing: number;
@@ -91,7 +97,22 @@ export const getTodayDate = () => new Date().toISOString().split('T')[0];
 const INITIAL_METRICS: Metrics = {
     production: { videos: 0, pomodoros: 0, managementSessions: 0, points: 0, proofPhotoUrl: '' },
     finance: { revenue: 0, activeClients: 0, total2026: 0 },
-    fitness: { pushups: 0, abs: 0, biceps: 0, burpees: 0, boxing: 0, kegels: 0, singing: 0, dancing: 0 },
+    fitness: {
+        pushups: 0,
+        pullups: 0,
+        abs: 0,
+        jumpSquats: 0,
+        swimLaps: 0,
+        footballMins: 0,
+        jumpRopeMins: 0,
+        runningMins: 0,
+        biceps: 0,
+        burpees: 0,
+        boxing: 0,
+        kegels: 0,
+        singing: 0,
+        dancing: 0
+    },
     lifestyle: {
         sleep: 0, noSocial: false, noYouTube: false,
         phoneHours: 0, phonePickups: 0,

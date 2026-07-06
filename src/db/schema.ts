@@ -104,6 +104,14 @@ export const dailyLogs = pgTable('daily_logs', {
     aiResponse: text('ai_response'),
     aiMood: text('ai_mood'), // DOMINATION, ACCEPTABLE, DISGRACE, REDEMPTION
 
+    // Fitness Workout Metrics
+    pullups: integer('pullups').default(0),
+    jumpSquats: integer('jump_squats').default(0),
+    swimLaps: integer('swim_laps').default(0),
+    footballMins: integer('football_mins').default(0),
+    jumpRopeMins: integer('jump_rope_mins').default(0),
+    runningMins: integer('running_mins').default(0),
+
     // CMF Studio Metrics (daily counters)
     sampleVideosDelivered: integer('sample_videos_delivered').default(0),
     interviewSessions: integer('interview_sessions').default(0),

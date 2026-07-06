@@ -53,8 +53,10 @@ export function deriveSnapshot(today: Metrics, os: Pick<FortressOSState, 'studio
   const dancingMinutes = Math.max(os.passions.dancing.minutes, today.fitness?.dancing ?? 0);
   const dancingScore = percent(dancingMinutes, os.passions.dancing.targetMinutes);
 
-  const fitnessMinutes = Math.min(60, (today.fitness?.pushups ?? 0) / 5 + (today.fitness?.abs ?? 0) / 5 + (today.fitness?.biceps ?? 0) / 3 + (today.fitness?.burpees ?? 0) / 3);
-  const fitnessScore = Math.max(percent(fitnessMinutes, 60), Math.max(boxingScore, 0));
+  const strengthMinutes = (today.fitness?.pushups ?? 0) / 5 + (today.fitness?.pullups ?? 0) / 2 + (today.fitness?.abs ?? 0) / 5 + (today.fitness?.jumpSquats ?? 0) / 3;
+  const cardioMinutes = (today.fitness?.swimLaps ?? 0) + (today.fitness?.footballMins ?? 0) + (today.fitness?.jumpRopeMins ?? 0) + (today.fitness?.runningMins ?? 0);
+  const fitnessMinutes = Math.min(60, strengthMinutes + cardioMinutes);
+  const fitnessScore = percent(fitnessMinutes, 60);
 
   const practiceScores = [dietScore, investmentsScore, kegelScore, singingScore, boxingScore, dancingScore];
   const corePassionScore = Math.round(practiceScores.reduce((sum, score) => sum + score, 0) / practiceScores.length);
