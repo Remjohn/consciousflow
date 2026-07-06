@@ -145,6 +145,56 @@ export const OperatorReadiness = () => {
       </Card>
 
       <Card className="p-5">
+        <SectionHeader icon={<HeartPulse className="h-5 w-5" />} title="Practice Stack" action={<SelectPill>All Drills</SelectPill>} />
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <DrillCard
+            icon={<KegelIcon />}
+            title="Kegel"
+            score={snapshot.kegelScore}
+            detail={`${snapshot.kegelCompleted} / ${os.passions.kegel.target} sets`}
+            color="purple"
+            onAdd={() => {
+              os.updatePractice('kegel', { completed: os.passions.kegel.completed + 1, minutes: os.passions.kegel.minutes + 3 });
+              useUserStore.getState().incrementMetric('fitness', 'kegels', 3);
+            }}
+          />
+          <DrillCard
+            icon={<MicIcon />}
+            title="Singing Drills"
+            score={snapshot.singingScore}
+            detail={`${snapshot.singingMinutes} / ${os.passions.singing.targetMinutes} min`}
+            color="cyan"
+            onAdd={() => {
+              os.updatePractice('singing', { minutes: os.passions.singing.minutes + 5, completed: os.passions.singing.completed + 1 });
+              useUserStore.getState().incrementMetric('fitness', 'singing', 5);
+            }}
+          />
+          <DrillCard
+            icon={<DancingIcon />}
+            title="Dancing Drills"
+            score={snapshot.dancingScore}
+            detail={`${snapshot.dancingMinutes} / ${os.passions.dancing.targetMinutes} min`}
+            color="gold"
+            onAdd={() => {
+              os.updatePractice('dancing', { minutes: os.passions.dancing.minutes + 5, completed: os.passions.dancing.completed + 1 });
+              useUserStore.getState().incrementMetric('fitness', 'dancing', 5);
+            }}
+          />
+          <DrillCard
+            icon={<SexMobilityIcon />}
+            title="Sex Mobility"
+            score={snapshot.boxingScore}
+            detail={`${snapshot.boxingMinutes} / ${os.passions.boxing.targetMinutes} min`}
+            color="red"
+            onAdd={() => {
+              os.updatePractice('boxing', { minutes: os.passions.boxing.minutes + 5, completed: os.passions.boxing.completed + 1 });
+              useUserStore.getState().incrementMetric('fitness', 'boxing', 5);
+            }}
+          />
+        </div>
+      </Card>
+
+      <Card className="p-5">
         <SectionHeader icon={<Trophy className="h-5 w-5" />} title="Challenges" action={<div className="flex gap-4 text-xs font-mono uppercase tracking-[0.16em]"><span className="text-gold">Active</span><span className="text-muted">Completed</span></div>} />
         <ChallengeRow icon={<WalletCards className="h-6 w-6" />} label="Business Challenge" title={os.challenges.business.title} completed={os.challenges.business.completed} target={os.challenges.business.target} daysLeft={os.challenges.business.daysLeft} tone="gold" onAdd={() => os.updateChallenge('business', { completed: Math.min(os.challenges.business.target, os.challenges.business.completed + 1) })} />
         <ChallengeRow icon={<Flame className="h-6 w-6" />} label="Personal Challenge" title={os.challenges.personal.title} completed={os.challenges.personal.completed} target={os.challenges.personal.target} daysLeft={os.challenges.personal.daysLeft} tone="green" onAdd={() => os.updateChallenge('personal', { completed: Math.min(os.challenges.personal.target, os.challenges.personal.completed + 1) })} />
@@ -242,4 +292,57 @@ const ChallengeRow = ({ icon, label, title, completed, target, daysLeft, tone, o
       </button>
     </div>
   </div>
+);
+
+const DrillCard = ({ icon, title, score, detail, color, onAdd }: { icon: ReactNode; title: string; score: number; detail: string; color: 'gold' | 'green' | 'red' | 'purple' | 'cyan'; onAdd: () => void }) => (
+  <div className="rounded-xl border border-line bg-void/35 p-4">
+    <div className="mb-4 flex items-start justify-between">
+      <div className={color === 'purple' ? 'text-purplepulse' : color === 'cyan' ? 'text-hologram' : color === 'red' ? 'text-blood' : 'text-gold'}>{icon}</div>
+      <button onClick={onAdd} className="rounded-full border border-line p-1 text-muted hover:border-gold/40 hover:text-gold">
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+    <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">{title}</div>
+    <div className="mt-2 fortress-number text-4xl">{score}<span className="text-xl">%</span></div>
+    <div className="mt-1 text-sm text-muted">{detail}</div>
+    <ProgressBar value={score} max={100} color={color} className="mt-4" />
+  </div>
+);
+
+const KegelIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 4c-2 2-3 4-3 7 0 5 3 8 7 9 4-1 7-4 7-9 0-3-1-5-3-7" />
+    <path d="M9 6c1.5 1.2 4.5 1.2 6 0" />
+    <path d="M12 8v10" />
+  </svg>
+);
+
+const MicIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="2" width="6" height="12" rx="3" />
+    <path d="M19 10a7 7 0 0 1-14 0" />
+    <line x1="12" y1="19" x2="12" y2="22" />
+    <line x1="8" y1="22" x2="16" y2="22" />
+  </svg>
+);
+
+const DancingIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="4" r="2" />
+    <path d="M12 6v5l4 3" />
+    <path d="M12 11l-4 3" />
+    <path d="M10 13l-2 6" />
+    <path d="M15 14l2 5" />
+  </svg>
+);
+
+const SexMobilityIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="5" r="2" />
+    <path d="M12 7v6" />
+    <path d="M9 10l3 3 3-3" />
+    <path d="M7 17c0-2.8 2.2-5 5-5s5 2.2 5 5" />
+    <path d="M9 22v-3" />
+    <path d="M15 22v-3" />
+  </svg>
 );
