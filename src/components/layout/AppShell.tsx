@@ -1,6 +1,6 @@
 import { useEffect, type ComponentType } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, CircleDollarSign, Clapperboard, Home, Shield, Trophy, User, Wifi, Lock } from 'lucide-react';
+import { Bell, CircleDollarSign, Clapperboard, Home, Shield, Trophy, User, Wifi, Lock, Crown } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useUserStore } from '../../store/useUserStore';
 import { useFortressOSStore } from '../../store/useFortressOSStore';
@@ -12,6 +12,8 @@ const pageSubtitles: Array<{ match: string; subtitle: string }> = [
   { match: '/operator', subtitle: 'Operator' },
   { match: '/challenge', subtitle: 'Challenge Command' },
   { match: '/challenges', subtitle: 'Challenge Command' },
+  { match: '/dating', subtitle: 'The Championship • Candidate Pipeline' },
+  { match: '/championship', subtitle: 'The Championship • Candidate Pipeline' },
   { match: '/dashboard', subtitle: 'CMF Studio + Operator OS' },
 ];
 
@@ -21,6 +23,7 @@ const navItems = [
   { to: '/studio', label: 'Studio', icon: Clapperboard, aliases: ['/stats'] },
   { to: '/operator', label: 'Operator', icon: User, aliases: ['/fitness'] },
   { to: '/challenge', label: 'Challenges', icon: Trophy, aliases: ['/challenges'] },
+  { to: '/dating', label: 'Champion', icon: Crown, aliases: ['/championship'] },
 ];
 
 export const AppShell = () => {
@@ -74,7 +77,7 @@ export const AppShell = () => {
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-line/70 bg-void/85 px-2 pb-2 pt-2 backdrop-blur-xl">
-        <div className="mx-auto grid h-16 max-w-5xl grid-cols-5 gap-1 rounded-2xl border border-line/80 bg-panel/80 p-1 shadow-card">
+        <div className="mx-auto grid h-16 max-w-5xl grid-cols-6 gap-1 rounded-2xl border border-line/80 bg-panel/80 p-1 shadow-card">
           {navItems.map((item) => (
             <NavButton key={item.to} {...item} />
           ))}

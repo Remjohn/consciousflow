@@ -54,6 +54,74 @@ export interface DailyRecord {
 
 export type ScheduleMode = 'CORE_SLEEP' | 'PROTOCOL_START' | 'ALPHA_WORK' | 'RECOVERY' | 'NOURISH_RESET' | 'BRAVO_WORK' | 'FREE_BLOCK' | 'SHUTDOWN';
 
+export type CandidateStage = 'POOL' | 'GROUP_STAGE' | 'ROUND_OF_16' | 'QUARTER_FINALS' | 'SEMI_FINALS' | 'FINALS' | 'CHAMPION';
+
+export interface Candidate {
+    id: number;
+    userId: number;
+    name: string;
+    nickname?: string;
+    dob?: string;
+    photoUrl?: string;
+    stage: CandidateStage;
+
+    // Prescreening
+    age?: number;
+    ageScore: number;
+    isAgeDisqualified: boolean;
+
+    cuteness?: number;
+    prettiness?: number;
+    hotness?: number;
+    cleanliness?: number;
+    beautyScore?: number;
+    beautyLocked: boolean;
+
+    lifePathNumber?: number;
+    birthdateNumber?: number;
+    pinnacleNumber?: number;
+    numerologyScore: number;
+
+    // Metrics
+    valuesAlignment: number;
+    familyStructure: number;
+    communicationStyle: number;
+    disciplineStructure: number;
+    healthHygiene: number;
+    socialReputation: number;
+    teachability: number;
+    socialMediaConduct: number;
+
+    // Flags
+    redFlagCount: number;
+    greenFlagCount: number;
+    redFlagScore: number;
+    greenFlagScore: number;
+
+    // Totals
+    preScreeningScore: number;
+    coreMetricsScore: number;
+    questionsScore: number;
+    totalChampionshipScore: number;
+
+    // Meta
+    parentalApproval: boolean;
+    isArchived: boolean;
+    archiveReason?: string;
+    isDisqualified: boolean;
+    disqualificationReason?: string;
+
+    notes?: string;
+    createdAt?: string;
+
+    // V2 Fields
+    tiktokUrl?: string;
+    instagramUrl?: string;
+    facebookUrl?: string;
+    bonusPoints?: number;
+    penaltyPoints?: number;
+}
+
 interface UserState {
     name: string;
     location: 'Europe' | 'DRC';
@@ -74,6 +142,14 @@ interface UserState {
         monthVideos: number;
         monthTarget: number;
     };
+
+    // CHAMPIONSHIP (Dating)
+    candidates: Candidate[];
+    fetchCandidates: () => Promise<void>;
+    addCandidate: (candidate: { name: string; nickname?: string; dob?: string; photoUrl?: string; notes?: string; }) => Promise<void>;
+    moveCandidate: (id: number, stage: CandidateStage) => Promise<void>;
+    updateCandidate: (id: number, updates: Partial<Candidate>) => void;
+    removeCandidate: (id: number) => void;
 
     // ACTIONS
     fetchFromBackend: () => Promise<void>;
@@ -129,6 +205,7 @@ export const useUserStore = create<UserState>()(
         history: [],
         currentDate: getTodayDate(),
         today: INITIAL_METRICS,
+        candidates: [],
         goalStatus: { monthVideos: 0, monthTarget: 150 },
         isPunished: false,
 
@@ -368,6 +445,50 @@ export const useUserStore = create<UserState>()(
                     today: newDayMetrics
                 });
             }
+        },
+
+        // --- CHAMPIONSHIP ACTIONS ---
+        fetchCandidates: async () => {
+            try {
+                const res = await fetch(`${API_URL}/api/championship/leaderboard`);
+                if (!res.ok) throw new Error('Failed to fetch candidates');
+                const data = await res.json();
+                set({ candidates: data.candidates || [] });
+            } catch (err) {
+                console.error(err);
+            }
+        },
+
+        addCandidate: async (candidate) => {
+            try {
+                const res = await fetch(`${API_URL}/api/championship/candidate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(candidate)
+                });
+                if (res.ok) {
+                    get().fetchCandidates();
+                }
+            } catch (err) { console.error(err); }
+        },
+
+        moveCandidate: async (id, stage) => {
+            try {
+                await fetch(`${API_URL}/api/championship/candidate/${id}/advance`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ targetStage: stage })
+                });
+                get().fetchCandidates();
+            } catch (err) { console.error(err); }
+        },
+
+        updateCandidate: (_id, _updates) => {
+            console.warn("Generic updateCandidate called");
+        },
+
+        removeCandidate: async (id) => {
+            set((state) => ({ candidates: state.candidates.filter(c => c.id !== id) }));
         },
     })
 );

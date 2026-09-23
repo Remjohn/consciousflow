@@ -5,6 +5,7 @@ import { FinanceTracker } from './features/finance/FinanceTracker';
 import { StudioOperations } from './features/studio/StudioOperations';
 import { OperatorReadiness } from './features/operator/OperatorReadiness';
 import { ChallengeDashboard } from './features/challenge/ChallengeDashboard';
+import { Dating } from './features/dating/Dating';
 
 function App() {
   return (
@@ -21,6 +22,9 @@ function App() {
           <Route path="operator" element={<OperatorReadiness />} />
           <Route path="challenge" element={<ChallengeDashboard />} />
           <Route path="challenges" element={<ChallengeDashboard />} />
+          <Route path="dating" element={<Dating />} />
+          <Route path="championship" element={<Dating />} />
+          <Route path="champion" element={<Navigate to="/dating" replace />} />
           <Route path="stats" element={<Navigate to="/studio" replace />} />
           <Route path="fitness/progress" element={<Navigate to="/operator" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

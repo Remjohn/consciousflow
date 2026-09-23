@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Championship — Evaluation Questions</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 24px; max-width: 900px; margin: 0 auto; }
+    h1 { color: #f59e0b; border-bottom: 2px solid #334155; padding-bottom: 12px; }
+    .nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0; }
+    .nav button { background: #1e293b; color: #e2e8f0; border: 1px solid #475569; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .nav button.active { background: #f59e0b; color: #0f172a; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 24px; margin-bottom: 20px; display: none; }
+    .card.active { display: block; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 12px; background: #3b82f6; color: #fff; }
+    .q-fr { font-size: 20px; font-weight: 600; color: #fff; margin-bottom: 10px; line-height: 1.4; }
+    .q-en { font-size: 15px; color: #94a3b8; font-style: italic; margin-bottom: 20px; }
+    .rubric { background: #0f172a; border-radius: 8px; padding: 16px; margin: 16px 0; }
+    .rubric h4 { margin-top: 0; color: #f59e0b; }
+    .rubric ul { list-style: none; padding: 0; margin: 0; }
+    .rubric li { padding: 6px 0; border-bottom: 1px solid #1e293b; font-size: 14px; }
+    .copy-btn { background: #334155; color: #f8fafc; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; margin-right: 8px; font-size: 13px; }
+    .copy-btn:hover { background: #475569; }
+    .actions { display: flex; justify-content: space-between; margin-top: 24px; }
+    .btn-nav { background: #f59e0b; color: #0f172a; font-weight: bold; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; }
+    .all-mode { display: block !important; margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+  <h1>Championship Campaign — Test Questions</h1>
+  <div style="margin-bottom: 16px;">
+    <button class="copy-btn" onclick="toggleView('single')">🎯 Mode Question par Question (Run)</button>
+    <button class="copy-btn" onclick="toggleView('all')">📑 Voir Toutes les Questions</button>
+  </div>
+  <div class="nav" id="navList"></div>
+  <div id="cardsList"></div>
+
+  <script>
+    const questions = [
+      { id: "Q1", fr: "« À partir de combien de partenaires une personne n'est plus vraiment sérieuse selon toi ? »", en: "At what number of partners does someone stop being serious about relationships?", metric: "valuesAlignment", rules: ["+5: Dit 0-2 partenaires", "+2: Dit 3-5 partenaires", "-5: Dit 6+ partenaires OU relativise ('ça dépend', 'le passé c'est le passé')"] },
+      { id: "Q2", fr: "« À quel âge idéal une femme devrait se marier selon toi ? »", en: "At what ideal age should a woman get married?", metric: "valuesAlignment", rules: ["+5: 21-24 ans", "+2: 25-27 ans", "-5: 28+ ans ou ne montre aucune urgence"] },
+      { id: "Q3", fr: "« Selon toi, comment deux personnes doivent apprendre à se connaître avant le mariage ? »", en: "How should two people get to know each other before marriage?", metric: "disciplineStructure", rules: ["+5: Observation + cadre familial + église", "0: Narratif dating moderne", "-10: Approche physique/romantique en premier (RED FLAG)"] },
+      { id: "Q4", fr: "« En cas de désaccord dans un couple, comment ça devrait se gérer selon toi ? »", en: "In case of disagreement in a couple, how should it be handled?", metric: "communicationStyle", rules: ["+5: Dialogue + respect du leadership masculin", "0: 'Toujours égal sans structure'", "-5: Rejette la structure de leadership"] },
+      { id: "Q5", fr: "« Comment est ta relation avec ton père ? »", en: "How is your relationship with your father?", metric: "familyStructure", rules: ["+5: Relation respectueuse et aimante", "0: Père absent mais respecté", "-10: Mépris / hostilité ouverte (RED FLAG)"] },
+      { id: "Q6", fr: "« Quelle femme admires-tu le plus dans ta famille ? Pourquoi ? »", en: "Which woman do you admire most in your family? Why?", metric: "valuesAlignment", rules: ["+5: Loue le soin, l'esprit de famille et le sacrifice", "-2: Ne loue que l'indépendance", "0: Pas de réponse claire / confusion"] },
+      { id: "Q7", fr: "« Tu penses quoi des filles très actives sur les réseaux sociaux ? »", en: "What do you think about girls who are very active on social media?", metric: "socialMediaConduct", rules: ["+5: Attitude critique / réservée", "0: Neutre", "-5: Défend la recherche de validation"] },
+      { id: "Q8", fr: "« Un homme et une femme peuvent être juste amis selon toi ? »", en: "Can a man and woman just be friends in your opinion?", metric: "valuesAlignment", rules: ["+6: 'Non' clair et sans ambiguïté (GREEN FLAG)", "0: Réponse conditionnelle", "-5: 'Oui, c'est tout à fait normal'"] },
+      { id: "Q9", fr: "« Quand tu es énervée, tu fais quoi généralement ? »", en: "When you're upset, what do you generally do?", metric: "communicationStyle", rules: ["+5: Se retire, prie, réfléchit", "0: Parle sous l'émotion", "-5: Explose, accuse, bouderie"] },
+      { id: "Q10", fr: "« Selon toi, le rôle principal d'un homme dans une famille c'est quoi ? »", en: "In your opinion, what is the main role of a man in a family?", metric: "valuesAlignment", rules: ["+5: Protection + provision + leadership", "-2: Soutien émotionnel uniquement", "-5: Rejette le rôle de pourvoyeur"] },
+      { id: "Q11", fr: "« Qu'est-ce qu'une bonne épouse accepte même quand c'est difficile ? »", en: "What does a good wife accept even when it's difficult?", metric: "valuesAlignment", rules: ["+6: Patience, respect, service (GREEN FLAG)", "0: Compromis du quotidien uniquement", "-5: Narratif centré sur soi ('ne doit rien tolérer')"] },
+      { id: "Q12", fr: "« Comment tu imagines ta vie dans 10 ans ? »", en: "How do you imagine your life in 10 years?", metric: "valuesAlignment", rules: ["+5: Vision centrée sur la famille et le foyer", "-2: Focus exclusif sur la carrière", "-5: Aucune vision / confusion"] },
+      { id: "E1", fr: "« Qu'est-ce qui rend quelqu'un de sérieux pour le mariage aujourd'hui ? »", en: "What makes someone serious for marriage today?", metric: "valuesAlignment", rules: ["+5: Capacité de sacrifice, maturité spirituelle", "0: Stabilité financière seule", "-5: Critères superficiels (lifestyle, physique)"] },
+      { id: "E2", fr: "« Selon toi, qu'est-ce qui gâte ou ruine les femmes de bien ? »", en: "What do you think ruins good women?", metric: "teachability", rules: ["+5: Réseaux sociaux, vanité, mauvaises amies", "0: Circonstances économiques", "-5: Blâme exclusif des hommes / déni"] },
+      { id: "E3", fr: "« Qu'est-ce que tu admires chez les couples mariés que tu respectes ? »", en: "What do you admire in married couples you respect?", metric: "familyStructure", rules: ["+5: La paix du foyer, l'honneur mutuel, persévérance", "0: 'Ils sont mignons ensemble'", "-5: Cynisme envers le mariage"] }
+    ];
+
+    let current = 0;
+    let mode = 'single';
+
+    function render() {
+      const nav = document.getElementById('navList');
+      const cards = document.getElementById('cardsList');
+      nav.innerHTML = '';
+      cards.innerHTML = '';
+
+      questions.forEach((q, idx) => {
+        const btn = document.createElement('button');
+        btn.textContent = q.id;
+        btn.className = (idx === current && mode === 'single') ? 'active' : '';
+        btn.onclick = () => { current = idx; mode = 'single'; render(); };
+        nav.appendChild(btn);
+
+        const card = document.createElement('div');
+        card.className = 'card' + (mode === 'all' || idx === current ? ' active' : '');
+        card.innerHTML = `
+          <span class="badge">${q.id} • ${q.metric}</span>
+          <div class="q-fr">${q.fr}</div>
+          <div class="q-en">${q.en}</div>
+          <div class="rubric">
+            <h4>Barème Framework</h4>
+            <ul>${q.rules.map(r => `<li>${r}</li>`).join('')}</ul>
+          </div>
+          <div>
+            <button class="copy-btn" onclick="copy('${encodeURIComponent(q.fr)}')">📋 Copier FR</button>
+            <button class="copy-btn" onclick="copy('${encodeURIComponent(q.en)}')">📋 Copy EN</button>
+          </div>
+          ${mode === 'single' ? `
+            <div class="actions">
+              <button class="btn-nav" onclick="prev()" ${idx === 0 ? 'disabled style="opacity:0.5"' : ''}>← Précédent</button>
+              <button class="btn-nav" onclick="next()" ${idx === questions.length - 1 ? 'disabled style="opacity:0.5"' : ''}>Suivant →</button>
+            </div>
+          ` : ''}
+        `;
+        cards.appendChild(card);
+      });
+    }
+
+    function toggleView(m) { mode = m; render(); }
+    function prev() { if (current > 0) { current--; render(); } }
+    function next() { if (current < questions.length - 1) { current++; render(); } }
+    function copy(txt) { navigator.clipboard.writeText(decodeURIComponent(txt)); alert("Copié !"); }
+
+    render();
+  </script>
+</body>
+</html>
