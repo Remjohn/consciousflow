@@ -653,6 +653,85 @@ app.post('/api/championship/candidate', async (c) => {
     }
 });
 
+// PUT: Update Candidate Profile (Name, Nickname, DOB, Photo, Notes, Stage)
+app.put('/api/championship/candidate/:id', async (c) => {
+    try {
+        const id = parseInt(c.req.param('id'));
+        const body = await c.req.json();
+        const { name, nickname, dob, photoUrl, notes, stage } = body;
+
+        const current = await db.select().from(candidates).where(eq(candidates.id, id));
+        if (current.length === 0) return c.json({ error: 'Candidate not found' }, 404);
+
+        const updateData: any = {
+            updatedAt: new Date()
+        };
+
+        if (name !== undefined) updateData.name = name;
+        if (nickname !== undefined) updateData.nickname = nickname;
+        if (photoUrl !== undefined) updateData.photoUrl = photoUrl;
+        if (notes !== undefined) updateData.notes = notes;
+        if (stage !== undefined) updateData.stage = stage;
+
+        if (dob !== undefined) {
+            updateData.dob = dob;
+            if (dob) {
+                const age = calculateAgeFromDob(dob);
+                const ageResult = calculateAgeScore(age);
+                updateData.age = age;
+                updateData.ageScore = ageResult.score;
+                updateData.isAgeDisqualified = ageResult.isDisqualified;
+
+                const numData = autoCalculateNumerology(dob);
+                updateData.lifePathNumber = numData.lifePathNumber;
+                updateData.birthdateNumber = numData.birthdateNumber;
+                updateData.numerologyScore = numData.numerologyScore;
+            }
+        }
+
+        await db.update(candidates)
+            .set(updateData)
+            .where(eq(candidates.id, id));
+
+        // Recalculate candidate total score in case age or numerology shifted
+        await recalculateCandidateScore(id);
+
+        const finalCandidate = await db.select().from(candidates).where(eq(candidates.id, id));
+
+        return c.json({
+            status: 'UPDATED',
+            candidate: finalCandidate[0]
+        });
+    } catch (error) {
+        console.error("Update Candidate Error:", error);
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
+// DELETE: Remove Candidate and associated evaluation records
+app.delete('/api/championship/candidate/:id', async (c) => {
+    try {
+        const id = parseInt(c.req.param('id'));
+
+        const current = await db.select().from(candidates).where(eq(candidates.id, id));
+        if (current.length === 0) return c.json({ error: 'Candidate not found' }, 404);
+
+        // Delete associated records first
+        await db.delete(candidateFlags).where(eq(candidateFlags.candidateId, id));
+        await db.delete(candidateQuestions).where(eq(candidateQuestions.candidateId, id));
+        await db.delete(candidateLogs).where(eq(candidateLogs.candidateId, id));
+        await db.delete(candidateAdjustments).where(eq(candidateAdjustments.candidateId, id));
+
+        // Delete candidate
+        await db.delete(candidates).where(eq(candidates.id, id));
+
+        return c.json({ status: 'DELETED', id });
+    } catch (error) {
+        console.error("Delete Candidate Error:", error);
+        return c.json({ error: String(error) }, 500);
+    }
+});
+
 // PUT: Update Appearance (Beauty Score)
 app.put('/api/championship/candidate/:id/appearance', async (c) => {
     try {

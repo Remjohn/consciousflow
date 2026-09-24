@@ -148,8 +148,8 @@ interface UserState {
     fetchCandidates: () => Promise<void>;
     addCandidate: (candidate: { name: string; nickname?: string; dob?: string; photoUrl?: string; notes?: string; }) => Promise<void>;
     moveCandidate: (id: number, stage: CandidateStage) => Promise<void>;
-    updateCandidate: (id: number, updates: Partial<Candidate>) => void;
-    removeCandidate: (id: number) => void;
+    updateCandidate: (id: number, updates: Partial<Candidate>) => Promise<boolean>;
+    removeCandidate: (id: number) => Promise<boolean>;
 
     // ACTIONS
     fetchFromBackend: () => Promise<void>;
@@ -483,12 +483,40 @@ export const useUserStore = create<UserState>()(
             } catch (err) { console.error(err); }
         },
 
-        updateCandidate: (_id, _updates) => {
-            console.warn("Generic updateCandidate called");
+        updateCandidate: async (id, updates) => {
+            try {
+                const res = await fetch(`${API_URL}/api/championship/candidate/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updates)
+                });
+                if (res.ok) {
+                    await get().fetchCandidates();
+                    return true;
+                }
+                return false;
+            } catch (err) {
+                console.error(err);
+                return false;
+            }
         },
 
         removeCandidate: async (id) => {
-            set((state) => ({ candidates: state.candidates.filter(c => c.id !== id) }));
+            try {
+                const res = await fetch(`${API_URL}/api/championship/candidate/${id}`, {
+                    method: 'DELETE'
+                });
+                if (res.ok) {
+                    set((state) => ({ candidates: state.candidates.filter(c => c.id !== id) }));
+                    await get().fetchCandidates();
+                    return true;
+                }
+                return false;
+            } catch (err) {
+                console.error(err);
+                set((state) => ({ candidates: state.candidates.filter(c => c.id !== id) }));
+                return false;
+            }
         },
     })
 );

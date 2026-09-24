@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
   Apple,
-  CalendarDays,
   Clapperboard,
   Dumbbell,
   Flame,
@@ -23,13 +22,9 @@ import { useFortressOSStore } from '../../store/useFortressOSStore';
 import { useUserStore } from '../../store/useUserStore';
 import { ScrollingQuotes } from '../../components/ScrollingQuotes';
 import { API_URL } from '../../lib/api';
+import { LiveClock } from '../../components/LiveClock';
 
-const todayLabel = new Date().toLocaleDateString('en-US', {
-  weekday: 'long',
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-});
+
 
 const CoverImageGallery = () => {
   const [images, setImages] = useState<string[]>([]);
@@ -75,10 +70,7 @@ export const Dashboard = () => {
   return (
     <div className="fortress-screen space-y-4">
       <div className="flex items-center justify-between px-1 pt-2">
-        <div className="flex items-center gap-3 text-sm font-semibold text-concrete">
-          <CalendarDays className="h-4 w-4 text-gold" />
-          {todayLabel}
-        </div>
+        <LiveClock horizontal />
         <SelectPill>Day View</SelectPill>
       </div>
 

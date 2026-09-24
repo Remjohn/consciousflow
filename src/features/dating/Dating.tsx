@@ -1,19 +1,44 @@
 import { useState, useEffect, useRef } from 'react';
 import { useUserStore } from '../../store/useUserStore';
 import type { CandidateStage, Candidate } from '../../store/useUserStore';
-import { Plus, User, Trophy, X, ChevronRight, ChevronLeft, RefreshCw, LayoutGrid, Kanban, Upload, Loader } from 'lucide-react';
+import { Plus, User, Trophy, X, ChevronRight, ChevronLeft, RefreshCw, LayoutGrid, Kanban, Upload, Loader, Pencil, Trash2, AlertTriangle } from 'lucide-react';
 import { ScoringModal } from './ScoringModal';
 import { API_URL } from '../../lib/api';
 
 const STAGES: CandidateStage[] = ['POOL', 'GROUP_STAGE', 'ROUND_OF_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINALS', 'CHAMPION'];
 
 export const Dating = () => {
-    const { candidates, addCandidate, moveCandidate, fetchCandidates } = useUserStore();
+    const { candidates, addCandidate, moveCandidate, fetchCandidates, updateCandidate, removeCandidate } = useUserStore();
     const [viewMode, setViewMode] = useState<'PIPELINE' | 'GALLERY'>('GALLERY');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     // Scoring Modal State
     const [scoringCandidate, setScoringCandidate] = useState<Candidate | null>(null);
+
+    // Edit Candidate State
+    const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
+    const [editFormData, setEditFormData] = useState<{
+        name: string;
+        nickname: string;
+        dob: string;
+        photoUrl: string;
+        stage: CandidateStage;
+        notes: string;
+    }>({
+        name: '',
+        nickname: '',
+        dob: '',
+        photoUrl: '',
+        stage: 'POOL',
+        notes: ''
+    });
+    const [editPreviewUrl, setEditPreviewUrl] = useState<string | null>(null);
+    const [isEditUploading, setIsEditUploading] = useState(false);
+    const editFileInputRef = useRef<HTMLInputElement>(null);
+
+    // Delete Candidate State
+    const [deletingCandidate, setDeletingCandidate] = useState<Candidate | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Initial Load
     useEffect(() => {
@@ -81,6 +106,79 @@ export const Dating = () => {
         const newIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
         if (newIndex >= 0 && newIndex < STAGES.length) {
             moveCandidate(id, STAGES[newIndex]);
+        }
+    };
+
+    const handleOpenEdit = (candidate: Candidate) => {
+        setEditingCandidate(candidate);
+        setEditFormData({
+            name: candidate.name || '',
+            nickname: candidate.nickname || '',
+            dob: candidate.dob ? String(candidate.dob).split('T')[0] : '',
+            photoUrl: candidate.photoUrl || '',
+            stage: candidate.stage || 'POOL',
+            notes: candidate.notes || ''
+        });
+        setEditPreviewUrl(candidate.photoUrl ? (candidate.photoUrl.startsWith('http') ? candidate.photoUrl : `${API_URL}${candidate.photoUrl}`) : null);
+    };
+
+    const handlePhotoEditUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setEditPreviewUrl(URL.createObjectURL(file));
+        setIsEditUploading(true);
+
+        try {
+            const formDataUpload = new FormData();
+            formDataUpload.append('photo', file);
+
+            const res = await fetch(`${API_URL}/api/upload/photo`, {
+                method: 'POST',
+                body: formDataUpload
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setEditFormData(prev => ({ ...prev, photoUrl: data.url }));
+            }
+        } catch (err) {
+            console.error('Upload failed:', err);
+        } finally {
+            setIsEditUploading(false);
+        }
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingCandidate || !editFormData.name.trim()) return;
+        setIsEditUploading(true);
+        try {
+            await updateCandidate(editingCandidate.id, {
+                name: editFormData.name.trim(),
+                nickname: editFormData.nickname.trim(),
+                dob: editFormData.dob || undefined,
+                photoUrl: editFormData.photoUrl || undefined,
+                stage: editFormData.stage,
+                notes: editFormData.notes
+            });
+            setEditingCandidate(null);
+            setEditPreviewUrl(null);
+        } finally {
+            setIsEditUploading(false);
+        }
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deletingCandidate) return;
+        setIsDeleting(true);
+        try {
+            await removeCandidate(deletingCandidate.id);
+            if (scoringCandidate?.id === deletingCandidate.id) {
+                setScoringCandidate(null);
+            }
+            setDeletingCandidate(null);
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -194,12 +292,28 @@ export const Dating = () => {
                                                     >
                                                         <ChevronLeft size={14} />
                                                     </button>
-                                                    <button
-                                                        onClick={() => setScoringCandidate(candidate)}
-                                                        className="text-[9px] bg-steel/20 hover:bg-gold hover:text-void px-2 py-1 uppercase text-concrete/50 transition-colors"
-                                                    >
-                                                        EVAL
-                                                    </button>
+                                                    <div className="flex items-center gap-1">
+                                                        <button
+                                                            onClick={() => setScoringCandidate(candidate)}
+                                                            className="text-[9px] bg-steel/20 hover:bg-gold hover:text-void px-2 py-1 uppercase text-concrete/70 transition-colors font-bold"
+                                                        >
+                                                            EVAL
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleOpenEdit(candidate)}
+                                                            className="text-[9px] bg-steel/20 hover:bg-white hover:text-void p-1 text-concrete/50 transition-colors"
+                                                            title="Edit Profile"
+                                                        >
+                                                            <Pencil size={11} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setDeletingCandidate(candidate)}
+                                                            className="text-[9px] bg-steel/20 hover:bg-blood hover:text-white p-1 text-concrete/50 transition-colors"
+                                                            title="Delete Candidate"
+                                                        >
+                                                            <Trash2 size={11} />
+                                                        </button>
+                                                    </div>
                                                     <button
                                                         onClick={() => handleMove(candidate.id, stage, 'next')}
                                                         disabled={stage === 'CHAMPION'}
@@ -229,6 +343,23 @@ export const Dating = () => {
                                 ) : (
                                     <div className="absolute inset-0 flex items-center justify-center text-concrete/10"><User size={48} /></div>
                                 )}
+                                <div className="absolute top-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                    <button
+                                        onClick={() => handleOpenEdit(candidate)}
+                                        className="p-1 bg-void/80 hover:bg-gold hover:text-void text-concrete/70 backdrop-blur border border-steel/30 text-[10px] transition-colors"
+                                        title="Edit Candidate"
+                                    >
+                                        <Pencil size={11} />
+                                    </button>
+                                    <button
+                                        onClick={() => setDeletingCandidate(candidate)}
+                                        className="p-1 bg-void/80 hover:bg-blood hover:text-white text-concrete/70 backdrop-blur border border-steel/30 text-[10px] transition-colors"
+                                        title="Delete Candidate"
+                                    >
+                                        <Trash2 size={11} />
+                                    </button>
+                                </div>
+                                <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-void/80 backdrop-blur border border-steel/30 text-[8px] text-concrete/50 font-mono uppercase">{candidate.stage.replace(/_/g, ' ')}</div>
                                 <div className="absolute inset-0 bg-gradient-to-t from-void via-void/20 to-transparent flex flex-col justify-end p-3">
                                     <div className="flex justify-between items-end mb-1">
                                         <div>
@@ -240,16 +371,29 @@ export const Dating = () => {
                                             <div className="text-[8px] text-gold/50 uppercase tracking-widest">PTS</div>
                                         </div>
                                     </div>
-                                    <div className="h-0 group-hover:h-8 transition-all overflow-hidden flex items-end">
+                                    <div className="h-0 group-hover:h-8 transition-all overflow-hidden flex items-end gap-1.5">
                                         <button
                                             onClick={() => setScoringCandidate(candidate)}
-                                            className="w-full bg-gold text-void text-[10px] font-bold py-1.5 uppercase tracking-widest hover:bg-white"
+                                            className="flex-1 bg-gold text-void text-[10px] font-bold py-1.5 uppercase tracking-widest hover:bg-white transition-colors"
                                         >
                                             EVALUATE
                                         </button>
+                                        <button
+                                            onClick={() => handleOpenEdit(candidate)}
+                                            className="bg-steel/30 text-concrete hover:text-gold hover:bg-steel/50 p-1.5 transition-colors"
+                                            title="Edit Profile"
+                                        >
+                                            <Pencil size={13} />
+                                        </button>
+                                        <button
+                                            onClick={() => setDeletingCandidate(candidate)}
+                                            className="bg-steel/30 text-concrete/70 hover:text-white hover:bg-blood p-1.5 transition-colors"
+                                            title="Delete Candidate"
+                                        >
+                                            <Trash2 size={13} />
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-void/80 backdrop-blur border border-steel/30 text-[8px] text-concrete/50 font-mono uppercase">{candidate.stage.replace(/_/g, ' ')}</div>
                             </div>
                         ))}
                     </div>
@@ -347,6 +491,170 @@ export const Dating = () => {
                                 className="w-full bg-gold text-void py-3 font-bold uppercase tracking-widest text-xs hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 ENTER DATABASE
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Candidate Modal */}
+            {editingCandidate && (
+                <div className="fixed inset-0 bg-void/95 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-void border border-steel/30 w-full max-w-md shadow-2xl">
+                        <div className="p-4 border-b border-steel/20 flex justify-between items-center">
+                            <div>
+                                <h2 className="font-display font-black text-lg text-gold uppercase tracking-wider">
+                                    EDIT TARGET DOSSIER
+                                </h2>
+                                <p className="text-[10px] font-mono text-concrete/50">ID #{editingCandidate.id} &bull; {editingCandidate.name}</p>
+                            </div>
+                            <button onClick={() => { setEditingCandidate(null); setEditPreviewUrl(null); }} className="text-concrete/50 hover:text-white">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            {/* Photo Upload */}
+                            <div className="flex flex-col items-center">
+                                <div
+                                    onClick={() => editFileInputRef.current?.click()}
+                                    className="w-24 h-24 border-2 border-dashed border-steel/30 hover:border-gold/50 flex items-center justify-center cursor-pointer transition-colors overflow-hidden bg-steel/10 relative"
+                                >
+                                    {isEditUploading ? (
+                                        <Loader className="w-6 h-6 text-gold animate-spin" />
+                                    ) : editPreviewUrl ? (
+                                        <img src={editPreviewUrl} alt="Preview" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="flex flex-col items-center text-concrete/30">
+                                            <Upload className="w-6 h-6" />
+                                            <span className="text-[9px] font-mono mt-1">CHANGE PHOTO</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <input
+                                    ref={editFileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handlePhotoEditUpload}
+                                    className="hidden"
+                                />
+                                <span className="text-[10px] text-concrete/30 font-mono mt-2">Click to update portrait</span>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-mono text-concrete/50 uppercase block mb-1">Name</label>
+                                <input
+                                    type="text"
+                                    value={editFormData.name}
+                                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                                    className="w-full bg-steel/10 border border-steel/20 p-2 text-concrete focus:border-gold/50 outline-none font-mono"
+                                    placeholder="Target Name"
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-mono text-concrete/50 uppercase block mb-1">Nickname</label>
+                                    <input
+                                        type="text"
+                                        value={editFormData.nickname}
+                                        onChange={(e) => setEditFormData({ ...editFormData, nickname: e.target.value })}
+                                        className="w-full bg-steel/10 border border-steel/20 p-2 text-concrete focus:border-gold/50 outline-none font-mono"
+                                        placeholder="Codename"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-mono text-concrete/50 uppercase block mb-1">DOB</label>
+                                    <input
+                                        type="date"
+                                        value={editFormData.dob}
+                                        onChange={(e) => setEditFormData({ ...editFormData, dob: e.target.value })}
+                                        className="w-full bg-steel/10 border border-steel/20 p-2 text-concrete focus:border-gold/50 outline-none font-mono"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-mono text-concrete/50 uppercase block mb-1">Tournament Stage</label>
+                                <select
+                                    value={editFormData.stage}
+                                    onChange={(e) => setEditFormData({ ...editFormData, stage: e.target.value as CandidateStage })}
+                                    className="w-full bg-void border border-steel/20 p-2 text-concrete focus:border-gold/50 outline-none font-mono text-xs uppercase"
+                                >
+                                    {STAGES.map((s) => (
+                                        <option key={s} value={s} className="bg-void text-concrete">
+                                            {s.replace(/_/g, ' ')}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-mono text-concrete/50 uppercase block mb-1">Intel</label>
+                                <textarea
+                                    value={editFormData.notes}
+                                    onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                                    className="w-full bg-steel/10 border border-steel/20 p-2 text-concrete focus:border-gold/50 outline-none font-mono min-h-[80px] resize-none"
+                                    placeholder="Updated notes or background intel..."
+                                />
+                            </div>
+
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => { setEditingCandidate(null); setEditPreviewUrl(null); }}
+                                    className="flex-1 bg-steel/20 hover:bg-steel/30 text-concrete py-3 font-bold uppercase tracking-widest text-xs transition-colors"
+                                >
+                                    CANCEL
+                                </button>
+                                <button
+                                    onClick={handleSaveEdit}
+                                    disabled={!editFormData.name.trim() || isEditUploading}
+                                    className="flex-1 bg-gold text-void py-3 font-bold uppercase tracking-widest text-xs hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    SAVE CHANGES
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deletingCandidate && (
+                <div className="fixed inset-0 bg-void/95 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-void border border-blood/50 w-full max-w-sm shadow-2xl p-6 space-y-4">
+                        <div className="flex items-center gap-3 text-blood">
+                            <AlertTriangle className="w-6 h-6 flex-shrink-0" />
+                            <h2 className="font-display font-black text-lg uppercase tracking-wider text-blood">
+                                EXPUNGE TARGET
+                            </h2>
+                        </div>
+                        <p className="text-xs text-concrete/70 font-mono leading-relaxed">
+                            Are you certain you want to permanently delete candidate <span className="text-white font-bold">{deletingCandidate.name}</span>?
+                            All associated evaluation scores, questions, flags, and tactical logs will be permanently erased.
+                        </p>
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                onClick={() => setDeletingCandidate(null)}
+                                disabled={isDeleting}
+                                className="flex-1 bg-steel/20 hover:bg-steel/30 text-concrete py-2.5 font-bold uppercase tracking-widest text-xs transition-colors font-mono"
+                            >
+                                CANCEL
+                            </button>
+                            <button
+                                onClick={handleDeleteConfirm}
+                                disabled={isDeleting}
+                                className="flex-1 bg-blood hover:bg-blood/80 text-white py-2.5 font-bold uppercase tracking-widest text-xs transition-colors font-mono disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {isDeleting ? (
+                                    <>
+                                        <Loader className="w-3.5 h-3.5 animate-spin" />
+                                        DELETING...
+                                    </>
+                                ) : (
+                                    'CONFIRM EXPUNGE'
+                                )}
                             </button>
                         </div>
                     </div>

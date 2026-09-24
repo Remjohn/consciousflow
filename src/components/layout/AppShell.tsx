@@ -4,6 +4,7 @@ import { Bell, CircleDollarSign, Clapperboard, Home, Shield, Trophy, User, Wifi,
 import { cn } from '../../lib/utils';
 import { useUserStore } from '../../store/useUserStore';
 import { useFortressOSStore } from '../../store/useFortressOSStore';
+import { LiveClock } from '../LiveClock';
 
 const pageSubtitles: Array<{ match: string; subtitle: string }> = [
   { match: '/revenue', subtitle: 'Studio Operations & Wealth' },
@@ -58,7 +59,12 @@ export const AppShell = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Real-Time Live Clock & Date */}
+          <div className="flex items-center rounded-xl border border-line bg-panel/80 px-2.5 py-1 sm:px-3 sm:py-1.5 shadow-sm">
+            <LiveClock />
+          </div>
+
           <div className="hidden items-center gap-2 rounded-full border border-line bg-panel/70 px-3 py-2 text-[11px] font-mono uppercase tracking-[0.16em] text-muted md:flex">
             <Wifi className="h-3.5 w-3.5 text-success" /> Synced
           </div>
