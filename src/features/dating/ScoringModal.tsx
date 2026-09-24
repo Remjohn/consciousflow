@@ -43,13 +43,15 @@ const NUMEROLOGY_VALUES: Record<number, number> = {
 
 // Age point values from Framework Section 2.1
 const AGE_SCORES: Record<number, { score: number; label: string; color: string }> = {
-    18: { score: -15, label: 'TOO YOUNG', color: 'text-blood' },
-    19: { score: -10, label: 'RISKY', color: 'text-blood' },
-    20: { score: 2, label: 'ACCEPTABLE', color: 'text-gold' },
-    21: { score: 4, label: 'GOOD', color: 'text-emerald-500' },
+    18: { score: 0, label: 'BASELINE', color: 'text-concrete' },
+    19: { score: 2, label: 'GOOD', color: 'text-emerald-500' },
+    20: { score: 2, label: 'GOOD', color: 'text-emerald-500' },
+    21: { score: 4, label: 'GREAT', color: 'text-emerald-500' },
     22: { score: 6, label: 'OPTIMAL', color: 'text-emerald-500' },
-    23: { score: 2, label: 'GOOD', color: 'text-gold' },
-    24: { score: 0, label: 'BASELINE', color: 'text-concrete' }
+    23: { score: 0, label: 'BASELINE', color: 'text-concrete' },
+    24: { score: -5, label: 'OLDER', color: 'text-gold' },
+    25: { score: -10, label: 'RISKY', color: 'text-blood' },
+    26: { score: -15, label: 'HIGH RISK', color: 'text-blood' }
 };
 
 // Core Metrics Descriptions from Framework Section 3
@@ -209,7 +211,7 @@ export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
     const numScore = calculateNumerologyScore();
 
     const age = candidate.age || 0;
-    const ageData = AGE_SCORES[age] || { score: age > 24 ? -100 : 0, label: age > 24 ? 'DISQUALIFIED' : 'N/A', color: 'text-blood' };
+    const ageData = AGE_SCORES[age] || { score: age >= 27 ? -100 : 0, label: age >= 27 ? 'DISQUALIFIED' : (age < 18 ? 'YOUTH' : 'N/A'), color: age >= 27 ? 'text-blood' : 'text-concrete' };
 
     // Save functions
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

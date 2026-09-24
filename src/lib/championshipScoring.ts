@@ -29,12 +29,16 @@ export function calculateAgeScore(age: number): { score: number, isDisqualified:
     let score = 0;
     let isDisqualified = false;
     
-    if (age > 24) {
+    if (age >= 27) {
         isDisqualified = true;
+    } else if (age === 26) {
+        score = -15;
+    } else if (age === 25) {
+        score = -10;
     } else if (age === 24) {
-        score = 0;
+        score = -5;
     } else if (age === 23) {
-        score = 2;
+        score = 0;
     } else if (age === 22) {
         score = 6;
     } else if (age === 21) {
@@ -42,9 +46,9 @@ export function calculateAgeScore(age: number): { score: number, isDisqualified:
     } else if (age === 20) {
         score = 2;
     } else if (age === 19) {
-        score = -10;
+        score = 2;
     } else if (age <= 18) {
-        score = -15;
+        score = 0;
     }
     
     return { score, isDisqualified };
