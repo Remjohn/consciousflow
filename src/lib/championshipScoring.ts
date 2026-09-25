@@ -114,3 +114,107 @@ export function canAdvanceStage(totalScore: number, redFlagCount: number): boole
     if (totalScore <= 0 || redFlagCount > 0) return false;
     return true;
 }
+
+// ============================================
+// CANDIDATE BADGES & RANKING SYSTEM
+// ============================================
+
+export type CandidateTier = 'ELITE' | 'STRONG' | 'ACCEPTABLE' | 'WEAK' | 'DANGER';
+
+export interface CandidateBadgeInfo {
+    rank: number;
+    totalCandidates: number;
+    tier: CandidateTier;
+    label: string;
+    badgeClasses: string;
+    borderHighlight: string;
+    rankBadgeBg: string;
+    icon: string;
+}
+
+export interface CandidateRankable {
+    id: number;
+    totalChampionshipScore?: number | null;
+    redFlagCount?: number | null;
+    isDisqualified?: boolean | null;
+    isAgeDisqualified?: boolean | null;
+    isArchived?: boolean | null;
+}
+
+export function getCandidateBadge(
+    candidate: CandidateRankable,
+    allCandidates: CandidateRankable[]
+): CandidateBadgeInfo {
+    const active = allCandidates
+        .filter(c => !c.isArchived)
+        .sort((a, b) => (b.totalChampionshipScore || 0) - (a.totalChampionshipScore || 0));
+
+    const rankIndex = active.findIndex(c => c.id === candidate.id);
+    const rank = rankIndex !== -1 ? rankIndex + 1 : active.length;
+    const score = candidate.totalChampionshipScore || 0;
+    const redFlags = candidate.redFlagCount || 0;
+    const totalCandidates = active.length;
+
+    if (candidate.isDisqualified || candidate.isAgeDisqualified || redFlags >= 2 || score < 0) {
+        return {
+            rank,
+            totalCandidates,
+            tier: 'DANGER',
+            label: candidate.isDisqualified ? 'DISQUALIFIED' : (score < 0 ? 'CRITICAL' : 'HIGH RISK'),
+            badgeClasses: 'bg-blood/20 text-blood border-blood/60',
+            borderHighlight: 'border-blood/50 shadow-[0_0_12px_rgba(220,38,38,0.25)]',
+            rankBadgeBg: 'bg-blood text-white font-bold',
+            icon: '⚠️'
+        };
+    }
+
+    if (score >= 70 && redFlags === 0) {
+        return {
+            rank,
+            totalCandidates,
+            tier: 'ELITE',
+            label: rank === 1 ? 'LEADER' : 'ELITE',
+            badgeClasses: 'bg-gold/20 text-gold border-gold/70 font-black',
+            borderHighlight: 'border-gold/70 ring-1 ring-gold/40 shadow-[0_0_15px_rgba(212,175,55,0.3)]',
+            rankBadgeBg: rank === 1 ? 'bg-gold text-void font-black' : 'bg-gold/80 text-void font-bold',
+            icon: rank === 1 ? '👑' : '⭐'
+        };
+    }
+
+    if (score >= 45 && redFlags <= 1) {
+        return {
+            rank,
+            totalCandidates,
+            tier: 'STRONG',
+            label: 'CONTENDER',
+            badgeClasses: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/60 font-bold',
+            borderHighlight: 'border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]',
+            rankBadgeBg: 'bg-emerald-600 text-white font-bold',
+            icon: '💎'
+        };
+    }
+
+    if (score >= 20) {
+        return {
+            rank,
+            totalCandidates,
+            tier: 'ACCEPTABLE',
+            label: 'VIABLE',
+            badgeClasses: 'bg-amber-500/20 text-amber-400 border-amber-500/50',
+            borderHighlight: 'border-amber-500/30',
+            rankBadgeBg: 'bg-amber-600/80 text-white font-bold',
+            icon: '🛡️'
+        };
+    }
+
+    return {
+        rank,
+        totalCandidates,
+        tier: 'WEAK',
+        label: 'PROBATION',
+        badgeClasses: 'bg-steel/30 text-concrete/70 border-steel/40',
+        borderHighlight: 'border-steel/30',
+        rankBadgeBg: 'bg-steel/40 text-concrete font-mono',
+        icon: '⏳'
+    };
+}

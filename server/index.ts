@@ -1140,7 +1140,7 @@ app.post('/api/championship/auto-advance', async (c) => {
         const autoDisqualified: number[] = [];
         for (const cand of sorted) {
             const shouldDisqualify =
-                (cand.age && cand.age > 24) ||
+                (cand.age && cand.age >= 27) ||
                 (cand.beautyScore && cand.beautyScore < 14) ||
                 (cand.redFlagCount && cand.redFlagCount >= 3);
 
@@ -1149,7 +1149,7 @@ app.post('/api/championship/auto-advance', async (c) => {
                 await db.update(candidates)
                     .set({
                         isDisqualified: true,
-                        disqualificationReason: cand.age && cand.age > 24 ? 'AGE_EXCEEDED' :
+                        disqualificationReason: cand.age && cand.age >= 27 ? 'AGE_EXCEEDED' :
                             cand.beautyScore && cand.beautyScore < 14 ? 'BEAUTY_BELOW_THRESHOLD' :
                                 'RED_FLAG_ACCUMULATION'
                     })

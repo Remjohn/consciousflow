@@ -53,5 +53,12 @@ export const api = {
     }
 };
 
-// For image URLs (photos, etc.)
-export const assetUrl = (path: string) => path ? `${API_URL}${path}` : '';
+// For image URLs (photos, uploads, external links)
+export const assetUrl = (path: string | null | undefined): string => {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
+        return path;
+    }
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    return API_URL ? `${API_URL}${cleanPath}` : cleanPath;
+};

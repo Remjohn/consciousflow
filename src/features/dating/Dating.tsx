@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { useUserStore } from '../../store/useUserStore';
 import type { CandidateStage, Candidate } from '../../store/useUserStore';
-import { Plus, User, Trophy, X, ChevronRight, ChevronLeft, RefreshCw, LayoutGrid, Kanban, Upload, Loader, Pencil, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, Trophy, X, ChevronRight, ChevronLeft, RefreshCw, LayoutGrid, Kanban, Upload, Loader, Pencil, Trash2, AlertTriangle, ArrowUpDown } from 'lucide-react';
 import { ScoringModal } from './ScoringModal';
-import { API_URL } from '../../lib/api';
+import { API_URL, assetUrl } from '../../lib/api';
+import { getCandidateBadge } from '../../lib/championshipScoring';
 
 const STAGES: CandidateStage[] = ['POOL', 'GROUP_STAGE', 'ROUND_OF_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINALS', 'CHAMPION'];
 
 export const Dating = () => {
     const { candidates, addCandidate, moveCandidate, fetchCandidates, updateCandidate, removeCandidate } = useUserStore();
     const [viewMode, setViewMode] = useState<'PIPELINE' | 'GALLERY'>('GALLERY');
+    const [sortBy, setSortBy] = useState<'RANK' | 'DEFAULT'>('RANK');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     // Scoring Modal State
@@ -188,7 +190,7 @@ export const Dating = () => {
             {/* Scoring Modal */}
             {scoringCandidate && (
                 <ScoringModal
-                    candidate={scoringCandidate}
+                    candidate={candidates.find(c => c.id === scoringCandidate.id) || scoringCandidate}
                     onClose={() => setScoringCandidate(null)}
                     onRefresh={fetchCandidates}
                 />
@@ -206,10 +208,26 @@ export const Dating = () => {
                     </p>
                 </div>
                 <div className="flex gap-3 items-center">
+                    {/* Sort Toggle (Gallery View) */}
+                    {viewMode === 'GALLERY' && (
+                        <button
+                            onClick={() => setSortBy(prev => prev === 'RANK' ? 'DEFAULT' : 'RANK')}
+                            className={`flex items-center gap-1.5 px-3 py-2 border text-xs font-mono uppercase transition-colors ${
+                                sortBy === 'RANK'
+                                    ? 'bg-gold/15 text-gold border-gold/60 font-bold shadow-[0_0_10px_rgba(212,175,55,0.2)]'
+                                    : 'bg-steel/10 text-concrete/60 border-steel/30 hover:text-concrete'
+                            }`}
+                            title="Toggle ranking sort order"
+                        >
+                            <ArrowUpDown size={13} />
+                            <span>{sortBy === 'RANK' ? '👑 Ranked: Best → Worst' : 'Stage Order'}</span>
+                        </button>
+                    )}
+
                     {/* Auto-Advance Button */}
                     <button
                         onClick={async () => {
-                            const confirmed = window.confirm('⚡ AUTO-ADVANCE\n\nThis will:\n• Disqualify candidates with age > 24, beauty < 14, or 3+ red flags\n• Rank all candidates by total score\n• Assign stages based on ranking\n\nProceed?');
+                            const confirmed = window.confirm('⚡ AUTO-ADVANCE\n\nThis will:\n• Disqualify candidates with age >= 27, beauty < 14, or 3+ red flags\n• Rank all candidates by total score\n• Assign stages based on ranking\n\nProceed?');
                             if (!confirmed) return;
                             try {
                                 const res = await fetch(`${API_URL}/api/championship/auto-advance`, { method: 'POST' });
@@ -260,70 +278,89 @@ export const Dating = () => {
                                         <span className="text-[10px] font-mono text-concrete/30">{stageCandidates.length}</span>
                                     </div>
                                     <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3 scrollbar-hide">
-                                        {stageCandidates.map(candidate => (
-                                            <div key={candidate.id} className="bg-void border border-steel/20 p-3 group hover:border-gold/30 transition-colors relative">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <div
-                                                            className="w-8 h-8 bg-steel/20 flex items-center justify-center overflow-hidden cursor-pointer border border-steel/30"
-                                                            onClick={() => setScoringCandidate(candidate)}
-                                                        >
-                                                            {candidate.photoUrl ? (
-                                                                <img src={`${API_URL}${candidate.photoUrl}`} alt={candidate.name} className="w-full h-full object-cover" />
-                                                            ) : (
-                                                                <User className="w-4 h-4 text-concrete/30" />
-                                                            )}
+                                        {stageCandidates.map(candidate => {
+                                            const badge = getCandidateBadge(candidate, candidates);
+                                            return (
+                                                <div key={candidate.id} className={`bg-void border ${badge.borderHighlight} p-3 group hover:border-gold/50 transition-colors relative`}>
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <div
+                                                                className="w-9 h-9 bg-steel/20 flex items-center justify-center overflow-hidden cursor-pointer border border-steel/30 relative shrink-0"
+                                                                onClick={() => setScoringCandidate(candidate)}
+                                                            >
+                                                                {candidate.photoUrl ? (
+                                                                    <img
+                                                                        src={assetUrl(candidate.photoUrl)}
+                                                                        alt={candidate.name}
+                                                                        className="w-full h-full object-cover object-top"
+                                                                        onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                                                                    />
+                                                                ) : null}
+                                                                <div className={`w-full h-full flex items-center justify-center text-gold/70 font-mono text-xs font-bold ${candidate.photoUrl ? '-z-10' : ''}`}>
+                                                                    {candidate.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className={`text-[9px] font-mono px-1 py-0.2 border ${badge.badgeClasses}`}>
+                                                                        {badge.icon} #{badge.rank}
+                                                                    </span>
+                                                                    <div className="font-bold text-concrete text-sm cursor-pointer hover:text-gold truncate max-w-[130px]" onClick={() => setScoringCandidate(candidate)}>
+                                                                        {candidate.name}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-[10px] font-mono text-concrete/40 flex items-center gap-2 mt-0.5">
+                                                                    <span>{candidate.age ? `${candidate.age} Y/O` : '? Y/O'}</span>
+                                                                    <span className="text-[9px] uppercase tracking-wider">{badge.label}</span>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <div className="font-bold text-concrete text-sm cursor-pointer hover:text-gold" onClick={() => setScoringCandidate(candidate)}>{candidate.name}</div>
-                                                            <div className="text-[10px] font-mono text-concrete/40">{candidate.age || '?'} Y/O</div>
+                                                        <div className={`font-mono font-bold text-xs ${badge.tier === 'ELITE' ? 'text-gold' : badge.tier === 'STRONG' ? 'text-emerald-400' : badge.tier === 'DANGER' ? 'text-blood' : 'text-concrete'}`}>
+                                                            {candidate.totalChampionshipScore || 0} PTS
                                                         </div>
                                                     </div>
-                                                    <div className={`font-mono font-bold text-xs ${candidate.totalChampionshipScore > 50 ? 'text-gold' : 'text-blood'}`}>
-                                                        {candidate.totalChampionshipScore} PTS
-                                                    </div>
-                                                </div>
 
-                                                <div className="flex justify-between items-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                        onClick={() => handleMove(candidate.id, stage, 'prev')}
-                                                        disabled={stage === 'POOL'}
-                                                        className="p-1 hover:text-white disabled:opacity-0 text-concrete/50"
-                                                    >
-                                                        <ChevronLeft size={14} />
-                                                    </button>
-                                                    <div className="flex items-center gap-1">
+                                                    <div className="flex justify-between items-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button
-                                                            onClick={() => setScoringCandidate(candidate)}
-                                                            className="text-[9px] bg-steel/20 hover:bg-gold hover:text-void px-2 py-1 uppercase text-concrete/70 transition-colors font-bold"
+                                                            onClick={() => handleMove(candidate.id, stage, 'prev')}
+                                                            disabled={stage === 'POOL'}
+                                                            className="p-1 hover:text-white disabled:opacity-0 text-concrete/50"
                                                         >
-                                                            EVAL
+                                                            <ChevronLeft size={14} />
                                                         </button>
+                                                        <div className="flex items-center gap-1">
+                                                            <button
+                                                                onClick={() => setScoringCandidate(candidate)}
+                                                                className="text-[9px] bg-steel/20 hover:bg-gold hover:text-void px-2 py-1 uppercase text-concrete/70 transition-colors font-bold"
+                                                            >
+                                                                EVAL
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleOpenEdit(candidate)}
+                                                                className="text-[9px] bg-steel/20 hover:bg-white hover:text-void p-1 text-concrete/50 transition-colors"
+                                                                title="Edit Profile"
+                                                            >
+                                                                <Pencil size={11} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setDeletingCandidate(candidate)}
+                                                                className="text-[9px] bg-steel/20 hover:bg-blood hover:text-white p-1 text-concrete/50 transition-colors"
+                                                                title="Delete Candidate"
+                                                            >
+                                                                <Trash2 size={11} />
+                                                            </button>
+                                                        </div>
                                                         <button
-                                                            onClick={() => handleOpenEdit(candidate)}
-                                                            className="text-[9px] bg-steel/20 hover:bg-white hover:text-void p-1 text-concrete/50 transition-colors"
-                                                            title="Edit Profile"
+                                                            onClick={() => handleMove(candidate.id, stage, 'next')}
+                                                            disabled={stage === 'CHAMPION'}
+                                                            className="p-1 hover:text-gold disabled:opacity-0 text-concrete/50"
                                                         >
-                                                            <Pencil size={11} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setDeletingCandidate(candidate)}
-                                                            className="text-[9px] bg-steel/20 hover:bg-blood hover:text-white p-1 text-concrete/50 transition-colors"
-                                                            title="Delete Candidate"
-                                                        >
-                                                            <Trash2 size={11} />
+                                                            <ChevronRight size={14} />
                                                         </button>
                                                     </div>
-                                                    <button
-                                                        onClick={() => handleMove(candidate.id, stage, 'next')}
-                                                        disabled={stage === 'CHAMPION'}
-                                                        className="p-1 hover:text-gold disabled:opacity-0 text-concrete/50"
-                                                    >
-                                                        <ChevronRight size={14} />
-                                                    </button>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             );
@@ -332,70 +369,116 @@ export const Dating = () => {
                 ) : (
                     // GALLERY VIEW
                     <div className="p-6 overflow-y-auto h-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                        {candidates.filter(c => !c.isArchived).map(candidate => (
-                            <div key={candidate.id} className="aspect-[3/4] bg-steel/10 border border-steel/20 relative group overflow-hidden hover:border-gold/50 transition-all">
-                                {candidate.photoUrl ? (
-                                    <img
-                                        src={`${API_URL}${candidate.photoUrl}`}
-                                        alt={candidate.name}
-                                        className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all grayscale group-hover:grayscale-0"
-                                    />
-                                ) : (
-                                    <div className="absolute inset-0 flex items-center justify-center text-concrete/10"><User size={48} /></div>
-                                )}
-                                <div className="absolute top-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                    <button
-                                        onClick={() => handleOpenEdit(candidate)}
-                                        className="p-1 bg-void/80 hover:bg-gold hover:text-void text-concrete/70 backdrop-blur border border-steel/30 text-[10px] transition-colors"
-                                        title="Edit Candidate"
+                        {(() => {
+                            const activeCandidates = candidates.filter(c => !c.isArchived);
+                            const displayed = sortBy === 'RANK'
+                                ? [...activeCandidates].sort((a, b) => (b.totalChampionshipScore || 0) - (a.totalChampionshipScore || 0))
+                                : activeCandidates;
+
+                            return displayed.map(candidate => {
+                                const badge = getCandidateBadge(candidate, candidates);
+                                return (
+                                    <div
+                                        key={candidate.id}
+                                        className={`aspect-[3/4] bg-void border ${badge.borderHighlight} relative group overflow-hidden transition-all shadow-lg`}
                                     >
-                                        <Pencil size={11} />
-                                    </button>
-                                    <button
-                                        onClick={() => setDeletingCandidate(candidate)}
-                                        className="p-1 bg-void/80 hover:bg-blood hover:text-white text-concrete/70 backdrop-blur border border-steel/30 text-[10px] transition-colors"
-                                        title="Delete Candidate"
-                                    >
-                                        <Trash2 size={11} />
-                                    </button>
-                                </div>
-                                <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-void/80 backdrop-blur border border-steel/30 text-[8px] text-concrete/50 font-mono uppercase">{candidate.stage.replace(/_/g, ' ')}</div>
-                                <div className="absolute inset-0 bg-gradient-to-t from-void via-void/20 to-transparent flex flex-col justify-end p-3">
-                                    <div className="flex justify-between items-end mb-1">
-                                        <div>
-                                            <h3 className="text-white font-display font-bold uppercase leading-tight">{candidate.name}</h3>
-                                            <div className="text-[10px] text-gold/70 font-mono">{candidate.age || '?'}y • {candidate.stage.replace(/_/g, ' ')}</div>
+                                        {/* Portrait Photo */}
+                                        {candidate.photoUrl ? (
+                                            <img
+                                                src={assetUrl(candidate.photoUrl)}
+                                                alt={candidate.name}
+                                                className="absolute inset-0 w-full h-full object-cover object-top opacity-90 group-hover:opacity-100 transition-all group-hover:scale-105"
+                                                onError={(e) => {
+                                                    (e.target as HTMLElement).style.display = 'none';
+                                                }}
+                                            />
+                                        ) : null}
+
+                                        {/* Tactical Avatar Fallback (visible if photoUrl is null or fails) */}
+                                        <div className={`absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-steel/20 to-void/90 ${candidate.photoUrl ? '-z-10' : ''}`}>
+                                            <div className="w-16 h-16 rounded-full bg-steel/30 border border-steel/40 flex items-center justify-center text-gold/90 font-display font-black text-xl mb-1 shadow-inner">
+                                                {candidate.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
+                                            </div>
+                                            <span className="text-[9px] font-mono text-concrete/40 uppercase tracking-widest">NO PORTRAIT</span>
                                         </div>
-                                        <div className="text-right">
-                                            <div className="text-xl font-black text-gold leading-none">{candidate.totalChampionshipScore}</div>
-                                            <div className="text-[8px] text-gold/50 uppercase tracking-widest">PTS</div>
+
+                                        {/* Rank & Performance Tier Badge */}
+                                        <div className={`absolute top-2 left-2 z-20 flex items-center gap-1.5 px-2 py-0.5 border text-[10px] font-mono font-bold tracking-wider backdrop-blur-md shadow-md ${badge.badgeClasses}`}>
+                                            <span>{badge.icon}</span>
+                                            <span>#{badge.rank}</span>
+                                            <span className="opacity-40">|</span>
+                                            <span>{badge.label}</span>
+                                        </div>
+
+                                        {/* Stage Pill */}
+                                        <div className="absolute top-2 right-2 z-20 px-1.5 py-0.5 bg-void/80 backdrop-blur border border-steel/30 text-[8px] text-concrete/70 font-mono uppercase">
+                                            {candidate.stage.replace(/_/g, ' ')}
+                                        </div>
+
+                                        {/* Quick Edit / Delete Buttons on Card */}
+                                        <div className="absolute top-8 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                            <button
+                                                onClick={() => handleOpenEdit(candidate)}
+                                                className="p-1.5 bg-void/85 hover:bg-gold hover:text-void text-concrete/70 backdrop-blur border border-steel/30 text-[10px] transition-colors"
+                                                title="Edit Candidate"
+                                            >
+                                                <Pencil size={12} />
+                                            </button>
+                                            <button
+                                                onClick={() => setDeletingCandidate(candidate)}
+                                                className="p-1.5 bg-void/85 hover:bg-blood hover:text-white text-concrete/70 backdrop-blur border border-steel/30 text-[10px] transition-colors"
+                                                title="Delete Candidate"
+                                            >
+                                                <Trash2 size={12} />
+                                            </button>
+                                        </div>
+
+                                        {/* Gradient Overlay & Bottom Info */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-void via-void/30 to-transparent flex flex-col justify-end p-3 pointer-events-none">
+                                            <div className="flex justify-between items-end mb-1">
+                                                <div>
+                                                    <h3 className="text-white font-display font-bold uppercase leading-tight drop-shadow-sm">{candidate.name}</h3>
+                                                    {candidate.nickname && (
+                                                        <div className="text-[10px] text-gold/80 font-mono">"{candidate.nickname}"</div>
+                                                    )}
+                                                    <div className="text-[10px] text-concrete/60 font-mono">
+                                                        {candidate.age ? `${candidate.age}y` : '?y'} &bull; {candidate.stage.replace(/_/g, ' ')}
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className={`text-xl font-black leading-none ${badge.tier === 'ELITE' ? 'text-gold' : badge.tier === 'STRONG' ? 'text-emerald-400' : badge.tier === 'DANGER' ? 'text-blood' : 'text-concrete'}`}>
+                                                        {candidate.totalChampionshipScore || 0}
+                                                    </div>
+                                                    <div className="text-[8px] text-concrete/50 uppercase tracking-widest">PTS</div>
+                                                </div>
+                                            </div>
+                                            <div className="h-0 group-hover:h-8 transition-all overflow-hidden flex items-end gap-1.5 pointer-events-auto">
+                                                <button
+                                                    onClick={() => setScoringCandidate(candidate)}
+                                                    className="flex-1 bg-gold text-void text-[10px] font-bold py-1.5 uppercase tracking-widest hover:bg-white transition-colors"
+                                                >
+                                                    EVALUATE
+                                                </button>
+                                                <button
+                                                    onClick={() => handleOpenEdit(candidate)}
+                                                    className="bg-steel/30 text-concrete hover:text-gold hover:bg-steel/50 p-1.5 transition-colors"
+                                                    title="Edit Profile"
+                                                >
+                                                    <Pencil size={13} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setDeletingCandidate(candidate)}
+                                                    className="bg-steel/30 text-concrete/70 hover:text-white hover:bg-blood p-1.5 transition-colors"
+                                                    title="Delete Candidate"
+                                                >
+                                                    <Trash2 size={13} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="h-0 group-hover:h-8 transition-all overflow-hidden flex items-end gap-1.5">
-                                        <button
-                                            onClick={() => setScoringCandidate(candidate)}
-                                            className="flex-1 bg-gold text-void text-[10px] font-bold py-1.5 uppercase tracking-widest hover:bg-white transition-colors"
-                                        >
-                                            EVALUATE
-                                        </button>
-                                        <button
-                                            onClick={() => handleOpenEdit(candidate)}
-                                            className="bg-steel/30 text-concrete hover:text-gold hover:bg-steel/50 p-1.5 transition-colors"
-                                            title="Edit Profile"
-                                        >
-                                            <Pencil size={13} />
-                                        </button>
-                                        <button
-                                            onClick={() => setDeletingCandidate(candidate)}
-                                            className="bg-steel/30 text-concrete/70 hover:text-white hover:bg-blood p-1.5 transition-colors"
-                                            title="Delete Candidate"
-                                        >
-                                            <Trash2 size={13} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                                );
+                            });
+                        })()}
                     </div>
                 )}
             </div>
@@ -423,7 +506,7 @@ export const Dating = () => {
                                     {isUploading ? (
                                         <Loader className="w-6 h-6 text-gold animate-spin" />
                                     ) : previewUrl ? (
-                                        <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                                        <img src={assetUrl(previewUrl)} alt="Preview" className="w-full h-full object-cover object-top" />
                                     ) : (
                                         <div className="flex flex-col items-center text-concrete/30">
                                             <Upload className="w-6 h-6" />
@@ -438,7 +521,19 @@ export const Dating = () => {
                                     onChange={handlePhotoUpload}
                                     className="hidden"
                                 />
-                                <span className="text-[10px] text-concrete/30 font-mono mt-2">Click to upload</span>
+                                <span className="text-[10px] text-concrete/30 font-mono mt-1">Click to upload file</span>
+                                <div className="w-full mt-2">
+                                    <input
+                                        type="url"
+                                        value={formData.photoUrl}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, photoUrl: e.target.value });
+                                            setPreviewUrl(e.target.value || null);
+                                        }}
+                                        placeholder="Or paste direct image URL (https://...)"
+                                        className="w-full bg-steel/10 border border-steel/20 p-1.5 text-concrete focus:border-gold/50 outline-none font-mono text-[11px]"
+                                    />
+                                </div>
                             </div>
 
                             <div>
@@ -523,7 +618,7 @@ export const Dating = () => {
                                     {isEditUploading ? (
                                         <Loader className="w-6 h-6 text-gold animate-spin" />
                                     ) : editPreviewUrl ? (
-                                        <img src={editPreviewUrl} alt="Preview" className="w-full h-full object-cover" />
+                                        <img src={assetUrl(editPreviewUrl)} alt="Preview" className="w-full h-full object-cover object-top" />
                                     ) : (
                                         <div className="flex flex-col items-center text-concrete/30">
                                             <Upload className="w-6 h-6" />
@@ -538,7 +633,19 @@ export const Dating = () => {
                                     onChange={handlePhotoEditUpload}
                                     className="hidden"
                                 />
-                                <span className="text-[10px] text-concrete/30 font-mono mt-2">Click to update portrait</span>
+                                <span className="text-[10px] text-concrete/30 font-mono mt-1">Click to update portrait</span>
+                                <div className="w-full mt-2">
+                                    <input
+                                        type="url"
+                                        value={editFormData.photoUrl}
+                                        onChange={(e) => {
+                                            setEditFormData(prev => ({ ...prev, photoUrl: e.target.value }));
+                                            setEditPreviewUrl(e.target.value || null);
+                                        }}
+                                        placeholder="Or paste direct image URL (https://...)"
+                                        className="w-full bg-steel/10 border border-steel/20 p-1.5 text-concrete focus:border-gold/50 outline-none font-mono text-[11px]"
+                                    />
+                                </div>
                             </div>
 
                             <div>

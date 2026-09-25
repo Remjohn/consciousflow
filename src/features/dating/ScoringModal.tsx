@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import type { Candidate, CandidateStage } from '../../store/useUserStore';
 import { useUserStore } from '../../store/useUserStore';
 import { X, Brain, Flag, Loader, User, MessageSquare, Calculator, History, Zap, Trash2, Upload, AlertTriangle, Check, Save } from 'lucide-react';
-import { API_URL } from '../../lib/api';
+import { API_URL, assetUrl } from '../../lib/api';
+import { getCandidateBadge } from '../../lib/championshipScoring';
 
 const STAGES: CandidateStage[] = ['POOL', 'GROUP_STAGE', 'ROUND_OF_16', 'QUARTER_FINALS', 'SEMI_FINALS', 'FINALS', 'CHAMPION'];
 
@@ -108,9 +109,12 @@ interface FlagHistoryItem {
 }
 
 export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
-    const { updateCandidate, removeCandidate } = useUserStore();
+    const { candidates, updateCandidate, removeCandidate } = useUserStore();
     const [activeTab, setActiveTab] = useState<TabName>('PROFILE');
     const [loading, setLoading] = useState(false);
+
+    // Dynamic Ranking Badge
+    const badge = getCandidateBadge(candidate, candidates);
 
     // Primary Identity State
     const [identity, setIdentity] = useState({
@@ -122,7 +126,7 @@ export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
         notes: candidate.notes || ''
     });
     const [photoPreview, setPhotoPreview] = useState<string | null>(
-        candidate.photoUrl ? (candidate.photoUrl.startsWith('http') ? candidate.photoUrl : `${API_URL}${candidate.photoUrl}`) : null
+        candidate.photoUrl ? assetUrl(candidate.photoUrl) : null
     );
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
     const [identitySaved, setIdentitySaved] = useState(false);
@@ -414,17 +418,19 @@ export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
                 {/* Header */}
                 <div className="bg-steel/10 border-b border-steel/20 p-4 flex justify-between items-center shrink-0">
                     <div className="flex items-center gap-4">
-                        {(photoPreview || candidate.photoUrl) ? (
-                            <img
-                                src={photoPreview || (candidate.photoUrl?.startsWith('http') ? candidate.photoUrl : `${API_URL}${candidate.photoUrl}`)}
-                                alt={identity.name || candidate.name}
-                                className="w-12 h-12 object-cover border border-steel/30"
-                            />
-                        ) : (
-                            <div className="w-12 h-12 bg-steel/20 border border-steel/30 flex items-center justify-center text-concrete/40 font-mono text-xs">
-                                <User size={20} />
+                        <div className="w-12 h-12 bg-steel/20 border border-steel/30 flex items-center justify-center relative overflow-hidden shrink-0">
+                            {(photoPreview || candidate.photoUrl) ? (
+                                <img
+                                    src={assetUrl(photoPreview || candidate.photoUrl)}
+                                    alt={identity.name || candidate.name}
+                                    className="w-full h-full object-cover object-top"
+                                    onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                                />
+                            ) : null}
+                            <div className={`w-full h-full flex items-center justify-center text-gold/70 font-mono text-xs font-bold ${(photoPreview || candidate.photoUrl) ? '-z-10' : ''}`}>
+                                {(identity.name || candidate.name).split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()}
                             </div>
-                        )}
+                        </div>
                         <div>
                             <div className="flex items-center gap-2">
                                 <h2 className="font-display font-black text-xl text-concrete uppercase">{identity.name || candidate.name}</h2>
@@ -433,10 +439,15 @@ export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
                                         "{identity.nickname}"
                                     </span>
                                 )}
+                                <span className={`text-[10px] font-mono px-2 py-0.5 border font-bold flex items-center gap-1 ${badge.badgeClasses}`}>
+                                    {badge.icon} #{badge.rank} &bull; {badge.label}
+                                </span>
                             </div>
                             <div className="flex items-center gap-3 text-xs font-mono text-concrete/50">
                                 <span>Stage: <span className="text-gold font-bold">{identity.stage || candidate.stage}</span></span>
                                 <span>Total: <span className="text-emerald-400 font-bold">{candidate.totalChampionshipScore || 0} PTS</span></span>
+                                <span className="text-concrete/30">|</span>
+                                <span>Leaderboard: <span className="text-gold font-bold">#{badge.rank} of {badge.totalCandidates}</span></span>
                             </div>
                         </div>
                     </div>
@@ -507,7 +518,7 @@ export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
                                                 <Loader className="w-6 h-6 text-gold animate-spin" />
                                             ) : photoPreview ? (
                                                 <>
-                                                    <img src={photoPreview} alt={identity.name} className="w-full h-full object-cover" />
+                                                    <img src={assetUrl(photoPreview)} alt={identity.name} className="w-full h-full object-cover object-top" />
                                                     <div className="absolute inset-0 bg-void/70 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity text-white text-[9px] font-mono">
                                                         <Upload size={14} className="mb-1 text-gold" />
                                                         CHANGE
@@ -527,7 +538,19 @@ export const ScoringModal = ({ candidate, onClose, onRefresh }: Props) => {
                                             onChange={handlePhotoUpload}
                                             className="hidden"
                                         />
-                                        <span className="text-[10px] text-concrete/40 font-mono mt-2 text-center">Click portrait to change</span>
+                                        <span className="text-[10px] text-concrete/40 font-mono mt-1 text-center">Click portrait to upload</span>
+                                        <div className="w-full mt-2">
+                                            <input
+                                                type="url"
+                                                value={identity.photoUrl}
+                                                onChange={(e) => {
+                                                    setIdentity(prev => ({ ...prev, photoUrl: e.target.value }));
+                                                    setPhotoPreview(e.target.value || null);
+                                                }}
+                                                placeholder="Or image URL (https://...)"
+                                                className="w-full bg-steel/10 border border-steel/20 p-1.5 text-concrete focus:border-gold/50 outline-none font-mono text-[10px]"
+                                            />
+                                        </div>
                                     </div>
 
                                     {/* Name, Nickname, DOB, Stage Inputs */}
